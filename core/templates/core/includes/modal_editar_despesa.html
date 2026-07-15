@@ -1,0 +1,47 @@
+<!-- Modal Editar Despesa -->
+                                    <div class="modal fade text-start text-wrap" id="modalEditarDespesa-{{receipt.id}}" tabindex="-1" aria-hidden="true" style="white-space: normal;">
+                                      <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                          <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title"><i class="fa-solid fa-pencil me-2"></i> Editar Despesa</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                          </div>
+                                          <div class="modal-body">
+                                            <form method="post" action="{% url 'receipt_edit' band.slug receipt.id %}?next={{ request.resolver_match.url_name }}" enctype="multipart/form-data">
+                                                {% csrf_token %}
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label fw-bold">Descrição</label>
+                                                        <input type="text" name="description" class="form-control" value="{{ receipt.description }}" required>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label fw-bold">Categoria</label>
+                                                        <input type="text" name="category" class="form-control" value="{{ receipt.category|default_if_none:'' }}">
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label fw-bold">Data</label>
+                                                        <input type="date" name="date" class="form-control" value="{{ receipt.date|date:'Y-m-d' }}">
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label fw-bold">Valor (R$)</label>
+                                                        <input type="text" name="value" class="form-control money-mask" value="{{ receipt.value|stringformat:'.2f' }}" required>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-12 mb-3">
+                                                        <label class="form-label fw-bold">Atualizar Arquivo (Opcional)</label>
+                                                        <input type="file" name="file" class="form-control">
+                                                    </div>
+                                                </div>
+                                                <div class="text-end mt-2">
+                                                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">
+                                                        <i class="bi bi-check-circle me-1"></i> Atualizar Despesa
+                                                    </button>
+                                                </div>
+                                            </form>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>

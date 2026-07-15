@@ -1,0 +1,51 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# sqlite
+db.sqlite3
+db_backup*.sqlite3
+
+# media and static
+media/
+staticfiles/
+
+# .env
+.env
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# temp
+audit.py
+audit_report.json
+extract_temp/
+_archive_unused/
+test_error.py
+
+# env extra
+.env.*
+!.env.example
+*.pem
+*.key
+local_settings.py
+
+# debug and logs
+.pytest_cache/
+.coverage
+htmlcov/
+logs/
+*.log
+
+# ide
+.vscode/
+.idea/

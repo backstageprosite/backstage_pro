@@ -1,0 +1,107 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Custos com Equipe - {{ show.title }} | Backstage Pro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="h4 mb-1 fw-bold text-dark">
+            <i class="fa-solid fa-users text-primary me-2"></i> Custos com Equipe
+        </h2>
+        <p class="text-muted mb-0">
+            Show: <strong>{{ show.title }}</strong> &bull; {{ show.date|date:"d/m/Y" }}
+        </p>
+    </div>
+    <a href="{% url 'relatorio_financeiro' band.slug %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+        <i class="fa-solid fa-arrow-left me-2"></i> Voltar aos Relatórios
+    </a>
+</div>
+
+<div class="row">
+    <!-- Coluna do Formulário -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+                <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-plus-circle text-primary me-2"></i> Adicionar Custo</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">Nome do Integrante</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small mt-1">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">Função</label>
+                        {{ form.role }}
+                        {% if form.role.errors %}
+                            <div class="text-danger small mt-1">{{ form.role.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark">Valor (R$)</label>
+                        {{ form.value }}
+                        {% if form.value.errors %}
+                            <div class="text-danger small mt-1">{{ form.value.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2">
+                        <i class="fa-solid fa-save me-2"></i> Salvar Custo
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna da Lista -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-header bg-white border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-list-check text-primary me-2"></i> Equipe do Show</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if team_costs %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
+                            <tr>
+                                <th class="ps-4 py-3">Integrante</th>
+                                <th class="py-3">Função</th>
+                                <th class="py-3 text-end">Valor (R$)</th>
+                                <th class="pe-4 py-3 text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cost in team_costs %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">{{ cost.name }}</td>
+                                <td class="text-muted">{{ cost.role|default:"-" }}</td>
+                                <td class="text-end fw-bold text-danger">R$ {{ cost.value|floatformat:"2g" }}</td>
+                                <td class="pe-4 text-end">
+                                    <a href="{% url 'teamcost_delete' band.slug cost.id %}" class="btn btn-sm btn-outline-danger" title="Remover">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fa-solid fa-user-xmark text-muted opacity-50 mb-3" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted fw-bold">Nenhum custo com equipe cadastrado.</h5>
+                    <p class="text-muted">Utilize o formulário ao lado para registrar os cachês.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'core/base.html' %}
+{% load i18n static %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="text-center mb-4">
+            <img src="{% static 'img/logo-backstage.png' %}" alt="Backstage Pro" class="img-fluid mb-3" style="max-height: 180px;">
+            <p class="text-muted">Acesso restrito à Área de Produção</p>
+        </div>
+        
+        <div class="card p-4">
+            <div class="card-body">
+                <h4 class="card-title text-center mb-4">Entrar</h4>
+                
+                <form method="post" id="login-form">
+                    {% csrf_token %}
+                    {% if form.errors and not form.non_field_errors %}
+                    <div class="alert alert-danger p-2 fs-6">
+                        {% if form.errors.items|length == 1 %}Por favor, corrija o erro abaixo.{% else %}Por favor, corrija os erros abaixo.{% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.non_field_errors %}
+                    {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger p-2 fs-6">
+                        {{ error }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Usuário</label>
+                        <input type="text" name="username" class="form-control" id="id_username" required autofocus>
+                    </div>
+                    <div class="mb-4">
+                        <label for="id_password" class="form-label">Senha</label>
+                        <input type="password" name="password" class="form-control" id="id_password" required>
+                        <input type="hidden" name="next" value="{{ next }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Entrar <i class="fa-solid fa-arrow-right ms-1"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,359 @@
+{% extends 'core/admin/base_admin.html' %}
+{% load admin_tags %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold m-0"><i class="fa-solid fa-file-invoice-dollar me-2 text-dark"></i> Fatura e Cobrança</h3>
+    <button class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaCobranca">
+        <i class="fa-solid fa-plus me-2"></i>Nova Fatura
+    </button>
+</div>
+
+<!-- Filtros e Busca -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-muted small fw-bold text-uppercase">Banda</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0 ps-0 bg-light" placeholder="Nome da banda..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small fw-bold text-uppercase">Período</label>
+                <input type="text" name="period" class="form-control bg-light" placeholder="Ex: Agosto/2026" value="{{ request.GET.period }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small fw-bold text-uppercase">Status</label>
+                <select name="status" class="form-select bg-light">
+                    <option value="">Todos</option>
+                    <option value="PENDENTE" {% if request.GET.status == 'PENDENTE' %}selected{% endif %}>Pendentes</option>
+                    <option value="VENCENDO_7D" {% if request.GET.status == 'VENCENDO_7D' %}selected{% endif %}>Vencendo (7 dias)</option>
+                    <option value="VENCIDAS" {% if request.GET.status == 'VENCIDAS' %}selected{% endif %}>Vencidas / Atrasadas</option>
+                    <option value="PAGO" {% if request.GET.status == 'PAGO' %}selected{% endif %}>Pagas</option>
+                    <option value="ATRASADO" {% if request.GET.status == 'ATRASADO' %}selected{% endif %}>Atrasado Real</option>
+                    <option value="CANCELADO" {% if request.GET.status == 'CANCELADO' %}selected{% endif %}>Canceladas</option>
+                    <option value="ISENTO" {% if request.GET.status == 'ISENTO' %}selected{% endif %}>Isentas</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-dark fw-bold rounded-pill">Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4 text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Banda & Período</th>
+                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Valor</th>
+                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Vencimento</th>
+                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Data Pagamento</th>
+                        <th class="text-muted text-uppercase text-center" style="font-size: 0.8rem; letter-spacing: 0.5px;">Status</th>
+                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Cobrança</th>
+                        <th class="text-end pe-4 text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in cobrancas %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ rec.band.name }}</div>
+                            <div class="small text-muted"><i class="fa-solid fa-calendar me-1"></i>{{ rec.reference_period }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold {% if rec.status == 'PAGO' %}text-success{% else %}text-dark{% endif %}">R$ {{ rec.amount }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">
+                                {{ rec.due_date|date:"d/m/Y" }}
+                                {% if rec.status == 'PENDENTE' %}
+                                    <br>
+                                    {% if rec.due_date < today %}
+                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2" style="font-size: 0.7rem;">Em atraso</span>
+                                    {% elif rec.due_date <= today %}
+                                        <span class="badge bg-warning-subtle text-warning rounded-pill px-2" style="font-size: 0.7rem;">Vence hoje/breve</span>
+                                    {% else %}
+                                        <span class="badge bg-primary-subtle text-primary rounded-pill px-2" style="font-size: 0.7rem;">No prazo</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">
+                                {% if rec.paid_date %}
+                                    <span class="text-success"><i class="fa-solid fa-check me-1"></i>{{ rec.paid_date|date:"d/m/Y" }}</span>
+                                {% else %}
+                                    <span class="text-muted opacity-50">-</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            {% if rec.status == 'PAGO' %}
+                                <span class="badge bg-success px-3 py-2 rounded-pill"><i class="fa-solid fa-check-double me-1"></i>Pago</span>
+                            {% elif rec.status == 'ATRASADO' %}
+                                <span class="badge bg-danger px-3 py-2 rounded-pill"><i class="fa-solid fa-triangle-exclamation me-1"></i>Atrasado</span>
+                            {% elif rec.status == 'PENDENTE' %}
+                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>Pendente</span>
+                            {% elif rec.status == 'CANCELADO' %}
+                                <span class="badge bg-secondary px-3 py-2 rounded-pill"><i class="fa-solid fa-ban me-1"></i>Cancelado</span>
+                            {% else %}
+                                <span class="badge bg-info text-dark px-3 py-2 rounded-pill">{{ rec.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% with phone=rec.subscription.billing_phone|whatsapp_clean %}
+                            {% if phone %}
+                                <div class="d-flex align-items-center gap-1" id="msgContainer{{ rec.id }}">
+                                    <textarea id="msgText{{ rec.id }}" class="d-none">Olá, {{ rec.subscription.financial_responsible_name|default:"responsável" }}. Tudo bem?
+
+Estou passando para lembrar sobre a assinatura do Backstage Pro da banda {{ rec.band.name }}.
+
+Plano: {{ rec.subscription.plan_name }}
+Período: {{ rec.reference_period }}
+Valor: R$ {{ rec.amount }}
+Vencimento: {{ rec.due_date|date:"d/m/Y" }}
+
+O pagamento pode ser regularizado conforme combinado.
+
+Qualquer dúvida, fico à disposição.
+
+Atenciosamente,
+Vinicius Lopes
+Backstage Pro</textarea>
+                                    <a href="https://wa.me/{{ phone }}?text=Ol%C3%A1%2C%20{{ rec.subscription.financial_responsible_name|default:'respons%C3%A1vel'|urlencode }}%2E%20Tudo%20bem%3F%0A%0AEstou%20passando%20para%20lembrar%20sobre%20a%20assinatura%20do%20Backstage%20Pro%20da%20banda%20{{ rec.band.name|urlencode }}%2E%0A%0APlano%3A%20{{ rec.subscription.plan_name|urlencode }}%0APer%C3%ADodo%3A%20{{ rec.reference_period|urlencode }}%0AValor%3A%20R%24%20{{ rec.amount }}%0AVencimento%3A%20{{ rec.due_date|date:'d/m/Y' }}%0A%0AO%20pagamento%20pode%20ser%20regularizado%20conforme%20combinado%2E%0A%0AQualquer%20d%C3%BAvida%2C%20fico%20%C3%A0%20disposi%C3%A7%C3%A3o%2E%0A%0AAtenciosamente%2C%0AVinicius%20Lopes%0ABackstage%20Pro" target="_blank" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm" title="Enviar WhatsApp">
+                                        <i class="fa-brands fa-whatsapp me-1"></i> Enviar
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm" onclick="copyToClipboard('msgText{{ rec.id }}')" title="Copiar Mensagem">
+                                        <i class="fa-solid fa-copy"></i>
+                                    </button>
+                                </div>
+                            {% else %}
+                                <button class="btn btn-sm btn-secondary rounded-pill px-3 opacity-50" disabled title="Sem telefone cadastrado"><i class="fa-brands fa-whatsapp me-1"></i> Sem Tel</button>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="text-end pe-4">
+                            {% if rec.status != 'PAGO' %}
+                            <form method="POST" action="{% url 'admin_painel:cobranca_marcar_paga' rec.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-success rounded-pill shadow-sm mb-1" title="Marcar como Paga" onclick="return confirm('Confirmar pagamento?');">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if rec.proof_file %}
+                            <a href="{{ rec.proof_file.url }}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill shadow-sm mb-1" title="Ver Comprovante">
+                                <i class="fa-solid fa-file-invoice"></i>
+                            </a>
+                            {% endif %}
+
+                            <button class="btn btn-sm btn-outline-primary rounded-pill shadow-sm mb-1 px-3" data-bs-toggle="modal" data-bs-target="#modalEditCobranca{{ rec.id }}" title="Editar Fatura">
+                                Editar
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Modal Edit Record -->
+                    <div class="modal fade" id="modalEditCobranca{{ rec.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                                <div class="modal-header bg-light border-bottom-0">
+                                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Editar Fatura: {{ rec.band.name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{% url 'admin_painel:cobrancas_editar' rec.id %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="modal-body py-4 text-start">
+                                        <input type="hidden" name="band" value="{{ rec.band.id }}">
+                                        <input type="hidden" name="subscription" value="{{ rec.subscription.id }}">
+                                        
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Período de Ref.</label>
+                                                <input type="text" name="reference_period" class="form-control" value="{{ rec.reference_period }}" required>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Valor</label>
+                                                <input type="number" step="0.01" name="amount" class="form-control" value="{{ rec.amount }}" required>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Vencimento</label>
+                                                <input type="date" name="due_date" class="form-control" value="{{ rec.due_date|date:'Y-m-d' }}" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Status</label>
+                                                <select name="status" class="form-select">
+                                                    {% for val, display in form_create.fields.status.choices %}
+                                                        <option value="{{ val }}" {% if rec.status == val %}selected{% endif %}>{{ display }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Data do Pagamento</label>
+                                                <input type="date" name="paid_date" class="form-control" value="{{ rec.paid_date|date:'Y-m-d' }}">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Forma de Pagamento</label>
+                                                <select name="payment_method" class="form-select">
+                                                    <option value="">-- Indefinido --</option>
+                                                    {% for val, display in form_create.fields.payment_method.choices %}
+                                                        <option value="{{ val }}" {% if rec.payment_method == val %}selected{% endif %}>{{ display }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Comprovante</label>
+                                            <input type="file" name="proof_file" class="form-control">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Observações</label>
+                                            <textarea name="notes" class="form-control" rows="2">{{ rec.notes|default:'' }}</textarea>
+                                        </div>
+
+                                    </div>
+                                    <div class="modal-footer bg-light border-top-0">
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Salvar Alterações</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-receipt fa-3x mb-3 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold">Nenhuma fatura cadastrada</h5>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Create Record -->
+<div class="modal fade" id="modalNovaCobranca" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-2"></i>Nova Fatura / Cobrança</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'admin_painel:cobrancas_nova' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body py-4 text-start">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Banda Cliente</label>
+                            <select name="band" class="form-select" required>
+                                <option value="">-- Selecione --</option>
+                                {% for band in form_create.fields.band.queryset %}
+                                    <option value="{{ band.id }}">{{ band.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Assinatura Vinculada</label>
+                            <select name="subscription" class="form-select" required>
+                                <option value="">-- Selecione (Aparece se cadastrada) --</option>
+                                {% for sub in form_create.fields.subscription.queryset %}
+                                    <option value="{{ sub.id }}">Assinatura: {{ sub.band.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Período Referência</label>
+                            <input type="text" name="reference_period" class="form-control" placeholder="Ex: Setembro/2026" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Valor da Fatura</label>
+                            <input type="number" step="0.01" name="amount" class="form-control" value="300.00" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Data de Vencimento</label>
+                            <input type="date" name="due_date" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Status Atual</label>
+                            <select name="status" class="form-select">
+                                {% for val, display in form_create.fields.status.choices %}
+                                    <option value="{{ val }}">{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Data do Pagamento</label>
+                            <input type="date" name="paid_date" class="form-control" placeholder="Opcional">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Método de Pagamento</label>
+                            <select name="payment_method" class="form-select">
+                                <option value="">-- Indefinido --</option>
+                                {% for val, display in form_create.fields.payment_method.choices %}
+                                    <option value="{{ val }}">{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Anexar Comprovante</label>
+                        <input type="file" name="proof_file" class="form-control">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Observações (Interno)</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Gerar Fatura</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyToClipboard(elementId) {
+        var copyText = document.getElementById(elementId);
+        
+        // Usa a API moderna do clipboard
+        navigator.clipboard.writeText(copyText.value).then(function() {
+            // Feedback visual (Toast)
+            alert("Mensagem copiada para a área de transferência!");
+        }, function(err) {
+            console.error('Falha ao copiar: ', err);
+            alert("Não foi possível copiar a mensagem automaticamente. Você pode selecionar e copiar.");
+        });
+    }
+</script>
+{% endblock %}

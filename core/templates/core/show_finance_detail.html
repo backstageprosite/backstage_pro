@@ -1,0 +1,446 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div class="text-center text-md-start">
+        <h2 class="mb-1 text-success"><i class="fa-solid fa-file-invoice-dollar me-2"></i> Financeiro do Show</h2>
+        <h5 class="text-muted">{{ show.title }} - {{ show.date|date:"d/m/Y" }}</h5>
+    </div>
+    <div class="d-flex flex-wrap justify-content-center gap-2">
+        <a href="{% url 'relatorio_financeiro' band.slug %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar aos Relatórios
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 12px;">
+    <div class="card-body p-4">
+        <div class="row mb-3">
+                    <div class="col-6 col-md-3 mb-3 mb-md-0">
+                        <div class="border rounded p-3 text-center bg-light h-100">
+                            <small class="d-block text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Total Recebido</small>
+                            <strong class="text-success fs-5">R$ {{ total_recebido|floatformat:"2g" }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3 mb-md-0">
+                        <div class="border rounded p-3 text-center bg-light h-100">
+                            <small class="d-block text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Total Pendente</small>
+                            <strong class="fs-5 {% if total_pendente < 0 %}text-danger{% else %}text-warning{% endif %}">
+                                R$ {{ total_pendente|floatformat:"2g" }}
+                            </strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3 mb-md-0">
+                        <div class="border rounded p-3 text-center bg-light h-100">
+                            <small class="d-block text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Percentual Recebido</small>
+                            <strong class="text-info fs-5">{{ percentual_recebido|floatformat:"1" }}%</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3 mb-3 mb-md-0">
+                        <div class="border rounded p-3 text-center bg-light h-100">
+                            <small class="d-block text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Caixa Realizado</small>
+                            <strong class="fs-5 {% if caixa_realizado < 0 %}text-danger{% else %}text-success{% endif %}">
+                                R$ {{ caixa_realizado|floatformat:"2g" }}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+        <hr class="border-secondary opacity-25 my-4">
+
+        
+        <!-- Receita do Show -->
+        
+        <!-- Shortcut para Valor do Cachê -->
+        <div class="card bg-white border-0 shadow-sm mb-4">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Valor do Cachê Contratado</h6>
+                    <h4 class="mb-0 fw-bold text-dark">R$ {{ show.fee|default:"0.00"|floatformat:"2g" }}</h4>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalEditarCache">
+                        <i class="bi bi-pencil me-1"></i> Editar Cachê
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Editar Cachê -->
+        <div class="modal fade" id="modalEditarCache" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+              <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fa-solid fa-pencil me-2"></i> Editar Cachê</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <form method="post" action="{% url 'show_finance_detail' band.slug show.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Valor do Cachê (R$)</label>
+                        <input type="text" name="fee" class="form-control money-mask" value="{{ show.fee|default:'0'|floatformat:'2g' }}" required>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" name="update_fee" class="btn btn-primary rounded-pill px-4 fw-bold">
+                            Salvar
+                        </button>
+                    </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="text-success m-0 fw-bold"><i class="fa-solid fa-hand-holding-dollar me-2"></i> Receita do Show</h5>
+                    <button type="button" class="btn btn-sm btn-success rounded-pill fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalAdicionarReceita">
+                        <i class="bi bi-plus-circle me-1"></i> Adicionar Receita
+                    </button>
+                </div>
+                
+                
+
+                {% if total_pendente < 0 %}
+                <div class="alert alert-warning py-2 mb-3">
+                    <i class="bi bi-exclamation-triangle"></i> Atenção: O total de recebimentos superou o valor do cachê contratado.
+                </div>
+                {% endif %}
+
+                {% if show.payments.all %}
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 30%;">Descrição</th>
+                                <th style="width: 15%;">Data</th>
+                                <th style="width: 20%;">Forma de Pag.</th>
+                                <th style="width: 15%;">Valor</th>
+                                <th style="width: 20%;" class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in show.payments.all %}
+                            <tr>
+                                <td>
+                                    {{ payment.description }}
+                                    {% if payment.observations %}
+                                    <i class="bi bi-info-circle text-muted ms-1" data-bs-toggle="tooltip" title="{{ payment.observations }}"></i>
+                                    {% endif %}
+                                </td>
+                                <td>{{ payment.receipt_date|date:"d/m/Y"|default:"-" }}</td>
+                                <td>{{ payment.get_payment_method_display }}</td>
+                                
+                                <td class="fw-bold text-success">R$ {{ payment.value|floatformat:"2g" }}</td>
+                                <td class="text-end text-nowrap">
+                                    {% if payment.file %}
+                                    <a href="{{ payment.file.url }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill">
+                                        <i class="bi bi-file-earmark-text"></i> Ver Anexo
+                                    </a>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill ms-1 px-3" data-bs-toggle="modal" data-bs-target="#modalEditarReceita-{{payment.id}}">Editar</button>
+
+                                    {% include "core/includes/modal_editar_receita.html" %}
+
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill ms-1" data-bs-toggle="modal" data-bs-target="#modalExcluirReceita-{{payment.id}}"><i class="bi bi-trash"></i> Excluir</button>
+                                    {% include "core/includes/modal_excluir_receita.html" %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 bg-light rounded border">
+                    <p class="text-muted mb-0">Nenhum recebimento cadastrado para este show.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <hr class="border-secondary opacity-25 my-4">
+        
+        <!-- Custos e Comprovantes -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="text-danger m-0 fw-bold"><i class="fa-solid fa-money-bill-transfer me-2"></i> Custos e Despesas</h5>
+                    <button type="button" class="btn btn-sm btn-danger rounded-pill fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalAdicionarDespesa">
+                        <i class="bi bi-plus-circle me-1"></i> Adicionar Despesas
+                    </button>
+                </div>
+                
+                {% if show.receipts.all %}
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 30%;">Descrição</th>
+                                <th style="width: 15%;">Data</th>
+                                <th style="width: 20%;">Categoria</th>
+                                <th style="width: 15%;">Valor</th>
+                                <th style="width: 20%;" class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for receipt in show.receipts.all %}
+                            <tr>
+                                <td>
+                                    {{ receipt.description }}
+                                </td>
+                                <td>{{ receipt.date|date:"d/m/Y"|default:"-" }}</td>
+                                <td>{{ receipt.category|default:"-" }}</td>
+                                <td class="fw-bold text-danger">R$ {{ receipt.value|floatformat:"2g" }}</td>
+                                <td class="text-end text-nowrap">
+                                    {% if receipt.file %}
+                                    <a href="{{ receipt.file.url }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill">
+                                        <i class="bi bi-file-earmark-text"></i> Ver Anexo
+                                    </a>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill ms-1 px-3" data-bs-toggle="modal" data-bs-target="#modalEditarDespesa-{{receipt.id}}">Editar</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill ms-1" data-bs-toggle="modal" data-bs-target="#modalExcluirDespesa-{{receipt.id}}"><i class="bi bi-trash"></i> Excluir</button>
+                                    {% include "core/includes/modal_excluir_despesa.html" %}
+
+                                    {% include "core/includes/modal_editar_despesa.html" %}
+
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 bg-light rounded border mb-4">
+                    <p class="text-muted mb-0">Nenhum custo cadastrado para este show.</p>
+                </div>
+                {% endif %}
+                
+                
+            </div>
+        </div>
+
+        <hr class="border-secondary opacity-25 my-4">
+
+        <!-- Custos com Equipe -->
+        <div class="row">
+            <div class="col-md-12">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                      <h5 class="text-primary m-0 fw-bold"><i class="fa-solid fa-users me-2"></i> Custos com Equipe</h5>
+                      <button type="button" class="btn btn-sm btn-primary rounded-pill fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalAdicionarCustoEquipe">
+                          <i class="bi bi-plus-circle me-1"></i> Adicionar Custos
+                      </button>
+                  </div>
+                  {% include "core/includes/modal_adicionar_equipe.html" %}
+                
+                {% if show.team_costs.all %}
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 30%;">Nome do Integrante</th>
+                                <th style="width: 15%;">Data</th>
+                                <th style="width: 20%;">Função</th>
+                                <th style="width: 15%;">Valor</th>
+                                <th style="width: 20%;" class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cost in show.team_costs.all|dictsort:"name" %}
+                            <tr>
+                                <td>{{ cost.name }}</td>
+                                <td>{{ cost.date|date:'d/m/Y'|default:'-' }}</td>
+                                <td>{{ cost.role|default:"-" }}</td>
+                                <td class="fw-bold text-danger">R$ {{ cost.value|floatformat:"2g" }}</td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill ms-1 px-3" data-bs-toggle="modal" data-bs-target="#modalEditarCustoEquipe-{{cost.id}}">Editar</button>
+                                      {% include "core/includes/modal_editar_equipe.html" %}
+                                      <button type="button" class="btn btn-sm btn-outline-danger rounded-pill ms-1" data-bs-toggle="modal" data-bs-target="#modalExcluirCustoEquipe-{{cost.id}}"><i class="bi bi-trash"></i> Excluir</button>
+                                      {% include "core/includes/modal_excluir_equipe.html" %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 bg-light rounded border mb-4">
+                    <p class="text-muted mb-0">Nenhum custo com equipe cadastrado para este show.</p>
+                </div>
+                {% endif %}
+                
+                
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+<!-- Modal Adicionar Receita -->
+<div class="modal fade" id="modalAdicionarReceita" tabindex="-1" aria-labelledby="modalAdicionarReceitaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalAdicionarReceitaLabel"><i class="fa-solid fa-hand-holding-dollar me-2"></i> Adicionar Receita</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Descrição</label>
+                    {{ payment_form.description }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Valor (R$)</label>
+                    {{ payment_form.value }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Data Prevista</label>
+                    {{ payment_form.expected_date }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Data</label>
+                    {{ payment_form.receipt_date }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label fw-bold">Forma de Pagamento</label>
+                    {{ payment_form.payment_method }}
+                </div>
+                
+            </div>
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label fw-bold">Observações</label>
+                    {{ payment_form.observations }}
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label class="form-label fw-bold">Arquivo (Comprovante)</label>
+                    {{ payment_form.file }}
+                </div>
+            </div>
+            <div class="text-end mt-2">
+                <button type="submit" name="submit_payment" class="btn btn-success rounded-pill px-4 fw-bold">
+                    <i class="bi bi-plus-circle me-1"></i> Salvar Receita
+                </button>
+            </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Adicionar Despesa -->
+<div class="modal fade" id="modalAdicionarDespesa" tabindex="-1" aria-labelledby="modalAdicionarDespesaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="modalAdicionarDespesaLabel"><i class="fa-solid fa-money-bill-transfer me-2"></i> Adicionar Despesa</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Descrição</label>
+                                    {{ form.description }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Categoria</label>
+                                    {{ form.category }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Data</label>
+                                    {{ form.date }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Valor (R$)</label>
+                                    {{ form.value }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-bold">Observações</label>
+                                    <textarea name="observations" class="form-control" rows="2"></textarea>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-bold">Arquivo (PDF, Imagem)</label>
+                                    {{ form.file }}
+                                    <div class="form-text">Anexe o comprovante de pagamento ou nota fiscal.</div>
+                                </div>
+                            </div>
+                            <div class="text-end mt-2">
+                                <button type="submit" name="submit_receipt" class="btn btn-danger rounded-pill px-4 fw-bold">
+                                    <i class="bi bi-plus-circle me-1"></i> Salvar Custo
+                                </button>
+                            </div>
+                        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Adiciona as classes do Bootstrap aos inputs do form
+    const inputs = document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], select');
+    inputs.forEach(input => {
+        input.classList.add('form-control');
+    });
+    
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => {
+        input.classList.add('form-control');
+    });
+});
+</script>
+{% endblock %}
+
+
+<!-- Modal Adicionar Custo de Equipe -->
+<div class="modal fade" id="modalAdicionarCustoEquipe" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fa-solid fa-users me-2"></i> Adicionar Custo com Equipe</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{% url 'show_finance_detail' band.slug show.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-bold">Nome do Integrante</label>
+                {{ team_cost_form.name }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Função</label>
+                {{ team_cost_form.role }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Valor (R$)</label>
+                {{ team_cost_form.value }}
+            </div>
+            <div class="text-end mt-2">
+                <button type="submit" name="submit_team_cost" class="btn btn-primary rounded-pill px-4 fw-bold">
+                    <i class="bi bi-plus-circle me-1"></i> Salvar Custo
+                </button>
+            </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

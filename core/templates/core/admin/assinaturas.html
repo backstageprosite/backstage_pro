@@ -1,0 +1,362 @@
+{% extends 'core/admin/base_admin.html' %}
+{% load admin_tags %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold m-0"><i class="fa-solid fa-star me-2 text-dark"></i> Planos e Assinaturas</h3>
+    <button class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCreateSubscription">
+        <i class="fa-solid fa-plus me-2"></i>Nova Assinatura
+    </button>
+</div>
+
+<!-- Filtros e Busca -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-muted small fw-bold text-uppercase">Busca Livre</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0 ps-0 bg-light" placeholder="Banda ou Responsável..." value="{{ request.GET.q }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small fw-bold text-uppercase">Status</label>
+                <select name="status" class="form-select bg-light">
+                    <option value="">Todos</option>
+                    <option value="ATIVO" {% if request.GET.status == 'ATIVO' %}selected{% endif %}>Ativo</option>
+                    <option value="VENCENDO_7D" {% if request.GET.status == 'VENCENDO_7D' %}selected{% endif %}>Vencendo (7 dias)</option>
+                    <option value="VENCIDO" {% if request.GET.status == 'VENCIDO' %}selected{% endif %}>Vencido</option>
+                    <option value="SUSPENSO" {% if request.GET.status == 'SUSPENSO' %}selected{% endif %}>Suspenso</option>
+                    <option value="TESTE" {% if request.GET.status == 'TESTE' %}selected{% endif %}>Teste</option>
+                    <option value="CANCELADO" {% if request.GET.status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small fw-bold text-uppercase">Ciclo</label>
+                <select name="cycle" class="form-select bg-light">
+                    <option value="">Todos</option>
+                    <option value="MENSAL" {% if request.GET.cycle == 'MENSAL' %}selected{% endif %}>Mensal</option>
+                    <option value="SEMESTRAL" {% if request.GET.cycle == 'SEMESTRAL' %}selected{% endif %}>Semestral</option>
+                    <option value="ANUAL" {% if request.GET.cycle == 'ANUAL' %}selected{% endif %}>Anual</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-dark fw-bold rounded-pill">Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0">        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4 text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Banda</th>
+                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Responsável</th>
+                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Plano</th>
+                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Valor</th>
+                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Vencimento</th>
+                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Pagamento</th>
+                        <th class="text-muted text-uppercase text-center" style="font-size: 0.8rem; letter-spacing: 0.5px;">Status</th>
+                        <th class="text-end pe-4 text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in assinaturas %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ sub.band.name }}</div>
+                        </td>
+                        <td>
+                            <div class="small text-muted"><i class="fa-solid fa-user-tie me-1"></i>{{ sub.financial_responsible_name|default:"Não informado" }}</div>
+                            {% if sub.billing_phone %}
+                            <div class="small mt-1">
+                                <a href="https://wa.me/{{ sub.billing_phone|whatsapp_clean }}" target="_blank" class="text-decoration-none text-success fw-semibold">
+                                    <i class="fa-brands fa-whatsapp me-1"></i>{{ sub.billing_phone }}
+                                </a>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ sub.get_billing_cycle_display }}</span>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-success">R$ {{ sub.contracted_value }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">
+                                {% if sub.next_due_date %}
+                                    {{ sub.next_due_date|date:"d/m/Y" }}
+                                {% else %}
+                                    <span class="text-muted">Não definido</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if sub.next_due_date %}
+                                {% if sub.status == 'VENCIDO' %}
+                                    <span class="badge bg-danger-subtle text-danger rounded-pill px-2" style="font-size: 0.7rem;">Vencido</span>
+                                {% elif sub.status == 'VENCENDO' or sub.next_due_date <= today %}
+                                    <span class="badge bg-warning-subtle text-warning rounded-pill px-2" style="font-size: 0.7rem;">Prox. Vencimento</span>
+                                {% else %}
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-2" style="font-size: 0.7rem;">No Prazo</span>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if sub.status == 'ATIVO' %}
+                                <span class="badge bg-success px-3 py-2 rounded-pill"><i class="fa-solid fa-check-circle me-1"></i>{{ sub.get_status_display }}</span>
+                            {% elif sub.status == 'VENCENDO' %}
+                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>{{ sub.get_status_display }}</span>
+                            {% elif sub.status == 'VENCIDO' %}
+                                <span class="badge bg-danger px-3 py-2 rounded-pill"><i class="fa-solid fa-exclamation-triangle me-1"></i>{{ sub.get_status_display }}</span>
+                            {% elif sub.status == 'SUSPENSO' %}
+                                <span class="badge bg-secondary px-3 py-2 rounded-pill"><i class="fa-solid fa-ban me-1"></i>{{ sub.get_status_display }}</span>
+                            {% elif sub.status == 'TESTE' %}
+                                <span class="badge bg-info text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-flask me-1"></i>{{ sub.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary rounded-pill px-2">{{ sub.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill shadow-sm me-1" data-bs-toggle="modal" data-bs-target="#modalEditSub{{ sub.id }}">
+                                Editar
+                            </button>
+                            {% if sub.status != 'CANCELADO' %}
+                                <form method="POST" action="{% url 'admin_painel:assinaturas_cancelar' sub.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill shadow-sm" onclick="return confirm('Tem certeza que deseja cancelar esta assinatura?');">
+                                        Cancelar
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    
+                    <!-- Modal Edit Subscription -->
+                    <div class="modal fade" id="modalEditSub{{ sub.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                                <div class="modal-header bg-light border-bottom-0">
+                                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Editar Assinatura: {{ sub.band.name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{% url 'admin_painel:assinaturas_editar' sub.id %}">
+                                    {% csrf_token %}
+                                    <div class="modal-body py-4 text-start">
+                                        <input type="hidden" name="band" value="{{ sub.band.id }}">
+                                        
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Plano</label>
+                                                <input type="text" name="plan_name" class="form-control" value="{{ sub.plan_name }}" required>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Ciclo de Cobrança</label>
+                                                <select name="billing_cycle" class="form-select">
+                                                    {% for val, display in form_create.fields.billing_cycle.choices %}
+                                                        <option value="{{ val }}" {% if sub.billing_cycle == val %}selected{% endif %}>{{ display }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Valor Contratado</label>
+                                                <input type="number" step="0.01" name="contracted_value" class="form-control" value="{{ sub.contracted_value|stringformat:'s' }}">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Data Inicial</label>
+                                                <input type="date" name="start_date" class="form-control" value="{{ sub.start_date|date:'Y-m-d' }}">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Próximo Vencimento</label>
+                                                <input type="date" name="next_due_date" class="form-control" value="{{ sub.next_due_date|date:'Y-m-d' }}">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label fw-semibold">Status</label>
+                                                <select name="status" class="form-select">
+                                                    {% for val, display in form_create.fields.status.choices %}
+                                                        <option value="{{ val }}" {% if sub.status == val %}selected{% endif %}>{{ display }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <hr class="my-4">
+                                        <h6 class="fw-bold mb-3 text-secondary">Dados Financeiros e Contato</h6>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-semibold">Responsável Financeiro</label>
+                                                <input type="text" name="financial_responsible_name" class="form-control" value="{{ sub.financial_responsible_name|default:'' }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-semibold">Método de Pagamento</label>
+                                                <select name="payment_method_preference" class="form-select">
+                                                    {% for val, display in form_create.fields.payment_method_preference.choices %}
+                                                        <option value="{{ val }}" {% if sub.payment_method_preference == val %}selected{% endif %}>{{ display }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-semibold">WhatsApp de Cobrança</label>
+                                                <input type="text" name="billing_phone" class="form-control whatsapp-mask" value="{{ sub.billing_phone|default:'' }}" placeholder="Ex: (71) 99999-8888">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label fw-semibold">E-mail de Cobrança</label>
+                                                <input type="email" name="billing_email" class="form-control" value="{{ sub.billing_email|default:'' }}">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Notas Internas</label>
+                                            <textarea name="internal_notes" class="form-control" rows="2">{{ sub.internal_notes|default:'' }}</textarea>
+                                        </div>
+
+                                    </div>
+                                    <div class="modal-footer bg-light border-top-0">
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Salvar Alterações</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-file-contract fa-3x mb-3 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold">Nenhuma assinatura cadastrada</h5>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Create Subscription -->
+<div class="modal fade" id="modalCreateSubscription" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-2"></i>Nova Assinatura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'admin_painel:assinaturas_nova' %}">
+                {% csrf_token %}
+                <div class="modal-body py-4 text-start">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Banda Cliente</label>
+                        <select name="band" class="form-select" required>
+                            <option value="">-- Selecione --</option>
+                            {% for band in form_create.fields.band.queryset %}
+                                <option value="{{ band.id }}">{{ band.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Plano</label>
+                            <input type="text" name="plan_name" class="form-control" value="Mensal" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Ciclo de Cobrança</label>
+                            <select name="billing_cycle" class="form-select">
+                                {% for val, display in form_create.fields.billing_cycle.choices %}
+                                    <option value="{{ val }}">{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Valor Contratado</label>
+                            <input type="number" step="0.01" name="contracted_value" class="form-control" value="300.00" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Data Inicial</label>
+                            <input type="date" name="start_date" class="form-control">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Próximo Vencimento</label>
+                            <input type="date" name="next_due_date" class="form-control">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Status Inicial</label>
+                            <select name="status" class="form-select">
+                                {% for val, display in form_create.fields.status.choices %}
+                                    <option value="{{ val }}">{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h6 class="fw-bold mb-3 text-secondary">Dados Financeiros e Contato</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Responsável Financeiro</label>
+                            <input type="text" name="financial_responsible_name" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Método de Pagamento Preferido</label>
+                            <select name="payment_method_preference" class="form-select">
+                                {% for val, display in form_create.fields.payment_method_preference.choices %}
+                                    <option value="{{ val }}">{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">WhatsApp de Cobrança</label>
+                            <input type="text" name="billing_phone" class="form-control whatsapp-mask" placeholder="Ex: (71) 99999-8888">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">E-mail de Cobrança</label>
+                            <input type="email" name="billing_email" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Notas Internas</label>
+                        <textarea name="internal_notes" class="form-control" rows="2"></textarea>
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Criar Assinatura</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+    $(document).ready(function(){
+        $('.whatsapp-mask').mask('(00) 00000-0000');
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Remove a preferência de tema escuro do Django Admin e força modo Claro
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+        
+        // Esconde o botão de alternar tema do Django
+        document.addEventListener('DOMContentLoaded', function() {
+            var themeToggles = document.querySelectorAll('.theme-toggle');
+            themeToggles.forEach(function(btn) {
+                btn.style.display = 'none';
+            });
+        });
+    </script>
+    <style>
+        /* Força a cor clara caso o CSS do Django tente sobrescrever com media queries de preferência do sistema */
+        :root {
+            --primary: #0f7fb1 !important;
+            --secondary: #0b628a !important;
+            --header-color: #ffffff !important;
+            --header-bg: #417690 !important;
+            --body-bg: #ffffff !important;
+            --body-quiet-color: #666 !important;
+            --body-loud-color: #000 !important;
+            --link-hover-color: #034b6b !important;
+        }
+        body, input, select, textarea, button {
+            font-family: 'Inter', sans-serif !important;
+        }
+        .theme-toggle {
+            display: none !important;
+        }
+    </style>
+{% endblock %}

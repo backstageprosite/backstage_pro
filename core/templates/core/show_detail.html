@@ -1,0 +1,444 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="fa-solid fa-music text-primary me-2"></i> {{ show.title }}</h2>
+        {% if show.event_name %}
+        <h5 class="text-muted"><i class="fa-solid fa-calendar-check me-2 text-secondary"></i> {{ show.event_name }}</h5>
+        {% endif %}
+    </div>
+    <div class="d-flex gap-2">
+        {% if user.is_produtor or user.is_superuser %}
+        <a href="{% url 'show_pdf' band.slug show.id %}" target="_blank" class="btn btn-dark border-dark rounded-pill fw-bold" style="color: white !important;"><i class="fa-solid fa-file-pdf me-1"></i> PDF Show</a>
+        <a href="{% url 'shows_edit' band.slug show.id %}" class="btn btn-outline-primary rounded-pill px-4 fw-bold">Editar Informações</a>
+        {% endif %}
+        <a href="{% url 'calendario' band.slug %}" class="btn btn-outline-light rounded-pill fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
+    </div>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="row">
+    <!-- Coluna Esquerda: Informações Gerais -->
+    <div class="col-12 col-xl-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-primary fw-bold">
+                <i class="fa-solid fa-circle-info me-1"></i> Dados do Evento
+            </div>
+            <div class="card-body text-break" style="overflow-wrap: anywhere; word-break: break-word;">
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% if show.title %}
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        <strong>Nome do Show:</strong> {{ show.title }}
+                    </li>
+                    {% endif %}
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        <strong>Data:</strong> {{ show.date|date:"d/m/Y" }} - {{ show.date|date:"l"|upper }}
+                    </li>
+                    {% if show.event_name %}
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        <strong>Nome do Evento:</strong> {{ show.event_name }}
+                    </li>
+                    {% endif %}
+
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        <strong>Cidade:</strong> {{ show.city }}
+                    </li>
+                    {% if show.venue %}
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        <strong>Local:</strong> {{ show.venue }}
+                    </li>
+                    {% endif %}
+                    {% if show.address or show.address_link %}
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        {% if show.address %}<strong>Endereço:</strong> {{ show.address }}{% endif %}
+                        {% if show.address and show.address_link %} - {% endif %}
+                        {% if show.address_link %}
+                        <a href="{{ show.address_link }}" target="_blank" class="text-primary text-decoration-none fw-bold">
+                            <i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa
+                        </a>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna Direita: Horários -->
+    <div class="col-12 col-xl-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-primary fw-bold">
+                <i class="fa-regular fa-clock me-1"></i> Cronograma
+            </div>
+            <div class="card-body text-break" style="overflow-wrap: anywhere; word-break: break-word;">
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% if show.departure_location or show.departure_location_link %}
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        {% if show.departure_location %}<strong>Local de Saída:</strong> {{ show.departure_location }}{% endif %}
+                        {% if show.departure_location and show.departure_location_link %} - {% endif %}
+                        {% if show.departure_location_link %}
+                        <a href="{{ show.departure_location_link }}" target="_blank" class="text-primary text-decoration-none fw-bold">
+                            <i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa
+                        </a>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                    {% if show.distance_km or show.travel_time %}
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        {% if show.distance_km %}<strong>Distância:</strong> {{ show.distance_km }}{% endif %}
+                        {% if show.distance_km and show.travel_time %} <span class="text-light mx-1">|</span> {% endif %}
+                        {% if show.travel_time %}<strong>Tempo de Desloc.:</strong> {{ show.travel_time }}{% endif %}
+                    </li>
+                    {% endif %}
+                    {% if show.departure_time or show.arrival_time %}
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        {% if show.departure_time %}<strong>Horário Saída:</strong> {{ show.departure_time|time:"H:i" }}{% endif %}
+                        {% if show.departure_time and show.arrival_time %} <span class="text-light mx-1">|</span> {% endif %}
+                        {% if show.arrival_time %}<strong>Previsão Chegada:</strong> {{ show.arrival_time|time:"H:i" }}{% endif %}
+                    </li>
+                    {% endif %}
+                    {% if show.soundcheck_time %}
+                    <li class="list-group-item bg-transparent text-warning border-secondary">
+                        <strong>Passagem de Som:</strong> {{ show.soundcheck_time|time:"H:i" }}
+                    </li>
+                    {% endif %}
+                    {% if show.show_time or show.show_end_time %}
+                    <li class="list-group-item bg-transparent border-secondary">
+                        {% if show.show_time %}<span class="text-success"><strong>Início do Show:</strong> {{ show.show_time|time:"H:i" }}</span>{% endif %}
+                        {% if show.show_time and show.show_end_time %} <span class="text-light mx-1">|</span> {% endif %}
+                        {% if show.show_end_time %}<span class="text-danger"><strong>Final do Show:</strong> {{ show.show_end_time|time:"H:i" }}</span>{% endif %}
+                    </li>
+                    {% endif %}
+                    {% if show.duration %}
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        <strong>Duração:</strong> {{ show.duration }}
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção: Logística -->
+    <div class="col-12 mb-4">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white fw-bold">
+                <i class="fa-solid fa-truck-fast me-1"></i> Logística & Produção
+            </div>
+            <div class="card-body text-break" style="overflow-wrap: anywhere; word-break: break-word;">
+                <div class="row">
+                    {% if show.transport %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-bus me-1"></i> Transporte</h6>
+                        <p class="mb-1">
+                            {{ show.transport|linebreaksbr }}
+                            {% if show.transport_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.transport_contact }}">{{ show.transport_contact }}</a></span>{% endif %}
+                        </p>
+                        {% if show.airline or show.flight_number or show.boarding_time %}
+                        <p class="mb-1 text-muted" style="font-size: 0.9em;">
+                            {% if show.airline %}<strong>Cia Aérea:</strong> {{ show.airline }} {% endif %}
+                            {% if show.flight_number %}| <strong>Voo:</strong> {{ show.flight_number }} {% endif %}
+                            {% if show.boarding_time %}| <strong>Embarque:</strong> {{ show.boarding_time|time:"H:i" }} {% endif %}
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.accommodation %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-bed me-1"></i> Hospedagem</h6>
+                        <p class="mb-1">
+                            {{ show.accommodation|linebreaksbr }}
+                            {% if show.accommodation_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.accommodation_contact }}">{{ show.accommodation_contact }}</a></span>{% endif %}
+                        </p>
+                        {% if show.checkout_time %}
+                        <p class="mb-1 text-muted" style="font-size: 0.9em;">
+                            <strong>Saída (Checkout):</strong> {{ show.checkout_time|time:"H:i" }}
+                        </p>
+                        {% endif %}
+                        {% if show.accommodation_link %}
+                        <p class="mb-0 mt-1"><a href="{{ show.accommodation_link }}" target="_blank" class="text-primary text-decoration-none" style="font-size: 0.85em;"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa</a></p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.transfer %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-right-left me-1"></i> Palco/Baldeação</h6>
+                        <p class="mb-1">
+                            {{ show.transfer|linebreaksbr }}
+                            {% if show.transfer_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.transfer_contact }}">{{ show.transfer_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.dressing_room %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-door-closed me-1"></i> Camarim</h6>
+                        <p class="mb-1">
+                            {{ show.dressing_room|linebreaksbr }}
+                            {% if show.dressing_room_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.dressing_room_contact }}">{{ show.dressing_room_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.catering %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-utensils me-1"></i> Alimentação</h6>
+                        <p>{{ show.catering|linebreaksbr }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.wardrobe %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-shirt me-1"></i> Figurino</h6>
+                        <p>{{ show.wardrobe|linebreaksbr }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if show.attractions %}
+                    <div class="col-md-12 mb-3 mt-2">
+                        <h6 class="text-muted"><i class="fa-solid fa-users me-1"></i> Outras Atrações no Evento</h6>
+                        <p>{{ show.attractions|linebreaksbr }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações Técnicas -->
+    {% if show.local_production or show.sound_system or show.lighting_system or show.led_system or show.backline or show.pyrotechnics or show.generator_system or show.loaders_system %}
+    <div class="col-12 mb-4">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark fw-bold">
+                <i class="fa-solid fa-screwdriver-wrench me-1"></i> Informações Técnicas
+            </div>
+            <div class="card-body text-break" style="overflow-wrap: anywhere; word-break: break-word;">
+                <div class="row">
+                    {% if show.local_production %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-user-tie me-1"></i> Produção Local</h6>
+                        <p class="mb-1">
+                            {{ show.local_production }}
+                            {% if show.local_production_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.local_production_contact }}">{{ show.local_production_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.sound_system %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-volume-high me-1"></i> Sistema de Sonorização</h6>
+                        <p class="mb-1">
+                            {{ show.sound_system }}
+                            {% if show.sound_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.sound_contact }}">{{ show.sound_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.lighting_system %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-regular fa-lightbulb me-1"></i> Sistema de Iluminação</h6>
+                        <p class="mb-1">
+                            {{ show.lighting_system }}
+                            {% if show.lighting_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.lighting_contact }}">{{ show.lighting_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.led_system %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-tv me-1"></i> Sistema de LED</h6>
+                        <p class="mb-1">
+                            {{ show.led_system }}
+                            {% if show.led_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.led_contact }}">{{ show.led_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.backline %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-guitar me-1"></i> Backline</h6>
+                        <p class="mb-1">
+                            {{ show.backline }}
+                            {% if show.backline_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.backline_contact }}">{{ show.backline_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.pyrotechnics %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-fire me-1"></i> Efeitos Pirotecnia</h6>
+                        <p class="mb-1">
+                            {{ show.pyrotechnics }}
+                            {% if show.pyrotechnics_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.pyrotechnics_contact }}">{{ show.pyrotechnics_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.generator_system %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-plug-circle-bolt me-1"></i> Gerador</h6>
+                        <p class="mb-1">
+                            {{ show.generator_system }}
+                            {% if show.generator_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.generator_contact }}">{{ show.generator_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if show.loaders_system %}
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-people-carry-box me-1"></i> Carregadores</h6>
+                        <p class="mb-1">
+                            {{ show.loaders_system }}
+                            {% if show.loaders_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.loaders_contact }}">{{ show.loaders_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Observações da Banda -->
+    {% if show.band_notes %}
+    <div class="col-12 mb-4">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="fa-solid fa-bullhorn me-1"></i> Avisos para a Banda
+            </div>
+            <div class="card-body text-break" style="overflow-wrap: anywhere; word-break: break-word;">
+                <p class="mb-0">{{ show.band_notes|linebreaksbr }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ÁREA RESTRITA: Apenas para Produtores -->
+    {% if user.is_produtor %}
+    <div class="col-12 mb-4">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white fw-bold">
+                <i class="fa-solid fa-lock me-1"></i> Área Restrita (Apenas Produção)
+            </div>
+            <div class="card-body text-break" style="overflow-wrap: anywhere; word-break: break-word;">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-danger"><i class="fa-solid fa-file-contract me-1"></i> Dados do Contrato</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Contratante:</strong> {{ show.contractor_name|default:"Não informado" }}</li>
+                            <li><strong>Telefone:</strong> 
+                                {% if show.contractor_phone %}
+                                    <a href="#" class="whatsapp-link text-primary text-decoration-none" data-phone="{{ show.contractor_phone }}"><i class="fa-brands fa-whatsapp me-1"></i> {{ show.contractor_phone }}</a>
+                                {% else %}
+                                    Não informado
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-danger"><i class="fa-solid fa-sack-dollar me-1"></i> Financeiro</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Valor (Cachê):</strong> R$ {{ show.fee|default:"0,00" }}</li>
+                            <li><strong>Status do Pagamento:</strong> {{ show.get_payment_status_display }}</li>
+                        </ul>
+                    </div>
+                    {% if show.internal_notes %}
+                    <div class="col-12 mt-2">
+                        <h6 class="text-danger"><i class="fa-solid fa-note-sticky me-1"></i> Notas Internas</h6>
+                        <div class="p-3 border border-danger rounded">
+                            {{ show.internal_notes|linebreaksbr }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <hr class="border-secondary my-4">
+                
+                <!-- Nova Área: Anexos e Comprovantes -->
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <h6 class="text-danger"><i class="fa-solid fa-paperclip me-1"></i> Comprovantes Anexados</h6>
+                        {% if show.receipts.all %}
+                            <ul class="list-group list-group-flush bg-transparent mt-2">
+                            {% for receipt in show.receipts.all %}
+                                <li class="list-group-item bg-transparent text-light border-secondary d-flex justify-content-between align-items-center px-0">
+                                    <div>
+                                        <strong>{{ receipt.description }}</strong><br>
+                                        <small class="text-muted">R$ {{ receipt.value }}</small>
+                                    </div>
+                                    <a href="{{ receipt.file.url }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                        <i class="fa-solid fa-download me-1"></i> Ver Anexo
+                                    </a>
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted small mt-2">Nenhum comprovante anexado ainda.</p>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <hr class="border-secondary my-4">
+                
+                <!-- Nova Área: Documentos Anexados -->
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <h6 class="text-danger"><i class="fa-solid fa-file-contract me-1"></i> Documentos Anexados</h6>
+                        {% if show.documents.all %}
+                            <ul class="list-group list-group-flush bg-transparent mt-2">
+                            {% for doc in show.documents.all %}
+                                <li class="list-group-item bg-transparent text-light border-secondary d-flex justify-content-between align-items-center px-0">
+                                    <div>
+                                        <strong>{{ doc.description }}</strong><br>
+                                        <small class="text-muted">Anexado via Painel de Administrador</small>
+                                    </div>
+                                    <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                        <i class="fa-solid fa-download me-1"></i> Ver Documento
+                                    </a>
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted mt-2 mb-0"><small>Nenhum documento anexado para este evento.</small></p>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('.whatsapp-link').forEach(function(el) {
+            let phone = el.getAttribute('data-phone');
+            if(phone) {
+                // Remove tudo que não é número
+                phone = phone.replace(/\D/g, '');
+                // Adiciona o DDI 55 do Brasil se a pessoa só digitou o DDD + Número (10 ou 11 dígitos)
+                if (phone.length === 10 || phone.length === 11) {
+                    phone = '55' + phone;
+                }
+                el.href = 'https://wa.me/' + phone;
+                el.target = '_blank';
+            }
+        });
+    });
+</script>
+{% endblock %}

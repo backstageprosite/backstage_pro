@@ -1,0 +1,52 @@
+{% load static %}
+
+<!-- PWA Install Button (oculto por padrão) -->
+<li class="nav-item">
+    <a href="#" id="pwa-install-btn" class="nav-link text-dark py-3 px-3 fw-medium" style="display: none; border-radius: 8px; background-color: rgba(15, 127, 177, 0.1);">
+        {% if request.resolver_match.namespace == 'admin_painel' %}
+            <i class="fas fa-download fa-fw me-2 text-primary"></i> Instalar Backstage Pro
+        {% else %}
+            <i class="fas fa-download fa-fw me-2 text-primary"></i> Instalar aplicativo
+        {% endif %}
+    </a>
+</li>
+
+<!-- Modal Educativo para iOS -->
+<div class="modal fade" id="iosInstallModal" tabindex="-1" aria-labelledby="iosInstallModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="iosInstallModalLabel">
+                    {% if request.resolver_match.namespace == 'admin_painel' %}
+                        Instalar Backstage Pro
+                    {% else %}
+                        Instalar aplicativo
+                    {% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body text-center pb-4">
+                <p class="mb-4">Para instalar {% if request.resolver_match.namespace == 'admin_painel' %}o Backstage Pro{% else %}este aplicativo{% endif %} no seu iPhone ou iPad:</p>
+                <div class="d-flex flex-column align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fs-4 text-primary"><i class="fa-solid fa-arrow-up-from-bracket"></i></span>
+                        <span class="text-start">1. Toque no botão <strong>Compartilhar</strong> do Safari.</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fs-4 text-primary"><i class="fa-solid fa-plus-square"></i></span>
+                        <span class="text-start">2. Selecione <strong>'Adicionar à Tela de Início'</strong>.</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fs-4 text-primary fw-bold text-end" style="width:24px;">Adicionar</span>
+                        <span class="text-start">3. Confirme tocando em <strong>'Adicionar'</strong>.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary w-100 fw-bold" data-bs-dismiss="modal">Entendi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'core/pwa/pwa-install.js' %}"></script>

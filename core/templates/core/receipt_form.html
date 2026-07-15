@@ -1,0 +1,83 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Editar Comprovante - {{ band.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        Editar Comprovante/Custo
+    </h2>
+    {% if request.GET.next == 'financeiro' %}
+    <a href="{% url 'show_finance_detail' band.slug show.id %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar ao Financeiro
+    </a>
+    {% elif request.GET.next == 'arquivos' %}
+    <a href="{% url 'arquivos' band.slug %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar aos Arquivos
+    </a>
+    {% elif request.GET.next == 'shows_edit' %}
+    <a href="{% url 'shows_edit' band.slug show.id %}#anexos" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar aos Anexos
+    </a>
+    {% else %}
+    <a href="{% url 'show_detail' band.slug show.id %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar ao Show
+    </a>
+    {% endif %}
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Show: {{ show.title }}</h5>
+        
+        <form method="post" enctype="multipart/form-data" action="{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                Por favor, corrija os erros abaixo.
+                {{ form.errors }}
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">Descrição</label>
+                    {{ form.description }}
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label fw-bold">Data</label>
+                    {{ form.date }}
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label fw-bold">Categoria</label>
+                    {{ form.category }}
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label fw-bold">Valor (R$)</label>
+                    {{ form.value }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label fw-bold">Arquivo (PDF, Imagem)</label>
+                    {% if receipt.file %}
+                        <div class="mb-2">
+                            <a href="{{ receipt.file.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-file-earmark-text"></i> Arquivo Atual
+                            </a>
+                        </div>
+                    {% endif %}
+                    {{ form.file }}
+                    <div class="form-text">Deixe em branco para manter o arquivo atual, ou anexe um novo.</div>
+                </div>
+            </div>
+            <div class="text-end mt-2">
+                <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                    <i class="fa-solid fa-save me-1"></i> Salvar Alterações
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

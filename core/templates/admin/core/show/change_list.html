@@ -1,0 +1,17 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+    <li>
+        {% if request.user.band %}
+        <a href="/{{ request.user.band.slug }}/calendario/" class="button" style="background-color: #0f7fb1; color: white;">
+            Ir para Calendário
+        </a>
+        {% else %}
+        <a href="/" class="button" style="background-color: #0f7fb1; color: white;">
+            Ir para o Site
+        </a>
+        {% endif %}
+    </li>
+    {{ block.super }}
+{% endblock %}

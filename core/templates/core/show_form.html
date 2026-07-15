@@ -1,0 +1,623 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <h2 class="fw-bold m-0 text-center text-md-start">
+        <i class="fa-solid {% if is_edit %}fa-pen-to-square{% else %}fa-plus-circle{% endif %} text-primary me-2"></i> 
+        {% if is_edit %}Editar Show{% else %}Adicionar Show{% endif %}
+    </h2>
+    <div class="d-flex flex-wrap justify-content-center gap-2">
+        {% if is_edit %}
+        <a href="{% url 'show_pdf' band.slug form.instance.id %}" target="_blank" class="btn btn-dark text-white border-dark rounded-pill px-4 fw-bold shadow-sm" style="color: white !important;">
+            <i class="fa-solid fa-file-pdf me-1"></i> PDF Show
+        </a>
+        <button type="button" class="btn btn-outline-danger rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalDeleteShow">
+            Excluir
+        </button>
+        {% endif %}
+        <a href="{% url 'calendario' band.slug %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 12px; max-width: 1000px; margin: 0 auto;">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-0" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+        <ul class="nav nav-tabs border-bottom-0 flex-nowrap" style="overflow-x: auto; overflow-y: hidden;" id="showFormTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold px-4 text-nowrap" id="geral-tab" data-bs-toggle="tab" data-bs-target="#geral" type="button" role="tab" aria-controls="geral" aria-selected="true">Evento</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold px-4 text-nowrap" id="cronograma-tab" data-bs-toggle="tab" data-bs-target="#cronograma" type="button" role="tab" aria-controls="cronograma" aria-selected="false">Cronograma</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold px-4 text-nowrap" id="logistica-tab" data-bs-toggle="tab" data-bs-target="#logistica" type="button" role="tab" aria-controls="logistica" aria-selected="false">Logística</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold px-4 text-nowrap" id="tecnica-tab" data-bs-toggle="tab" data-bs-target="#tecnica" type="button" role="tab" aria-controls="tecnica" aria-selected="false">Técnica</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold px-4 text-nowrap" id="financeiro-tab" data-bs-toggle="tab" data-bs-target="#financeiro" type="button" role="tab" aria-controls="financeiro" aria-selected="false">Financeiro</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold px-4 text-nowrap" id="anexos-tab" data-bs-toggle="tab" data-bs-target="#anexos" type="button" role="tab" aria-controls="anexos" aria-selected="false">Anexos</button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body p-4 p-md-5 pt-3 border-top">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="alert alert-danger" style="border-radius: 8px;">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> Há campos com erro. Verifique todas as abas.
+                </div>
+            {% endif %}
+
+            <div class="tab-content" id="showFormTabsContent">
+                
+                <!-- ABA GERAL -->
+                <div class="tab-pane fade show active" id="geral" role="tabpanel" aria-labelledby="geral-tab">
+                    <h5 class="fw-bold mb-4 text-primary pb-2">Informações Principais</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">{{ form.title.label }}</label>
+                            {{ form.title }}
+                            {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.date.label }}</label>
+                            {{ form.date }}
+                            {% if form.date.errors %}<div class="text-danger small mt-1">{{ form.date.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">{{ form.event_name.label }}</label>
+                            {{ form.event_name }}
+                            {% if form.event_name.errors %}<div class="text-danger small mt-1">{{ form.event_name.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.status.label }}</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-4 text-primary pb-2 border-top pt-4">Localização</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.city.label }}</label>
+                            {{ form.city }}
+                            {% if form.city.errors %}<div class="text-danger small mt-1">{{ form.city.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.venue.label }}</label>
+                            {{ form.venue }}
+                            {% if form.venue.errors %}<div class="text-danger small mt-1">{{ form.venue.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">{{ form.address.label }}</label>
+                            {{ form.address }}
+                            {% if form.address.errors %}<div class="text-danger small mt-1">{{ form.address.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">{{ form.address_link.label }}</label>
+                            {{ form.address_link }}
+                            {% if form.address_link.errors %}<div class="text-danger small mt-1">{{ form.address_link.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">{{ form.attractions.label }}</label>
+                            {{ form.attractions }}
+                            {% if form.attractions.errors %}<div class="text-danger small mt-1">{{ form.attractions.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ABA CRONOGRAMA -->
+                <div class="tab-pane fade" id="cronograma" role="tabpanel" aria-labelledby="cronograma-tab">
+                    <h5 class="fw-bold mb-4 text-primary pb-2">Deslocamento</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.departure_location.label }}</label>
+                            {{ form.departure_location }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.departure_location_link.label }}</label>
+                            {{ form.departure_location_link }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.departure_time.label }}</label>
+                            {{ form.departure_time }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.arrival_time.label }}</label>
+                            {{ form.arrival_time }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.travel_time.label }}</label>
+                            {{ form.travel_time }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.distance_km.label }}</label>
+                            {{ form.distance_km }}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mb-4 text-primary pb-2 border-top pt-4">No Local</h5>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">{{ form.soundcheck_time.label }}</label>
+                            {{ form.soundcheck_time }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">{{ form.show_time.label }}</label>
+                            {{ form.show_time }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">{{ form.show_end_time.label }}</label>
+                            {{ form.show_end_time }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">{{ form.duration.label }}</label>
+                            {{ form.duration }}
+                        </div>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-4 text-primary pb-2 border-top pt-4">Observações</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.internal_notes.label }}</label>
+                            {{ form.internal_notes }}
+                            <div class="form-text text-muted small">{{ form.internal_notes.help_text }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.band_notes.label }}</label>
+                            {{ form.band_notes }}
+                            <div class="form-text text-muted small">{{ form.band_notes.help_text }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ABA LOGÍSTICA -->
+                <div class="tab-pane fade" id="logistica" role="tabpanel" aria-labelledby="logistica-tab">
+                    <h5 class="fw-bold mb-4 text-primary pb-2">Transporte</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.transport.label }}</label>
+                            {{ form.transport }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.transport_contact.label }}</label>
+                            {{ form.transport_contact }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.flight_number.label }}</label>
+                            {{ form.flight_number }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.airline.label }}</label>
+                            {{ form.airline }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.boarding_time.label }}</label>
+                            {{ form.boarding_time }}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mb-4 text-primary pb-2 border-top pt-4">Hospedagem</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">{{ form.accommodation.label }}</label>
+                            {{ form.accommodation }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.accommodation_link.label }}</label>
+                            {{ form.accommodation_link }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.accommodation_contact.label }}</label>
+                            {{ form.accommodation_contact }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{{ form.checkout_time.label }}</label>
+                            {{ form.checkout_time }}
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold mb-4 text-primary pb-2 border-top pt-4">Apoio (Camarim / Alimentação / Palco)</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.dressing_room.label }}</label>
+                            {{ form.dressing_room }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.dressing_room_contact.label }}</label>
+                            {{ form.dressing_room_contact }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.transfer.label }}</label>
+                            {{ form.transfer }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.transfer_contact.label }}</label>
+                            {{ form.transfer_contact }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.catering.label }}</label>
+                            {{ form.catering }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.wardrobe.label }}</label>
+                            {{ form.wardrobe }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ABA TÉCNICA -->
+                <div class="tab-pane fade" id="tecnica" role="tabpanel" aria-labelledby="tecnica-tab">
+                    <div class="row g-3">
+                        <!-- Produção Local -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.local_production.label }}</label>
+                            {{ form.local_production }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.local_production_contact.label }}</label>
+                            {{ form.local_production_contact }}
+                        </div>
+
+                        <!-- Som -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.sound_system.label }}</label>
+                            {{ form.sound_system }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.sound_contact.label }}</label>
+                            {{ form.sound_contact }}
+                        </div>
+
+                        <!-- Luz -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.lighting_system.label }}</label>
+                            {{ form.lighting_system }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.lighting_contact.label }}</label>
+                            {{ form.lighting_contact }}
+                        </div>
+
+                        <!-- LED -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.led_system.label }}</label>
+                            {{ form.led_system }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.led_contact.label }}</label>
+                            {{ form.led_contact }}
+                        </div>
+
+                        <!-- Backline -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.backline.label }}</label>
+                            {{ form.backline }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.backline_contact.label }}</label>
+                            {{ form.backline_contact }}
+                        </div>
+
+                        <!-- Pirotécnia -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.pyrotechnics.label }}</label>
+                            {{ form.pyrotechnics }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.pyrotechnics_contact.label }}</label>
+                            {{ form.pyrotechnics_contact }}
+                        </div>
+
+                        <!-- Gerador -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.generator_system.label }}</label>
+                            {{ form.generator_system }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.generator_contact.label }}</label>
+                            {{ form.generator_contact }}
+                        </div>
+
+                        <!-- Carregadores -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.loaders_system.label }}</label>
+                            {{ form.loaders_system }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.loaders_contact.label }}</label>
+                            {{ form.loaders_contact }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ABA FINANCEIRO -->
+                <div class="tab-pane fade" id="financeiro" role="tabpanel" aria-labelledby="financeiro-tab">
+                    <div class="alert alert-warning mb-4" style="border-radius: 8px;">
+                        <i class="fa-solid fa-lock me-2"></i> Apenas produtores possuem acesso a essas informações
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.contractor_name.label }}</label>
+                            {{ form.contractor_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.contractor_phone.label }}</label>
+                            {{ form.contractor_phone }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ form.contract_type.label }}</label>
+                            {{ form.contract_type }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">{{ form.fee.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                {{ form.fee }}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">{{ form.payment_status.label }}</label>
+                            {{ form.payment_status }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA ANEXOS -->
+                <div class="tab-pane fade" id="anexos" role="tabpanel" aria-labelledby="anexos-tab">
+                    <div class="alert alert-warning mb-4" style="border-radius: 8px;">
+                        <i class="fa-solid fa-lock me-2"></i> Apenas produtores possuem acesso a essas informações
+                    </div>
+                    
+                    {% if not is_edit %}
+                        <div class="text-center py-5">
+                            <i class="fa-solid fa-cloud-arrow-up fa-3x text-muted mb-3"></i>
+                            <h5 class="fw-bold">Salve o evento primeiro</h5>
+                            <p class="text-muted mb-0">Para enviar documentos e anexar comprovantes, você precisa salvar este Show primeiro.</p>
+                        </div>
+                    {% else %}
+                        <div class="row g-4 align-items-stretch">
+                            <!-- Documentos -->
+                            <div class="col-md-6 d-flex flex-column">
+                                <h5 class="fw-bold mb-3 text-primary border-bottom pb-2"><i class="fa-solid fa-file-contract me-2"></i> Adicionar Documento</h5>
+                                {{ doc_formset.management_form }}
+                                {% for form in doc_formset %}
+                                    {% if not form.instance.pk %}
+                                        <div class="card shadow-sm border-0 bg-light flex-grow-1" style="border-radius: 8px;">
+                                            <div class="card-body p-4">
+                                                {% for hidden in form.hidden_fields %}
+                                                    {{ hidden }}
+                                                {% endfor %}
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">{{ form.description.label }}</label>
+                                                    {{ form.description }}
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">{{ form.file.label }}</label>
+                                                    {{ form.file }}
+                                                </div>
+                                                <div class="text-muted small mt-2"><i class="fa-solid fa-info-circle me-1"></i> Preencha e salve o show para enviar.</div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+
+                            <!-- Comprovantes -->
+                            <div class="col-md-6 d-flex flex-column">
+                                <h5 class="fw-bold mb-3 text-success border-bottom pb-2"><i class="fa-solid fa-receipt me-2"></i> Comprovantes e Despesas</h5>
+                                <div class="card shadow-sm border-0 bg-light flex-grow-1" style="border-radius: 8px;">
+                                    <div class="card-body py-4 text-center d-flex flex-column justify-content-center align-items-center">
+                                        <i class="fa-solid fa-money-bill-transfer text-success opacity-50 mb-3" style="font-size: 3rem;"></i>
+                                        <h5 class="text-dark fw-bold mb-2">Gerenciar Financeiro</h5>
+                                        <p class="text-muted small mb-4">Adicione despesas, custos com equipe e anexe comprovantes na área financeira deste show.</p>
+                                        {% if show_to_edit %}
+                                        <a href="{% url 'show_finance_detail' band.slug show_to_edit.id %}" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm d-inline-flex align-items-center">
+                                            <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> Acessar Financeiro
+                                        </a>
+                                        {% else %}
+                                        <button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm d-inline-flex align-items-center" disabled>
+                                            <i class="fa-solid fa-arrow-right-to-bracket me-2"></i> Salve o show primeiro
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Documentos Anexados (Full width) -->
+                            <div class="col-12 mt-2">
+                                <h6 class="fw-bold mt-2 mb-3 text-secondary"><i class="fa-solid fa-list me-2"></i> Documentos Anexados</h6>
+                                <ul class="list-group shadow-sm" style="border-radius: 8px;">
+                                    {% for form in doc_formset %}
+                                        {% if form.instance.pk %}
+                                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                                <div class="d-none">
+                                                    {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                                </div>
+                                                <div>
+                                                    <strong class="d-block text-dark" id="desc-text-{{ form.instance.pk }}">{{ form.instance.description }}</strong>
+                                                    <small class="text-muted">Anexado em: {{ form.instance.created_at|date:"d/m/Y" }}</small>
+                                                </div>
+                                                <div class="d-flex align-items-center">
+                                                    <a href="{{ form.instance.file.url }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill me-2"><i class="bi bi-file-earmark-text"></i> Ver Anexo</a>
+                                                    
+                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill me-3" data-bs-toggle="modal" data-bs-target="#editDocModal{{ form.instance.pk }}"><i class="bi bi-pencil"></i> Editar</button>
+
+                                                    <!-- Modal Editar Anexo -->
+                                                    <div class="modal fade" id="editDocModal{{ form.instance.pk }}" tabindex="-1" aria-hidden="true">
+                                                        <div class="modal-dialog modal-dialog-centered">
+                                                            <div class="modal-content border-0 shadow">
+                                                                <div class="modal-header bg-light border-0">
+                                                                    <h5 class="modal-title fw-bold text-primary"><i class="bi bi-pencil me-2"></i>Editar Documento</h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body p-4">
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-bold small">{{ form.description.label }}</label>
+                                                                        {{ form.description }}
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-bold small">Substituir Arquivo / Documento</label>
+                                                                        {{ form.file }}
+                                                                    </div>
+                                                                </div>
+                                                                <div class="modal-footer bg-light border-0 justify-content-center">
+                                                                    <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                                                                    <button type="button" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm" data-bs-dismiss="modal" onclick="document.getElementById('desc-text-{{ form.instance.pk }}').innerText = document.getElementById('{{ form.description.id_for_label }}').value;">Salvar Alterações</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#deleteDocModal{{ form.instance.pk }}">Excluir</button>
+                                                    <div class="d-none">
+                                                        {{ form.DELETE }}
+                                                    </div>
+
+                                                    <!-- Modal Excluir Anexo -->
+                                                    <div class="modal fade" id="deleteDocModal{{ form.instance.pk }}" tabindex="-1" aria-hidden="true">
+                                                        <div class="modal-dialog modal-dialog-centered">
+                                                            <div class="modal-content border-0 shadow">
+                                                                <div class="modal-header border-0 pb-0">
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body text-center pb-5 px-4">
+                                                                    <div class="mb-4">
+                                                                        <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 4rem;"></i>
+                                                                    </div>
+                                                                    <h4 class="fw-bold text-dark mb-3">Excluir Anexo?</h4>
+                                                                    <p class="text-muted mb-4">Tem certeza que deseja excluir este anexo?<br>Esta ação não poderá ser desfeita.</p>
+                                                                    <div class="d-flex justify-content-center gap-2">
+                                                                        <button type="button" class="btn btn-light border fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                                        <button type="button" class="btn btn-danger fw-bold px-4" onclick="document.getElementById('{{ form.DELETE.id_for_label }}').checked = true; this.closest('form').submit();">Sim, Excluir</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <hr class="my-4">
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{% url 'calendario' band.slug %}" class="btn btn-light border px-4 fw-bold rounded-pill">Cancelar</a>
+                <button type="submit" name="save_and_continue" class="btn btn-outline-success btn-loading px-4 fw-bold rounded-pill shadow-sm">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Salvar e Continuar
+                </button>
+                <button type="submit" class="btn btn-success btn-loading px-4 fw-bold rounded-pill shadow-sm">
+                    <i class="fa-solid fa-check me-1"></i> Salvar Show
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Excluir Show -->
+{% if is_edit %}
+<div class="modal fade" id="modalDeleteShow" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i> Excluir Show</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <i class="fa-solid fa-trash text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="fw-bold mb-3">Tem certeza que deseja excluir<br>este show?</h5>
+                <p class="text-muted mb-0">Essa ação não pode ser desfeita. Todos os dados associados a este show serão perdidos.</p>
+            </div>
+            <div class="modal-footer bg-light border-0 justify-content-center">
+                <button type="button" class="btn btn-light border fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{% url 'shows_delete' band.slug form.instance.id %}" method="POST" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger fw-bold px-4">Sim, Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var phoneFields = document.querySelectorAll('.phone-mask');
+        phoneFields.forEach(function(field) {
+            field.addEventListener('input', function(e) {
+                var x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+                e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+            });
+            // Run once on load to format existing data if needed
+            var evt = new Event('input');
+            field.dispatchEvent(evt);
+        });
+
+        // Activate tab based on hash
+        if (window.location.hash) {
+            var triggerEl = document.querySelector('button[data-bs-target="' + window.location.hash + '"]');
+            if (triggerEl) {
+                var tab = new bootstrap.Tab(triggerEl);
+                tab.show();
+            }
+        }
+
+        // Money mask for fee field
+        var feeField = document.querySelector('input[name="fee"]');
+        if (feeField) {
+            feeField.type = 'text'; // allow commas and dots
+            
+            function maskMoney(value) {
+                value = value.replace(/\D/g, '');
+                if (value) {
+                    value = (parseFloat(value) / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                }
+                return value;
+            }
+
+            // Initial format
+            if (feeField.value) {
+                // if it comes as "140000.00" from backend
+                var num = parseFloat(feeField.value.replace(',', '.'));
+                if (!isNaN(num)) {
+                    feeField.value = num.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                }
+            }
+
+            feeField.addEventListener('input', function(e) {
+                e.target.value = maskMoney(e.target.value);
+            });
+
+            // Strip formatting before submit
+            var form = feeField.closest('form');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    if (feeField.value) {
+                        feeField.value = feeField.value.replace(/\./g, '').replace(',', '.');
+                    }
+                });
+            }
+        }
+    });
+</script>
+{% endblock %}

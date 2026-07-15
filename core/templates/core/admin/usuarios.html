@@ -1,0 +1,245 @@
+{% extends 'core/admin/base_admin.html' %}
+{% load admin_tags %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold m-0"><i class="fa-solid fa-users me-2 text-dark"></i> Gestão de Usuários Gerais</h3>
+    <button class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCreateUser">
+        <i class="fa-solid fa-plus me-1"></i> Novo Usuário
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-hover-premium align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4 border-0 rounded-start">Usuário</th>
+                        <th class="border-0">E-mail (Login)</th>
+                        <th class="border-0">Banda Vinculada</th>
+                        <th class="border-0">Perfil</th>
+                        <th class="text-end pe-4 border-0 rounded-end">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for u in usuarios %}
+                    <tr>
+                        <td class="ps-4 fw-bold">
+                            <i class="fa-solid fa-user text-secondary me-2"></i> {{ u.username }}
+                        </td>
+                        <td class="text-muted">{{ u.email }}</td>
+                        <td>
+                            {% if u.band %}
+                                <span class="badge {{ u.band.name|band_color }} rounded-pill px-3 py-1">
+                                    {{ u.band.name }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary rounded-pill">Sem Banda</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.is_superuser %}
+                                <span class="badge bg-dark rounded-pill px-2"><i class="fa-solid fa-shield"></i> Admin Geral</span>
+                            {% elif u.role == 'PRODUTOR' %}
+                                <span class="badge bg-primary rounded-pill px-2"><i class="fa-solid fa-crown"></i> Produtor</span>
+                            {% else %}
+                                <span class="badge bg-secondary rounded-pill px-2"><i class="fa-solid fa-guitar"></i> Integrante</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill shadow-sm mb-1" data-bs-toggle="modal" data-bs-target="#modalEditUser{{ u.id }}">
+                                Editar
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning rounded-pill shadow-sm mb-1" data-bs-toggle="modal" data-bs-target="#modalResetPass{{ u.id }}" title="Resetar Senha">
+                                <i class="fa-solid fa-key"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-{% if u.is_active %}danger{% else %}success{% endif %} rounded-pill shadow-sm mb-1" data-bs-toggle="modal" data-bs-target="#modalToggleUser{{ u.id }}">
+                                {% if u.is_active %}Excluir{% else %}Reativar{% endif %}
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Modal Edit User -->
+                    <div class="modal fade" id="modalEditUser{{ u.id }}" tabindex="-1" aria-labelledby="modalEditUserLabel{{ u.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                                <div class="modal-header bg-light border-bottom-0">
+                                    <h5 class="modal-title fw-bold" id="modalEditUserLabel{{ u.id }}"><i class="fa-solid fa-pen-to-square me-2"></i>Editar Usuário</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{% url 'admin_painel:usuarios_editar' u.id %}">
+                                    {% csrf_token %}
+                                    <div class="modal-body py-4 text-start">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Nome (Username)</label>
+                                            <input type="text" name="username" class="form-control" value="{{ u.username }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">E-mail (Login)</label>
+                                            <input type="email" name="email" class="form-control" value="{{ u.email }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Banda Vinculada</label>
+                                            <select name="band" class="form-select">
+                                                <option value="">-- Nenhuma Banda --</option>
+                                                {% for band in form_create.fields.band.queryset %}
+                                                    <option value="{{ band.id }}" {% if u.band and u.band.id == band.id %}selected{% endif %}>{{ band.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Perfil</label>
+                                            <select name="role" class="form-select">
+                                                <option value="INTEGRANTE" {% if u.role == 'INTEGRANTE' %}selected{% endif %}>Integrante</option>
+                                                <option value="PRODUTOR" {% if u.role == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-check form-switch mt-4">
+                                            <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserEdit{{ u.id }}" {% if u.is_active %}checked{% endif %}>
+                                            <label class="form-check-label fw-semibold" for="isActiveUserEdit{{ u.id }}">Usuário Ativo (Pode logar)</label>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer bg-light border-top-0">
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Salvar Alterações</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Toggle Active User -->
+                    <div class="modal fade" id="modalToggleUser{{ u.id }}" tabindex="-1" aria-labelledby="modalToggleUserLabel{{ u.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                                <div class="modal-header bg-light border-bottom-0">
+                                    <h5 class="modal-title fw-bold text-{% if u.is_active %}danger{% else %}success{% endif %}" id="modalToggleUserLabel{{ u.id }}">
+                                        <i class="fa-solid fa-triangle-exclamation me-2"></i>{% if u.is_active %}Excluir{% else %}Ativar{% endif %} Usuário
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body py-4 text-center">
+                                    <p class="fs-5 mb-1">Tem certeza que deseja <strong>{% if u.is_active %}excluir{% else %}ativar{% endif %}</strong> o usuário {{ u.username }}?</p>
+                                    {% if u.is_active %}
+                                        <p class="text-muted small">Esta ação removerá o acesso do usuário.<br>Ele não conseguirá mais fazer login no sistema.</p>
+                                    {% else %}
+                                        <p class="text-muted small">O login deste usuário será restaurado.</p>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer bg-light border-top-0 justify-content-center">
+                                    <form method="POST" action="{% url 'admin_painel:usuarios_desativar' u.id %}">
+                                        {% csrf_token %}
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-loading btn-{% if u.is_active %}danger{% else %}success{% endif %} rounded-pill px-4">
+                                            Confirmar {% if u.is_active %}Exclusão{% else %}Ativação{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Reset Password -->
+                    <div class="modal fade" id="modalResetPass{{ u.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                                <div class="modal-header bg-warning text-dark border-bottom-0">
+                                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-key me-2"></i>Resetar Senha: {{ u.username }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{% url 'admin_painel:usuarios_resetar_senha' u.id %}">
+                                    {% csrf_token %}
+                                    <div class="modal-body py-4 text-start">
+                                        <p class="text-muted small mb-4">Atenção: Ao redefinir a senha, o usuário perderá o acesso com a senha antiga. Ele precisará usar esta nova senha para o próximo login.</p>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Nova Senha</label>
+                                            <input type="password" name="new_password" class="form-control" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Confirmar Nova Senha</label>
+                                            <input type="password" name="confirm_password" class="form-control" required>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer bg-light border-top-0">
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-warning btn-loading rounded-pill px-4 fw-bold">Salvar Senha</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-users-slash fa-3x mb-3 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold">Nenhum usuário</h5>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Create User -->
+<div class="modal fade" id="modalCreateUser" tabindex="-1" aria-labelledby="modalCreateUserLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold" id="modalCreateUserLabel"><i class="fa-solid fa-user-plus me-2"></i>Novo Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'admin_painel:usuarios_novo' %}">
+                {% csrf_token %}
+                <div class="modal-body py-4 text-start">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nome (Username)</label>
+                        <input type="text" name="username" class="form-control" required placeholder="Ex: Joao Silva">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">E-mail (Login)</label>
+                        <input type="email" name="email" class="form-control" required placeholder="joao@email.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Banda Vinculada</label>
+                        <select name="band" class="form-select" required>
+                            <option value="">-- Selecione uma banda --</option>
+                            {% for band in form_create.fields.band.queryset %}
+                                <option value="{{ band.id }}">{{ band.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Perfil</label>
+                        <select name="role" class="form-select" required>
+                            <option value="INTEGRANTE">Integrante</option>
+                            <option value="PRODUTOR">Produtor</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Senha Inicial</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Confirmar Senha</label>
+                            <input type="password" name="confirm_password" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserCreate" checked>
+                        <label class="form-check-label fw-semibold" for="isActiveUserCreate">Usuário Ativo (Pode logar)</label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Cadastrar Usuário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

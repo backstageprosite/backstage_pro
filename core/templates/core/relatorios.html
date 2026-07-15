@@ -1,0 +1,203 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <h2 class="fw-bold m-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i> Relatórios Financeiros</h2>
+    <div>
+        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-secondary rounded-pill fw-bold px-4 py-2">
+            <i class="fa-solid fa-arrow-left me-2"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label text-muted fw-bold" style="font-size: 0.85rem;">Data Inicial</label>
+                <input type="date" name="date_start" class="form-control rounded-3" value="{{ request.GET.date_start }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted fw-bold" style="font-size: 0.85rem;">Data Final</label>
+                <input type="date" name="date_end" class="form-control rounded-3" value="{{ request.GET.date_end }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted fw-bold" style="font-size: 0.85rem;">Status</label>
+                <select name="payment_status" class="form-select rounded-3">
+                    <option value="">Todos</option>
+                    <option value="PAGO" {% if request.GET.payment_status == 'PAGO' %}selected{% endif %}>Pago Totalmente</option>
+                    <option value="PARCIAL" {% if request.GET.payment_status == 'PARCIAL' %}selected{% endif %}>Pago Parcialmente</option>
+                    <option value="PENDENTE" {% if request.GET.payment_status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-muted fw-bold" style="font-size: 0.85rem;">Contratação</label>
+                <input type="text" name="contract_type" class="form-control rounded-3" placeholder="Ex: Prefeitura" value="{{ request.GET.contract_type }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100 rounded-3 fw-bold">Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Cards Gerenciais -->
+<div class="row g-3 mb-4">
+    <!-- Linha 1 -->
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm border-0 border-start border-4 border-primary h-100" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Receita Contratada</p>
+                <h4 class="fw-bold mb-0 text-primary">R$ {{ total_receita|default:"0,00"|floatformat:"2g" }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm border-0 border-start border-4 border-success h-100" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Total Recebido</p>
+                <h4 class="fw-bold mb-0 text-success">R$ {{ total_recebido_geral|default:"0,00"|floatformat:"2g" }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm border-0 border-start border-4 border-warning h-100" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Total Pendente</p>
+                <h4 class="fw-bold mb-0 text-warning">R$ {{ total_pendente_geral|default:"0,00"|floatformat:"2g" }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm border-0 border-start border-4 border-danger h-100" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Custos Cadastrados</p>
+                <h4 class="fw-bold mb-0 text-danger">R$ {{ total_custos|default:"0,00"|floatformat:"2g" }}</h4>
+            </div>
+        </div>
+    </div>
+    <!-- Linha 2 -->
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm border-0 border-start border-4 border-info h-100" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Resultado Previsto</p>
+                <h4 class="fw-bold mb-0 text-info">R$ {{ resultado_previsto_total|default:"0,00"|floatformat:"2g" }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm border-0 border-start border-4 border-success h-100" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Caixa Realizado</p>
+                <h4 class="fw-bold mb-0 text-success">R$ {{ caixa_realizado_geral|default:"0,00"|floatformat:"2g" }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm border-0 border-start border-4 border-secondary h-100" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Margem Prevista</p>
+                <h4 class="fw-bold mb-0 text-secondary">{{ margem_prevista_geral|default:"0,00"|floatformat:"2" }}%</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card shadow-sm border-0 border-start border-4 border-dark h-100" style="border-radius: 12px;">
+            <div class="card-body p-3">
+                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Qtd. Shows</p>
+                <h4 class="fw-bold mb-0 text-dark">{{ qtd_shows }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p class="text-muted mb-3"><i class="fa-solid fa-list-check me-2"></i> Mostrando <strong>{{ qtd_shows }}</strong> shows no período selecionado.</p>
+
+<!-- Tabela de Shows -->
+<div class="card shadow-sm border-0" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
+                    <tr>
+                        <th class="ps-4 py-3">Data</th>
+                        <th class="py-3">Show</th>
+                        <th class="py-3">Cachê (R$)</th>
+                        <th class="py-3">Recebido (R$)</th>
+                        <th class="py-3">Pendente (R$)</th>
+                        <th class="py-3">Custos (R$)</th>
+                        <th class="py-3">Equipe (R$)</th>
+                        <th class="py-3">Resultado (R$)</th>
+                        <th class="py-3">Caixa Real (R$)</th>
+                        <th class="py-3">Status</th>
+                        <th class="pe-4 py-3 text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for show in shows %}
+                    <tr>
+                        <td class="ps-4 text-nowrap fw-medium">{{ show.date|date:"d/m/Y" }}</td>
+                        <td>
+                            <a href="{% url 'show_detail' band.slug show.id %}" class="text-decoration-none fw-bold text-dark">
+                                {{ show.title|default:"Sem Título" }}
+                            </a><br>
+                            <small class="text-muted">{{ show.city|default:"-" }} &bull; {{ show.contract_type|default:"-" }}</small>
+                        </td>
+                        <td class="fw-bold text-primary">
+                            {% if show.fee %}R$ {{ show.fee|floatformat:"2g" }}{% else %}-{% endif %}
+                        </td>
+                        <td class="text-success fw-medium">
+                            {% if show.total_recebido %}R$ {{ show.total_recebido|floatformat:"2g" }}{% else %}-{% endif %}
+                        </td>
+                        <td class="text-warning fw-medium">
+                            {% if show.fee %}R$ {{ show.total_pendente|floatformat:"2g" }}{% else %}-{% endif %}
+                        </td>
+                        <td class="text-danger fw-medium">
+                            {% if show.total_logistica %}R$ {{ show.total_logistica|floatformat:"2g" }}{% else %}-{% endif %}
+                        </td>
+                        <td class="text-danger fw-medium">
+                            {% if show.total_equipe %}R$ {{ show.total_equipe|floatformat:"2g" }}{% else %}-{% endif %}
+                        </td>
+                        <td class="text-info fw-bold">
+                            {% if show.fee %}
+                                R$ {{ show.resultado_previsto|floatformat:"2g" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-success fw-bold">
+                            R$ {{ show.caixa_realizado|floatformat:"2g" }}
+                        </td>
+                        <td>
+                            {% if show.payment_status == 'PAGO' %}
+                                <span class="badge bg-success">Pago</span>
+                            {% elif show.payment_status == 'PARCIAL' %}
+                                <span class="badge bg-warning text-dark">Parcial</span>
+                            {% else %}
+                                <span class="badge bg-danger">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 text-end text-nowrap">
+                            <a href="{% url 'show_finance_detail' band.slug show.id %}" class="btn btn-sm btn-outline-primary rounded-pill fw-bold">
+                                Editar
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
+                                <i class="fa-solid fa-chart-line text-muted mb-3" style="font-size: 3rem;"></i>
+                                <h5 class="text-muted fw-bold">Nenhum show encontrado.</h5>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

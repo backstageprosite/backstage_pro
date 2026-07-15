@@ -1,0 +1,48 @@
+
+<!-- Modal Adicionar Custo Equipe -->
+<div class="modal fade" id="modalAdicionarCustoEquipe" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-primary">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i> Adicionar Custo com Equipe</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{% url 'show_finance_detail' band.slug show.id %}">
+                    {% csrf_token %}
+                    
+                                        <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Nome do Integrante</label>
+                            <input type="text" name="name" class="form-control" required placeholder="Ex: João Silva">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Data</label>
+                            <input type="date" name="date" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Função</label>
+                            <input type="text" name="role" class="form-control" placeholder="Ex: Técnico de Som">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Valor (R$)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="text" name="value" class="form-control money-mask" required placeholder="0,00">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" name="submit_team_cost" class="btn btn-primary rounded-pill fw-bold py-2">
+                            <i class="bi bi-check-circle me-1"></i> Salvar Custo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

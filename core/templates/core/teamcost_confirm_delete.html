@@ -1,0 +1,40 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Excluir Custo com Equipe | Backstage Pro{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm border-0 mt-4" style="border-radius: 12px;">
+            <div class="card-body p-4 text-center">
+                <div class="mb-4">
+                    <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 3.5rem;"></i>
+                </div>
+                
+                <h4 class="fw-bold text-dark mb-3">Excluir Custo com Equipe?</h4>
+                <p class="text-muted mb-4">
+                    Tem certeza de que deseja remover o custo de <strong>{{ team_cost.name }}</strong> no valor de <strong>R$ {{ team_cost.value|floatformat:"2g" }}</strong>?<br>Esta ação não poderá ser desfeita.
+                </p>
+
+                <form method="post" action="{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        {% if request.GET.next == 'financeiro' %}
+                        <a href="{% url 'show_finance_detail' band.slug team_cost.show.id %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                            Cancelar
+                        </a>
+                        {% else %}
+                        <a href="{% url 'manage_team_costs' band.slug team_cost.show.id %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">
+                            Cancelar
+                        </a>
+                        {% endif %}
+                        <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">
+                            <i class="fa-solid fa-trash me-2"></i> Excluir Custo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

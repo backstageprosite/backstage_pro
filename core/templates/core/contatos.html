@@ -1,0 +1,245 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold m-0"><i class="fa-solid fa-address-book text-primary me-2"></i> Banco de Dados</h2>
+    <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoContato">
+        <i class="fa-solid fa-plus me-1"></i> Novo Contato
+    </button>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
+                    <tr>
+                        <th class="ps-4 py-3">Nome</th>
+                        <th class="py-3">Contato</th>
+                        <th class="py-3">Tipo</th>
+                        <th class="py-3">Local</th>
+                        <th class="py-3 text-center">Link</th>
+                        <th class="py-3">Observações</th>
+                        <th class="pe-4 py-3 text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contato in contatos %}
+                    <tr>
+                        <td class="ps-4">
+                            <h6 class="mb-0 text-dark">{{ contato.name }}</h6>
+                        </td>
+                        <td class="fw-medium text-dark phone-format">{{ contato.phone|default:"-" }}</td>
+                        <td>
+                            {% if contato.contact_type == 'FORNECEDOR' %}
+                                <span class="badge bg-secondary px-3 py-2"><i class="fa-solid fa-truck-fast me-1"></i> Fornecedor</span>
+                            {% elif contato.contact_type == 'CONTRATANTE' %}
+                                <span class="badge bg-primary px-3 py-2"><i class="fa-solid fa-handshake me-1"></i> Contratante</span>
+                            {% elif contato.contact_type == 'ESTABELECIMENTO' %}
+                                <span class="badge bg-dark px-3 py-2"><i class="fa-solid fa-building me-1"></i> Estabelecimento</span>
+                            {% elif contato.contact_type == 'HOSPEDAGEM' %}
+                                <span class="badge bg-info text-dark px-3 py-2"><i class="fa-solid fa-hotel me-1"></i> Hospedagem</span>
+                            {% elif contato.contact_type == 'RESTAURANTE' %}
+                                <span class="badge bg-warning text-dark px-3 py-2"><i class="fa-solid fa-utensils me-1"></i> Restaurante</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border px-3 py-2">{{ contato.get_contact_type_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-medium text-dark">{{ contato.location|default:"-" }}</td>
+                        <td class="text-center">
+                            {% if contato.link %}
+                            <a href="{{ contato.link }}" target="_blank" class="text-primary text-decoration-none fw-bold">
+                                <i class="fa-solid fa-link me-1"></i> Ver Link
+                            </a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="fw-medium text-dark">{{ contato.notes|default:"-" }}</td>
+                        <td class="pe-4 text-end text-nowrap">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold shadow-sm me-2" data-bs-toggle="modal" data-bs-target="#modalEditarContato{{ contato.id }}">
+                                Editar
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ contato.id }}">
+                                Excluir
+                            </button>
+                            
+                            <!-- Delete Modal -->
+                            <div class="modal fade" id="deleteModal{{ contato.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content border-0 shadow-lg text-start" style="border-radius: 12px;">
+                                        <div class="modal-header border-bottom-0 pb-0">
+                                            <h5 class="modal-title fw-bold text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i> Excluir Contato</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body py-4">
+                                            <p class="mb-0 text-muted">Tem certeza que deseja excluir o contato<br><strong>{{ contato.name }}</strong>?</p>
+                                        </div>
+                                        <div class="modal-footer border-top-0 pt-0">
+                                            <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                                            <form action="{% url 'contatos_delete' band.slug contato.id %}" method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Excluir Contato</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="modalEditarContato{{ contato.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content border-0 shadow-lg text-start" style="border-radius: 12px;">
+                                        <div class="modal-header border-bottom-0 pb-0">
+                                            <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen me-2 text-primary"></i> Editar Contato</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form action="{% url 'contatos_edit' band.slug contato.id %}" method="POST">
+                                            {% csrf_token %}
+                                            <div class="modal-body py-4">
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Nome do contato</label>
+                                                    <input type="text" name="name" class="form-control" value="{{ contato.name }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Contato</label>
+                                                    <input type="text" name="phone" class="form-control phone-mask" value="{{ contato.phone|default:'' }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Tipo</label>
+                                                    <select name="contact_type" class="form-select" required>
+                                                        <option value="FORNECEDOR" {% if contato.contact_type == 'FORNECEDOR' %}selected{% endif %}>Fornecedor (a)</option>
+                                                        <option value="CONTRATANTE" {% if contato.contact_type == 'CONTRATANTE' %}selected{% endif %}>Contratante</option>
+                                                        <option value="ESTABELECIMENTO" {% if contato.contact_type == 'ESTABELECIMENTO' %}selected{% endif %}>Estabelecimento</option>
+                                                        <option value="RESTAURANTE" {% if contato.contact_type == 'RESTAURANTE' %}selected{% endif %}>Restaurante</option>
+                                                        <option value="HOSPEDAGEM" {% if contato.contact_type == 'HOSPEDAGEM' %}selected{% endif %}>Hospedagem</option>
+                                                        <option value="PRODUTOR" {% if contato.contact_type == 'PRODUTOR' %}selected{% endif %}>Produtor (a)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Local</label>
+                                                    <input type="text" name="location" class="form-control" value="{{ contato.location|default:'' }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Link</label>
+                                                    <input type="url" name="link" class="form-control" value="{{ contato.link|default:'' }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Observações</label>
+                                                    <textarea name="notes" class="form-control" rows="3">{{ contato.notes|default:'' }}</textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-top-0 pt-0">
+                                                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                                                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Salvar Alterações</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-address-book fs-1 mb-3 opacity-25"></i><br>
+                            <h5 class="fw-bold">Nenhum contato cadastrado no banco.</h5>
+                            <p class="mb-0">Cadastre contratantes, hotéis e fornecedores clicando no botão acima.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- New Modal -->
+<div class="modal fade" id="modalNovoContato" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg text-start" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-plus me-2 text-primary"></i> Novo Contato</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'contatos_add' band.slug %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body py-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Nome do contato</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Contato</label>
+                        <input type="text" name="phone" class="form-control phone-mask">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Tipo</label>
+                        <select name="contact_type" class="form-select" required>
+                            <option value="FORNECEDOR" selected>Fornecedor (a)</option>
+                            <option value="CONTRATANTE">Contratante</option>
+                            <option value="ESTABELECIMENTO">Estabelecimento</option>
+                            <option value="RESTAURANTE">Restaurante</option>
+                            <option value="HOSPEDAGEM">Hospedagem</option>
+                            <option value="PRODUTOR">Produtor (a)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Local</label>
+                        <input type="text" name="location" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Link</label>
+                        <input type="url" name="link" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Observações</label>
+                        <textarea name="notes" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Cadastrar Contato</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const phoneCells = document.querySelectorAll(".phone-format");
+        phoneCells.forEach(cell => {
+            let text = cell.innerText.trim();
+            if (text && text !== "-") {
+                let digits = text.replace(/\D/g, '');
+                let formatted = text;
+                if (digits.length === 11) {
+                    formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+                } else if (digits.length === 10) {
+                    formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6, 10)}`;
+                }
+                
+                let waDigits = digits;
+                if (!waDigits.startsWith('55')) {
+                    waDigits = '55' + waDigits;
+                }
+                
+                cell.innerHTML = `<a href="https://wa.me/${waDigits}" target="_blank" class="text-success text-decoration-none fw-bold"><i class="fa-brands fa-whatsapp me-1"></i>${formatted}</a>`;
+            }
+        });
+
+        const phoneInputs = document.querySelectorAll(".phone-mask");
+        phoneInputs.forEach(input => {
+            input.addEventListener("input", function(e) {
+                let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+                if (!x[1]) {
+                    e.target.value = '';
+                    return;
+                }
+                e.target.value = !x[2] ? '(' + x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+            });
+        });
+    });
+</script>
+{% endblock %}

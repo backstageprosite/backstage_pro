@@ -1,0 +1,66 @@
+{% extends 'core/admin/base_admin.html' %}
+{% load admin_tags %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold m-0"><i class="fa-solid fa-microphone-lines me-2 text-dark"></i> Gestão Geral de Shows</h3>
+</div>
+
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-hover-premium align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4 border-0 rounded-start">Data</th>
+                        <th class="border-0">Banda</th>
+                        <th class="border-0">Show / Evento</th>
+                        <th class="border-0">Cidade</th>
+                        <th class="text-end pe-4 border-0 rounded-end">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for s in shows %}
+                    <tr>
+                        <td class="ps-4 fw-bold">
+                            {% if s.date %}
+                                {{ s.date|date:"d/m/Y" }}
+                            {% else %}
+                                Sem data
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.band %}
+                                <span class="badge {{ s.band.name|band_color }} rounded-pill px-3 py-1">
+                                    {{ s.band.name }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-dark">{{ s.title|default:"-" }}</td>
+                        <td class="text-muted">{{ s.city|default:"-" }}</td>
+                        <td class="text-end pe-4">
+                            {% if s.status == 'CONFIRMADO' %}
+                                <span class="badge bg-success text-white rounded-pill px-3 py-1">Confirmado</span>
+                            {% elif s.status == 'CANCELADO' %}
+                                <span class="badge bg-danger text-white rounded-pill px-3 py-1">Cancelado</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-1">Reserva</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-calendar-xmark fa-3x mb-3 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold">Nenhum show cadastrado no sistema global</h5>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

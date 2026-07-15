@@ -1,0 +1,466 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidade | Backstage Pro</title>
+    <meta name="description" content="Saiba como o Backstage Pro coleta, utiliza, armazena e protege os seus dados pessoais, em conformidade com a LGPD.">
+    
+    <!-- Open Graph tags for social sharing -->
+    <meta property="og:title" content="Política de Privacidade | Backstage Pro">
+    <meta property="og:description" content="Nossas práticas de privacidade e proteção de dados.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://backstagepro.site/politica-de-privacidade/">
+
+    <!-- Google Fonts: Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-green: #6BD443;
+            --primary-green-hover: #58ba35;
+            --text-dark: #111111;
+            --text-muted: #555555;
+            --bg-white: #FFFFFF;
+            --bg-light: #F7F8FA;
+            --border-color: #E6E8EC;
+            --font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            color: var(--text-dark);
+            background-color: var(--bg-white);
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        /* Header */
+        .navbar {
+            background-color: var(--bg-white);
+            border-bottom: 1px solid var(--border-color);
+            padding-top: 15px;
+            padding-bottom: 15px;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--text-dark);
+        }
+
+        .site-logo {
+            width: 100%;
+            max-width: 190px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .btn-outline-custom {
+            background-color: transparent;
+            color: var(--text-dark);
+            font-weight: 700;
+            border: 2px solid var(--border-color);
+            padding: 8px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-outline-custom:hover {
+            border-color: var(--text-dark);
+            background-color: var(--text-dark);
+            color: var(--bg-white);
+        }
+
+        /* Content Area */
+        main {
+            flex-grow: 1;
+        }
+        
+        .legal-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .legal-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .legal-content .last-updated {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 40px;
+            font-weight: 500;
+        }
+
+        .legal-content h2 {
+            font-size: 1.5rem;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .legal-content h3 {
+            font-size: 1.25rem;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .legal-content p, .legal-content li {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .legal-content ul {
+            margin-bottom: 25px;
+            padding-left: 25px;
+        }
+
+        .legal-content li {
+            margin-bottom: 10px;
+        }
+
+        .legal-content a {
+            color: var(--primary-green);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .legal-content a:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--bg-white);
+            border-top: 1px solid var(--border-color);
+            padding: 60px 0 30px;
+            margin-top: auto;
+        }
+
+        .footer-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 10px;
+            transition: color 0.3s;
+        }
+
+        .footer-link:hover {
+            color: var(--primary-green);
+        }
+
+        @media (max-width: 768px) {
+            .legal-content {
+                padding: 40px 15px;
+            }
+            .legal-content h1 {
+                font-size: 2rem;
+            }
+            .site-logo {
+                max-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <nav class="navbar sticky-top">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand" href="/">
+                <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="site-logo">
+            </a>
+            <a href="/" class="btn-outline-custom"><i class="fa-solid fa-arrow-left me-2"></i>Voltar para o início</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <section class="legal-content">
+            <h1>Política de Privacidade do Backstage Pro</h1>
+            <p class="last-updated">Última atualização: 08 de julho de 2026</p>
+
+            <p>Esta Política de Privacidade explica como o Backstage Pro coleta, utiliza, armazena, compartilha e protege dados pessoais relacionados ao uso da plataforma.</p>
+            <p>O Backstage Pro respeita a privacidade dos usuários e busca tratar dados pessoais de forma transparente, segura e compatível com a Lei Geral de Proteção de Dados Pessoais, Lei nº 13.709/2018, conhecida como LGPD, e demais normas aplicáveis.</p>
+            <p>Ao acessar, cadastrar-se ou utilizar a plataforma, o usuário declara estar ciente das práticas descritas nesta Política.</p>
+
+            <h2>1. Quem somos</h2>
+            <p>O Backstage Pro é um sistema web destinado à gestão de shows, bandas, artistas, produtores e equipes musicais.</p>
+            <p>A plataforma permite organizar agenda, logística, equipe, informações financeiras, arquivos, checklists, dados de contratantes, integrantes e demais informações operacionais relacionadas à produção de eventos.</p>
+            <p>Canais oficiais de contato:</p>
+            <ul>
+                <li><strong>E-mail:</strong> <a href="mailto:backstagepro.site@gmail.com">backstagepro.site@gmail.com</a></li>
+                <li><strong>WhatsApp:</strong> <a href="https://wa.me/5571982729156" target="_blank">+55 71 98272-9156</a></li>
+                <li><strong>Site:</strong> backstagepro.site</li>
+            </ul>
+
+            <h2>2. Papéis no tratamento de dados</h2>
+            <p>Em relação aos dados pessoais necessários para cadastro, acesso, cobrança, suporte, comunicação e administração da conta, o Backstage Pro atua, em geral, como controlador dos dados, pois decide como esses dados são tratados para prestar e administrar o serviço.</p>
+            <p>Em relação aos dados que o Cliente insere livremente na plataforma sobre integrantes, contratantes, equipe, fornecedores, eventos, documentos ou terceiros, o Cliente pode atuar como controlador desses dados, e o Backstage Pro poderá atuar como operador, tratando as informações conforme a finalidade do serviço e as instruções do Cliente.</p>
+            <p>O Cliente é responsável por garantir que possui autorização, base legal ou legitimidade para inserir dados pessoais de terceiros na plataforma.</p>
+
+            <h2>3. Dados que podemos coletar</h2>
+            <p>O Backstage Pro pode coletar os seguintes tipos de dados:</p>
+
+            <h3>3.1. Dados de cadastro</h3>
+            <ul>
+                <li>Nome;</li>
+                <li>E-mail;</li>
+                <li>Telefone;</li>
+                <li>Senha criptografada;</li>
+                <li>Nome da banda, artista, produtora ou organização;</li>
+                <li>Função do usuário;</li>
+                <li>Dados da conta e permissões de acesso.</li>
+            </ul>
+
+            <h3>3.2. Dados da organização</h3>
+            <ul>
+                <li>Nome da banda, artista, escritório ou equipe;</li>
+                <li>Dados do responsável;</li>
+                <li>Plano contratado;</li>
+                <li>Status da assinatura;</li>
+                <li>Datas de contratação, vencimento, renovação ou cancelamento;</li>
+                <li>Histórico básico de uso da conta.</li>
+            </ul>
+
+            <h3>3.3. Dados inseridos pelo Cliente na plataforma</h3>
+            <ul>
+                <li>Informações de shows e eventos;</li>
+                <li>Datas, cidades, locais e endereços;</li>
+                <li>Horários de saída, chegada, passagem de som e apresentação;</li>
+                <li>Informações de contratantes;</li>
+                <li>Telefones e contatos operacionais;</li>
+                <li>Dados de integrantes e equipe;</li>
+                <li>Informações de hospedagem, transporte, camarim e alimentação;</li>
+                <li>Valores de cachê e status de pagamento;</li>
+                <li>Observações internas;</li>
+                <li>Observações visíveis para a banda;</li>
+                <li>Arquivos, contratos, riders, comprovantes e documentos enviados pelo Cliente.</li>
+            </ul>
+
+            <h3>3.4. Dados de pagamento</h3>
+            <p>O Backstage Pro poderá tratar informações relacionadas a planos, cobranças, vencimentos, status de pagamento e confirmação de transações.</p>
+            <p>Pagamentos poderão ser processados por plataformas terceirizadas. O Backstage Pro não pretende armazenar dados completos de cartão de crédito, como número integral, código de segurança ou senha bancária.</p>
+
+            <h3>3.5. Dados técnicos e de navegação</h3>
+            <p>Podemos coletar automaticamente:</p>
+            <ul>
+                <li>Endereço IP;</li>
+                <li>Data e hora de acesso;</li>
+                <li>Tipo de navegador;</li>
+                <li>Tipo de dispositivo;</li>
+                <li>Sistema operacional;</li>
+                <li>Páginas acessadas;</li>
+                <li>Registros de login;</li>
+                <li>Logs de segurança;</li>
+                <li>Cookies e tecnologias semelhantes, quando utilizados.</li>
+            </ul>
+
+            <h3>3.6. Dados de atendimento e comunicação</h3>
+            <p>Podemos armazenar mensagens enviadas por e-mail, WhatsApp, formulários, suporte ou outros canais oficiais, incluindo dúvidas, solicitações, reclamações, feedbacks e histórico de atendimento.</p>
+
+            <h2>4. Finalidades do tratamento de dados</h2>
+            <p>Os dados pessoais podem ser tratados para:</p>
+            <ul>
+                <li>Criar e gerenciar contas de usuários;</li>
+                <li>Permitir login e autenticação;</li>
+                <li>Organizar dados de bandas, shows, equipe e produção;</li>
+                <li>Controlar permissões entre produtor, integrante e administradores;</li>
+                <li>Exibir informações operacionais aos usuários autorizados;</li>
+                <li>Processar assinaturas, cobranças e pagamentos;</li>
+                <li>Prestar suporte técnico e atendimento;</li>
+                <li>Enviar comunicações importantes sobre a conta;</li>
+                <li>Enviar avisos sobre atualizações, segurança ou funcionamento da plataforma;</li>
+                <li>Melhorar funcionalidades, desempenho e experiência do usuário;</li>
+                <li>Proteger a plataforma contra fraudes, acessos indevidos e abusos;</li>
+                <li>Cumprir obrigações legais, regulatórias ou judiciais;</li>
+                <li>Registrar evidências de contratação, uso, aceite de termos e consentimentos;</li>
+                <li>Realizar análises internas e estatísticas, sempre que possível de forma agregada ou anonimizada.</li>
+            </ul>
+
+            <h2>5. Bases legais</h2>
+            <p>O tratamento de dados pessoais poderá se apoiar em diferentes bases legais previstas na LGPD, conforme o caso, incluindo:</p>
+            <ul>
+                <li>Execução de contrato ou procedimentos preliminares relacionados ao serviço;</li>
+                <li>Cumprimento de obrigação legal ou regulatória;</li>
+                <li>Exercício regular de direitos em processos judiciais, administrativos ou arbitrais;</li>
+                <li>Legítimo interesse, quando aplicável e respeitados os direitos dos titulares;</li>
+                <li>Consentimento, quando necessário;</li>
+                <li>Proteção do crédito, quando aplicável a processos de cobrança;</li>
+                <li>Prevenção a fraudes e segurança do titular e da plataforma.</li>
+            </ul>
+
+            <h2>6. Compartilhamento de dados</h2>
+            <p>O Backstage Pro poderá compartilhar dados pessoais apenas quando necessário e de forma compatível com esta Política, incluindo:</p>
+            <ul>
+                <li>Provedores de hospedagem e infraestrutura;</li>
+                <li>Serviços de banco de dados e armazenamento;</li>
+                <li>Plataformas de pagamento;</li>
+                <li>Serviços de envio de e-mail;</li>
+                <li>Ferramentas de atendimento e suporte;</li>
+                <li>Ferramentas de análise, segurança e monitoramento;</li>
+                <li>Prestadores de serviços técnicos necessários ao funcionamento da plataforma;</li>
+                <li>Autoridades públicas, judiciais, administrativas ou regulatórias, quando houver obrigação legal ou ordem válida.</li>
+            </ul>
+            <p>O Backstage Pro não vende dados pessoais dos usuários.</p>
+
+            <h2>7. Dados inseridos por clientes e visualização por integrantes</h2>
+            <p>A plataforma pode permitir que o produtor ou administrador insira informações relacionadas a shows, contratantes, integrantes, equipe, arquivos e logística.</p>
+            <p>O produtor é responsável por definir quais informações serão visíveis para os integrantes.</p>
+            <p>O Backstage Pro buscará aplicar controles de permissão para separar informações completas e informações resumidas, mas o Cliente é responsável por revisar os dados inseridos e as permissões atribuídas a cada usuário.</p>
+
+            <h2>8. Armazenamento e retenção dos dados</h2>
+            <p>Os dados serão armazenados pelo tempo necessário para cumprir as finalidades descritas nesta Política, prestar o serviço, manter registros de contratação, cumprir obrigações legais, resolver disputas, prevenir fraudes e exercer direitos.</p>
+            <p>Após o encerramento da conta ou cancelamento do serviço, os dados poderão ser mantidos por prazo razoável para fins legais, técnicos, fiscais, auditoria, segurança ou defesa de direitos.</p>
+            <p>Quando não houver necessidade de manutenção, os dados poderão ser excluídos, anonimizados ou desativados de forma segura, conforme viabilidade técnica e obrigações aplicáveis.</p>
+
+            <h2>9. Segurança da informação</h2>
+            <p>O Backstage Pro adota ou buscará adotar medidas técnicas e administrativas razoáveis para proteger os dados pessoais contra acessos não autorizados, perda, alteração, divulgação indevida ou uso inadequado.</p>
+            <p>Essas medidas podem incluir:</p>
+            <ul>
+                <li>Controle de acesso por login e senha;</li>
+                <li>Senhas armazenadas de forma criptografada;</li>
+                <li>Permissões por perfil de usuário;</li>
+                <li>Uso de HTTPS;</li>
+                <li>Backups;</li>
+                <li>Monitoramento de acessos;</li>
+                <li>Atualizações de segurança;</li>
+                <li>Restrição de acesso administrativo;</li>
+                <li>Boas práticas de desenvolvimento e infraestrutura.</li>
+            </ul>
+            <p>Apesar dos esforços de segurança, nenhum sistema digital é totalmente imune a riscos. O usuário também deve contribuir protegendo suas credenciais, evitando compartilhamento de senha e utilizando dispositivos seguros.</p>
+
+            <h2>10. Direitos dos titulares</h2>
+            <p>Nos termos da LGPD, o titular de dados pessoais pode solicitar, conforme aplicável:</p>
+            <ul>
+                <li>Confirmação da existência de tratamento;</li>
+                <li>Acesso aos dados;</li>
+                <li>Correção de dados incompletos, inexatos ou desatualizados;</li>
+                <li>Anonimização, bloqueio ou eliminação de dados desnecessários, excessivos ou tratados em desconformidade;</li>
+                <li>Portabilidade dos dados, quando regulamentada e aplicável;</li>
+                <li>Informação sobre compartilhamento de dados;</li>
+                <li>Revogação do consentimento, quando o tratamento depender dessa base legal;</li>
+                <li>Eliminação de dados tratados com base no consentimento, observadas as hipóteses legais de conservação;</li>
+                <li>Revisão de decisões automatizadas, quando aplicável;</li>
+                <li>Oposição a tratamentos realizados em desconformidade com a lei.</li>
+            </ul>
+            <p>Para exercer seus direitos, o titular pode entrar em contato pelo e-mail:</p>
+            <p><a href="mailto:backstagepro.site@gmail.com">backstagepro.site@gmail.com</a></p>
+            <p>O Backstage Pro poderá solicitar informações adicionais para confirmar a identidade do solicitante e garantir a segurança do processo.</p>
+
+            <h2>11. Cookies e tecnologias semelhantes</h2>
+            <p>O Backstage Pro poderá utilizar cookies e tecnologias semelhantes para:</p>
+            <ul>
+                <li>Manter o usuário logado;</li>
+                <li>Lembrar preferências;</li>
+                <li>Melhorar a navegação;</li>
+                <li>Medir desempenho;</li>
+                <li>Proteger a plataforma;</li>
+                <li>Entender como o site é utilizado.</li>
+            </ul>
+            <p>O usuário poderá gerenciar cookies diretamente nas configurações do navegador. No entanto, a desativação de certos cookies pode comprometer funcionalidades da plataforma.</p>
+
+            <h2>12. Transferência internacional de dados</h2>
+            <p>Alguns fornecedores de tecnologia utilizados pelo Backstage Pro, como serviços de hospedagem, e-mail, pagamento, analytics ou suporte, podem armazenar ou processar dados em servidores localizados fora do Brasil.</p>
+            <p>Quando isso ocorrer, o Backstage Pro buscará utilizar fornecedores que adotem padrões adequados de segurança e proteção de dados.</p>
+
+            <h2>13. Dados de crianças e adolescentes</h2>
+            <p>O Backstage Pro não é direcionado a crianças.</p>
+            <p>Caso adolescentes venham a utilizar a plataforma como integrantes de banda ou equipe, o Cliente responsável pela organização deverá garantir que possui autorização adequada dos responsáveis legais, quando exigível, e que o uso está de acordo com a legislação aplicável.</p>
+
+            <h2>14. Comunicações</h2>
+            <p>O Backstage Pro poderá enviar comunicações relacionadas a:</p>
+            <ul>
+                <li>Cadastro e acesso;</li>
+                <li>Segurança da conta;</li>
+                <li>Alterações importantes;</li>
+                <li>Suporte;</li>
+                <li>Pagamentos e cobranças;</li>
+                <li>Atualizações da plataforma;</li>
+                <li>Novidades sobre funcionalidades;</li>
+                <li>Informações comerciais relacionadas ao serviço.</li>
+            </ul>
+            <p>O usuário poderá solicitar a interrupção de comunicações promocionais, quando aplicável, sem prejuízo do envio de mensagens essenciais ao funcionamento da conta e do serviço.</p>
+
+            <h2>15. Links para terceiros</h2>
+            <p>O site ou a plataforma podem conter links para sites, serviços ou plataformas de terceiros.</p>
+            <p>O Backstage Pro não se responsabiliza pelas práticas de privacidade, conteúdo ou segurança de terceiros. Recomenda-se que o usuário leia as políticas de privacidade dos serviços externos acessados.</p>
+
+            <h2>16. Incidentes de segurança</h2>
+            <p>Em caso de incidente de segurança que possa gerar risco ou dano relevante aos titulares, o Backstage Pro adotará medidas razoáveis para avaliar o ocorrido, mitigar impactos e realizar comunicações necessárias, conforme a legislação aplicável.</p>
+
+            <h2>17. Atualizações desta Política</h2>
+            <p>Esta Política de Privacidade poderá ser atualizada para refletir mudanças legais, técnicas, operacionais ou comerciais.</p>
+            <p>A versão atualizada será publicada nesta página, com indicação da data da última atualização.</p>
+            <p>O uso contínuo da plataforma após alterações representa ciência da nova versão.</p>
+
+            <h2>18. Contato sobre privacidade</h2>
+            <p>Para dúvidas, solicitações ou exercício de direitos relacionados a dados pessoais, entre em contato:</p>
+            <p><strong>E-mail:</strong> <a href="mailto:backstagepro.site@gmail.com">backstagepro.site@gmail.com</a><br>
+            <strong>WhatsApp:</strong> <a href="https://wa.me/5571982729156" target="_blank">+55 71 98272-9156</a></p>
+
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <h5 class="fw-bold mb-3">Backstage Pro</h5>
+                    <p class="text-muted mb-4">Sistema web para gestão de shows, bandas e produção musical.</p>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="fw-bold mb-3">Contato</h6>
+                    <p class="text-muted mb-1"><i class="fa-regular fa-envelope me-2"></i> backstagepro.site@gmail.com</p>
+                    <p class="text-muted mb-1"><i class="fa-brands fa-whatsapp me-2"></i> +55 71 98272-9156</p>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="fw-bold mb-3">Links Úteis</h6>
+                    <a href="/termos-de-uso/" class="footer-link">Termos de Uso</a>
+                    <a href="/politica-de-privacidade/" class="footer-link">Política de Privacidade</a>
+                    <a href="/painel/" class="footer-link">Entrar</a>
+                </div>
+            </div>
+            <div class="border-top border-color mt-5 pt-4 text-center">
+                <p class="text-muted small mb-0">&copy; <span id="current-year"></span> Backstage Pro. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

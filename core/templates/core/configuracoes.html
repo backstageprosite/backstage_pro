@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold m-0"><i class="fa-solid fa-gear text-primary me-2"></i> Configurações da Banda</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-4">Identidade Visual</h5>
+                
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted">Logo Atual</label>
+                        <div class="d-flex align-items-center p-3 bg-light rounded border">
+                            {% if band.logo %}
+                                <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="me-3" style="max-height: 80px; border-radius: 6px;">
+                            {% else %}
+                                <div class="bg-secondary bg-opacity-10 rounded d-flex justify-content-center align-items-center me-3" style="width: 80px; height: 80px;">
+                                    <i class="fa-solid fa-image fs-1 text-muted"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ band.name }}</h6>
+                                <small class="text-muted">{% if band.logo %}Logo carregada.{% else %}Nenhuma logo carregada.{% endif %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="logo" class="form-label fw-bold text-muted">Alterar Logo</label>
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                        <div class="form-text">Recomendamos imagens com fundo transparente (PNG) ou formato quadrado (JPG/PNG).</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary px-4 fw-bold rounded-pill">
+                            <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold m-0">
+        <i class="fa-solid {% if is_edit %}fa-pen-to-square{% else %}fa-plus-circle{% endif %} text-primary me-2"></i> 
+        {% if is_edit %}Editar Contato{% else %}Adicionar Contato{% endif %}
+    </h2>
+    <a href="{% url 'contatos_list' band.slug %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
+        <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+    </a>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 12px; max-width: 800px; margin: 0 auto;">
+    <div class="card-body p-4 p-md-5">
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="alert alert-danger" style="border-radius: 8px;">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i> Verifique os erros no formulário abaixo.
+                </div>
+            {% endif %}
+
+            <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">Informações do Contato</h5>
+            
+            <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                    <label class="form-label fw-bold">{{ form.name.label }}</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="text-danger small mt-1">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">{{ form.contact_type.label }}</label>
+                    {{ form.contact_type }}
+                    {% if form.contact_type.errors %}
+                        <div class="text-danger small mt-1">{{ form.contact_type.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">{{ form.phone.label }}</label>
+                    {{ form.phone }}
+                    {% if form.phone.errors %}
+                        <div class="text-danger small mt-1">{{ form.phone.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">{{ form.email.label }}</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="text-danger small mt-1">{{ form.email.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">Detalhes</h5>
+            
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    <label class="form-label fw-bold">{{ form.notes.label }}</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}
+                        <div class="text-danger small mt-1">{{ form.notes.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <hr class="my-4">
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{% url 'contatos_list' band.slug %}" class="btn btn-light border px-4 fw-bold rounded-pill">Cancelar</a>
+                <button type="submit" class="btn btn-success px-4 fw-bold rounded-pill shadow-sm">
+                    <i class="fa-solid fa-check me-1"></i> Salvar Contato
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

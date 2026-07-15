@@ -1,0 +1,230 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <h2 class="fw-bold m-0"><i class="fa-solid fa-microphone-lines text-primary me-2"></i> Gerenciador de Shows</h2>
+    <div class="d-flex gap-2">
+        <a href="{% url 'shows_add' band.slug %}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center">
+            <i class="fa-solid fa-plus me-2"></i> Novo Show
+        </a>
+        <button type="button" class="btn btn-dark rounded-pill shadow-sm px-4 fw-bold d-flex align-items-center transition-hover" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
+            <i class="fa-solid fa-file-pdf me-2 fs-5"></i> PDF Agenda
+        </button>
+    </div>
+</div>
+
+<!-- Barra de Filtros -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">Pesquisar Show</label>
+                <input type="text" name="q" class="form-control form-control-sm" placeholder="Nome do evento..." value="{{ current_q|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">Tipo de Contratação</label>
+                <input type="text" name="contract_type" class="form-control form-control-sm" placeholder="Ex: Prefeitura..." value="{{ current_contract_type|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted">Mês/Ano</label>
+                <input type="month" name="month" class="form-control form-control-sm" value="{{ current_month|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    <option value="PRE_RESERVADO" {% if current_status == 'PRE_RESERVADO' %}selected{% endif %}>Reserva</option>
+                    <option value="CONFIRMADO" {% if current_status == 'CONFIRMADO' %}selected{% endif %}>Confirmado</option>
+                    <option value="CONCLUIDO" {% if current_status == 'CONCLUIDO' %}selected{% endif %}>Concluído</option>
+                    <option value="CANCELADO" {% if current_status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted">Pagamento</label>
+                <select name="payment_status" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    <option value="PENDENTE" {% if current_payment_status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                    <option value="PARCIAL" {% if current_payment_status == 'PARCIAL' %}selected{% endif %}>Parcial</option>
+                    <option value="PAGO" {% if current_payment_status == 'PAGO' %}selected{% endif %}>Pago Totalmente</option>
+                </select>
+            </div>
+            <div class="col-12 text-end mt-3">
+                <a href="{% url 'shows_list' band.slug %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
+                <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
+                    <tr>
+                        <th class="ps-4 py-3">Data</th>
+                        <th class="py-3">Evento / Local</th>
+                        <th class="py-3 d-none d-md-table-cell">Tipo de Contratação</th>
+                        <th class="py-3">Status do Evento</th>
+                        <th class="py-3 d-none d-md-table-cell">Pagamento</th>
+                        <th class="pe-4 py-3 text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for show in shows %}
+                    <tr>
+                        <td class="ps-4 text-nowrap fw-bold text-dark">{{ show.date|date:"d/m/Y" }}</td>
+                        <td>
+                            <a href="{% url 'show_detail' band.slug show.id %}" class="text-decoration-none fw-bold text-primary">
+                                {{ show.title|default:"Sem Título" }}
+                            </a><br>
+                            <small class="text-muted"><i class="fa-solid fa-location-dot me-1"></i> {{ show.city|default:"Cidade não informada" }}</small>
+                        </td>
+                        <td class="d-none d-md-table-cell">{{ show.contract_type|default:"-" }}</td>
+                        <td>
+                            {% if show.status == 'CANCELADO' %}
+                                <span class="badge bg-danger px-3 py-2">Cancelado</span>
+                            {% elif show.is_past %}
+                                <span class="badge bg-secondary px-3 py-2">Concluído</span>
+                            {% elif show.status == 'CONFIRMADO' %}
+                                <span class="badge bg-success px-3 py-2">Confirmado</span>
+                            {% elif show.status == 'PRE_RESERVADO' %}
+                                <span class="badge bg-warning text-dark px-3 py-2">Reserva</span>
+                            {% endif %}
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                            {% if show.payment_status == 'PAGO' %}
+                                <span class="badge bg-success px-3 py-2">Pago Totalmente</span>
+                            {% elif show.payment_status == 'PARCIAL' %}
+                                <span class="badge bg-warning text-dark px-3 py-2">Pago Parcialmente</span>
+                            {% else %}
+                                <span class="badge bg-danger px-3 py-2">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 text-end text-nowrap">
+                            <div class="d-none d-md-block">
+                                <a href="{% url 'show_pdf' band.slug show.id %}" target="_blank" class="btn btn-sm btn-outline-dark btn-loading rounded-pill px-3 fw-bold shadow-sm me-2">
+                                    <i class="fa-solid fa-file-pdf"></i> PDF
+                                </a>
+                                <a href="{% url 'shows_edit' band.slug show.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold shadow-sm me-2">
+                                    Editar
+                                </a>
+                                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ show.id }}">
+                                    Excluir
+                                </button>
+                            </div>
+                            
+                            <div class="d-md-none dropdown">
+                                <button class="btn btn-sm btn-secondary dropdown-toggle rounded-pill" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Ações
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow" style="position: absolute;">
+                                    <li><a class="dropdown-item" href="{% url 'show_detail' band.slug show.id %}"><i class="fa-solid fa-eye text-primary me-2"></i> Ver Detalhes</a></li>
+                                    <li><a class="dropdown-item btn-loading" href="{% url 'show_pdf' band.slug show.id %}" target="_blank"><i class="fa-solid fa-file-pdf text-success me-2"></i> Gerar PDF</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'shows_edit' band.slug show.id %}">Editar</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteModal{{ show.id }}">Excluir</a></li>
+                                </ul>
+                            </div>
+                        </td>
+
+                            <!-- Modal de Remoção -->
+                            <div class="modal fade text-start" id="deleteModal{{ show.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ show.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                                        <div class="modal-header border-0 pb-0">
+                                            <h5 class="modal-title fw-bold text-danger" id="deleteModalLabel{{ show.id }}">
+                                                <i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Exclusão
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body pt-3 pb-4">
+                                            <h5 class="fw-bold mb-3">Excluir Show?</h5>
+                                            <p class="text-muted mb-0">
+                                                Deseja excluir o evento <strong>"{{ show.title|default:'Sem Título' }}"</strong>?<br>
+                                                <small class="text-danger">Esta ação é irreversível.</small>
+                                            </p>
+                                        </div>
+                                        <div class="modal-footer border-0 pt-0 flex-column flex-md-row w-100">
+                                            <button type="button" class="btn btn-light rounded-pill px-4 w-100 mb-2 mb-md-0" data-bs-dismiss="modal">Cancelar</button>
+                                            <form action="{% url 'shows_delete' band.slug show.id %}" method="post" class="d-inline w-100">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger btn-loading rounded-pill px-4 fw-bold w-100">
+                                                    <i class="fa-solid fa-trash me-1"></i> Sim, Excluir
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
+                                <i class="fa-solid fa-calendar-times text-muted mb-3" style="font-size: 3rem;"></i>
+                                <h5 class="fw-bold text-dark mb-1">Nenhum show cadastrado ainda</h5>
+                                <p class="text-muted small mb-4">Comece adicionando o primeiro evento da agenda da banda.</p>
+                                <a href="{% url 'shows_add' band.slug %}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                                    <i class="fa-solid fa-plus me-1"></i> Criar Primeiro Show
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Exportar PDF -->
+<div class="modal fade" id="exportPdfModal" tabindex="-1" aria-labelledby="exportPdfModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold" id="exportPdfModalLabel"><i class="fa-solid fa-file-pdf text-danger me-2"></i> PDF Agenda</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{% url 'agenda_pdf' band.slug %}" method="GET" target="_blank">
+          <div class="modal-body">
+            <p class="text-muted small mb-3">Selecione os status dos eventos que deseja incluir no PDF:</p>
+            
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="status" value="CONFIRMADO" id="chkConfirmado_shows" checked>
+              <label class="form-check-label fw-bold" for="chkConfirmado_shows">
+                <span class="badge bg-success me-1" style="font-size: 0.8rem;">CONFIRMADO</span>
+              </label>
+            </div>
+            
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="status" value="CONCLUIDO" id="chkConcluido_shows">
+              <label class="form-check-label fw-bold" for="chkConcluido_shows">
+                <span class="badge bg-secondary me-1" style="font-size: 0.8rem;">CONCLUÍDO</span>
+              </label>
+            </div>
+            
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="status" value="PRE_RESERVADO" id="chkReserva_shows">
+              <label class="form-check-label fw-bold" for="chkReserva_shows">
+                <span class="badge bg-warning text-dark me-1" style="font-size: 0.8rem;">RESERVA</span>
+              </label>
+            </div>
+            
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" name="status" value="CANCELADO" id="chkCancelado_shows">
+              <label class="form-check-label fw-bold" for="chkCancelado_shows">
+                <span class="badge bg-danger me-1" style="font-size: 0.8rem;">CANCELADO</span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer border-top-0 pt-0 flex-column flex-md-row w-100">
+            <button type="button" class="btn btn-light rounded-pill px-4 w-100 mb-2 mb-md-0" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-danger btn-loading rounded-pill px-4 fw-bold w-100">Gerar PDF</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

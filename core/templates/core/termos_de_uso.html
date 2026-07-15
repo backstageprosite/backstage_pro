@@ -1,0 +1,421 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termos de Uso | Backstage Pro</title>
+    <meta name="description" content="Leia os Termos de Uso do Backstage Pro e entenda as regras, direitos e deveres na utilização da nossa plataforma de gestão para bandas.">
+    
+    <!-- Open Graph tags for social sharing -->
+    <meta property="og:title" content="Termos de Uso | Backstage Pro">
+    <meta property="og:description" content="Regras e condições de uso do sistema Backstage Pro.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://backstagepro.site/termos-de-uso/">
+
+    <!-- Google Fonts: Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-green: #6BD443;
+            --primary-green-hover: #58ba35;
+            --text-dark: #111111;
+            --text-muted: #555555;
+            --bg-white: #FFFFFF;
+            --bg-light: #F7F8FA;
+            --border-color: #E6E8EC;
+            --font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            color: var(--text-dark);
+            background-color: var(--bg-white);
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        /* Header */
+        .navbar {
+            background-color: var(--bg-white);
+            border-bottom: 1px solid var(--border-color);
+            padding-top: 15px;
+            padding-bottom: 15px;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--text-dark);
+        }
+
+        .site-logo {
+            width: 100%;
+            max-width: 190px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .btn-outline-custom {
+            background-color: transparent;
+            color: var(--text-dark);
+            font-weight: 700;
+            border: 2px solid var(--border-color);
+            padding: 8px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-outline-custom:hover {
+            border-color: var(--text-dark);
+            background-color: var(--text-dark);
+            color: var(--bg-white);
+        }
+
+        /* Content Area */
+        main {
+            flex-grow: 1;
+        }
+        
+        .legal-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .legal-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .legal-content .last-updated {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 40px;
+            font-weight: 500;
+        }
+
+        .legal-content h2 {
+            font-size: 1.5rem;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .legal-content h3 {
+            font-size: 1.25rem;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .legal-content p, .legal-content li {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .legal-content ul {
+            margin-bottom: 25px;
+            padding-left: 25px;
+        }
+
+        .legal-content li {
+            margin-bottom: 10px;
+        }
+
+        .legal-content a {
+            color: var(--primary-green);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .legal-content a:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--bg-white);
+            border-top: 1px solid var(--border-color);
+            padding: 60px 0 30px;
+            margin-top: auto;
+        }
+
+        .footer-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 10px;
+            transition: color 0.3s;
+        }
+
+        .footer-link:hover {
+            color: var(--primary-green);
+        }
+
+        @media (max-width: 768px) {
+            .legal-content {
+                padding: 40px 15px;
+            }
+            .legal-content h1 {
+                font-size: 2rem;
+            }
+            .site-logo {
+                max-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <nav class="navbar sticky-top">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand" href="/">
+                <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="site-logo">
+            </a>
+            <a href="/" class="btn-outline-custom"><i class="fa-solid fa-arrow-left me-2"></i>Voltar para o início</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <section class="legal-content">
+            <h1>Termos de Uso do Backstage Pro</h1>
+            <p class="last-updated">Última atualização: 08 de julho de 2026</p>
+
+            <p>Bem-vindo ao Backstage Pro.</p>
+            <p>Estes Termos de Uso regulam o acesso e a utilização do Backstage Pro, sistema web desenvolvido para auxiliar bandas, artistas, produtores e equipes musicais na organização de shows, agenda, logística, equipe, informações operacionais, arquivos e dados relacionados à produção de eventos.</p>
+            <p>Ao acessar, cadastrar-se ou utilizar o Backstage Pro, o usuário declara que leu, entendeu e concorda com estes Termos de Uso. Caso não concorde com qualquer condição aqui prevista, o usuário não deverá utilizar a plataforma.</p>
+
+            <h2>1. Definições</h2>
+            <p>Para fins destes Termos de Uso:</p>
+            <ul>
+                <li><strong>"Backstage Pro" ou "Plataforma"</strong> significa o sistema web disponibilizado por meio do domínio backstagepro.site ou outros endereços oficiais vinculados ao serviço.</li>
+                <li><strong>"Usuário"</strong> significa qualquer pessoa que acesse ou utilize a plataforma, incluindo produtores, integrantes, administradores, técnicos, representantes de bandas, artistas ou convidados.</li>
+                <li><strong>"Cliente"</strong> significa a pessoa física ou jurídica responsável pela contratação do Backstage Pro.</li>
+                <li><strong>"Organização"</strong> significa o ambiente criado para uma banda, artista, produtor, escritório ou equipe, no qual ficam armazenadas as informações dos shows, usuários e dados operacionais.</li>
+                <li><strong>"Produtor"</strong> significa o usuário com permissão para cadastrar, editar, organizar e gerenciar informações completas dentro de uma organização.</li>
+                <li><strong>"Integrante"</strong> significa o usuário com acesso limitado às informações liberadas pelo produtor.</li>
+                <li><strong>"Conteúdo do Cliente"</strong> significa todas as informações, arquivos, dados, textos, documentos, contratos, riders, comprovantes, imagens, observações, agendas e demais materiais inseridos na plataforma pelos usuários.</li>
+            </ul>
+
+            <h2>2. Objeto</h2>
+            <p>O Backstage Pro é uma plataforma digital destinada à organização e gestão operacional de shows e produções musicais.</p>
+            <p>A plataforma pode permitir, entre outras funcionalidades:</p>
+            <ul>
+                <li>Cadastro de shows e eventos;</li>
+                <li>Organização de agenda;</li>
+                <li>Registro de cidade, local, endereço e horários;</li>
+                <li>Cadastro de contratantes e informações operacionais;</li>
+                <li>Controle de equipe e integrantes;</li>
+                <li>Controle de cachê, pagamento e observações financeiras;</li>
+                <li>Upload de arquivos, contratos, riders e comprovantes;</li>
+                <li>Criação de visão resumida para integrantes;</li>
+                <li>Checklists;</li>
+                <li>Notificações e organização de informações relevantes à produção.</li>
+            </ul>
+            <p>As funcionalidades podem variar conforme o plano contratado, fase de desenvolvimento, disponibilidade técnica e evolução da plataforma.</p>
+
+            <h2>3. Status de beta fechado e acesso antecipado</h2>
+            <p>O Backstage Pro encontra-se em fase de beta fechado e acesso antecipado.</p>
+            <p>Isso significa que a plataforma ainda poderá passar por ajustes, melhorias, correções, alterações visuais, mudanças em funcionalidades, inclusão ou remoção de recursos e atualizações técnicas.</p>
+            <p>O Cliente reconhece que, durante esse período, podem ocorrer instabilidades, indisponibilidades temporárias, ajustes de interface e mudanças no funcionamento de determinadas áreas da plataforma.</p>
+            <p>O Backstage Pro buscará corrigir falhas e evoluir o sistema de forma contínua, mas não garante que todas as funcionalidades planejadas estarão disponíveis imediatamente.</p>
+
+            <h2>4. Cadastro e acesso</h2>
+            <p>Para utilizar a plataforma, o usuário poderá precisar criar uma conta, informar dados verdadeiros e manter suas informações atualizadas.</p>
+            <p>O Cliente é responsável por indicar corretamente os usuários autorizados a acessar sua organização.</p>
+            <p>Cada usuário é responsável por manter a confidencialidade de seu login e senha, bem como por todas as atividades realizadas em sua conta.</p>
+            <p>O usuário compromete-se a não compartilhar suas credenciais com terceiros não autorizados.</p>
+            <p>O Backstage Pro poderá suspender ou bloquear acessos em caso de suspeita de uso indevido, fraude, violação destes Termos ou risco à segurança da plataforma.</p>
+
+            <h2>5. Perfis de usuário e permissões</h2>
+            <p>A plataforma poderá possuir diferentes níveis de acesso, incluindo produtor, integrante, administrador ou outros perfis criados futuramente.</p>
+            <p>O produtor ou administrador da organização é responsável por definir quais usuários terão acesso às informações cadastradas.</p>
+            <p>Informações financeiras, observações internas, dados de contratantes e arquivos sensíveis poderão ficar restritos a perfis autorizados.</p>
+            <p>O Backstage Pro não se responsabiliza por permissões concedidas incorretamente pelo Cliente ou por administradores da própria organização.</p>
+
+            <h2>6. Responsabilidades do Cliente e dos usuários</h2>
+            <p>O Cliente e seus usuários são responsáveis por:</p>
+            <ul>
+                <li>Inserir informações corretas, completas e atualizadas;</li>
+                <li>Conferir datas, horários, endereços, valores, contatos e orientações operacionais;</li>
+                <li>Garantir que possuem autorização para inserir dados pessoais de terceiros;</li>
+                <li>Utilizar a plataforma de forma ética, legal e compatível com sua finalidade;</li>
+                <li>Controlar quem terá acesso às informações da organização;</li>
+                <li>Manter backup próprio de informações críticas, quando necessário;</li>
+                <li>Não inserir conteúdo ilegal, ofensivo, fraudulento ou que viole direitos de terceiros.</li>
+            </ul>
+            <p>O Backstage Pro é uma ferramenta de organização. A responsabilidade final pela execução do show, cumprimento de contratos, pagamento de equipe, deslocamentos, horários e comunicação operacional permanece sendo do Cliente.</p>
+
+            <h2>7. Uso permitido</h2>
+            <p>O usuário concorda em utilizar a plataforma apenas para finalidades legais e relacionadas à gestão de shows, bandas, artistas, produção musical, eventos e atividades compatíveis.</p>
+            <p>É proibido:</p>
+            <ul>
+                <li>Utilizar a plataforma para prática de atos ilícitos;</li>
+                <li>Tentar acessar dados de outras organizações;</li>
+                <li>Testar, explorar ou violar vulnerabilidades de segurança;</li>
+                <li>Copiar, revender ou explorar comercialmente a plataforma sem autorização;</li>
+                <li>Inserir vírus, códigos maliciosos ou arquivos prejudiciais;</li>
+                <li>Utilizar robôs, automações abusivas ou meios que prejudiquem a estabilidade do sistema;</li>
+                <li>Inserir conteúdo que viole direitos autorais, marcas, imagem, privacidade ou dados de terceiros;</li>
+                <li>Utilizar a plataforma para armazenar conteúdo discriminatório, ofensivo, difamatório, abusivo ou ilegal.</li>
+            </ul>
+
+            <h2>8. Planos, valores e pagamento</h2>
+            <p>O Backstage Pro poderá ser contratado por assinatura mensal, semestral ou anual, conforme planos disponíveis no momento da contratação.</p>
+            <p>Os valores informados na página comercial podem representar condições promocionais de acesso antecipado e podem ser alterados no futuro.</p>
+            <p>Planos atuais de referência:</p>
+            <ul>
+                <li>Plano Mensal: R$ 300 por mês;</li>
+                <li>Plano Semestral: R$ 250 por mês;</li>
+                <li>Plano Anual: R$ 200 por mês.</li>
+            </ul>
+            <p>A cobrança poderá ser feita por link de pagamento, Pix, boleto, cartão, plataforma de pagamento terceirizada ou outro meio informado ao Cliente.</p>
+            <p>O acesso à plataforma poderá depender da confirmação do pagamento.</p>
+            <p>Em caso de inadimplência, o Backstage Pro poderá suspender, limitar ou bloquear o acesso do Cliente até a regularização do pagamento.</p>
+
+            <h2>9. Cancelamento</h2>
+            <p>O Cliente poderá solicitar o cancelamento da assinatura pelos canais oficiais de atendimento.</p>
+            <p>O cancelamento impede novas cobranças futuras, mas não gera automaticamente reembolso de valores já pagos, salvo quando houver previsão legal aplicável, erro de cobrança ou política comercial específica informada por escrito.</p>
+            <p>Em planos semestrais ou anuais promocionais, eventuais condições de reembolso, crédito ou encerramento antecipado poderão depender da política vigente no momento da contratação.</p>
+            <p>Após o cancelamento, o acesso à plataforma poderá permanecer ativo até o fim do período já pago ou ser encerrado conforme a condição contratada.</p>
+
+            <h2>10. Suspensão e encerramento de conta</h2>
+            <p>O Backstage Pro poderá suspender ou encerrar o acesso de usuários ou organizações em caso de:</p>
+            <ul>
+                <li>Violação destes Termos de Uso;</li>
+                <li>Inadimplência;</li>
+                <li>Uso fraudulento;</li>
+                <li>Risco à segurança da plataforma;</li>
+                <li>Tentativa de acesso indevido a dados de terceiros;</li>
+                <li>Uso abusivo dos recursos;</li>
+                <li>Determinação legal, judicial ou administrativa.</li>
+            </ul>
+            <p>Quando possível, o Cliente será comunicado para regularizar a situação.</p>
+
+            <h2>11. Disponibilidade da plataforma</h2>
+            <p>O Backstage Pro buscará manter a plataforma disponível e funcionando adequadamente. No entanto, o Cliente reconhece que sistemas digitais podem sofrer interrupções por manutenção, atualizações, falhas técnicas, instabilidades de internet, serviços de terceiros, ataques, eventos de força maior ou situações fora do controle razoável da plataforma.</p>
+            <p>Sempre que possível, manutenções programadas serão realizadas buscando reduzir impacto aos usuários.</p>
+            <p>O Backstage Pro não garante disponibilidade ininterrupta, funcionamento livre de erros ou compatibilidade com todos os dispositivos, navegadores e ambientes tecnológicos.</p>
+
+            <h2>12. Dados, arquivos e conteúdo inserido pelo Cliente</h2>
+            <p>O Cliente mantém a titularidade sobre o conteúdo inserido na plataforma.</p>
+            <p>Ao inserir dados, arquivos e informações no Backstage Pro, o Cliente autoriza o tratamento desses dados pela plataforma na medida necessária para prestar o serviço contratado.</p>
+            <p>O Cliente declara que possui autorização, base legal ou legitimidade para inserir dados pessoais, documentos, informações de contratantes, integrantes, equipe e terceiros na plataforma.</p>
+            <p>O Backstage Pro não se responsabiliza pelo conteúdo cadastrado pelos usuários, nem pela veracidade, licitude ou atualização dessas informações.</p>
+
+            <h2>13. Backup e preservação de dados</h2>
+            <p>O Backstage Pro poderá adotar rotinas de backup e medidas de segurança proporcionais à fase e estrutura da plataforma.</p>
+            <p>Ainda assim, recomenda-se que o Cliente mantenha cópias próprias de informações críticas, contratos, comprovantes e documentos essenciais.</p>
+            <p>Em caso de cancelamento, exclusão de conta ou encerramento de contrato, os dados poderão ser removidos ou desativados conforme a Política de Privacidade e os prazos técnicos e legais aplicáveis.</p>
+
+            <h2>14. Propriedade intelectual</h2>
+            <p>A marca, nome, identidade visual, layout, código, estrutura, funcionalidades, textos, organização da plataforma, elementos visuais e demais componentes do Backstage Pro pertencem aos seus titulares e são protegidos por leis de propriedade intelectual.</p>
+            <p>O uso da plataforma não transfere ao Cliente qualquer direito de propriedade sobre o sistema.</p>
+            <p>É proibido copiar, reproduzir, modificar, distribuir, vender, alugar, sublicenciar, realizar engenharia reversa ou explorar comercialmente qualquer parte da plataforma sem autorização expressa.</p>
+
+            <h2>15. Serviços de terceiros</h2>
+            <p>O Backstage Pro poderá utilizar serviços de terceiros para hospedagem, banco de dados, pagamentos, e-mails, analytics, comunicação, segurança, suporte e infraestrutura.</p>
+            <p>O funcionamento desses serviços pode estar sujeito aos termos e políticas dos respectivos fornecedores.</p>
+            <p>O Backstage Pro não se responsabiliza por falhas, indisponibilidades ou alterações realizadas por terceiros que estejam fora de seu controle razoável, sem prejuízo de buscar soluções e alternativas quando necessário.</p>
+
+            <h2>16. Limitação de responsabilidade</h2>
+            <p>Na máxima extensão permitida pela legislação aplicável, o Backstage Pro não será responsável por:</p>
+            <ul>
+                <li>Erros em informações cadastradas pelo Cliente ou usuários;</li>
+                <li>Prejuízos decorrentes de horários, endereços ou dados incorretos inseridos na plataforma;</li>
+                <li>Cancelamento de shows, falhas de contratantes ou descumprimento de acordos externos;</li>
+                <li>Problemas logísticos, financeiros ou operacionais da banda, artista ou equipe;</li>
+                <li>Perda de oportunidades comerciais;</li>
+                <li>Danos indiretos, lucros cessantes ou prejuízos decorrentes do uso inadequado da plataforma;</li>
+                <li>Acesso indevido causado por compartilhamento de senha pelo usuário;</li>
+                <li>Falhas de internet, dispositivo, navegador, provedor ou serviços de terceiros.</li>
+            </ul>
+            <p>O Backstage Pro é uma ferramenta de apoio à gestão, não substituindo a conferência humana, contratos formais, gestão financeira profissional, assessoria jurídica, contábil ou operacional.</p>
+
+            <h2>17. Privacidade e proteção de dados</h2>
+            <p>O tratamento de dados pessoais realizado pelo Backstage Pro é descrito na Política de Privacidade.</p>
+            <p>Ao utilizar a plataforma, o usuário também concorda com a Política de Privacidade, que integra estes Termos de Uso.</p>
+
+            <h2>18. Comunicações</h2>
+            <p>O Backstage Pro poderá entrar em contato com o Cliente ou usuários por e-mail, WhatsApp ou outros canais informados no cadastro, para comunicações relacionadas à conta, suporte, cobrança, segurança, atualizações, novidades e funcionamento da plataforma.</p>
+            <p>O usuário deve manter seus dados de contato atualizados.</p>
+
+            <h2>19. Alterações destes Termos</h2>
+            <p>O Backstage Pro poderá atualizar estes Termos de Uso para refletir mudanças legais, técnicas, comerciais ou operacionais.</p>
+            <p>A versão atualizada será publicada nesta página, com indicação da data da última atualização.</p>
+            <p>O uso contínuo da plataforma após a publicação de alterações representa concordância com os novos termos.</p>
+
+            <h2>20. Legislação aplicável e resolução de conflitos</h2>
+            <p>Estes Termos de Uso são regidos pelas leis da República Federativa do Brasil.</p>
+            <p>Eventuais conflitos deverão ser preferencialmente resolvidos de forma amigável pelos canais oficiais de contato.</p>
+            <p>Quando aplicável, será observado o foro competente conforme a legislação brasileira vigente, especialmente em relações de consumo, quando caracterizadas.</p>
+
+            <h2>21. Contato</h2>
+            <p>Para dúvidas, solicitações, suporte, cancelamento ou assuntos relacionados a estes Termos de Uso, entre em contato:</p>
+            <p><strong>E-mail:</strong> <a href="mailto:backstagepro.site@gmail.com">backstagepro.site@gmail.com</a><br>
+            <strong>WhatsApp:</strong> <a href="https://wa.me/5571982729156" target="_blank">+55 71 98272-9156</a></p>
+
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <h5 class="fw-bold mb-3">Backstage Pro</h5>
+                    <p class="text-muted mb-4">Sistema web para gestão de shows, bandas e produção musical.</p>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="fw-bold mb-3">Contato</h6>
+                    <p class="text-muted mb-1"><i class="fa-regular fa-envelope me-2"></i> backstagepro.site@gmail.com</p>
+                    <p class="text-muted mb-1"><i class="fa-brands fa-whatsapp me-2"></i> +55 71 98272-9156</p>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="fw-bold mb-3">Links Úteis</h6>
+                    <a href="/termos-de-uso/" class="footer-link">Termos de Uso</a>
+                    <a href="/politica-de-privacidade/" class="footer-link">Política de Privacidade</a>
+                    <a href="/painel/" class="footer-link">Entrar</a>
+                </div>
+            </div>
+            <div class="border-top border-color mt-5 pt-4 text-center">
+                <p class="text-muted small mb-0">&copy; <span id="current-year"></span> Backstage Pro. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

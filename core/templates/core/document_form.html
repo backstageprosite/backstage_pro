@@ -1,0 +1,57 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Editar Documento - {{ band.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        Editar Documento
+    </h2>
+    <a href="{% url 'shows_edit' band.slug show.id %}#anexos" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar aos Anexos
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Show: {{ show.title }}</h5>
+        
+        <form method="post" enctype="multipart/form-data" action="{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                Por favor, corrija os erros abaixo.
+                {{ form.errors }}
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label fw-bold">Descrição</label>
+                    {{ form.description }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label fw-bold">Arquivo (PDF, Imagem)</label>
+                    {% if document.file %}
+                        <div class="mb-2">
+                            <a href="{{ document.file.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-file-earmark-text"></i> Arquivo Atual
+                            </a>
+                        </div>
+                    {% endif %}
+                    {{ form.file }}
+                    <div class="form-text">Deixe em branco para manter o arquivo atual, ou anexe um novo.</div>
+                </div>
+            </div>
+            <div class="text-end mt-2">
+                <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                    <i class="fa-solid fa-save me-1"></i> Salvar Alterações
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

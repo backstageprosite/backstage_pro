@@ -1,0 +1,1100 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" style="scroll-behavior: smooth;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backstage Pro | Gestão de Shows, Bandas e Produção Musical</title>
+    <meta name="description" content="Organize agenda, equipe, logística, contratos, financeiro e informações dos shows em uma plataforma criada para bandas, artistas e produtores musicais.">
+    
+    <!-- Open Graph tags for social sharing -->
+    <meta property="og:title" content="Backstage Pro | Gestão de Shows, Bandas e Produção Musical">
+    <meta property="og:description" content="Organize agenda, equipe, logística, contratos, financeiro e informações dos shows em uma plataforma criada para bandas, artistas e produtores musicais.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://backstagepro.site">
+
+    <!-- Google Fonts: Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-green: #6BD443;
+            --primary-green-hover: #58ba35;
+            --text-dark: #111111;
+            --text-muted: #555555;
+            --bg-white: #FFFFFF;
+            --bg-light: #F7F8FA;
+            --border-color: #E6E8EC;
+            --font-family: 'Montserrat', sans-serif;
+        }
+
+        body.landing-page {
+            font-family: var(--font-family);
+            color: var(--text-dark);
+            background-color: var(--bg-white);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .landing-page h1, .landing-page h2, .landing-page h3, .landing-page h4, .landing-page h5, .landing-page h6 {
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .landing-page .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        /* Buttons */
+        .landing-page .btn-primary-custom {
+            background-color: var(--primary-green);
+            color: var(--text-dark);
+            font-weight: 700;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        .landing-page .btn-primary-custom:hover {
+            background-color: var(--primary-green-hover);
+            color: var(--text-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 212, 67, 0.3);
+        }
+
+        .landing-page .btn-outline-custom {
+            background-color: transparent;
+            color: var(--text-dark);
+            font-weight: 700;
+            border: 2px solid var(--border-color);
+            padding: 10px 24px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .landing-page .btn-outline-custom:hover {
+            border-color: var(--text-dark);
+            background-color: var(--text-dark);
+            color: var(--bg-white);
+        }
+
+        /* Header */
+        .landing-page .navbar {
+            background-color: var(--bg-white);
+            border-bottom: 1px solid var(--border-color);
+            padding-top: 15px;
+            padding-bottom: 15px;
+        }
+
+        .landing-page .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--text-dark);
+        }
+
+        .landing-page .nav-link {
+            color: var(--text-muted);
+            font-weight: 500;
+            margin: 0 10px;
+            transition: color 0.3s;
+        }
+
+        .landing-page .nav-link:hover {
+            color: var(--text-dark);
+        }
+
+        /* Sections */
+        .landing-page section {
+            padding: 80px 0;
+        }
+
+        .landing-page .bg-light-sec {
+            background-color: var(--bg-light);
+        }
+
+        .landing-page .site-logo {
+            width: 100%;
+            max-width: 190px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        /* Hero */
+        .landing-page .hero-section {
+            padding: 100px 0 80px;
+            text-align: center;
+        }
+
+        .landing-page .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            letter-spacing: -1px;
+        }
+
+        .landing-page .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 800px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
+        }
+
+        .landing-page .hero-microcopy {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 20px;
+        }
+
+        /* Cards */
+        .landing-page .feature-card {
+            background-color: var(--bg-white);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
+            height: 100%;
+            transition: transform 0.3s;
+        }
+
+        .landing-page .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.03);
+        }
+
+        .landing-page .feature-icon {
+            font-size: 2rem;
+            color: var(--primary-green);
+            margin-bottom: 20px;
+        }
+
+        /* Solução / Comparação */
+        .landing-page .comparison-box {
+            background-color: var(--bg-white);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+        }
+        
+        .landing-page .list-check li {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .landing-page .list-check li::before {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            top: 2px;
+            color: var(--primary-green);
+        }
+
+        /* Passos */
+        .landing-page .step-number {
+            width: 48px;
+            height: 48px;
+            background-color: var(--bg-light);
+            border: 2px solid var(--primary-green);
+            color: var(--text-dark);
+            font-weight: 800;
+            font-size: 1.25rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        /* Clientes */
+        .landing-page .client-logo-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .landing-page .client-logo-card:hover {
+            border-color: var(--primary-green);
+        }
+
+        .landing-page .client-logo-card img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: grayscale(100%);
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        /* Pricing */
+        .landing-page .pricing-card {
+            background-color: var(--bg-white);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            height: 100%;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .landing-page .pricing-card:hover {
+            border-color: var(--primary-green);
+        }
+
+        .landing-page .pricing-card.recommended {
+            border: 2px solid var(--primary-green);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.05);
+        }
+
+        .landing-page .recommended-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--primary-green);
+            color: var(--text-dark);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .landing-page .price {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 20px 0 10px;
+            letter-spacing: -1px;
+        }
+
+        .landing-page .price span {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        /* FAQ */
+        .landing-page .accordion-button {
+            font-weight: 600;
+            color: var(--text-dark);
+            padding: 20px;
+        }
+
+        .landing-page .accordion-button:not(.collapsed) {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            box-shadow: none;
+        }
+
+        .landing-page .accordion-button:focus {
+            box-shadow: none;
+            border-color: var(--border-color);
+        }
+        
+        .landing-page .accordion-item {
+            border: 1px solid var(--border-color);
+            margin-bottom: 10px;
+            border-radius: 8px !important;
+            overflow: hidden;
+        }
+
+        /* Footer */
+        .landing-page footer {
+            background-color: var(--bg-white);
+            border-top: 1px solid var(--border-color);
+            padding: 60px 0 30px;
+        }
+
+        .landing-page .footer-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 10px;
+            transition: color 0.3s;
+        }
+
+        .landing-page .footer-link:hover {
+            color: var(--primary-green);
+        }
+
+        @media (max-width: 768px) {
+            .landing-page .hero-title {
+                font-size: 2.2rem;
+            }
+            .landing-page section {
+                padding: 60px 0;
+            }
+            .landing-page .site-logo {
+                max-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body class="landing-page">
+
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="site-logo">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item"><a class="nav-link" href="#problema">Problema</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#solucao">Solução</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#funcionalidades">Funcionalidades</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#como-funciona">Como funciona</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#clientes">Clientes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#planos">Planos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
+                    <a href="https://wa.me/5571982729156?text=Ol%C3%A1%21%20Conheci%20o%20Backstage%20Pro%20pelo%20site%20e%20gostaria%20de%20saber%20mais%20sobre%20a%20plataforma%20para%20organizar%20minha%20banda." target="_blank" class="btn-primary-custom">Falar pelo WhatsApp</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <h1 class="hero-title">Organize toda a operação da sua banda em um único lugar.</h1>
+            <p class="hero-subtitle">Agenda, equipe, logística, contratos, financeiro e informações de cada show organizados em uma plataforma desenvolvida exclusivamente para bandas, artistas e produtores musicais.</p>
+            <p class="fw-bold mb-4">Menos mensagens perdidas. Menos retrabalho. Mais controle em cada show.</p>
+            
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+                <a href="https://wa.me/5571982729156?text=Ol%C3%A1%21%20Conheci%20o%20Backstage%20Pro%20pelo%20site%20e%20gostaria%20de%20saber%20mais%20sobre%20a%20plataforma%20para%20organizar%20minha%20banda." target="_blank" class="btn-primary-custom">Falar pelo WhatsApp</a>
+            </div>
+            <p class="hero-microcopy">Shows e usuários ilimitados.</p>
+        </div>
+    </section>
+
+    <!-- Autoridade -->
+    <section class="bg-light-sec border-top border-bottom border-color">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">Criado por quem vive os bastidores da música.</h2>
+                <p class="text-muted mx-auto" style="max-width: 800px; font-size: 1.1rem;">O Backstage Pro nasceu dentro da rotina real de produção de shows. Foi desenvolvido para resolver problemas enfrentados por produtores, empresários, artistas e equipes que precisam organizar agenda, logística, informações, documentos e pagamentos sem depender de mensagens espalhadas e planilhas improvisadas.</p>
+            </div>
+            <div class="row g-4 justify-content-center text-center">
+                <div class="col-6 col-md-3">
+                    <i class="fa-solid fa-calendar-check fs-2 text-dark mb-2"></i>
+                    <h6 class="fw-bold">Agenda organizada</h6>
+                </div>
+                <div class="col-6 col-md-3">
+                    <i class="fa-solid fa-users fs-2 text-dark mb-2"></i>
+                    <h6 class="fw-bold">Equipe alinhada</h6>
+                </div>
+                <div class="col-6 col-md-3">
+                    <i class="fa-solid fa-folder-open fs-2 text-dark mb-2"></i>
+                    <h6 class="fw-bold">Informações centralizadas</h6>
+                </div>
+                <div class="col-6 col-md-3">
+                    <i class="fa-solid fa-briefcase fs-2 text-dark mb-2"></i>
+                    <h6 class="fw-bold">Mais profissionalismo</h6>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problema -->
+    <section id="problema">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">Sua produção ainda depende de mensagens espalhadas no WhatsApp?</h2>
+                <p class="text-muted mx-auto" style="max-width: 800px; font-size: 1.1rem;">Quando a agenda cresce, qualquer informação perdida pode gerar atraso, retrabalho, erro de logística, cobrança errada ou desgaste com a equipe e o contratante.</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card text-center bg-light-sec border-0">
+                        <i class="fa-solid fa-messages feature-icon text-dark"></i>
+                        <h5 class="mb-3">Informações espalhadas</h5>
+                        <p class="text-muted mb-0">Contratos no e-mail, logística no WhatsApp, cachê em planilhas e observações perdidas em conversas antigas.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center bg-light-sec border-0">
+                        <i class="fa-solid fa-users-slash feature-icon text-dark"></i>
+                        <h5 class="mb-3">Integrantes desinformados</h5>
+                        <p class="text-muted mb-0">Perguntas repetidas sobre saída, local, horário, figurino, passagem de som e programação do evento.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center bg-light-sec border-0">
+                        <i class="fa-solid fa-head-side-cough feature-icon text-dark"></i>
+                        <h5 class="mb-3">Produtor sobrecarregado</h5>
+                        <p class="text-muted mb-0">Tempo perdido repassando as mesmas informações e cobrando atenção da equipe.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center bg-light-sec border-0">
+                        <i class="fa-regular fa-calendar-xmark feature-icon text-dark"></i>
+                        <h5 class="mb-3">Falta de controle da agenda</h5>
+                        <p class="text-muted mb-0">Reservas esquecidas, choque de datas e dificuldade para visualizar shows confirmados e datas disponíveis.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center bg-light-sec border-0">
+                        <i class="fa-solid fa-wallet feature-icon text-dark"></i>
+                        <h5 class="mb-3">Falta de controle financeiro</h5>
+                        <p class="text-muted mb-0">Pouca clareza sobre cachês, adiantamentos, pagamentos pendentes, custos e comprovantes.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card text-center bg-light-sec border-0">
+                        <i class="fa-solid fa-triangle-exclamation feature-icon text-dark"></i>
+                        <h5 class="mb-3">Informações esquecidas no dia</h5>
+                        <p class="text-muted mb-0">Detalhes importantes sendo lembrados apenas quando a equipe já está a caminho ou prestes a subir no palco.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Transformação -->
+    <section id="solucao" class="bg-light-sec">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">O Backstage Pro transforma cada show em uma operação organizada.</h2>
+                <p class="text-muted mx-auto" style="max-width: 800px; font-size: 1.1rem;">Cada evento reúne em um único lugar tudo o que o produtor precisa controlar e tudo o que a equipe precisa saber.</p>
+                <div class="d-inline-block mt-3 px-4 py-2 bg-dark text-white rounded-pill fw-semibold">Cada usuário vê apenas o que precisa.</div>
+            </div>
+            
+            <div class="row g-4 align-items-stretch">
+                <div class="col-lg-6">
+                    <div class="comparison-box h-100 border-0 shadow-sm">
+                        <h4 class="mb-4"><i class="fa-solid fa-user-tie text-primary me-2" style="color: #111 !important;"></i> O Produtor vê tudo</h4>
+                        <ul class="list-unstyled list-check">
+                            <li>Cachê e acordos</li>
+                            <li>Dados do contratante</li>
+                            <li>Status dos pagamentos</li>
+                            <li>Contratos e documentos</li>
+                            <li>Logística completa</li>
+                            <li>Contatos</li>
+                            <li>Observações internas</li>
+                            <li>Informações financeiras</li>
+                            <li>Relatórios</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="comparison-box bg-white h-100 border-0 shadow-sm">
+                        <h4 class="mb-4"><i class="fa-solid fa-guitar me-2" style="color: var(--primary-green);"></i> O Integrante vê apenas o necessário</h4>
+                        <ul class="list-unstyled list-check">
+                            <li>Data, cidade e local</li>
+                            <li>Horário de saída</li>
+                            <li>Passagem de som</li>
+                            <li>Horário do show</li>
+                            <li>Transporte</li>
+                            <li>Hospedagem</li>
+                            <li>Figurino</li>
+                            <li>Avisos importantes</li>
+                            <li>Informações liberadas pelo produtor</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Funcionalidades -->
+    <section id="funcionalidades">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">Muito mais que uma agenda de shows.</h2>
+                <p class="text-muted mx-auto" style="max-width: 800px; font-size: 1.1rem;">Uma estrutura completa para organizar a operação antes, durante e depois de cada evento.</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-4 bg-light-sec rounded-3 h-100">
+                        <i class="fa-regular fa-calendar-check fs-3 mb-3" style="color: var(--primary-green);"></i>
+                        <h5 class="fw-bold mb-2">Agenda completa</h5>
+                        <p class="text-muted mb-0 small">Visualize shows confirmados, reservas, datas livres e compromissos em uma única visão.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-4 bg-light-sec rounded-3 h-100">
+                        <i class="fa-solid fa-list-check fs-3 mb-3" style="color: var(--primary-green);"></i>
+                        <h5 class="fw-bold mb-2">Cadastro completo do show</h5>
+                        <p class="text-muted mb-0 small">Centralize contratante, local, horários, contatos, observações e informações importantes.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-4 bg-light-sec rounded-3 h-100">
+                        <i class="fa-solid fa-bus fs-3 mb-3" style="color: var(--primary-green);"></i>
+                        <h5 class="fw-bold mb-2">Logística</h5>
+                        <p class="text-muted mb-0 small">Organize transporte, saída, hospedagem, alimentação, passagem de som e horários.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-4 bg-light-sec rounded-3 h-100">
+                        <i class="fa-solid fa-users-gear fs-3 mb-3" style="color: var(--primary-green);"></i>
+                        <h5 class="fw-bold mb-2">Gestão de equipe</h5>
+                        <p class="text-muted mb-0 small">Cadastre produtores, músicos e integrantes com acesso individual.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-4 bg-light-sec rounded-3 h-100">
+                        <i class="fa-solid fa-key fs-3 mb-3" style="color: var(--primary-green);"></i>
+                        <h5 class="fw-bold mb-2">Permissões por usuário</h5>
+                        <p class="text-muted mb-0 small">O produtor acessa informações completas. O integrante vê apenas o que foi liberado.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-4 bg-light-sec rounded-3 h-100">
+                        <i class="fa-solid fa-money-bill-wave fs-3 mb-3" style="color: var(--primary-green);"></i>
+                        <h5 class="fw-bold mb-2">Financeiro dos shows</h5>
+                        <p class="text-muted mb-0 small">Controle cachê, valores recebidos, pendências, custos e comprovantes.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-4 bg-light-sec rounded-3 h-100">
+                        <i class="fa-solid fa-file-arrow-up fs-3 mb-3" style="color: var(--primary-green);"></i>
+                        <h5 class="fw-bold mb-2">Documentos e arquivos</h5>
+                        <p class="text-muted mb-0 small">Mantenha contratos, riders, comprovantes e arquivos vinculados ao show.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-4 bg-light-sec rounded-3 h-100">
+                        <i class="fa-solid fa-chart-pie fs-3 mb-3" style="color: var(--primary-green);"></i>
+                        <h5 class="fw-bold mb-2">Relatórios</h5>
+                        <p class="text-muted mb-0 small">Tenha uma visão consolidada da agenda, operação e financeiro.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-4 bg-light-sec rounded-3 h-100">
+                        <i class="fa-solid fa-comments fs-3 mb-3" style="color: var(--primary-green);"></i>
+                        <h5 class="fw-bold mb-2">Comunicação centralizada</h5>
+                        <p class="text-muted mb-0 small">Reduza mensagens repetidas e mantenha a equipe alinhada.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-5">
+                <p class="text-muted small">Novos recursos de comunicação e notificações estão em desenvolvimento.</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Diferenciação -->
+    <section class="bg-light-sec border-top border-bottom border-color">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">Desenvolvido exclusivamente para a produção musical.</h2>
+                <p class="text-muted mx-auto" style="max-width: 800px; font-size: 1.1rem;">Planilhas, grupos de WhatsApp, ferramentas de tarefas e sistemas genéricos exigem adaptações. O Backstage Pro já foi pensado para a realidade de shows, bandas e artistas.</p>
+            </div>
+            
+            <div class="row g-4 align-items-stretch">
+                <div class="col-md-6">
+                    <div class="p-5 bg-white border border-color rounded-4 h-100 text-center">
+                        <h4 class="mb-4 text-muted">Ferramentas genéricas</h4>
+                        <ul class="list-unstyled text-start mx-auto" style="max-width: 300px;">
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> exigem configuração</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> misturam informações</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> não entendem a hierarquia da banda</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> não separam produtor e integrante</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> não foram criadas para shows</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-5 bg-white border border-color rounded-4 h-100 text-center">
+                        <h4 class="mb-4 text-dark fw-bold">Backstage Pro</h4>
+                        <ul class="list-unstyled text-start mx-auto" style="max-width: 300px;">
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> pronto para a rotina musical</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> organização por show</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> permissões específicas</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> agenda e logística integradas</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> financeiro separado</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> visão para produtor e integrantes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefícios -->
+    <section>
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">Mais controle para quem produz. Mais clareza para quem sobe ao palco.</h2>
+            </div>
+            
+            <div class="row g-5">
+                <div class="col-md-6">
+                    <div class="p-4 bg-light-sec rounded-3 border-0 h-100">
+                        <h4 class="mb-4 pb-3 border-bottom border-color">Para o Produtor</h4>
+                        <ul class="list-unstyled list-check">
+                            <li>Menos retrabalho</li>
+                            <li>Menos mensagens repetidas</li>
+                            <li>Mais controle da agenda</li>
+                            <li>Mais clareza financeira</li>
+                            <li>Menos risco de erro</li>
+                            <li>Mais profissionalismo com contratantes</li>
+                            <li>Informações centralizadas</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-4 bg-light-sec rounded-3 border-0 h-100">
+                        <h4 class="mb-4 pb-3 border-bottom border-color">Para a Banda</h4>
+                        <ul class="list-unstyled list-check">
+                            <li>Agenda organizada</li>
+                            <li>Menos dúvidas</li>
+                            <li>Melhor comunicação</li>
+                            <li>Horários claros</li>
+                            <li>Logística acessível</li>
+                            <li>Mais segurança no dia do show</li>
+                            <li>Acesso apenas às informações necessárias</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Como funciona -->
+    <section id="como-funciona" class="bg-light-sec border-top border-color">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">Do contrato ao palco em poucos passos.</h2>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-number">1</div>
+                    <h5 class="fw-bold">Cadastre o show</h5>
+                    <p class="text-muted">Adicione data, local, contratante, horários e informações do evento.</p>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-number">2</div>
+                    <h5 class="fw-bold">Organize a operação</h5>
+                    <p class="text-muted">Inclua logística, equipe, transporte, hospedagem, alimentação, financeiro e arquivos.</p>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-number">3</div>
+                    <h5 class="fw-bold">Libere as informações</h5>
+                    <p class="text-muted">Cada integrante recebe acesso apenas ao que precisa saber.</p>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-number">4</div>
+                    <h5 class="fw-bold">Execute com segurança</h5>
+                    <p class="text-muted">No dia do show, equipe e produção sabem onde estar, que horas chegar e o que fazer.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Implantação Assistida -->
+    <section>
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">Você não precisa configurar tudo sozinho.</h2>
+                <p class="text-muted mx-auto" style="max-width: 800px; font-size: 1.1rem;">A implantação inicial é assistida para que sua banda comece a usar o sistema com segurança e rapidez.</p>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="p-5 bg-light-sec rounded-4">
+                        <ol class="fs-5 text-dark fw-medium mb-4" style="line-height: 2;">
+                            <li>Criamos o ambiente da sua banda.</li>
+                            <li>Cadastramos o acesso do produtor.</li>
+                            <li>Orientamos a configuração inicial.</li>
+                            <li>Você cadastra ou convida a equipe.</li>
+                            <li>A produção começa a utilizar o sistema.</li>
+                        </ol>
+                        <p class="text-muted mb-0 fst-italic">O sistema é simples e intuitivo, e você terá orientação sempre que precisar.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Clientes / Portfólio -->
+    <section id="clientes" class="bg-light-sec border-top border-bottom border-color">
+        <div class="container text-center">
+            <h2 class="mb-3">Bandas e artistas que já utilizam o Backstage Pro</h2>
+            <p class="text-muted mx-auto mb-5" style="max-width: 700px; font-size: 1.1rem;">Operações musicais que já estão profissionalizando sua rotina com a plataforma.</p>
+            
+            <div class="row g-4 justify-content-center">
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="client-logo-card">
+                        <img src="{% static 'core/images/clientes/danniel-vieira.png' %}" alt="Danniel Vieira">
+                    </div>
+                </div>
+                <!-- Futuras logos seguirão este mesmo padrão -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Segurança -->
+    <section>
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">Informações organizadas e acessos controlados.</h2>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <i class="fa-solid fa-shield-halved text-primary fs-3 me-3 mt-1" style="color: var(--primary-green) !important;"></i>
+                        <div>
+                            <h5 class="fw-bold">Cada banda possui seu próprio ambiente</h5>
+                            <p class="text-muted small">Os dados de uma banda não se misturam com as de outras.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <i class="fa-solid fa-lock text-primary fs-3 me-3 mt-1" style="color: var(--primary-green) !important;"></i>
+                        <div>
+                            <h5 class="fw-bold">Usuário com acesso individual</h5>
+                            <p class="text-muted small">Cada membro tem o seu próprio login e senha.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <i class="fa-solid fa-eye-slash text-primary fs-3 me-3 mt-1" style="color: var(--primary-green) !important;"></i>
+                        <div>
+                            <h5 class="fw-bold">Produtor no controle</h5>
+                            <p class="text-muted small">O produtor controla o que a equipe e os integrantes podem visualizar.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <i class="fa-solid fa-file-invoice-dollar text-primary fs-3 me-3 mt-1" style="color: var(--primary-green) !important;"></i>
+                        <div>
+                            <h5 class="fw-bold">Isolamento financeiro</h5>
+                            <p class="text-muted small">Integrantes não acessam cachês ou informações financeiras.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <i class="fa-solid fa-folder-closed text-primary fs-3 me-3 mt-1" style="color: var(--primary-green) !important;"></i>
+                        <div>
+                            <h5 class="fw-bold">Documentos vinculados</h5>
+                            <p class="text-muted small">Contratos, comprovantes e documentos ficam vinculados aos respectivos shows.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <i class="fa-solid fa-user-xmark text-primary fs-3 me-3 mt-1" style="color: var(--primary-green) !important;"></i>
+                        <div>
+                            <h5 class="fw-bold">Bloqueio imediato</h5>
+                            <p class="text-muted small">Usuários desativados perdem o acesso à plataforma no mesmo instante.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Planos -->
+    <section id="planos" class="bg-light-sec border-top border-bottom border-color">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">Escolha o plano ideal para sua operação.</h2>
+                <p class="text-muted mx-auto" style="max-width: 800px; font-size: 1.1rem;">Todos os planos incluem shows ilimitados, usuários ilimitados, acesso às funcionalidades disponíveis e implantação assistida.</p>
+            </div>
+            
+            <div class="row g-4 justify-content-center align-items-stretch">
+                <!-- Mensal -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="pricing-card d-flex flex-column">
+                        <h4 class="fw-bold text-dark">Plano Mensal</h4>
+                        <div class="price">R$ 300<span>/mês</span></div>
+                        <p class="text-muted mb-4 mt-2 flex-grow-1">Para quem deseja começar com flexibilidade.</p>
+                        <ul class="list-unstyled text-start mb-4 mx-auto" style="font-size: 0.95rem;">
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> shows ilimitados</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> usuários ilimitados</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> implantação assistida</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> acesso completo ao sistema</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> suporte inicial</li>
+                        </ul>
+                        <a href="https://wa.me/5571982729156?text=Ol%C3%A1%21%20Tenho%20interesse%20no%20Plano%20Mensal%20do%20Backstage%20Pro%2C%20no%20valor%20de%20R%24%20300%20por%20m%C3%AAs%2C%20e%20gostaria%20de%20saber%20mais." target="_blank" class="btn-outline-custom w-100 m-0">Falar pelo WhatsApp</a>
+                    </div>
+                </div>
+                
+                <!-- Semestral -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="pricing-card d-flex flex-column">
+                        <h4 class="fw-bold text-dark">Plano Semestral</h4>
+                        <div class="price">R$ 1.500<span class="d-block fs-6 fw-normal mt-1">pagamento único</span></div>
+                        <p class="text-muted mb-2 mt-2">Equivale a R$ 250 por mês.</p>
+                        <p class="text-success small fw-bold mb-4 flex-grow-1">Economize R$ 300 em relação ao plano mensal.</p>
+                        <ul class="list-unstyled text-start mb-4 mx-auto" style="font-size: 0.95rem;">
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> shows ilimitados</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> usuários ilimitados</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> implantação assistida</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> acesso completo ao sistema</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> suporte inicial</li>
+                        </ul>
+                        <a href="https://wa.me/5571982729156?text=Ol%C3%A1%21%20Tenho%20interesse%20no%20Plano%20Semestral%20do%20Backstage%20Pro%2C%20no%20valor%20de%20R%24%201.500%20em%20pagamento%20%C3%BAnico%2C%20e%20gostaria%20de%20saber%20mais." target="_blank" class="btn-outline-custom w-100 m-0">Falar pelo WhatsApp</a>
+                    </div>
+                </div>
+                
+                <!-- Anual -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="pricing-card recommended d-flex flex-column">
+                        <div class="recommended-badge">Melhor custo-benefício</div>
+                        <h4 class="fw-bold text-dark mt-2">Plano Anual</h4>
+                        <div class="price">R$ 2.400<span class="d-block fs-6 fw-normal mt-1">pagamento único</span></div>
+                        <p class="text-muted mb-2 mt-2">Equivale a R$ 200 por mês.</p>
+                        <p class="text-success small fw-bold mb-4 flex-grow-1">Economize R$ 1.200 em relação ao plano mensal.</p>
+                        <ul class="list-unstyled text-start mb-4 mx-auto" style="font-size: 0.95rem;">
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> shows ilimitados</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> usuários ilimitados</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> implantação assistida</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> acesso completo ao sistema</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> suporte inicial</li>
+                        </ul>
+                        <a href="https://wa.me/5571982729156?text=Ol%C3%A1%21%20Tenho%20interesse%20no%20Plano%20Anual%20do%20Backstage%20Pro%2C%20no%20valor%20de%20R%24%202.400%20em%20pagamento%20%C3%BAnico%2C%20e%20gostaria%20de%20saber%20mais." target="_blank" class="btn-primary-custom w-100 m-0">Falar pelo WhatsApp</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Atendimento -->
+    <section class="border-bottom border-color">
+        <div class="container text-center">
+            <h2 class="mb-4">Implantação assistida para sua produção começar organizada.</h2>
+            <p class="text-muted mx-auto mb-4" style="max-width: 700px; font-size: 1.1rem;">
+                Após a contratação, ajudamos na criação do ambiente da banda, no acesso do produtor e nas primeiras configurações. O sistema é simples e intuitivo, e você poderá tirar dúvidas durante o processo inicial.
+            </p>
+            <a href="https://wa.me/5571982729156?text=Ol%C3%A1%21%20Conheci%20o%20Backstage%20Pro%20pelo%20site%20e%20gostaria%20de%20saber%20mais%20sobre%20a%20plataforma%20para%20organizar%20minha%20banda." target="_blank" class="btn-primary-custom">Conversar pelo WhatsApp</a>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="bg-light-sec">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="mb-3">Dúvidas Frequentes</h2>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="accordion" id="accordionFAQ1">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                    1. O Backstage Pro já está disponível?
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionFAQ1">
+                                <div class="accordion-body text-muted">
+                                    Sim. A plataforma já está disponível para contratação por bandas, artistas e produtores.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    2. Preciso instalar algum aplicativo?
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionFAQ1">
+                                <div class="accordion-body text-muted">
+                                    Não. O Backstage Pro funciona pelo navegador em computadores, tablets e celulares.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                    3. Funciona bem no celular?
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionFAQ1">
+                                <div class="accordion-body text-muted">
+                                    Sim. O sistema possui layout responsivo para uso em smartphones, tablets e computadores.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFour">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                    4. Quantos shows posso cadastrar?
+                                </button>
+                            </h2>
+                            <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionFAQ1">
+                                <div class="accordion-body text-muted">
+                                    Não há limite de shows.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFive">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                                    5. Quantos usuários posso cadastrar?
+                                </button>
+                            </h2>
+                            <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#accordionFAQ1">
+                                <div class="accordion-body text-muted">
+                                    Não há limite de usuários.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="accordion" id="accordionFAQ2">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingSix">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix">
+                                    6. Os integrantes veem os valores de cachê?
+                                </button>
+                            </h2>
+                            <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#accordionFAQ2">
+                                <div class="accordion-body text-muted">
+                                    Não. Informações financeiras são restritas ao produtor e aos usuários autorizados.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingSeven">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven" aria-expanded="false" aria-controls="collapseSeven">
+                                    7. Serve para artista solo com banda?
+                                </button>
+                            </h2>
+                            <div id="collapseSeven" class="accordion-collapse collapse" aria-labelledby="headingSeven" data-bs-parent="#accordionFAQ2">
+                                <div class="accordion-body text-muted">
+                                    Sim. A plataforma atende bandas, artistas solo acompanhados por músicos, produtores e equipes de produção.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingEight">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEight" aria-expanded="false" aria-controls="collapseEight">
+                                    8. Posso guardar contratos e riders?
+                                </button>
+                            </h2>
+                            <div id="collapseEight" class="accordion-collapse collapse" aria-labelledby="headingEight" data-bs-parent="#accordionFAQ2">
+                                <div class="accordion-body text-muted">
+                                    Sim. Documentos e arquivos podem ser organizados e vinculados aos shows.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingNine">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNine" aria-expanded="false" aria-controls="collapseNine">
+                                    9. Como faço para contratar?
+                                </button>
+                            </h2>
+                            <div id="collapseNine" class="accordion-collapse collapse" aria-labelledby="headingNine" data-bs-parent="#accordionFAQ2">
+                                <div class="accordion-body text-muted">
+                                    Clique em um dos botões de WhatsApp da página e fale diretamente com o responsável pelo Backstage Pro.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTen">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTen" aria-expanded="false" aria-controls="collapseTen">
+                                    10. O sistema envia notificações?
+                                </button>
+                            </h2>
+                            <div id="collapseTen" class="accordion-collapse collapse" aria-labelledby="headingTen" data-bs-parent="#accordionFAQ2">
+                                <div class="accordion-body text-muted">
+                                    Recursos adicionais de notificações estão em desenvolvimento. As funcionalidades atualmente disponíveis serão apresentadas durante o atendimento.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Final -->
+    <section class="hero-section border-top border-color">
+        <div class="container">
+            <h2 class="hero-title mb-4">Pronto para profissionalizar a operação da sua banda?</h2>
+            <p class="hero-subtitle">Centralize agenda, equipe, logística, contratos, financeiro e informações dos shows em uma plataforma criada para quem vive os bastidores da música.</p>
+            
+            <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+                <a href="https://wa.me/5571982729156?text=Ol%C3%A1%21%20Conheci%20o%20Backstage%20Pro%20pelo%20site%20e%20gostaria%20de%20saber%20mais%20sobre%20a%20plataforma%20para%20organizar%20minha%20banda." target="_blank" class="btn-primary-custom">Falar pelo WhatsApp</a>
+                <a href="#planos" class="btn-outline-custom">Conhecer os planos</a>
+            </div>
+            <p class="hero-microcopy">Shows e usuários ilimitados em todos os planos.</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <h5 class="fw-bold mb-3">Backstage Pro</h5>
+                    <p class="text-muted mb-4">Plataforma de gestão para bandas, artistas e produtores musicais.</p>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="fw-bold mb-3">Contato</h6>
+                    <p class="text-muted mb-1"><i class="fa-regular fa-envelope me-2"></i> backstagepro.site@gmail.com</p>
+                    <p class="text-muted mb-1"><i class="fa-brands fa-whatsapp me-2"></i> +55 71 98272-9156</p>
+                </div>
+                <div class="col-lg-4">
+                    <h6 class="fw-bold mb-3">Links Úteis</h6>
+                    <a href="/termos-de-uso/" class="footer-link">Termos de Uso</a>
+                    <a href="/politica-de-privacidade/" class="footer-link">Política de Privacidade</a>
+                    <a href="/painel/" class="footer-link">Entrar</a>
+                </div>
+            </div>
+            <div class="border-top border-color mt-5 pt-4 text-center">
+                <p class="text-muted small mb-0">&copy; <span id="current-year"></span> Backstage Pro. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

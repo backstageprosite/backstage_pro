@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if band %}{{ band.name }}{% else %}Backstage Pro{% endif %}</title>
+    
+    {% include 'core/includes/pwa_meta.html' %}
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FullCalendar CSS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+
+    <style>
+        :root {
+            --primary-color: #0f7fb1;
+            --primary-hover: #0b628a;
+        }
+        
+        html, body {
+            font-family: 'Inter', sans-serif;
+            font-size: 16px !important;
+        }
+        
+        /* Oculta opções de dark mode e usa o default do Bootstrap claro */
+        html[data-bs-theme="dark"] .navbar {
+            background-color: #1e1e1e !important;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        html[data-bs-theme="light"] body {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+        html[data-bs-theme="light"] .navbar {
+            background-color: #ffffff !important;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--primary-color) !important;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+
+        html[data-bs-theme="light"] .card {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Ajuste de textos brancos/claros no modo claro para evitar que sumam */
+        html[data-bs-theme="light"] .text-light,
+        html[data-bs-theme="light"] .text-white {
+            color: #212529 !important;
+        }
+        html[data-bs-theme="light"] .btn-outline-light {
+            color: #212529;
+            border-color: #212529;
+        }
+        html[data-bs-theme="light"] .btn-outline-light:hover {
+            background-color: #212529;
+            color: #ffffff;
+        }
+
+        /* Estilos do FullCalendar no Modo Claro */
+        .fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid {
+            border-color: #dee2e6 !important;
+        }
+        .fc .fc-button-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .fc .fc-button-primary:not(:disabled):active, .fc .fc-button-primary:not(:disabled).fc-button-active {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+        .fc-day-today {
+            background-color: rgba(15, 127, 177, 0.15) !important;
+        }
+        .fc-event {
+            cursor: pointer;
+        }
+
+        /* Ajustes de responsividade para Mobile */
+        @media (max-width: 576px) {
+            .modal-dialog {
+                margin: 10px; /* Garante respiro lateral nos modais */
+            }
+            .modal-content {
+                max-height: calc(100vh - 20px);
+                overflow-y: auto; /* Permite rolagem interna em modais muito altos */
+            }
+        }
+        
+        /* Micro-interações premium */
+        .btn, .nav-link, .dropdown-item {
+            transition: all 0.2s ease-in-out;
+        }
+        .table-hover-premium tbody tr {
+            transition: background-color 0.15s ease-in-out;
+        }
+        .table-hover-premium tbody tr:hover {
+            background-color: rgba(15, 127, 177, 0.05);
+        }
+        .card-hover-premium {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08) !important;
+        }
+        
+        /* Toasts mobile responsivo */
+        @media (max-width: 576px) {
+            .toast-container {
+                width: 100%;
+                left: 0;
+                right: 0;
+                padding: 1rem;
+                justify-content: center;
+                align-items: center;
+            }
+            .toast {
+                width: 100%;
+            }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    {% if user.is_authenticated %}
+    <div class="d-flex flex-column flex-lg-row min-vh-100">
+        
+        <!-- Menu Lateral (Sidebar Desktop / Offcanvas Mobile) -->
+        <div class="offcanvas-lg offcanvas-start bg-white shadow-sm flex-shrink-0" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel" style="width: 260px !important; min-width: 260px !important; max-width: 260px !important; flex: 0 0 260px !important; border-right: 1px solid #eaeaea;">
+            <div class="offcanvas-header px-4 py-3 pb-0 d-lg-none justify-content-end">
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
+            </div>
+            
+            <div class="offcanvas-body d-flex flex-column px-3 py-4 overflow-y-auto pt-lg-4">
+                
+                <!-- Logo da Banda Acima do Menu -->
+                <div class="mb-4 px-2 text-center text-lg-start">
+                    <a href="{% if band %}{% url 'calendario' band.slug %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none">
+                        {% if band and band.logo %}
+                            <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="img-fluid w-100" style="border-radius: 8px; object-fit: contain;">
+                        {% else %}
+                            <i class="fa-solid fa-guitar me-2 fs-3 text-primary"></i>
+                            <span class="fs-5 fw-bold text-dark">{% if band %}{{ band.name }}{% else %}Backstage Pro{% endif %}</span>
+                        {% endif %}
+                    </a>
+                </div>
+
+                <ul class="nav nav-pills flex-column mb-auto gap-2">
+
+                    <li class="nav-item">
+                        <a href="{% if band %}{% url 'calendario' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'calendario' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-calendar-days fa-fw me-2 {% if request.resolver_match.url_name != 'calendario' %}opacity-75{% endif %}"></i> Agenda
+                        </a>
+                    </li>
+                    
+                    {% if request.user.is_produtor or request.user.is_superuser %}
+                    <li class="nav-item">
+                        <a href="{% if band %}{% url 'shows_list' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'shows_list' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-microphone-lines fa-fw me-2 {% if request.resolver_match.url_name != 'shows_list' %}opacity-75{% endif %}"></i> Shows
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% if band %}{% url 'usuarios_list' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'usuarios_list' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-users fa-fw me-2 {% if request.resolver_match.url_name != 'usuarios_list' %}opacity-75{% endif %}"></i> Usuários
+                        </a>
+                    </li>
+
+
+                    <li class="nav-item">
+                        <a href="{% if band %}{% url 'contatos_list' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'contatos_list' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-address-book fa-fw me-2 {% if request.resolver_match.url_name != 'contatos_list' %}opacity-75{% endif %}"></i> Banco de Dados
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% if band %}{% url 'relatorios_index' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios_index' or request.resolver_match.url_name == 'relatorio_financeiro' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios_index' and request.resolver_match.url_name != 'relatorio_financeiro' %}opacity-75{% endif %}"></i> Relatórios
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% include 'core/includes/pwa_install.html' %}
+                </ul>
+                
+                {% if request.user.is_produtor or request.user.is_superuser %}
+                <hr class="mt-4 mb-3 text-muted">
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="{% if band %}{% url 'configuracoes' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'configuracoes' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-gear fa-fw me-2 {% if request.resolver_match.url_name != 'configuracoes' %}opacity-75{% endif %}"></i> Configurações
+                        </a>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Área de Conteúdo Principal -->
+        <div class="flex-grow-1 bg-light d-flex flex-column" style="flex: 1; min-width: 0; overflow-x: hidden; max-width: 100%;">
+            <!-- Cabeçalho Superior -->
+            <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm mb-4 py-2 sticky-top">
+                <div class="container-fluid px-4">
+                    <!-- Botão Hamburger para abrir Sidebar no Mobile -->
+                    <button class="navbar-toggler d-lg-none border-0 px-1 me-3 text-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
+                        <i class="fa-solid fa-bars fs-3"></i>
+                    </button>
+                    
+                    <div class="d-none d-lg-block text-muted fw-medium fs-6">
+                        {% if band %}Painel de Controle{% endif %}
+                    </div>
+
+                    <div class="d-flex align-items-center ms-auto">
+                        <span class="text-dark me-3 fw-medium">
+                            <i class="fa-regular fa-circle-user text-primary me-1"></i> Olá, {{ user.username }} 
+                            {% if user.is_produtor %}
+                                <span class="badge bg-primary ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-crown me-1"></i> Produtor</span>
+                            {% else %}
+                                <span class="badge bg-secondary ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-guitar me-1"></i> Integrante</span>
+                            {% endif %}
+                        </span>
+                        {% if band %}
+                            <a href="{% url 'logout' band.slug %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold">
+                                <i class="fa-solid fa-right-from-bracket me-1"></i> Sair
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Miolo da Página (Calendário) -->
+            <main class="container-fluid px-4 px-lg-5 pb-5">
+{% else %}
+    <!-- Layout para tela de Login / Não autenticados -->
+    <div class="container pb-5 mt-5">
+{% endif %}
+
+        {% block content %}{% endblock %}
+
+{% if user.is_authenticated %}
+            </main>
+        </div>
+
+    </div>
+{% else %}
+    </div>
+{% endif %}
+
+    <!-- Django Messages Toasts -->
+    {% if messages %}
+    <div class="toast-container position-fixed top-0 end-0 p-3 mt-5 mt-lg-0" style="z-index: 1100;">
+        {% for message in messages %}
+        <div class="toast align-items-center text-bg-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}primary{% endif %} border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
+            <div class="d-flex">
+                <div class="toast-body fw-medium fs-6">
+                    {% if message.tags == 'error' %}<i class="fa-solid fa-circle-exclamation me-2"></i>
+                    {% elif message.tags == 'success' %}<i class="fa-solid fa-circle-check me-2"></i>
+                    {% elif message.tags == 'warning' %}<i class="fa-solid fa-triangle-exclamation text-dark me-2"></i>
+                    {% else %}<i class="fa-solid fa-circle-info me-2"></i>{% endif %}
+                    {{ message }}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto {% if message.tags == 'warning' %}btn-close-dark{% endif %}" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Tema fixo no modo claro
+        document.documentElement.setAttribute('data-bs-theme', 'light');
+
+        // Auto-fechar sidebar no mobile ao clicar num link
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarMenu = document.getElementById('sidebarMenu');
+            if (sidebarMenu) {
+                const navLinks = sidebarMenu.querySelectorAll('.nav-link');
+                navLinks.forEach(function(link) {
+                    link.addEventListener('click', function() {
+                        if (window.innerWidth < 992) {
+                            const bsOffcanvas = bootstrap.Offcanvas.getInstance(sidebarMenu);
+                            if (bsOffcanvas) {
+                                bsOffcanvas.hide();
+                            }
+                        }
+                    });
+                });
+            }
+
+            // Inicializar Toasts do Bootstrap
+            const toastElList = document.querySelectorAll('.toast');
+            const toastList = [...toastElList].map(toastEl => new bootstrap.Toast(toastEl));
+            toastList.forEach(toast => toast.show());
+
+            // Lógica de Loading nos Botões
+            document.querySelectorAll('.btn-loading').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    const form = btn.closest('form');
+                    
+                    if (!form) {
+                        ativarLoading(btn, "Gerando...");
+                        setTimeout(() => desativarLoading(btn), 3000);
+                        return;
+                    }
+
+                    if (form.checkValidity()) {
+                        ativarLoading(btn, "Processando...");
+                    }
+                });
+            });
+
+            function ativarLoading(btn, texto) {
+                if (!btn.dataset.originalHtml) {
+                    btn.dataset.originalHtml = btn.innerHTML;
+                }
+                const w = btn.offsetWidth;
+                if(w > 0) btn.style.width = w + 'px';
+                btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>${texto}`;
+                btn.classList.add('disabled');
+            }
+
+            function desativarLoading(btn) {
+                if (btn.dataset.originalHtml) {
+                    btn.innerHTML = btn.dataset.originalHtml;
+                    btn.classList.remove('disabled');
+                    btn.style.width = 'auto';
+                }
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Apply money mask to all inputs with class 'money-mask' or name 'value' (if it looks like money)
+    const moneyInputs = document.querySelectorAll('.money-mask, input[name="value"]');
+    moneyInputs.forEach(input => {
+        if (input.type === 'number' || input.type === 'text') {
+            input.type = "text";
+            
+            if (input.value && !input.value.includes('R$')) {
+                // Parse correctly depending on what's already there
+                // If it already has dots as thousand separators, it might be tricky, but assuming it comes from backend as 50000.00
+                let raw_val = input.value;
+                if(raw_val.includes(',') && !raw_val.includes('.')) {
+                    raw_val = raw_val.replace(',', '.');
+                }
+                // If it has both dot and comma (e.g. 50.000,00) it's already formatted
+                if (!input.value.includes(',') || input.value.split(',')[1].length !== 2) {
+                    let val = parseFloat(raw_val);
+                    if (!isNaN(val)) {
+                        input.value = val.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    }
+                }
+            }
+            
+            input.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if(value === '') {
+                    e.target.value = '';
+                    return;
+                }
+                value = (parseInt(value, 10) / 100).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                e.target.value = value;
+            });
+
+            let form = input.closest('form');
+            if (form) {
+                // Avoid binding multiple times if already bound
+                if (!form.dataset.maskBound) {
+                    form.addEventListener('submit', function() {
+                        const allMoneyInputs = form.querySelectorAll('.money-mask, input[name="value"]');
+                        allMoneyInputs.forEach(inp => {
+                            inp.value = inp.value.replace(/\./g, '').replace(',', '.');
+                        });
+                    });
+                    form.dataset.maskBound = "true";
+                }
+            }
+        }
+    });
+});
+</script>
+
+</body>
+</html>

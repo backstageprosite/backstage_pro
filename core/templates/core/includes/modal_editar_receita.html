@@ -1,0 +1,66 @@
+<!-- Modal Editar Receita -->
+                                    <div class="modal fade text-start text-wrap" id="modalEditarReceita-{{payment.id}}" tabindex="-1" aria-hidden="true" style="white-space: normal;">
+                                      <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                          <div class="modal-header bg-success text-white">
+                                            <h5 class="modal-title"><i class="fa-solid fa-pencil me-2"></i> Editar Receita</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                          </div>
+                                          <div class="modal-body">
+                                            <form method="post" action="{% url 'payment_edit' band.slug payment.id %}?next={{ request.resolver_match.url_name }}" enctype="multipart/form-data">
+                                                {% csrf_token %}
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label fw-bold">Descrição</label>
+                                                        <input type="text" name="description" class="form-control" value="{{ payment.description }}" required>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label fw-bold">Valor (R$)</label>
+                                                        <input type="number" step="0.01" name="value" class="form-control" value="{{ payment.value|stringformat:'.2f' }}" required>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label fw-bold">Data Prevista</label>
+                                                        <input type="date" name="expected_date" class="form-control" value="{{ payment.expected_date|date:'Y-m-d' }}">
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label fw-bold">Data</label>
+                                                        <input type="date" name="receipt_date" class="form-control" value="{{ payment.receipt_date|date:'Y-m-d' }}">
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-12 mb-3">
+                            <label class="form-label fw-bold">Forma de Pagamento</label>
+                                                        <select name="payment_method" class="form-control" required>
+                                                            <option value="PIX" {% if payment.payment_method == 'PIX' %}selected{% endif %}>Pix</option>
+                                                            <option value="TRANSFERENCIA" {% if payment.payment_method == 'TRANSFERENCIA' %}selected{% endif %}>Transferência</option>
+                                                            <option value="DINHEIRO" {% if payment.payment_method == 'DINHEIRO' %}selected{% endif %}>Dinheiro</option>
+                                                            <option value="CARTAO" {% if payment.payment_method == 'CARTAO' %}selected{% endif %}>Cartão</option>
+                                                            <option value="BOLETO" {% if payment.payment_method == 'BOLETO' %}selected{% endif %}>Boleto</option>
+                                                            <option value="CHEQUE" {% if payment.payment_method == 'CHEQUE' %}selected{% endif %}>Cheque</option>
+                                                            <option value="OUTRO" {% if payment.payment_method == 'OUTRO' %}selected{% endif %}>Outro</option>
+                                                        </select>
+                                                    </div>
+                                                    
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-12 mb-3">
+                                                        <label class="form-label fw-bold">Observações</label>
+                                                        <textarea name="observations" class="form-control" rows="2">{{ payment.observations|default_if_none:'' }}</textarea>
+                                                    </div>
+                                                    <div class="col-md-12 mb-3">
+                                                        <label class="form-label fw-bold">Atualizar Arquivo (Opcional)</label>
+                                                        <input type="file" name="file" class="form-control">
+                                                    </div>
+                                                </div>
+                                                <div class="text-end mt-2">
+                                                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                                                        <i class="bi bi-check-circle me-1"></i> Atualizar Receita
+                                                    </button>
+                                                </div>
+                                            </form>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>

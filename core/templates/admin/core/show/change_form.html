@@ -1,0 +1,32 @@
+{% extends "admin/change_form.html" %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    {% if original.pk %}
+    <li>
+        <a href="/{{ original.band.slug }}/show/{{ original.pk }}/pdf/" target="_blank" style="background-color: #0f7fb1; color: white; border-radius: 4px; padding: 5px 10px; text-transform: none; font-weight: bold; border: none;">
+            📄 Gerar PDF (Versão Banda)
+        </a>
+    </li>
+    {% endif %}
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+    {{ block.super }}
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var changelistUrl = "{% url 'admin:core_show_changelist' %}";
+            var submitRows = document.querySelectorAll('.submit-row');
+            
+            submitRows.forEach(function(row) {
+                var btn = document.createElement('a');
+                btn.href = changelistUrl;
+                btn.textContent = "Voltar sem salvar";
+                btn.className = "closelink";
+                
+                // Adiciona o botão no final da linha de botões
+                row.appendChild(btn);
+            });
+        });
+    </script>
+{% endblock %}

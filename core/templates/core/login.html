@@ -1,0 +1,45 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="text-center mb-4">
+            {% if band and band.logo %}
+                <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="img-fluid mb-3" style="max-height: 200px;">
+            {% else %}
+                <h1 class="text-primary"><i class="fa-solid fa-guitar"></i> {% if band %}{{ band.name }}{% else %}Backstage Pro{% endif %}</h1>
+            {% endif %}
+            <p class="text-muted">Acesso restrito ao sistema</p>
+        </div>
+        
+        <div class="card p-4 shadow-sm border-0 card-hover-premium" style="border-radius: 12px;">
+            <div class="card-body p-sm-3">
+                <h4 class="card-title text-center mb-4 fw-bold">Entrar</h4>
+                
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger p-2 fs-6">
+                        Usuário ou senha incorretos.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-4">
+                        <label for="id_username" class="form-label fw-medium text-muted small text-uppercase">Usuário</label>
+                        <input type="text" name="username" class="form-control form-control-lg bg-light" id="id_username" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="id_password" class="form-label fw-medium text-muted small text-uppercase">Senha</label>
+                        <input type="password" name="password" class="form-control form-control-lg bg-light" id="id_password" required>
+                    </div>
+                    <div class="d-flex justify-content-end mb-4">
+                        <a href="{% url 'password_reset' %}?band={{ band.slug }}" class="text-decoration-none small text-primary fw-medium">Esqueci minha senha</a>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-loading w-100 fw-bold py-3 text-uppercase shadow-sm" style="letter-spacing: 1px;">Entrar <i class="fa-solid fa-arrow-right ms-2"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

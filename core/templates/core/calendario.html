@@ -1,0 +1,483 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4 gap-3">
+    <h2 class="mb-0 text-uppercase fw-bold text-center text-lg-start agenda-title">Agenda de Shows - {{ band.name }}</h2>
+    
+    {% if request.user.is_produtor or request.user.is_superuser %}
+    <div class="d-flex flex-wrap justify-content-center justify-content-lg-end gap-2 action-buttons-container">
+        <!-- Novo Show -->
+        <a href="{% url 'shows_add' band.slug %}" class="btn btn-primary rounded-pill px-4 py-2 fw-bold d-flex align-items-center shadow-sm action-btn-mobile">
+            <i class="fa-solid fa-plus me-2"></i> <span>Novo Show</span>
+        </a>
+        
+        
+        <!-- Exportar PDF -->
+        <button type="button" class="btn btn-dark rounded-pill shadow-sm px-4 py-2 fw-bold d-flex align-items-center transition-hover action-btn-mobile" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
+            <i class="fa-solid fa-file-pdf me-2 fs-5"></i> <span>PDF Agenda</span>
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .transition-hover { transition: all 0.2s ease; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,.15)!important; }
+    
+    @media (max-width: 768px) {
+        .agenda-title {
+            white-space: nowrap;
+            font-size: clamp(13px, 4.2vw, 20px) !important;
+            line-height: 1.1;
+            text-align: center;
+            max-width: 100%;
+            overflow: visible;
+        }
+        .action-buttons-container {
+            flex-wrap: nowrap !important;
+            gap: 4px !important;
+            width: 100%;
+            justify-content: center;
+        }
+        .action-btn-mobile {
+            padding: 6px 6px !important;
+            font-size: 0.65rem !important;
+            white-space: nowrap !important;
+            flex: 1 1 auto;
+            justify-content: center;
+            align-items: center;
+        }
+        .action-btn-mobile i {
+            margin-right: 4px !important;
+            font-size: 0.8rem !important;
+        }
+        .action-btn-mobile span {
+            display: inline-block;
+        }
+    }
+</style>
+
+<div class="card p-4 mb-4 shadow-sm border-0" style="border-radius: 12px;">
+    <div class="card-body">
+        <style>
+            /* Capitaliza o nome do Mês (Ex: "julho" vira "Julho") */
+            .fc-toolbar-title {
+                text-transform: capitalize !important;
+                font-weight: 700;
+                color: #333;
+            }
+            /* Nome completo do dia da semana em Maiúsculo (Ex: DOMINGO) */
+            .fc-col-header-cell-cushion {
+                text-transform: uppercase !important;
+                text-decoration: none !important;
+                color: var(--primary-color) !important;
+                padding: 10px 0;
+                font-size: 0.85rem;
+            }
+            
+            /* Melhorias nos Eventos do Calendário */
+            .fc-event {
+                border-radius: 6px !important;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                border: none !important;
+                padding: 2px 4px;
+            }
+            .fc-event:hover {
+                transform: scale(1.02);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+                z-index: 5 !important;
+            }
+            .fc-event-title {
+                font-weight: 600;
+            }
+
+            /* Responsividade Mobile para o Calendário */
+            @media (max-width: 768px) {
+                .fc-header-toolbar {
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                .fc-toolbar-title {
+                    font-size: 1.4rem !important;
+                }
+                .fc-col-header-cell-cushion {
+                    font-size: 0.7rem !important;
+                    padding: 6px 0 !important;
+                }
+                .fc-daygrid-day-number {
+                    font-size: 0.8rem !important;
+                    padding: 2px !important;
+                }
+                .fc-event {
+                    padding: 1px 2px;
+                }
+                .fc-event-title {
+                    font-size: 0.65rem !important;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+            }
+
+            /* --- Melhorias da Visualização de Agenda (List View) --- */
+            /* Ocultar a coluna de tempo/all-day */
+            .fc-list-event-time {
+                display: none !important;
+            }
+            
+            /* Tabela geral sem bordas pesadas */
+            .fc-list-table, .fc-list {
+                border: none !important;
+            }
+
+            /* Cabeçalho do Dia (Data) */
+            .fc-list-day th {
+                background: transparent !important;
+                border: none !important;
+                padding: 1.5rem 0 0.5rem 0 !important;
+            }
+            
+            /* Container interno do cabeçalho do Dia */
+            .fc-list-day-cushion {
+                background-color: #f4f6f9 !important;
+                padding: 12px 20px !important;
+                border-radius: 8px !important;
+                display: flex !important;
+                justify-content: flex-start !important;
+                align-items: center !important;
+                border: 1px solid #e9ecef !important;
+            }
+            
+            /* Textos do cabeçalho do Dia (2 de julho e Quinta-feira) */
+            .fc-list-day-text, .fc-list-day-side-text {
+                color: #495057 !important;
+                font-weight: 600 !important;
+                text-decoration: none !important;
+                pointer-events: none !important; /* Remove link click behaviour */
+            }
+            
+            .fc-list-day-text::after {
+                content: "-";
+                margin: 0 8px;
+                color: #6c757d;
+                font-weight: 600;
+            }
+            
+            .fc-list-day-side-text {
+                text-transform: capitalize !important;
+            }
+            
+            /* Linha do Evento / Show */
+            .fc-list-event td {
+                padding: 16px 12px !important;
+                background-color: #ffffff !important;
+                border: none !important;
+                border-bottom: 1px solid #f1f3f5 !important;
+                cursor: pointer !important;
+                transition: background-color 0.2s ease !important;
+            }
+            .fc-list-event:hover td {
+                background-color: #f8f9fa !important;
+            }
+            
+            /* Título do Evento / Show */
+            .fc-list-event-title {
+                font-weight: 700 !important;
+                color: #2b3035 !important;
+                font-size: 1.05rem !important;
+            }
+            .fc-list-event-title a {
+                color: inherit !important;
+                text-decoration: none !important;
+            }
+            
+            /* Ajustes Mobile para Agenda */
+            @media (max-width: 768px) {
+                .fc-list-day-cushion {
+                    padding: 10px 15px !important;
+                }
+                .fc-list-event-title {
+                    white-space: normal !important;
+                    font-size: 0.95rem !important;
+                }
+                .fc-list-event td {
+                    padding: 14px 10px !important;
+                }
+            }
+        </style>
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes do Show -->
+<div class="modal fade" id="showModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold" id="modalShowTitle">Nome do Evento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3" id="modalShowStatus"></div>
+        
+        <div class="d-flex mb-2">
+            <div class="me-3 text-primary" style="width: 20px; text-align: center;"><i class="fa-regular fa-calendar"></i></div>
+            <div><strong id="modalShowDate"></strong></div>
+        </div>
+        
+        <div class="d-flex mb-2">
+            <div class="me-3 text-primary" style="width: 20px; text-align: center;"><i class="fa-solid fa-location-dot"></i></div>
+            <div>
+                <span id="modalShowCity" class="fw-semibold"></span><br>
+                <small id="modalShowVenue" class="text-muted"></small>
+            </div>
+        </div>
+        
+        <div class="d-flex mb-2">
+            <div class="me-3 text-primary" style="width: 20px; text-align: center;"><i class="fa-regular fa-clock"></i></div>
+            <div>
+                <small class="text-muted d-block">Saída: <span id="modalShowDeparture" class="text-dark fw-medium"></span></small>
+                <small class="text-muted d-block">Show: <span id="modalShowTime" class="text-dark fw-medium"></span></small>
+            </div>
+        </div>
+        
+        <div id="modalShowNotesWrapper" class="mt-3 p-3 bg-light rounded d-none">
+            <small class="fw-bold d-block mb-1">Observações para a Banda:</small>
+            <small id="modalShowNotes" class="text-muted"></small>
+        </div>
+
+      </div>
+      <div class="modal-footer border-top-0 pt-0 w-100" style="display: grid; grid-template-columns: {% if request.user.is_produtor or request.user.is_superuser %}1fr 1fr{% else %}1fr{% endif %}; gap: 0.5rem;">
+        <a href="#" id="modalBtnDetails" class="btn btn-outline-success rounded-pill btn-sm w-100 fw-bold">Ver Detalhes</a>
+        
+        {% if request.user.is_produtor or request.user.is_superuser %}
+        <a href="#" id="modalBtnEdit" class="btn btn-outline-primary rounded-pill btn-sm w-100 fw-bold">Editar</a>
+        <a href="#" id="modalBtnPdf" target="_blank" class="btn btn-outline-dark rounded-pill btn-sm w-100 fw-bold"><i class="fa-solid fa-file-pdf me-1"></i> PDF Show</a>
+        <button type="button" class="btn btn-outline-danger rounded-pill btn-sm w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#modalDeleteShowCalendar" onclick="document.getElementById('showModal').querySelector('.btn-close').click();">Excluir</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Excluir Show do Calendário -->
+{% if request.user.is_produtor or request.user.is_superuser %}
+<div class="modal fade" id="modalDeleteShowCalendar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i> Excluir Show</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <i class="fa-solid fa-trash text-danger" style="font-size: 3rem;"></i>
+                </div>
+                <h5 class="fw-bold mb-3">Tem certeza que deseja excluir<br>este show?</h5>
+                <p class="text-muted mb-0">Essa ação não pode ser desfeita. Todos os dados associados a este show serão perdidos.</p>
+            </div>
+            <div class="modal-footer bg-light border-0 justify-content-center">
+                <button type="button" class="btn btn-light border fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formDeleteShowCalendar" method="POST" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger fw-bold px-4">Sim, Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+</div>
+
+<!-- Modal Exportar PDF -->
+<div class="modal fade" id="exportPdfModal" tabindex="-1" aria-labelledby="exportPdfModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold" id="exportPdfModalLabel"><i class="fa-solid fa-file-pdf text-danger me-2"></i> Exportar Agenda</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{% url 'agenda_pdf' band.slug %}" method="GET" target="_blank">
+          <div class="modal-body">
+            <p class="text-muted small mb-2">Filtre os shows por período (opcional):</p>
+            <div class="row mb-3">
+                <div class="col-6">
+                    <label for="data_inicio_pdf" class="form-label small fw-bold text-muted mb-1">De:</label>
+                    <input type="date" class="form-control form-control-sm" name="data_inicio" id="data_inicio_pdf">
+                </div>
+                <div class="col-6">
+                    <label for="data_fim_pdf" class="form-label small fw-bold text-muted mb-1">Até:</label>
+                    <input type="date" class="form-control form-control-sm" name="data_fim" id="data_fim_pdf">
+                </div>
+            </div>
+            
+            <p class="text-muted small mb-2">Selecione os status dos eventos que deseja incluir no PDF:</p>
+            
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="status" value="CONFIRMADO" id="chkConfirmado" checked>
+              <label class="form-check-label fw-bold" for="chkConfirmado">
+                <span class="badge bg-success me-1" style="font-size: 0.8rem;">CONFIRMADO</span>
+              </label>
+            </div>
+            
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="status" value="CONCLUIDO" id="chkConcluido">
+              <label class="form-check-label fw-bold" for="chkConcluido">
+                <span class="badge bg-secondary me-1" style="font-size: 0.8rem;">CONCLUÍDO</span>
+              </label>
+            </div>
+            
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="status" value="PRE_RESERVADO" id="chkReserva">
+              <label class="form-check-label fw-bold" for="chkReserva">
+                <span class="badge bg-warning text-dark me-1" style="font-size: 0.8rem;">RESERVA</span>
+              </label>
+            </div>
+            
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" name="status" value="CANCELADO" id="chkCancelado">
+              <label class="form-check-label fw-bold" for="chkCancelado">
+                <span class="badge bg-danger me-1" style="font-size: 0.8rem;">CANCELADO</span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer border-top-0 pt-0 flex-column flex-md-row w-100">
+            <button type="button" class="btn btn-light rounded-pill px-4 w-100 mb-2 mb-md-0" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold w-100">Gerar PDF</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'pt-br',
+            firstDay: 1, /* Começa na Segunda-feira (0 = Domingo) */
+            dayHeaderFormat: window.innerWidth < 768 ? { weekday: 'short' } : { weekday: 'long' },
+            aspectRatio: 1.45,
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,listMonth'
+            },
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                list: 'Lista'
+            },
+            windowResize: function(arg) {
+                if (window.innerWidth < 768) {
+                    calendar.setOption('dayHeaderFormat', { weekday: 'short' });
+                } else {
+                    calendar.setOption('dayHeaderFormat', { weekday: 'long' });
+                }
+            },
+            events: [
+                {% for show in shows %}
+                {
+                    title: '{{ show.title|escapejs }}',
+                    start: '{{ show.date|date:"Y-m-d" }}',
+                    url: '{% url "show_detail" band.slug show.id %}',
+                    backgroundColor: '{% if show.status == "CONFIRMADO" %}#198754{% elif show.status == "CANCELADO" %}#dc3545{% elif show.status == "PRE_RESERVADO" %}#ffc107{% else %}#0f7fb1{% endif %}',
+                    borderColor: '{% if show.status == "CONFIRMADO" %}#198754{% elif show.status == "CANCELADO" %}#dc3545{% elif show.status == "PRE_RESERVADO" %}#ffc107{% else %}#0f7fb1{% endif %}',
+                    textColor: '{% if show.status == "PRE_RESERVADO" %}#000000{% else %}#ffffff{% endif %}',
+                    
+                    // Dados extras para o tooltip e modal
+                    extendedProps: {
+                        eventName: '{{ show.event_name|default:""|escapejs }}',
+                        city: '{{ show.city|default:"Não informada"|escapejs }}',
+                        venue: '{{ show.venue|default:""|escapejs }}',
+                        departure_time: '{{ show.departure_time|time:"H:i"|default:"-" }}',
+                        soundcheck_time: '{{ show.soundcheck_time|time:"H:i"|default:"-" }}',
+                        show_time: '{{ show.show_time|time:"H:i"|default:"-" }}',
+                        statusDisplay: '{{ show.get_status_display|escapejs }}',
+                        statusColor: '{% if show.status == "CONFIRMADO" %}success{% elif show.status == "CANCELADO" %}danger{% elif show.status == "PRE_RESERVADO" %}warning{% else %}primary{% endif %}',
+                        notes: '{{ show.band_notes|truncatechars:100|escapejs }}',
+                        dateDisplay: '{{ show.date|date:"d/m/Y" }}',
+                        editUrl: '{% url "shows_edit" band.slug show.id %}',
+                        pdfUrl: '{% url "show_pdf" band.slug show.id %}',
+                        deleteUrl: '{% url "shows_delete" band.slug show.id %}'
+                    }
+                },
+                {% endfor %} 
+            ],
+            eventDidMount: function(info) {
+                var today = new Date();
+                today.setHours(0,0,0,0);
+                // Se a data do show for antes de hoje (já aconteceu)
+                if (info.event.start < today) {
+                    info.el.style.opacity = '0.5'; // Deixa o evento mais transparente
+                    info.el.style.filter = 'grayscale(30%)'; // Tira um pouco da cor para não chamar atenção
+                }
+
+                // Customiza título na list view se houver nome do evento
+                if (info.view.type === 'listMonth' || info.view.type === 'listWeek') {
+                    if (info.event.extendedProps.eventName) {
+                        var titleEl = info.el.querySelector('.fc-list-event-title a');
+                        if (titleEl) {
+                            titleEl.innerHTML = titleEl.innerHTML + ' <span style="font-size: 0.75rem; opacity: 0.65; font-weight: 500; margin-left: 6px;">&bull; ' + info.event.extendedProps.eventName + '</span>';
+                        }
+                    }
+                }
+            },
+            eventClick: function(info) {
+                info.jsEvent.preventDefault(); // Previne ir direto para a URL da página de detalhes
+                
+                // Preenche os dados do modal
+                document.getElementById('modalShowTitle').textContent = info.event.title;
+                document.getElementById('modalShowStatus').innerHTML = '<span class="badge bg-' + info.event.extendedProps.statusColor + ' px-3 py-2">' + info.event.extendedProps.statusDisplay + '</span>';
+                document.getElementById('modalShowDate').textContent = info.event.extendedProps.dateDisplay;
+                document.getElementById('modalShowCity').textContent = info.event.extendedProps.city;
+                
+                var venueEl = document.getElementById('modalShowVenue');
+                if (info.event.extendedProps.venue) {
+                    venueEl.textContent = info.event.extendedProps.venue;
+                    venueEl.style.display = 'inline';
+                } else {
+                    venueEl.style.display = 'none';
+                }
+                
+                document.getElementById('modalShowDeparture').textContent = info.event.extendedProps.departure_time;
+                document.getElementById('modalShowTime').textContent = info.event.extendedProps.show_time;
+                
+                if (info.event.extendedProps.notes) {
+                    document.getElementById('modalShowNotesWrapper').classList.remove('d-none');
+                    document.getElementById('modalShowNotes').textContent = info.event.extendedProps.notes;
+                } else {
+                    document.getElementById('modalShowNotesWrapper').classList.add('d-none');
+                }
+                
+                document.getElementById('modalBtnDetails').href = info.event.url;
+                
+                var btnEdit = document.getElementById('modalBtnEdit');
+                if (btnEdit) {
+                    btnEdit.href = info.event.extendedProps.editUrl;
+                }
+                
+                var btnPdf = document.getElementById('modalBtnPdf');
+                if (btnPdf) {
+                    btnPdf.href = info.event.extendedProps.pdfUrl;
+                }
+                
+                var formDelete = document.getElementById('formDeleteShowCalendar');
+                if (formDelete) {
+                    formDelete.action = info.event.extendedProps.deleteUrl;
+                }
+                
+                // Exibe o modal
+                var myModal = new bootstrap.Modal(document.getElementById('showModal'));
+                myModal.show();
+            }
+        });
+        calendar.render();
+    });
+</script>
+{% endblock %}

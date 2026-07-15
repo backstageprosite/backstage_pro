@@ -1,0 +1,45 @@
+
+<!-- Modal Editar Custo Equipe -->
+<div class="modal fade text-start text-wrap" id="modalEditarCustoEquipe-{{cost.id}}" tabindex="-1" aria-hidden="true" style="white-space: normal;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-primary">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-pencil me-2"></i> Editar Custo com Equipe</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{% url 'teamcost_edit' band.slug cost.id %}?next={{ request.resolver_match.url_name }}">
+          {% csrf_token %}
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Nome do Integrante</label>
+              <input type="text" name="name" class="form-control" value="{{ cost.name }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Data</label>
+              <input type="date" name="date" class="form-control" value="{{ cost.date|date:'Y-m-d' }}">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Função</label>
+              <input type="text" name="role" class="form-control" value="{{ cost.role|default:'' }}">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Valor (R$)</label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                <input type="text" name="value" class="form-control money-mask" value="{{ cost.value|stringformat:'f'|default:'' }}" required>
+              </div>
+            </div>
+          </div>
+          <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-primary rounded-pill fw-bold py-2">
+              <i class="bi bi-check-circle me-1"></i> Salvar Alterações
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,33 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Excluir Recebimento - {{ band.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Confirmar Exclusão</h5>
+            </div>
+            <div class="card-body text-center py-4">
+                <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                <h4 class="mt-3">Você tem certeza?</h4>
+                <p class="text-muted">Deseja realmente excluir o recebimento <strong>"{{ payment.description }}"</strong> no valor de <strong>R$ {{ payment.value }}</strong>?</p>
+                <p class="text-danger small">Esta ação não pode ser desfeita e afetará o saldo recebido do show.</p>
+                
+                <form method="post" class="mt-4" action="{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-3">
+                        {% if request.GET.next == 'financeiro' %}
+                        <a href="{% url 'show_finance_detail' band.slug payment.show.id %}" class="btn btn-secondary">Cancelar</a>
+                        {% else %}
+                        <a href="{% url 'show_detail' band.slug payment.show.id %}" class="btn btn-secondary">Cancelar</a>
+                        {% endif %}
+                        <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

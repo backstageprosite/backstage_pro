@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>[{% now "H:i_d-m-Y" %}] - AGENDA {{ band.name|upper }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+            color: #000;
+            font-size: 10px; /* Fonte base reduzida para 10px */
+        }
+        .pdf-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header-logo {
+            max-height: 90px; /* Logo maior */
+            margin-bottom: 10px;
+        }
+        .page-title {
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .month-header {
+            background-color: #f8f9fa;
+            padding: 5px 10px;
+            border-left: 4px solid #000;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: capitalize;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+        .show-item {
+            border-bottom: 1px solid #eee;
+            padding: 5px 0; /* Padding reduzido */
+            page-break-inside: avoid;
+        }
+        .show-item:last-child {
+            border-bottom: none;
+        }
+        .show-date {
+            font-weight: bold;
+            min-width: 100px;
+            font-size: 10px;
+        }
+        .show-title {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .show-details {
+            font-size: 9px;
+            margin-bottom: 0;
+        }
+        .badge {
+            font-size: 8px;
+            padding: 3px 5px;
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .past-show {
+            opacity: 0.5;
+        }
+        .past-show .show-title {
+            color: #555;
+        }
+        @media print {
+            .bg-success { background-color: #198754 !important; color: white !important; }
+            .bg-danger { background-color: #dc3545 !important; color: white !important; }
+            .bg-warning { background-color: #ffc107 !important; color: black !important; }
+            .bg-secondary { background-color: #6c757d !important; color: white !important; }
+
+            .no-print { display: none !important; }
+            body { padding: 0; margin: 0; }
+            .pdf-container { padding: 0; max-width: 100%; }
+            @page { margin: 1cm; } /* Margens menores na página A4 */
+        }
+    </style>
+</head>
+<body onload="setTimeout(function(){ window.print(); }, 500);">
+    <div class="pdf-container">
+        <!-- Cabeçalho com Logo -->
+        <div class="text-start mb-4 d-flex align-items-center">
+            {% if band.logo %}
+                <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="header-logo me-4">
+            {% else %}
+                <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="header-logo me-4" style="max-height: 50px;">
+            {% endif %}
+            <div>
+                <div class="page-title">Agenda de Shows - {{ band.name }}</div>
+                <div class="text-muted" style="font-size: 10px;">Gerado em {% now "d/m/Y \à\s H:i" %}</div>
+            </div>
+        </div>
+
+        <!-- Agrupamento por Mês e Ano -->
+        {% regroup shows by date|date:"F Y" as shows_by_month %}
+        
+        {% for month in shows_by_month %}
+            <h4 class="month-header">{{ month.grouper }}</h4>
+            
+            {% for show in month.list %}
+                <div class="show-item d-flex align-items-center {% if show.date < today %}past-show{% endif %}">
+                    <div class="show-date">
+                        {{ show.date|date:"d/m/Y (D)" }}
+                        {% if show.time_show %}
+                            <br><small class="text-muted"><i class="fa-regular fa-clock"></i> {{ show.time_show|time:"H:i" }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="ms-3">
+                        <div class="show-title">{{ show.title }}</div>
+                        <p class="show-details text-muted">
+                            <i class="fa-solid fa-location-dot"></i> {{ show.city }} - {{ show.state }} 
+                            {% if show.venue %}| {{ show.venue }}{% endif %}
+                        </p>
+                    </div>
+                    <div class="ms-auto text-end">
+                        {% if show.status == 'CANCELADO' %}
+                            <span class="badge bg-danger">CANCELADO</span>
+                        {% elif show.status == 'PRE_RESERVADO' %}
+                            <span class="badge bg-warning text-dark">RESERVA</span>
+                        {% elif show.status == 'CONFIRMADO' %}
+                            {% if show.date < today %}
+                                <span class="badge bg-secondary">CONCLUÍDO</span>
+                            {% else %}
+                                <span class="badge bg-success">CONFIRMADO</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p>Nenhum show cadastrado neste mês.</p>
+            {% endfor %}
+            
+        {% empty %}
+            <p class="text-center mt-5 text-muted">Nenhum show cadastrado na agenda.</p>
+        {% endfor %}
+        
+        <!-- Botões de Ação (não aparecem na impressão) -->
+        <div class="text-center mt-5 no-print">
+            <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print me-2"></i> Imprimir / Salvar PDF</button>
+            <button onclick="window.close()" class="btn btn-outline-secondary ms-2">Fechar aba</button>
+        </div>
+    </div>
+</body>
+</html>

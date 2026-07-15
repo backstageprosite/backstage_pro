@@ -1,0 +1,17 @@
+{% load pwa_tags static %}
+
+<meta name="theme-color" content="#6BD443">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+{% if band %}
+    <link rel="manifest" href="{% url 'manifest' band.slug %}">
+    <meta name="apple-mobile-web-app-title" content="{% get_pwa_short_name band %}">
+    <link rel="apple-touch-icon" href="{% url 'band_icon' band.slug 'apple-touch-icon.png' %}?v={% get_pwa_icon_version band %}">
+    <script id="pwa-register-script" src="{% static 'core/pwa/pwa-register.js' %}" data-sw-url="{% url 'band_sw' band.slug %}" data-sw-scope="/{{ band.slug }}/" defer></script>
+{% elif request.resolver_match.namespace == 'admin_painel' %}
+    <link rel="manifest" href="{% url 'admin_painel:manifest' %}">
+    <meta name="apple-mobile-web-app-title" content="Backstage Pro">
+    <link rel="apple-touch-icon" href="{% static 'core/pwa/icons/backstage-apple-touch-icon.png' %}?v=v1">
+    <script id="pwa-register-script" src="{% static 'core/pwa/pwa-register.js' %}" data-sw-url="{% url 'admin_painel:admin_sw' %}" data-sw-scope="/painel/" defer></script>
+{% endif %}

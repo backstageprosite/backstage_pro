@@ -1,0 +1,567 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import logout
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.views import LoginView
+from django.contrib import messages
+from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
+from django.views.generic import TemplateView, ListView
+from django.db.models import Count
+from core.models import Band, User, Show, BandSubscription, BillingRecord
+from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm
+import datetime
+
+def is_admin_geral(user):
+    return user.is_authenticated and user.is_superuser
+
+class AdminLoginView(LoginView):
+    template_name = 'admin/login.html'
+    redirect_authenticated_user = True
+    
+    def get_success_url(self):
+        return reverse_lazy('admin_painel:dashboard')
+
+def admin_logout(request):
+    logout(request)
+    return redirect('/painel/login/')
+
+class AdminRequiredMixin:
+    @method_decorator(user_passes_test(is_admin_geral, login_url='/painel/login/'))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+class AdminDashboardView(AdminRequiredMixin, TemplateView):
+    template_name = 'core/admin/dashboard.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from django.db.models import Sum
+        today = datetime.date.today()
+        seven_days_from_now = today + datetime.timedelta(days=7)
+
+        context['total_bandas'] = Band.objects.count()
+        context['bandas_ativas'] = Band.objects.filter(is_active=True).count()
+        context['total_usuarios'] = User.objects.count()
+        
+        # Financeiro SaaS
+        context['assinaturas_ativas'] = BandSubscription.objects.filter(status='ATIVO').count()
+        
+        receita_prevista = BandSubscription.objects.filter(status='ATIVO').aggregate(total=Sum('contracted_value'))['total'] or 0
+        context['receita_prevista'] = receita_prevista
+        
+        receita_recebida = BillingRecord.objects.filter(status='PAGO', paid_date__month=today.month, paid_date__year=today.year).aggregate(total=Sum('amount'))['total'] or 0
+        context['receita_recebida'] = receita_recebida
+        
+        context['cobrancas_pendentes'] = BillingRecord.objects.filter(status='PENDENTE').count()
+        context['cobrancas_atrasadas'] = BillingRecord.objects.filter(status='ATRASADO').count()
+        
+        # Alertas Vencimentos
+        context['bandas_vencidas'] = BandSubscription.objects.filter(status='VENCIDO')
+        context['bandas_vencendo_7d'] = BandSubscription.objects.filter(next_due_date__gt=today, next_due_date__lte=seven_days_from_now)
+        context['bandas_sem_assinatura'] = Band.objects.filter(subscription__isnull=True)
+        context['faturas_atrasadas'] = BillingRecord.objects.filter(status='ATRASADO')
+
+        if context['bandas_vencidas'].exists():
+            context['show_alert_modal'] = True
+        else:
+            context['show_alert_modal'] = False
+
+        context['total_shows'] = Show.objects.count()
+        
+        # Shows no mes atual
+        context['shows_mes_atual'] = Show.objects.filter(date__year=today.year, date__month=today.month).count()
+        
+        # Shows futuros
+        context['shows_futuros'] = Show.objects.filter(date__gte=today).count()
+        
+        # Bandas com assinatura vencida (se date for menor que hoje)
+        context['assinaturas_vencidas'] = Band.objects.filter(subscription_due_date__lt=today).count()
+        
+        # Bandas vencendo nos proximos 7 dias
+        next_week = today + datetime.timedelta(days=7)
+        context['assinaturas_vencendo'] = Band.objects.filter(subscription_due_date__gte=today, subscription_due_date__lte=next_week).count()
+        
+        return context
+
+class AdminBandListView(AdminRequiredMixin, ListView):
+    model = Band
+    template_name = 'core/admin/bandas.html'
+    context_object_name = 'bandas'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form_create'] = AdminBandForm()
+        return context
+    
+class AdminUserListView(AdminRequiredMixin, ListView):
+    model = User
+    template_name = 'core/admin/usuarios.html'
+    context_object_name = 'usuarios'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form_create'] = AdminUserCreateForm()
+        return context
+    
+class AdminShowListView(AdminRequiredMixin, ListView):
+    model = Show
+    template_name = 'core/admin/shows.html'
+    context_object_name = 'shows'
+    ordering = ['-date']
+
+class AdminAssinaturasView(AdminRequiredMixin, ListView):
+    model = BandSubscription
+    template_name = 'core/admin/assinaturas.html'
+    context_object_name = 'assinaturas'
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        q = self.request.GET.get('q', '')
+        status = self.request.GET.get('status', '')
+        cycle = self.request.GET.get('cycle', '')
+        
+        if q:
+            qs = qs.filter(band__name__icontains=q) | qs.filter(financial_responsible_name__icontains=q)
+        if status:
+            if status == 'VENCENDO_7D':
+                today = datetime.date.today()
+                qs = qs.filter(next_due_date__gt=today, next_due_date__lte=today + datetime.timedelta(days=7))
+            else:
+                qs = qs.filter(status=status)
+        if cycle:
+            qs = qs.filter(billing_cycle=cycle)
+            
+        return qs.distinct()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form_create'] = AdminSubscriptionForm()
+        context['today'] = datetime.date.today()
+        return context
+
+class AdminCobrancasView(AdminRequiredMixin, ListView):
+    model = BillingRecord
+    template_name = 'core/admin/cobrancas.html'
+    context_object_name = 'cobrancas'
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        q = self.request.GET.get('q', '')
+        status = self.request.GET.get('status', '')
+        period = self.request.GET.get('period', '')
+        
+        if q:
+            qs = qs.filter(band__name__icontains=q)
+        if period:
+            qs = qs.filter(reference_period__icontains=period)
+        if status:
+            if status == 'VENCENDO_7D':
+                today = datetime.date.today()
+                qs = qs.filter(status='PENDENTE', due_date__gt=today, due_date__lte=today + datetime.timedelta(days=7))
+            elif status == 'VENCIDAS':
+                today = datetime.date.today()
+                qs = qs.filter(status='PENDENTE', due_date__lt=today)
+            else:
+                qs = qs.filter(status=status)
+                
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form_create'] = AdminBillingRecordForm()
+        context['today'] = datetime.date.today()
+        return context
+
+class AdminRelatoriosView(AdminRequiredMixin, TemplateView):
+    template_name = 'core/admin/relatorios.html'
+
+class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
+    template_name = 'core/admin/relatorio_financeiro.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        import json
+        from django.db.models import Sum, Q
+        
+        today = datetime.date.today()
+        
+        # Filtros
+        start_date = self.request.GET.get('start_date')
+        end_date = self.request.GET.get('end_date')
+        band_id = self.request.GET.get('band')
+        status = self.request.GET.get('status')
+        plan = self.request.GET.get('plan')
+        cycle = self.request.GET.get('cycle')
+        period = self.request.GET.get('period')
+
+        if not start_date or not end_date:
+            if period == 'this_month':
+                start_date = today.replace(day=1)
+                end_date = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
+            elif period == 'last_month':
+                last_day_of_prev_month = today.replace(day=1) - datetime.timedelta(days=1)
+                start_date = last_day_of_prev_month.replace(day=1)
+                end_date = last_day_of_prev_month
+            elif period == 'next_30':
+                start_date = today
+                end_date = today + datetime.timedelta(days=30)
+            elif period == 'this_year':
+                start_date = today.replace(month=1, day=1)
+                end_date = today.replace(month=12, day=31)
+            else:
+                # Default: this month
+                start_date = today.replace(day=1)
+                end_date = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
+        else:
+            try:
+                start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+                end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+            except ValueError:
+                start_date = today.replace(day=1)
+                end_date = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
+
+        # Base Querysets
+        billings = BillingRecord.objects.all()
+        subs = BandSubscription.objects.all()
+        
+        # Applying Filters
+        if band_id:
+            billings = billings.filter(band_id=band_id)
+            subs = subs.filter(band_id=band_id)
+        if status:
+            billings = billings.filter(status=status)
+        if plan:
+            subs = subs.filter(plan_name=plan)
+            billings = billings.filter(subscription__plan_name=plan)
+        if cycle:
+            subs = subs.filter(billing_cycle=cycle)
+            billings = billings.filter(subscription__billing_cycle=cycle)
+
+        # 1. Valores Recebidos (PAGO no período baseado em paid_date)
+        recebido = billings.filter(
+            status='PAGO', 
+            paid_date__gte=start_date, 
+            paid_date__lte=end_date
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        # 2. Valores Pendentes (PENDENTE no período baseado em due_date, >= hoje)
+        pendente = billings.filter(
+            status='PENDENTE',
+            due_date__gte=max(today, start_date),
+            due_date__lte=end_date
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        # 3. Valores Futuros (PENDENTE com due_date > hoje)
+        # Vamos pegar todo o valor futuro, ou limitar ao período se aplicável.
+        # A regra diz: "soma de cobranças futuras ainda não pagas, com due_date maior que hoje. Pode incluir BillingRecord com status PENDENTE e vencimento futuro."
+        futuro = billings.filter(
+            status='PENDENTE',
+            due_date__gt=today
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        # 4. Valores Atrasados (ATRASADO ou PENDENTE < hoje)
+        atrasado = billings.filter(
+            Q(status='ATRASADO') | Q(status='PENDENTE', due_date__lt=today)
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        # 5. Receita Prevista Mensal (Valor Contratado das assinaturas ATIVAS)
+        receita_prevista_mensal = BandSubscription.objects.filter(status='ATIVO').aggregate(total=Sum('contracted_value'))['total'] or 0
+        
+        # 6. Total de Bandas Ativas Pagantes
+        total_bandas_ativas = BandSubscription.objects.filter(status='ATIVO').count()
+
+        # Gráficos Data
+        
+        # Gráfico 1: Recebido x Pendente x Futuro x Atrasado
+        chart_bars = {
+            'labels': ['Recebido', 'Pendente', 'Futuro', 'Atrasado'],
+            'data': [float(recebido), float(pendente), float(futuro), float(atrasado)]
+        }
+        
+        # Gráfico 2: Pizza de Status
+        status_counts = billings.values('status').annotate(total=Count('id'))
+        status_labels = []
+        status_data = []
+        for s in status_counts:
+            status_labels.append(s['status'])
+            status_data.append(s['total'])
+            
+        chart_pie = {
+            'labels': status_labels,
+            'data': status_data
+        }
+        
+        # Gráfico 3: Receita por Ciclo
+        cycle_revenue = subs.values('billing_cycle').annotate(total=Sum('contracted_value'))
+        cycle_labels = []
+        cycle_data = []
+        for c in cycle_revenue:
+            cycle_labels.append(c['billing_cycle'])
+            cycle_data.append(float(c['total'] or 0))
+            
+        chart_cycle = {
+            'labels': cycle_labels,
+            'data': cycle_data
+        }
+        
+        # Gráfico 4: Top Bandas
+        top_bandas = billings.filter(status='PAGO', paid_date__gte=start_date, paid_date__lte=end_date).values('band__name').annotate(total=Sum('amount')).order_by('-total')[:5]
+        top_bandas_labels = []
+        top_bandas_data = []
+        for tb in top_bandas:
+            top_bandas_labels.append(tb['band__name'])
+            top_bandas_data.append(float(tb['total']))
+            
+        chart_top_bandas = {
+            'labels': top_bandas_labels,
+            'data': top_bandas_data
+        }
+
+        # Tabelas
+        
+        # Tabela 1: Resumo por Banda
+        band_summaries = []
+        all_bands = Band.objects.filter(subscription__isnull=False)
+        if band_id:
+            all_bands = all_bands.filter(id=band_id)
+            
+        for band in all_bands:
+            band_billings = billings.filter(band=band)
+            rec = band_billings.filter(status='PAGO', paid_date__gte=start_date, paid_date__lte=end_date).aggregate(total=Sum('amount'))['total'] or 0
+            pend = band_billings.filter(status='PENDENTE', due_date__gte=today, due_date__lte=end_date).aggregate(total=Sum('amount'))['total'] or 0
+            fut = band_billings.filter(status='PENDENTE', due_date__gt=today).aggregate(total=Sum('amount'))['total'] or 0
+            atr = band_billings.filter(Q(status='ATRASADO') | Q(status='PENDENTE', due_date__lt=today)).aggregate(total=Sum('amount'))['total'] or 0
+            
+            band_summaries.append({
+                'band': band,
+                'subscription': band.subscription,
+                'recebido': rec,
+                'pendente': pend,
+                'futuro': fut,
+                'atrasado': atr
+            })
+            
+        # Context Update
+        context.update({
+            'start_date': start_date.strftime('%Y-%m-%d') if isinstance(start_date, datetime.date) else start_date,
+            'end_date': end_date.strftime('%Y-%m-%d') if isinstance(end_date, datetime.date) else end_date,
+            'band_id': band_id,
+            'status': status,
+            'plan': plan,
+            'cycle': cycle,
+            'period': period,
+            
+            'kpi_recebido': recebido,
+            'kpi_pendente': pendente,
+            'kpi_futuro': futuro,
+            'kpi_atrasado': atrasado,
+            'kpi_receita_prevista': receita_prevista_mensal,
+            'kpi_total_bandas': total_bandas_ativas,
+            
+            'chart_bars': json.dumps(chart_bars),
+            'chart_pie': json.dumps(chart_pie),
+            'chart_cycle': json.dumps(chart_cycle),
+            'chart_top_bandas': json.dumps(chart_top_bandas),
+            
+            'band_summaries': band_summaries,
+            'billings': billings.order_by('-due_date')[:100], # limit to 100 to avoid huge tables initially
+            'all_bands': Band.objects.filter(subscription__isnull=False).order_by('name'),
+        })
+        
+        return context
+
+class AdminConfiguracoesView(AdminRequiredMixin, TemplateView):
+    template_name = 'core/admin/configuracoes.html'
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_band_create(request):
+    if request.method == 'POST':
+        form = AdminBandForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Banda cadastrada com sucesso!")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Erro ({field}): {error}")
+    return redirect('admin_painel:bandas')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_band_edit(request, pk):
+    band = get_object_or_404(Band, pk=pk)
+    if request.method == 'POST':
+        form = AdminBandForm(request.POST, request.FILES, instance=band)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Banda atualizada com sucesso!")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Erro ({field}): {error}")
+    return redirect('admin_painel:bandas')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_band_toggle_active(request, pk):
+    if request.method == 'POST':
+        band = get_object_or_404(Band, pk=pk)
+        band.is_active = not band.is_active
+        band.save()
+        status = "ativada" if band.is_active else "desativada"
+        messages.success(request, f"Banda {status} com sucesso!")
+    return redirect('admin_painel:bandas')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_user_create(request):
+    if request.method == 'POST':
+        form = AdminUserCreateForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Usuário cadastrado com sucesso!")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Erro ({field}): {error}")
+    return redirect('admin_painel:usuarios')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_user_edit(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        form = AdminUserEditForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Usuário atualizado com sucesso!")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Erro ({field}): {error}")
+    return redirect('admin_painel:usuarios')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_user_toggle_active(request, pk):
+    if request.method == 'POST':
+        user = get_object_or_404(User, pk=pk)
+        user.is_active = not user.is_active
+        user.save()
+        status = "ativado" if user.is_active else "desativado"
+        messages.success(request, f"Usuário {status} com sucesso!")
+    return redirect('admin_painel:usuarios')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_user_reset_password(request, pk):
+    if request.method == 'POST':
+        user = get_object_or_404(User, pk=pk)
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        if not new_password or not confirm_password:
+            messages.error(request, "As senhas não podem ser vazias.")
+        elif new_password != confirm_password:
+            messages.error(request, "As senhas não conferem. Tente novamente.")
+        else:
+            user.set_password(new_password)
+            user.save()
+            messages.success(request, f"Senha do usuário {user.username} redefinida com sucesso!")
+            
+    return redirect('admin_painel:usuarios')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_assinatura_create(request):
+    if request.method == 'POST':
+        form = AdminSubscriptionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Assinatura cadastrada com sucesso!")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Erro ({field}): {error}")
+    return redirect('admin_painel:assinaturas')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_assinatura_edit(request, pk):
+    sub = get_object_or_404(BandSubscription, pk=pk)
+    if request.method == 'POST':
+        form = AdminSubscriptionForm(request.POST, instance=sub)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Assinatura atualizada com sucesso!")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Erro ({field}): {error}")
+    return redirect('admin_painel:assinaturas')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_assinatura_cancel(request, pk):
+    if request.method == 'POST':
+        sub = get_object_or_404(BandSubscription, pk=pk)
+        sub.status = 'CANCELADO'
+        sub.save()
+        messages.success(request, "Assinatura cancelada com sucesso!")
+    return redirect('admin_painel:assinaturas')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_cobranca_create(request):
+    if request.method == 'POST':
+        form = AdminBillingRecordForm(request.POST, request.FILES)
+        if form.is_valid():
+            record = form.save(commit=False)
+            record.created_by = request.user
+            record.save()
+            
+            # Auto-ativa a assinatura se a fatura for paga
+            if record.status == 'PAGO' and record.subscription:
+                sub = record.subscription
+                if sub.status != 'ATIVO':
+                    sub.status = 'ATIVO'
+                    sub.save(update_fields=['status'])
+                    
+            messages.success(request, "Cobrança gerada com sucesso!")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Erro ({field}): {error}")
+    return redirect('admin_painel:cobrancas')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_cobranca_edit(request, pk):
+    record = get_object_or_404(BillingRecord, pk=pk)
+    if request.method == 'POST':
+        form = AdminBillingRecordForm(request.POST, request.FILES, instance=record)
+        if form.is_valid():
+            record = form.save()
+            
+            # Auto-ativa a assinatura se a fatura for paga
+            if record.status == 'PAGO' and record.subscription:
+                sub = record.subscription
+                if sub.status != 'ATIVO':
+                    sub.status = 'ATIVO'
+                    sub.save(update_fields=['status'])
+                    
+            messages.success(request, "Cobrança atualizada com sucesso!")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Erro ({field}): {error}")
+    return redirect('admin_painel:cobrancas')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_cobranca_change_status(request, pk, status):
+    if request.method == 'POST':
+        record = get_object_or_404(BillingRecord, pk=pk)
+        if status in dict(BillingRecord.STATUS_CHOICES):
+            record.status = status
+            if status == 'PAGO' and not record.paid_date:
+                record.paid_date = datetime.date.today()
+            record.save()
+            
+            # Auto-ativa a assinatura se a fatura for paga
+            if status == 'PAGO' and record.subscription:
+                sub = record.subscription
+                if sub.status != 'ATIVO':
+                    sub.status = 'ATIVO'
+                    sub.save(update_fields=['status'])
+                    
+            messages.success(request, f"Status alterado para {record.get_status_display()}!")
+    return redirect('admin_painel:cobrancas')
