@@ -92,7 +92,7 @@
             <!-- Logo da Banda -->
             <div style="width: 150px; text-align: left;">
                 {% if show.band.logo %}
-                <img src="{{ show.band.logo.url }}" alt="{{ show.band.name }}" style="max-width: 100%; max-height: 80px;">
+                <img src="{% url 'public_band_logo' show.band.slug %}" alt="{{ show.band.name }}" style="max-width: 100%; max-height: 80px;">
                 {% endif %}
             </div>
 

@@ -4,7 +4,6 @@ URL configuration for config project.
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
-from django.conf.urls.static import serve
 from django.contrib.auth import views as auth_views
 from core import views
 from core.views import landing_page_view, termos_de_uso_view, politica_de_privacidade_view
@@ -23,5 +22,4 @@ urlpatterns = [
     path('redefinir-senha/concluido/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
     path('<slug:band_slug>/', include('core.urls')),
-    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]

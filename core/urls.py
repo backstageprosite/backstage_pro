@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, pwa_views
+from . import views, pwa_views, file_views
 
 urlpatterns = [
     path('manifest.webmanifest', pwa_views.band_manifest, name='manifest'),
@@ -46,4 +46,11 @@ urlpatterns = [
     path('equipe/custo/<int:pk>/excluir/', views.teamcost_delete_view, name='teamcost_delete'),
     path('equipe/custo/<int:pk>/editar/', views.teamcost_edit_view, name='teamcost_edit'),
 
+    # Arquivos Seguros
+    path('assets/logo/', file_views.public_band_logo, name='public_band_logo'),
+    path('admin/assets/logo/', file_views.admin_band_logo, name='admin_band_logo'),
+    path('documentos/contratos/<int:pk>/download/', file_views.download_contract, name='download_contract'),
+    path('financeiro/recebimentos/<int:pk>/download/', file_views.download_receipt, name='download_receipt'),
+    path('financeiro/pagamentos/<int:pk>/download/', file_views.download_payment, name='download_payment'),
+    path('faturas/<int:pk>/download/', file_views.download_billing, name='download_billing'),
 ]

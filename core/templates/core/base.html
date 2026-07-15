@@ -162,7 +162,7 @@
                 <div class="mb-4 px-2 text-center text-lg-start">
                     <a href="{% if band %}{% url 'calendario' band.slug %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none">
                         {% if band and band.logo %}
-                            <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="img-fluid w-100" style="border-radius: 8px; object-fit: contain;">
+                            <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid w-100" style="border-radius: 8px; object-fit: contain;">
                         {% else %}
                             <i class="fa-solid fa-guitar me-2 fs-3 text-primary"></i>
                             <span class="fs-5 fw-bold text-dark">{% if band %}{{ band.name }}{% else %}Backstage Pro{% endif %}</span>

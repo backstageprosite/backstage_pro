@@ -18,7 +18,7 @@
                         <label class="form-label fw-bold text-muted">Logo Atual</label>
                         <div class="d-flex align-items-center p-3 bg-light rounded border">
                             {% if band.logo %}
-                                <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="me-3" style="max-height: 80px; border-radius: 6px;">
+                                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="me-3" style="max-height: 80px; border-radius: 6px;">
                             {% else %}
                                 <div class="bg-secondary bg-opacity-10 rounded d-flex justify-content-center align-items-center me-3" style="width: 80px; height: 80px;">
                                     <i class="fa-solid fa-image fs-1 text-muted"></i>

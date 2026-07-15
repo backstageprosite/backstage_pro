@@ -90,7 +90,7 @@
         <!-- Cabeçalho com Logo -->
         <div class="text-start mb-4 d-flex align-items-center">
             {% if band.logo %}
-                <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="header-logo me-4">
+                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="header-logo me-4">
             {% else %}
                 <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="header-logo me-4" style="max-height: 50px;">
             {% endif %}

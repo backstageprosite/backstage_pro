@@ -1,0 +1,220 @@
+import os
+import mimetypes
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404, redirect
+from django.core.exceptions import PermissionDenied
+from django.utils.text import get_valid_filename
+from django.contrib.auth.decorators import login_required
+from functools import wraps
+
+from core.models import Band, ContractDocument, FinancialReceipt, ShowPayment, BillingRecord
+
+def is_admin_geral(user):
+    """Identifica o Admin Geral nativo do Django."""
+    return user.is_superuser
+
+def sanitize_filename(filename):
+    """
+    Garante que o nome do arquivo seja seguro.
+    - Normaliza barras
+    - Extrai basename
+    - Remove CR, LF e controles
+    - Fallback para 'documento.bin' se ficar vazio
+    """
+    if not filename:
+        return "documento.bin"
+        
+    # Trocar contrabarras
+    filename = filename.replace("\\", "/")
+    # Extrair apenas o último componente (basename)
+    basename = filename.split("/")[-1]
+    
+    # Remover CR e LF agressivamente
+    basename = basename.replace("\r", "").replace("\n", "")
+    
+    # Passar pelo validador do Django
+    from django.core.exceptions import SuspiciousFileOperation
+    try:
+        safe_name = get_valid_filename(basename)
+    except SuspiciousFileOperation:
+        return "documento.bin"
+    
+    if not safe_name:
+        return "documento.bin"
+        
+    return safe_name
+
+def get_safe_mime_type(filename):
+    """
+    Retorna o MIME type apropriado.
+    Tipos perigosos (HTML, SVG, JS, Executáveis) são rebaixados para octet-stream.
+    """
+    mime_type, _ = mimetypes.guess_type(filename)
+    
+    # Lista de tipos explicitamente seguros e recomendados
+    SAFE_MIMETYPES = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain',
+        'text/csv',
+    ]
+    
+    if mime_type in SAFE_MIMETYPES:
+        return mime_type
+        
+    return 'application/octet-stream'
+
+def serve_private_file(file_field, as_attachment=True):
+    """
+    Helper seguro para abrir e servir um arquivo do FieldFile.
+    """
+    if not file_field or not file_field.name:
+        raise Http404("Arquivo não existe no registro.")
+        
+    try:
+        file_obj = file_field.open("rb")
+    except (FileNotFoundError, OSError, ValueError):
+        raise Http404("Arquivo não encontrado fisicamente no servidor.")
+        
+    filename = sanitize_filename(file_field.name)
+    mime_type = get_safe_mime_type(filename)
+    
+    response = FileResponse(file_obj, as_attachment=as_attachment, filename=filename, content_type=mime_type)
+    
+    # Headers de Segurança
+    response['Cache-Control'] = 'private, no-store, no-cache, must-revalidate'
+    response['X-Content-Type-Options'] = 'nosniff'
+    
+    return response
+
+def private_download_required(view_func):
+    """
+    Decorador que garante:
+    - Usuário autenticado
+    - Acesso à banda validado (relacionamento cruzado bloqueado)
+    - Perfil correto (Produtor ou Admin Geral)
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, band_slug, *args, **kwargs):
+        if not request.user.is_authenticated:
+            # Garante redirecionamento para o login correto com um 'next' interno
+            next_url = request.path
+            login_url = redirect('login', band_slug=band_slug).url
+            return redirect(f"{login_url}?next={next_url}")
+            
+        band = get_object_or_404(Band, slug=band_slug)
+        
+        # Validar inatividade da banda
+        if not band.is_active and not is_admin_geral(request.user):
+            raise PermissionDenied("O acesso desta banda ao Backstage Pro está suspenso.")
+            
+        # Admin master acessa tudo.
+        if is_admin_geral(request.user):
+            pass
+        else:
+            # Usuário comum deve pertencer à banda
+            if request.user.band != band:
+                # 404 para não revelar existência do arquivo em acesso cruzado
+                raise Http404("Página não encontrada.")
+                
+            # Verifica perfil (apenas Produtor pode baixar documentos financeiros/contratos)
+            if hasattr(request.user, 'is_produtor') and not request.user.is_produtor():
+                raise PermissionDenied("Seu perfil de Integrante não tem permissão para baixar este documento.")
+                
+        request.band = band
+        return view_func(request, band_slug, *args, **kwargs)
+    return _wrapped_view
+
+
+@private_download_required
+def download_contract(request, band_slug, pk):
+    """Download protegido de ContractDocument"""
+    doc = get_object_or_404(ContractDocument, pk=pk, show__band=request.band)
+    return serve_private_file(doc.file)
+
+
+@private_download_required
+def download_receipt(request, band_slug, pk):
+    """Download protegido de FinancialReceipt"""
+    doc = get_object_or_404(FinancialReceipt, pk=pk, show__band=request.band)
+    return serve_private_file(doc.file)
+
+
+@private_download_required
+def download_payment(request, band_slug, pk):
+    """Download protegido de ShowPayment"""
+    doc = get_object_or_404(ShowPayment, pk=pk, show__band=request.band)
+    return serve_private_file(doc.file)
+
+
+@private_download_required
+def download_billing(request, band_slug, pk):
+    """Download protegido de BillingRecord"""
+    doc = get_object_or_404(BillingRecord, pk=pk, band=request.band)
+    return serve_private_file(doc.proof_file)
+
+
+def public_band_logo(request, band_slug):
+    """
+    Exibe a logo pública da banda de forma segura.
+    Servido apenas para bandas ativas.
+    """
+    band = get_object_or_404(Band, slug=band_slug)
+    
+    # Rota pública não serve logo inativa para ninguém.
+    if not band.is_active:
+        raise Http404("Logo não disponível.")
+        
+    if not band.logo or not band.logo.name:
+        raise Http404("Esta banda não possui logo.")
+        
+    try:
+        file_obj = band.logo.open("rb")
+    except (FileNotFoundError, OSError, ValueError):
+        raise Http404("Logo não encontrada fisicamente.")
+        
+    mime_type = get_safe_mime_type(band.logo.name)
+    
+    # Para visualização pública no navegador, as_attachment=False
+    response = FileResponse(file_obj, as_attachment=False)
+    response['Content-Type'] = mime_type
+    response['X-Content-Type-Options'] = 'nosniff'
+    
+    response['Cache-Control'] = 'public, max-age=86400'
+        
+    return response
+
+
+def admin_band_logo(request, band_slug):
+    """
+    Rota administrativa exclusiva para servir logos de bandas, mesmo inativas.
+    Restrita ao Admin Geral.
+    """
+    if not request.user.is_authenticated or not is_admin_geral(request.user):
+        raise PermissionDenied("Acesso exclusivo para Admin Geral.")
+        
+    band = get_object_or_404(Band, slug=band_slug)
+    
+    if not band.logo or not band.logo.name:
+        raise Http404("Esta banda não possui logo.")
+        
+    try:
+        file_obj = band.logo.open("rb")
+    except (FileNotFoundError, OSError, ValueError):
+        raise Http404("Logo não encontrada fisicamente.")
+        
+    mime_type = get_safe_mime_type(band.logo.name)
+    
+    response = FileResponse(file_obj, as_attachment=False, content_type=mime_type)
+    response['X-Content-Type-Options'] = 'nosniff'
+    response['Cache-Control'] = 'private, no-store, must-revalidate'
+    response['Vary'] = 'Cookie'
+        
+    return response
