@@ -12,6 +12,6 @@
 {% elif request.resolver_match.namespace == 'admin_painel' %}
     <link rel="manifest" href="{% url 'admin_painel:manifest' %}">
     <meta name="apple-mobile-web-app-title" content="Backstage Pro">
-    <link rel="apple-touch-icon" href="{% static 'core/pwa/icons/backstage-apple-touch-icon.png' %}?v=v1">
+    <link rel="apple-touch-icon" href="{% static 'core/pwa/icons/backstage-apple-touch-icon.png' %}?v=white-bg-v2">
     <script id="pwa-register-script" src="{% static 'core/pwa/pwa-register.js' %}" data-sw-url="{% url 'admin_painel:admin_sw' %}" data-sw-scope="/painel/" defer></script>
 {% endif %}

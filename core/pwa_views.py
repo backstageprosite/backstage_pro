@@ -27,6 +27,8 @@ def get_short_name(name):
         return truncated[:last_space]
     return truncated
 
+PWA_ICON_STYLE_VERSION = "white-bg-v2"
+
 def get_band_icon_version(band):
     """
     Gera um hash curto e seguro baseado nos metadados do arquivo da logo.
@@ -34,7 +36,7 @@ def get_band_icon_version(band):
     se o token é baseado em fatores que mudam confiavelmente (tamanho, mtime).
     """
     if band.logo and band.logo.name:
-        components = [band.logo.name]
+        components = [band.logo.name, PWA_ICON_STYLE_VERSION]
         is_reliable = False
         
         try:
@@ -125,7 +127,7 @@ def admin_manifest(request):
     start_url = reverse('admin_painel:dashboard') + '?source=pwa'
     
     # Ícones fixos do admin (Backstage Pro)
-    v = "v1"
+    v = "white-bg-v2"
     icons = [
         {
             "src": static("core/pwa/icons/backstage-icon-192.png") + f"?v={v}",

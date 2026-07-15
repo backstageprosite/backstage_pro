@@ -58,7 +58,7 @@ def generate_band_icon(band_logo, size, maskable=False, apple=False):
         logger.warning(f"Erro inesperado no Pillow ao gerar ícone: {e}")
         return None
 
-    bg_color = '#6BD443'
+    bg_color = '#FFFFFF'
     bg = Image.new('RGBA', (size, size), bg_color)
     
     # Normal/Apple: 75% da área; Maskable: 65% (para respeitar a safe zone circular)
@@ -87,7 +87,7 @@ def generate_band_icon(band_logo, size, maskable=False, apple=False):
     x = (size - new_w) // 2
     y = (size - new_h) // 2
     
-    # Cola a imagem sobre o fundo verde (transparências originais viram verde)
+    # Cola a imagem sobre o fundo branco (transparências originais viram branco)
     bg.alpha_composite(resized_img, (x, y))
     
     # Converte para RGB para garantir que não haja transparência final nas bordas

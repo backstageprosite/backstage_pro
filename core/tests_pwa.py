@@ -377,4 +377,53 @@ class PWAManifestTestCase(TestCase):
         self.assertNotIn('caches.open', content)
         self.assertNotIn('Notification.requestPermission', content)
 
+    def test_pwa_icon_background_is_white(self):
+        """Testa se o fundo do ícone PWA gerado é branco."""
+        from PIL import Image
+        import io
+        from django.conf import settings
+        import os
+        
+        # Cria uma imagem simulada preta de 100x100
+        img = Image.new('RGB', (100, 100), 'black')
+        img_io = io.BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+        
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.band_a.logo = SimpleUploadedFile('test_logo.png', img_io.read(), content_type='image/png')
+        self.band_a.save()
+        
+        # Testa a geração dinâmica (Banda)
+        response = self.client.get(f'/{self.band_a.slug}/pwa/icon-192.png')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/png')
+        
+        generated_img = Image.open(io.BytesIO(response.content))
+        self.assertEqual(generated_img.size, (192, 192))
+        
+        # Testa os 4 cantos para confirmar fundo branco
+        white = (255, 255, 255)
+        self.assertEqual(generated_img.getpixel((0, 0)), white)
+        self.assertEqual(generated_img.getpixel((191, 0)), white)
+        self.assertEqual(generated_img.getpixel((0, 191)), white)
+        self.assertEqual(generated_img.getpixel((191, 191)), white)
+        
+        # Confirma ausência do verde antigo #6BD443 (107, 212, 67)
+        old_green = (107, 212, 67)
+        self.assertNotEqual(generated_img.getpixel((0, 0)), old_green)
+        
+        # O centro deve ter pixel preto da logo mockada
+        self.assertEqual(generated_img.getpixel((96, 96)), (0, 0, 0))
+
+        # Testa o ícone estático (Backstage Pro)
+        static_icon_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'core', 'pwa', 'icons', 'backstage-icon-192.png')
+        self.assertTrue(os.path.exists(static_icon_path))
+        static_img = Image.open(static_icon_path)
+        self.assertEqual(static_img.size, (192, 192))
+        
+        # Verifica fundo branco no ícone estático
+        self.assertEqual(static_img.getpixel((0, 0)), white)
+        self.assertNotEqual(static_img.getpixel((0, 0)), old_green)
+
 
