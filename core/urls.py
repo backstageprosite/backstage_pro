@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, pwa_views, file_views
+from . import views, pwa_views, file_views, notification_views
 
 urlpatterns = [
     path('manifest.webmanifest', pwa_views.band_manifest, name='manifest'),
@@ -45,6 +45,12 @@ urlpatterns = [
     path('shows/<int:show_id>/equipe/gerenciar/', views.manage_team_costs_view, name='manage_team_costs'),
     path('equipe/custo/<int:pk>/excluir/', views.teamcost_delete_view, name='teamcost_delete'),
     path('equipe/custo/<int:pk>/editar/', views.teamcost_edit_view, name='teamcost_edit'),
+
+    # Notificações
+    path('notificacoes/', notification_views.notifications_list, name='notifications_list'),
+    path('notificacoes/<int:pk>/abrir/', notification_views.notification_open, name='notification_open'),
+    path('notificacoes/<int:pk>/marcar-lida/', notification_views.notification_mark_read, name='notification_mark_read'),
+    path('notificacoes/marcar-todas-lidas/', notification_views.notifications_mark_all_read, name='notifications_mark_all_read'),
 
     # Arquivos Seguros
     path('assets/logo/', file_views.public_band_logo, name='public_band_logo'),

@@ -233,6 +233,8 @@
                     </div>
 
                     <div class="d-flex align-items-center ms-auto">
+                        {% load notification_tags %}
+                        {% render_notifications_bell %}
                         <span class="text-dark me-3 fw-medium">
                             <i class="fa-regular fa-circle-user text-primary me-1"></i> Olá, {{ user.username }} 
                             {% if user.is_produtor %}

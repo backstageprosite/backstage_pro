@@ -123,7 +123,7 @@ def notify_band_users(band, event_type, title, message, target_url, event_key_ba
 
 
 def get_unread_notifications(recipient, band):
-    return Notification.objects.filter(recipient=recipient, band=band, read_at__isnull=True).order_by('-created_at')
+    return Notification.objects.filter(recipient=recipient, band=band, read_at__isnull=True).order_by('-created_at', '-pk')
 
 
 def get_recent_notifications(recipient, band, limit=10):
@@ -137,7 +137,7 @@ def get_recent_notifications(recipient, band, limit=10):
     elif limit > 100:
         limit = 100
         
-    return Notification.objects.filter(recipient=recipient, band=band).order_by('-created_at')[:limit]
+    return Notification.objects.filter(recipient=recipient, band=band).order_by('-created_at', '-pk')[:limit]
 
 
 def mark_notification_as_read(notification_id, recipient, band):
