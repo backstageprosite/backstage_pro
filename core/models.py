@@ -139,6 +139,9 @@ class Show(models.Model):
     # Observações
     internal_notes = models.TextField(blank=True, null=True, help_text='Visível apenas para a produção.', verbose_name='Observações Internas')
     band_notes = models.TextField(blank=True, null=True, help_text='Visível para todos os integrantes.', verbose_name='Observações para a Banda')
+    
+    # Revisão de Notificações
+    notification_revision = models.PositiveBigIntegerField(default=0, editable=False)
 
     class Meta:
         verbose_name = 'Show'
