@@ -142,6 +142,22 @@
                 width: 100%;
             }
         }
+
+        /* Ajustes responsivos para Dropdown de Notificações */
+        @media (max-width: 768px) {
+            .notifications-dropdown {
+                position: static !important;
+            }
+            .notifications-dropdown-menu {
+                width: auto !important;
+                left: 12px !important;
+                right: 12px !important;
+                max-width: calc(100vw - 24px) !important;
+                top: 100% !important;
+                transform: none !important;
+                margin-top: 0.25rem !important;
+            }
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>

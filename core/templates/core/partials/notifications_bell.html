@@ -1,5 +1,5 @@
 {% if show_bell %}
-<div class="dropdown me-3">
+<div class="dropdown me-3 notifications-dropdown">
     <button class="btn btn-light position-relative p-2 border-0 bg-transparent text-dark shadow-none" type="button" id="notificationBell" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notificações" title="Notificações">
         <i class="fa-solid fa-bell fs-5"></i>
         {% if unread_count > 0 %}
@@ -9,7 +9,7 @@
             </span>
         {% endif %}
     </button>
-    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" aria-labelledby="notificationBell" style="width: 320px; max-height: 80vh; overflow-y: auto;">
+    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 notifications-dropdown-menu" aria-labelledby="notificationBell" style="width: 320px; max-height: 80vh; overflow-y: auto;">
         <li>
             <div class="dropdown-header d-flex justify-content-between align-items-center bg-white border-bottom py-2">
                 <strong class="text-dark">Notificações</strong>
