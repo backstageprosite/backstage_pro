@@ -4,7 +4,7 @@ from django.core.paginator import Paginator
 from django.http import HttpResponseNotAllowed, Http404
 from django.urls import reverse
 from core.models import Band, Notification
-from core.services.notifications import mark_notification_as_read, mark_all_notifications_as_read, validate_target_url
+from core.services.notifications import mark_notification_as_read, mark_all_notifications_as_read, validate_target_url, get_unread_notifications
 from functools import wraps
 
 def band_notification_access_required(view_func):
@@ -49,10 +49,13 @@ def notifications_list(request, band):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    unread_count = get_unread_notifications(request.user, band).count()
+    
     return render(request, 'core/notifications/list.html', {
         'band': band,
         'page_obj': page_obj,
         'filtro': filtro,
+        'unread_count': unread_count,
     })
 
 @band_notification_access_required

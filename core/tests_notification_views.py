@@ -242,3 +242,53 @@ class NotificationViewsTestCase(TestCase):
         idx1 = output.find('Notif 1')
         self.assertTrue(idx2 < idx1)
         self.assertTrue(idx2 > -1 and idx1 > -1)
+
+    def test_comportamento_ui_unread_count(self):
+        # 1. Sem notificações (unread_count == 0)
+        template = Template("{% load notification_tags %}{% render_notifications_bell %}")
+        context = Context({'request': type('Req', (), {'user': self.produtor, 'resolver_match': type('RM', (), {'url_name': 'shows_list'})()})(), 'band': self.banda})
+        output = template.render(context)
+        
+        # Não deve exibir badge nem botão de marcar todas
+        self.assertNotIn('bg-danger', output)
+        self.assertNotIn('fa-check-double', output)
+        
+        # Na central (paginada) também não
+        self.client.force_login(self.produtor)
+        url = reverse('notifications_list', kwargs={'band_slug': self.banda.slug})
+        response = self.client.get(url)
+        self.assertNotIn('Marcar todas', response.content.decode('utf-8'))
+        
+        # 2. Com notificação (unread_count > 0)
+        n = create_notification(self.banda, self.produtor, 'NEW_SHOW', 'Notif Unread UI', 'msg', f'/{self.banda.slug}/', 'k_ui')[0]
+        
+        # Dropdown
+        output2 = template.render(context)
+        self.assertIn('bg-danger', output2)
+        self.assertIn('fa-check-double', output2)
+        
+        # Central
+        response2 = self.client.get(url)
+        self.assertIn('Marcar todas', response2.content.decode('utf-8'))
+        
+        # 3. Após marcar todas
+        url_mark = reverse('notifications_mark_all_read', kwargs={'band_slug': self.banda.slug})
+        client_no_csrf = Client()
+        client_no_csrf.force_login(self.produtor)
+        client_no_csrf.post(url_mark)
+        
+        n.refresh_from_db()
+        self.assertIsNotNone(n.read_at)
+        
+        # Dropdown
+        output3 = template.render(context)
+        self.assertNotIn('bg-danger', output3)
+        self.assertNotIn('fa-check-double', output3)
+        
+        # Filtro não lidas vazio
+        response_nao_lidas = self.client.get(url + '?filtro=nao_lidas')
+        self.assertEqual(len(response_nao_lidas.context['page_obj']), 0)
+        
+        # Filtro todas contém
+        response_todas = self.client.get(url + '?filtro=todas')
+        self.assertEqual(len(response_todas.context['page_obj']), 1)
