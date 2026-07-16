@@ -263,6 +263,42 @@ class ShowAdmin(admin.ModelAdmin):
     }
     inlines = [ContractDocumentInline, FinancialReceiptInline, ShowTeamCostInline]
     
+    def save_model(self, request, obj, form, change):
+        from django.db import connection
+        # Comprova que o ModelAdmin está rodando em transação (atomic)
+        if not connection.in_atomic_block:
+            import logging
+            logging.getLogger(__name__).warning("ShowAdmin save_model executado fora de bloco atômico!")
+
+        if not request.user.is_superuser and not change:
+            if hasattr(request.user, 'band') and request.user.band:
+                obj.band = request.user.band
+
+        if not change:
+            # Criação
+            super().save_model(request, obj, form, change)
+            from core.services.show_notifications import schedule_show_notifications
+            schedule_show_notifications(old_show=None, new_show=obj, actor=request.user, is_creation=True)
+            return
+
+        # Edição
+        old_obj = Show.objects.select_for_update().get(pk=obj.pk, band=obj.band)
+        
+        has_relevant_event = (
+            (old_obj.date != obj.date) or
+            (old_obj.show_time != obj.show_time) or
+            (old_obj.status != 'CANCELADO' and obj.status == 'CANCELADO')
+        )
+        
+        if has_relevant_event:
+            obj.notification_revision += 1
+            
+        super().save_model(request, obj, form, change)
+        
+        if has_relevant_event:
+            from core.services.show_notifications import schedule_show_notifications
+            schedule_show_notifications(old_show=old_obj, new_show=obj, actor=request.user, is_creation=False)
+    
     def get_list_display(self, request):
         if not request.user.is_superuser:
             return tuple(f for f in super().get_list_display(request) if f != 'band')
@@ -296,12 +332,7 @@ class ShowAdmin(admin.ModelAdmin):
             return new_fieldsets
         return fieldsets
 
-    def save_model(self, request, obj, form, change):
-        if not request.user.is_superuser and not change:
-            if hasattr(request.user, 'band') and request.user.band:
-                obj.band = request.user.band
-        super().save_model(request, obj, form, change)
-    
+
     fieldsets = (
         ('Informações Básicas', {
             'fields': ('band', 'title', 'event_name', 'date', 'status')

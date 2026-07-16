@@ -1,5 +1,6 @@
 import datetime
 from django.shortcuts import render, get_object_or_404, redirect
+from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.contrib.auth import logout
@@ -601,9 +602,16 @@ def show_create_view(request, band_slug):
     if request.method == 'POST':
         form = ShowForm(request.POST, request.FILES)
         if form.is_valid():
-            show = form.save(commit=False)
-            show.band = band
-            show.save()
+            with transaction.atomic():
+                show = form.save(commit=False)
+                show.band = band
+                # Criação mantém notification_revision=0
+                show.save()
+                
+                # Agenda notificação de NEW_SHOW
+                from core.services.show_notifications import schedule_show_notifications
+                schedule_show_notifications(old_show=None, new_show=show, actor=request.user, is_creation=True)
+                
             messages.success(request, "Show adicionado com sucesso!")
             if 'save_and_continue' in request.POST:
                 return redirect('shows_edit', band_slug=band.slug, pk=show.id)
@@ -628,16 +636,60 @@ def show_edit_view(request, band_slug, pk):
     show_to_edit = get_object_or_404(Show, pk=pk, band=band)
     
     if request.method == 'POST':
-        form = ShowForm(request.POST, request.FILES, instance=show_to_edit)
-        doc_formset = ContractDocumentFormSet(request.POST, request.FILES, instance=show_to_edit)
-        
-        if form.is_valid() and doc_formset.is_valid():
-            form.save()
-            doc_formset.save()
-            messages.success(request, "Show atualizado com sucesso!")
-            if 'save_and_continue' in request.POST:
-                return redirect('shows_edit', band_slug=band.slug, pk=show_to_edit.id)
-            return redirect('calendario', band_slug=band.slug)
+        with transaction.atomic():
+            # Bloqueio concorrente
+            show_to_edit = Show.objects.select_for_update().get(pk=pk, band=band)
+            
+            # Snapshot antigo
+            old_date = show_to_edit.date
+            old_show_time = show_to_edit.show_time
+            old_status = show_to_edit.status
+            
+            form = ShowForm(request.POST, request.FILES, instance=show_to_edit)
+            doc_formset = ContractDocumentFormSet(request.POST, request.FILES, instance=show_to_edit)
+            
+            if form.is_valid() and doc_formset.is_valid():
+                # Detectar eventos relevantes
+                new_date = form.cleaned_data.get('date')
+                new_show_time = form.cleaned_data.get('show_time')
+                new_status = form.cleaned_data.get('status')
+                
+                has_relevant_event = (
+                    (old_date != new_date) or
+                    (old_show_time != new_show_time) or
+                    (old_status != 'CANCELADO' and new_status == 'CANCELADO')
+                )
+                
+                if has_relevant_event:
+                    show_to_edit.notification_revision += 1
+                    
+                form.save()
+                doc_formset.save()
+                
+                if has_relevant_event:
+                    from core.services.show_notifications import schedule_show_notifications
+                    
+                    # Precisamos montar um mock do old_show contendo apenas o que importa,
+                    # ou podemos passar um dict, mas a assinatura aceita "old_show" que pode
+                    # ser um objeto temporário simulado ou usamos uma dataclass mock. 
+                    # Como Python é flexível, criamos um dummy object para o old_show:
+                    class OldShowMock:
+                        def __init__(self):
+                            self.date = old_date
+                            self.show_time = old_show_time
+                            self.status = old_status
+                            
+                    schedule_show_notifications(
+                        old_show=OldShowMock(), 
+                        new_show=show_to_edit, 
+                        actor=request.user, 
+                        is_creation=False
+                    )
+
+                messages.success(request, "Show atualizado com sucesso!")
+                if 'save_and_continue' in request.POST:
+                    return redirect('shows_edit', band_slug=band.slug, pk=show_to_edit.id)
+                return redirect('calendario', band_slug=band.slug)
     else:
         form = ShowForm(instance=show_to_edit)
         doc_formset = ContractDocumentFormSet(instance=show_to_edit)
