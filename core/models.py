@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 
 class Band(models.Model):
     name = models.CharField(max_length=100, verbose_name="Nome da Banda")
@@ -372,3 +373,52 @@ class BillingRecord(models.Model):
 
     def __str__(self):
         return f"{self.band.name} - {self.reference_period} ({self.get_status_display()})"
+
+class Notification(models.Model):
+    EVENT_CHOICES = (
+        ('NEW_SHOW', 'Novo show'),
+        ('SHOW_CANCELLED', 'Show cancelado'),
+        ('SHOW_DATE_CHANGED', 'Data do show alterada'),
+        ('SHOW_START_TIME_CHANGED', 'Horário inicial do show alterado'),
+    )
+
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='notifications', verbose_name='Banda')
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications', verbose_name='Destinatário')
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications_as_actor', verbose_name='Ator')
+    
+    event_type = models.CharField(max_length=50, choices=EVENT_CHOICES, verbose_name='Tipo de Evento')
+    title = models.CharField(max_length=200, verbose_name='Título')
+    message = models.TextField(verbose_name='Mensagem')
+    target_url = models.CharField(max_length=500, verbose_name='URL de Destino')
+    
+    related_show = models.ForeignKey('Show', on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications', verbose_name='Show Relacionado')
+    event_key = models.CharField(max_length=255, verbose_name='Chave de Idempotência')
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    read_at = models.DateTimeField(null=True, blank=True, verbose_name='Lido em')
+
+    class Meta:
+        verbose_name = 'Notificação'
+        verbose_name_plural = 'Notificações'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['band', 'recipient', 'event_key'], name='unique_notification_recipient_event')
+        ]
+        indexes = [
+            models.Index(fields=['recipient', 'band', 'read_at', 'created_at']),
+            models.Index(fields=['band', 'created_at']),
+        ]
+
+    @property
+    def is_read(self):
+        return self.read_at is not None
+
+    def mark_as_read(self):
+        if not self.is_read:
+            from django.utils import timezone
+            self.read_at = timezone.now()
+            self.save(update_fields=['read_at'])
+
+    def __str__(self):
+        return f"{self.event_type} para {self.recipient} na banda {self.band}"
+
