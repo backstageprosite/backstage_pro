@@ -5,7 +5,8 @@ from django.db import models
 from django.forms import Textarea
 from django.utils import timezone
 import datetime
-from .models import User, Show, FinancialReceipt, ContractDocument, Band, Contact, ShowPayment, ShowTeamCost, BandSubscription, BillingRecord, WebPushSubscription
+from .models import User, Show, FinancialReceipt, ContractDocument, Band, Contact, ShowPayment, ShowTeamCost, BandSubscription, BillingRecord, WebPushSubscription, WebPushDelivery
+
 
 def custom_get_app_list(self, request, app_label=None):
     # Depending on Django version, app_label might be passed
@@ -452,3 +453,17 @@ class WebPushSubscriptionAdmin(admin.ModelAdmin):
             return obj.endpoint_hash[:8] + "..." + obj.endpoint_hash[-8:]
         return ""
     get_masked_endpoint_hash.short_description = "Hash do Endpoint (Mascarado)"
+
+@admin.register(WebPushDelivery)
+class WebPushDeliveryAdmin(admin.ModelAdmin):
+    list_display = ('notification_id', 'subscription_id', 'status', 'attempt_count', 'last_http_status', 'created_at', 'sent_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('notification__id', 'subscription__id', 'notification__recipient__username', 'notification__band__name')
+    readonly_fields = (
+        'notification', 'subscription', 'status', 'attempt_count', 
+        'last_http_status', 'error_code', 'last_attempt_at', 
+        'sent_at', 'created_at', 'updated_at'
+    )
+
+    def has_add_permission(self, request):
+        return False

@@ -523,3 +523,40 @@ class WebPushSubscription(models.Model):
 
     def __str__(self):
         return f"Push de {self.user.username} — {self.band.name} — {'Ativa' if self.is_active else 'Inativa'}"
+
+class WebPushDelivery(models.Model):
+    class StatusChoices(models.TextChoices):
+        PENDING = 'PENDING', 'Pendente'
+        SENDING = 'SENDING', 'Enviando'
+        SENT = 'SENT', 'Enviado'
+        TEMPORARY_FAILURE = 'TEMPORARY_FAILURE', 'Falha Temporária'
+        PERMANENT_FAILURE = 'PERMANENT_FAILURE', 'Falha Permanente'
+        SKIPPED = 'SKIPPED', 'Ignorado'
+
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='web_push_deliveries', verbose_name='Notificação')
+    subscription = models.ForeignKey(WebPushSubscription, on_delete=models.CASCADE, related_name='deliveries', verbose_name='Inscrição Web Push')
+    status = models.CharField(max_length=50, choices=StatusChoices.choices, default=StatusChoices.PENDING, verbose_name='Status')
+    
+    attempt_count = models.PositiveSmallIntegerField(default=0, verbose_name='Tentativas')
+    last_http_status = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name='Último Status HTTP')
+    error_code = models.CharField(max_length=64, blank=True, default='', verbose_name='Código de Erro')
+    
+    last_attempt_at = models.DateTimeField(null=True, blank=True, verbose_name='Última Tentativa')
+    sent_at = models.DateTimeField(null=True, blank=True, verbose_name='Enviado em')
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
+
+    class Meta:
+        verbose_name = 'Entrega Web Push'
+        verbose_name_plural = 'Entregas Web Push'
+        constraints = [
+            models.UniqueConstraint(fields=['notification', 'subscription'], name='uniq_wp_delivery_notif_sub')
+        ]
+        indexes = [
+            models.Index(fields=['status', 'updated_at']),
+            models.Index(fields=['notification', 'status']),
+        ]
+
+    def __str__(self):
+        return f"Notif {self.notification_id} — Sub {self.subscription_id} — {self.status}"
