@@ -109,10 +109,16 @@ class VapidConfigTests(TestCase):
         with self.assertRaises(VapidConfigurationError): validate_vapid_public_key(self.valid_pub_b64url + "=")
         
         # character '+' rejected
-        with self.assertRaises(VapidConfigurationError): validate_vapid_public_key(self.valid_pub_b64url.replace('-', '+'))
+        invalid_plus = self.valid_pub_b64url.replace('-', '+')
+        if invalid_plus == self.valid_pub_b64url:
+            invalid_plus = self.valid_pub_b64url[:-1] + '+'
+        with self.assertRaises(VapidConfigurationError): validate_vapid_public_key(invalid_plus)
             
         # character '/' rejected
-        with self.assertRaises(VapidConfigurationError): validate_vapid_public_key(self.valid_pub_b64url.replace('_', '/'))
+        invalid_slash = self.valid_pub_b64url.replace('_', '/')
+        if invalid_slash == self.valid_pub_b64url:
+            invalid_slash = self.valid_pub_b64url[:-1] + '/'
+        with self.assertRaises(VapidConfigurationError): validate_vapid_public_key(invalid_slash)
         
         # Non-canonical string rejected. 
         # Base64 with validate=True is very strict, but we test that any alteration throws VapidConfigurationError
