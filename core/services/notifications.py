@@ -1,8 +1,33 @@
 import urllib.parse
 import posixpath
-from django.db import IntegrityError
+import logging
+from functools import partial
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from core.models import Notification, User
+from core.services.web_push_delivery import prepare_web_push_deliveries, send_web_push_delivery
+
+logger = logging.getLogger(__name__)
+
+WEB_PUSH_ALLOWED_EVENTS = frozenset([
+    'NEW_SHOW',
+    'SHOW_CANCELLED',
+    'SHOW_DATE_CHANGED',
+    'SHOW_START_TIME_CHANGED',
+])
+
+def _dispatch_web_push_deliveries_safe(delivery_ids):
+    for delivery_id in delivery_ids:
+        try:
+            send_web_push_delivery(delivery_id)
+        except Exception:
+            logger.error(
+                "Web Push callback failure",
+                extra={
+                    "delivery_id": delivery_id,
+                    "error_code": "unexpected_callback_failure",
+                },
+            )
 
 def validate_target_url(target_url, band_slug):
     if not target_url:
@@ -101,6 +126,9 @@ def notify_band_users(band, event_type, title, message, target_url, event_key_ba
     recipients = User.objects.filter(is_active=True, band=band, role__in=['PRODUTOR', 'INTEGRANTE'])
     
     count = 0
+    prepared_delivery_ids = []
+    database_alias = 'default'
+    
     for recipient in recipients:
         try:
             notification, created = create_notification(
@@ -116,9 +144,39 @@ def notify_band_users(band, event_type, title, message, target_url, event_key_ba
             )
             if created:
                 count += 1
+                if event_type in WEB_PUSH_ALLOWED_EVENTS:
+                    try:
+                        with transaction.atomic(using=database_alias):
+                            deliveries = prepare_web_push_deliveries(notification.id)
+                            prepared_delivery_ids.extend(
+                                delivery.id for delivery in deliveries
+                            )
+                    except Exception:
+                        logger.error(
+                            "Web Push preparation failure",
+                            extra={
+                                "notification_id": notification.id,
+                                "band_id": band.id,
+                                "event_type": event_type,
+                                "error_code": "web_push_preparation_failure",
+                            },
+                        )
         except ValueError:
             # Pula criacao caso algo venha quebrado na geracao
             continue
+
+    delivery_ids = tuple(dict.fromkeys(prepared_delivery_ids))
+
+    if delivery_ids:
+        transaction.on_commit(
+            partial(
+                _dispatch_web_push_deliveries_safe,
+                delivery_ids,
+            ),
+            using=database_alias,
+            robust=True,
+        )
+
     return count
 
 
