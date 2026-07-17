@@ -190,3 +190,215 @@ def reconcile_stale_sending_deliveries(stale_minutes: int, limit: int = 100, exe
         "reconciled_count": reconciled,
         "ids": ids,
     }
+
+import logging
+from core.services.web_push_delivery import send_web_push_delivery
+
+logger = logging.getLogger(__name__)
+
+from django.db.models import Case, When, Value, IntegerField, DateTimeField, F
+from django.db.models.functions import Coalesce
+
+def find_retryable_web_push_deliveries(band_slug: str, status_filter: str, retry_after_minutes: int, max_attempts: int, limit: int):
+    now = timezone.now()
+    age_threshold = now - datetime.timedelta(minutes=retry_after_minutes)
+    
+    qs = WebPushDelivery.objects.filter(
+        notification__band__slug=band_slug,
+        attempt_count__lt=max_attempts,
+        subscription__is_active=True,
+        subscription__user=F('notification__recipient'),
+        subscription__band=F('notification__band'),
+        subscription__service_worker_scope=f"/{band_slug}/"
+    ).filter(
+        Q(subscription__expiration_time__isnull=True) | Q(subscription__expiration_time__gt=now)
+    )
+
+    if status_filter == 'pending':
+        qs = qs.filter(
+            status=WebPushDelivery.StatusChoices.PENDING,
+            updated_at__lt=age_threshold
+        )
+    elif status_filter == 'temporary-failure':
+        qs = qs.filter(
+            status=WebPushDelivery.StatusChoices.TEMPORARY_FAILURE
+        ).filter(
+            Q(last_attempt_at__isnull=False, last_attempt_at__lt=age_threshold) |
+            Q(last_attempt_at__isnull=True, updated_at__lt=age_threshold)
+        )
+    else:  # both
+        qs = qs.filter(
+            Q(
+                status=WebPushDelivery.StatusChoices.PENDING,
+                updated_at__lt=age_threshold
+            ) |
+            Q(
+                status=WebPushDelivery.StatusChoices.TEMPORARY_FAILURE,
+                last_attempt_at__isnull=False, last_attempt_at__lt=age_threshold
+            ) |
+            Q(
+                status=WebPushDelivery.StatusChoices.TEMPORARY_FAILURE,
+                last_attempt_at__isnull=True, updated_at__lt=age_threshold
+            )
+        )
+
+    qs = qs.annotate(
+        status_order=Case(
+            When(status=WebPushDelivery.StatusChoices.PENDING, then=Value(1)),
+            When(status=WebPushDelivery.StatusChoices.TEMPORARY_FAILURE, then=Value(2)),
+            default=Value(3),
+            output_field=IntegerField(),
+        ),
+        sort_time=Case(
+            When(
+                status=WebPushDelivery.StatusChoices.PENDING,
+                then=F("updated_at"),
+            ),
+            When(
+                status=WebPushDelivery.StatusChoices.TEMPORARY_FAILURE,
+                then=Coalesce("last_attempt_at", "updated_at"),
+            ),
+            default=F("updated_at"),
+            output_field=DateTimeField(),
+        )
+    ).order_by('status_order', 'sort_time', 'pk')[:limit]
+
+    results = []
+    for delivery in qs.values('id', 'status', 'attempt_count', 'updated_at', 'last_attempt_at'):
+        ts = delivery['last_attempt_at'] or delivery['updated_at']
+        results.append({
+            "delivery_id": delivery['id'],
+            "status": delivery['status'],
+            "attempt_count": delivery['attempt_count'],
+            "timestamp": ts.isoformat() if ts else None,
+            "band_slug": band_slug
+        })
+    return results
+
+def retry_web_push_deliveries(*, band_slug: str, status_filter: str = 'both', retry_after_minutes: int = 15, max_attempts: int = 3, limit: int = 50, execute: bool = False):
+    if not band_slug:
+        raise ValueError("band_slug is required")
+        
+    if status_filter not in ['pending', 'temporary-failure', 'both']:
+        raise ValueError("status_filter must be pending, temporary-failure, or both")
+        
+    if not isinstance(retry_after_minutes, (int, float)) or retry_after_minutes < 5 or retry_after_minutes > 10080:
+        raise ValueError("retry_after_minutes deve estar entre 5 e 10080")
+        
+    if not isinstance(max_attempts, int) or max_attempts < 1 or max_attempts > 10:
+        raise ValueError("max_attempts deve estar entre 1 e 10")
+        
+    if not isinstance(limit, int) or limit < 1 or limit > 500:
+        raise ValueError("limit deve estar entre 1 e 500")
+
+    candidates = find_retryable_web_push_deliveries(band_slug, status_filter, retry_after_minutes, max_attempts, limit)
+    
+    summary = {
+        "mode": "EXECUTE" if execute else "DRY-RUN",
+        "candidates": len(candidates),
+        "attempted": 0,
+        "sent": 0,
+        "temporary_failure": 0,
+        "permanent_failure": 0,
+        "skipped": 0,
+        "skipped_concurrent": 0,
+        "skipped_max_attempts": 0,
+        "skipped_inactive_subscription": 0,
+        "skipped_expired_subscription": 0,
+        "unexpected_error": 0,
+        "processed_ids": []
+    }
+
+    if not execute:
+        summary["processed_ids"] = [c["delivery_id"] for c in candidates]
+        return {"candidates": candidates, "summary": summary}
+        
+    now = timezone.now()
+    age_threshold = now - datetime.timedelta(minutes=retry_after_minutes)
+
+    for cand in candidates:
+        d_id = cand["delivery_id"]
+        initial_status = cand["status"]
+        
+        try:
+            if initial_status == WebPushDelivery.StatusChoices.TEMPORARY_FAILURE:
+                updated = WebPushDelivery.objects.filter(
+                    pk=d_id,
+                    status=WebPushDelivery.StatusChoices.TEMPORARY_FAILURE,
+                    attempt_count__lt=max_attempts,
+                    notification__band__slug=band_slug,
+                    subscription__is_active=True,
+                    subscription__user=F('notification__recipient'),
+                    subscription__band=F('notification__band'),
+                    subscription__service_worker_scope=f"/{band_slug}/"
+                ).filter(
+                    Q(subscription__expiration_time__isnull=True) | Q(subscription__expiration_time__gt=now)
+                ).filter(
+                    Q(last_attempt_at__isnull=False, last_attempt_at__lt=age_threshold) |
+                    Q(last_attempt_at__isnull=True, updated_at__lt=age_threshold)
+                ).update(
+                    status=WebPushDelivery.StatusChoices.PENDING,
+                    error_code="",
+                    last_http_status=None,
+                    updated_at=now
+                )
+                
+                if updated == 1:
+                    res = send_web_push_delivery(d_id)
+                    summary["attempted"] += 1
+                else:
+                    summary["skipped_concurrent"] += 1
+                    continue
+                    
+            elif initial_status == WebPushDelivery.StatusChoices.PENDING:
+                valid = WebPushDelivery.objects.filter(
+                    pk=d_id,
+                    status=WebPushDelivery.StatusChoices.PENDING,
+                    attempt_count__lt=max_attempts,
+                    notification__band__slug=band_slug,
+                    subscription__is_active=True,
+                    subscription__user=F('notification__recipient'),
+                    subscription__band=F('notification__band'),
+                    subscription__service_worker_scope=f"/{band_slug}/",
+                    updated_at__lt=age_threshold
+                ).filter(
+                    Q(subscription__expiration_time__isnull=True) | Q(subscription__expiration_time__gt=now)
+                ).exists()
+                
+                if not valid:
+                    summary["skipped_concurrent"] += 1
+                    continue
+                
+                res = send_web_push_delivery(d_id)
+                summary["attempted"] += 1
+            else:
+                summary["skipped_concurrent"] += 1
+                continue
+                
+            if res == "SENT":
+                summary["sent"] += 1
+            elif res == "TEMPORARY_FAILURE":
+                summary["temporary_failure"] += 1
+            elif res == "PERMANENT_FAILURE":
+                summary["permanent_failure"] += 1
+            elif res in ["SKIPPED", "SKIPPED/ALREADY_CLAIMED", "SKIPPED/ALREADY_FINALIZED"]:
+                summary["skipped"] += 1
+            else:
+                summary["unexpected_error"] += 1
+                
+            summary["processed_ids"].append(d_id)
+            
+        except Exception as e:
+            summary["unexpected_error"] += 1
+            logger.warning(
+                f"Unexpected error retrying web push delivery: {e}",
+                extra={
+                    "delivery_id": d_id,
+                    "band_slug": band_slug,
+                    "previous_status": initial_status,
+                    "attempt_count": cand["attempt_count"]
+                },
+                exc_info=True
+            )
+            
+    return {"candidates": candidates, "summary": summary}
