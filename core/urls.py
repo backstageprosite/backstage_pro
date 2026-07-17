@@ -1,10 +1,16 @@
 from django.urls import path
-from . import views, pwa_views, file_views, notification_views
+from . import views, pwa_views, file_views, notification_views, push_views
 
 urlpatterns = [
     path('manifest.webmanifest', pwa_views.band_manifest, name='manifest'),
     path('sw.js', pwa_views.band_service_worker, name='band_sw'),
     path('pwa/<str:filename>', pwa_views.band_icon_view, name='band_icon'),
+    
+    # Web Push Endpoints (Etapa 7B.1)
+    path('push/chave-publica/', push_views.push_public_key, name='push_public_key'),
+    path('push/status/', push_views.push_subscription_status, name='push_subscription_status'),
+    path('push/inscrever/', push_views.push_subscribe, name='push_subscribe'),
+    path('push/desinscrever/', push_views.push_unsubscribe, name='push_unsubscribe'),
     path('calendario/', views.calendario, name='calendario'),
     path('painel/', views.dashboard_view, name='dashboard'),
     path('shows/', views.shows_list_view, name='shows_list'),
