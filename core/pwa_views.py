@@ -230,11 +230,19 @@ def band_service_worker(request, band_slug):
     if not band.is_active:
         raise Http404("Banda inativa.")
         
+    v, _ = get_band_icon_version(band)
+    icon_url = reverse('band_icon', kwargs={'band_slug': band.slug, 'filename': 'icon-192.png'}) + f"?v={v}"
+    notifications_url = reverse('notifications_list', kwargs={'band_slug': band.slug})
+
     sw_content = f"""
 "use strict";
 
-const SW_VERSION = {json.dumps(band.slug + "-v1")};
-const SCOPE = {json.dumps("/" + band.slug + "/")};
+const SW_VERSION = {json.dumps(band.slug + "-v2")};
+const BAND_SLUG = {json.dumps(band.slug)};
+const BAND_SCOPE = {json.dumps("/" + band.slug + "/")};
+const BAND_NAME = {json.dumps(band.name.strip())};
+const NOTIFICATIONS_URL = {json.dumps(notifications_url)};
+const ICON_URL = {json.dumps(icon_url)};
 
 self.addEventListener("install", (event) => {{
     // Pass-through install
@@ -242,6 +250,152 @@ self.addEventListener("install", (event) => {{
 
 self.addEventListener("activate", (event) => {{
     // Pass-through activate
+}});
+
+function normalizeInternalTarget(rawTarget) {{
+    if (typeof rawTarget !== 'string') return NOTIFICATIONS_URL;
+    if (rawTarget.length > 500) return NOTIFICATIONS_URL;
+    
+    if (!rawTarget.startsWith('/') || rawTarget.startsWith('//')) return NOTIFICATIONS_URL;
+    if (/[\\x00-\\x1F\\x7F\\r\\n\\\\]/.test(rawTarget)) return NOTIFICATIONS_URL;
+    
+    try {{
+        const url = new URL(rawTarget, self.location.origin);
+        if (url.origin !== self.location.origin) return NOTIFICATIONS_URL;
+        if (!url.pathname.startsWith(BAND_SCOPE)) return NOTIFICATIONS_URL;
+        if (url.pathname.startsWith('/painel/')) return NOTIFICATIONS_URL;
+        
+        const segments = url.pathname.split('/');
+        const badSegments = ['.', '..', '%2e', '%2e%2e', '%252e', '%252e%252e'];
+        for (let b of badSegments) {{
+            if (segments.includes(b)) return NOTIFICATIONS_URL;
+        }}
+        
+        const decoded = decodeURIComponent(url.pathname);
+        const decSegments = decoded.split('/');
+        if (decSegments.includes('.') || decSegments.includes('..')) return NOTIFICATIONS_URL;
+        if (decoded.includes('//')) return NOTIFICATIONS_URL;
+        
+        return url.pathname + url.search;
+    }} catch (e) {{
+        return NOTIFICATIONS_URL;
+    }}
+}}
+
+self.addEventListener("push", (event) => {{
+    event.waitUntil((async () => {{
+        let payload = null;
+        try {{
+            if (event.data) {{
+                payload = event.data.json();
+            }}
+        }} catch (e) {{
+            payload = null;
+        }}
+
+        let title = BAND_NAME || "Backstage Pro";
+        let message = "Há uma nova atualização disponível.";
+        let targetUrl = NOTIFICATIONS_URL;
+        let notificationId = null;
+        let eventType = null;
+
+        if (payload) {{
+            if (
+                payload.version === 1 &&
+                Number.isInteger(payload.notification_id) && payload.notification_id > 0 &&
+                ["NEW_SHOW", "SHOW_CANCELLED", "SHOW_DATE_CHANGED", "SHOW_START_TIME_CHANGED"].includes(payload.event_type) &&
+                payload.band_slug === BAND_SLUG &&
+                typeof payload.title === 'string' && payload.title.trim().length > 0 && payload.title.length <= 120 &&
+                !/[\\x00-\\x1F\\x7F<>]/.test(payload.title) &&
+                typeof payload.message === 'string' && payload.message.trim().length > 0 && payload.message.length <= 300 &&
+                !/[\\x00-\\x1F\\x7F<>]/.test(payload.message)
+            ) {{
+                title = payload.title.trim();
+                message = payload.message.trim();
+                targetUrl = normalizeInternalTarget(payload.target_url);
+                notificationId = payload.notification_id;
+                eventType = payload.event_type;
+            }}
+        }}
+
+        const options = {{
+            body: message,
+            icon: ICON_URL,
+            data: {{
+                notificationId: notificationId,
+                targetUrl: targetUrl,
+                bandSlug: BAND_SLUG,
+                eventType: eventType
+            }}
+        }};
+
+        let tag = "backstagepro-" + BAND_SLUG + "-notification";
+        if (notificationId) {{
+            tag += "-" + notificationId;
+        }}
+        options.tag = tag;
+
+        return self.registration.showNotification(title, options);
+    }})().catch(() => {{
+        return self.registration.showNotification(BAND_NAME || "Backstage Pro", {{
+            body: "Há uma nova atualização disponível.",
+            icon: ICON_URL,
+            data: {{ targetUrl: NOTIFICATIONS_URL }}
+        }});
+    }}));
+}});
+
+self.addEventListener("notificationclick", (event) => {{
+    event.notification.close();
+
+    event.waitUntil((async () => {{
+        let rawTarget = NOTIFICATIONS_URL;
+        if (event.notification.data && event.notification.data.targetUrl) {{
+            rawTarget = event.notification.data.targetUrl;
+        }}
+        const targetUrl = normalizeInternalTarget(rawTarget);
+        const absoluteTargetUrl = new URL(targetUrl, self.location.origin).href;
+
+        let windowClients = [];
+        try {{
+            windowClients = await clients.matchAll({{
+                type: "window",
+                includeUncontrolled: true
+            }});
+        }} catch (e) {{
+            windowClients = [];
+        }}
+
+        for (let client of windowClients) {{
+            if (client.url === absoluteTargetUrl) {{
+                try {{
+                    return await client.focus();
+                }} catch (e) {{
+                    return;
+                }}
+            }}
+        }}
+
+        for (let client of windowClients) {{
+            try {{
+                const clientUrl = new URL(client.url);
+                if (clientUrl.origin === self.location.origin && clientUrl.pathname.startsWith(BAND_SCOPE)) {{
+                    const navigatedClient = await client.navigate(targetUrl);
+                    if (navigatedClient) {{
+                        return await navigatedClient.focus();
+                    }} else {{
+                        return await client.focus();
+                    }}
+                }}
+            }} catch (e) {{}}
+        }}
+
+        if (clients.openWindow) {{
+            try {{
+                return await clients.openWindow(targetUrl);
+            }} catch (e) {{}}
+        }}
+    }})());
 }});
 """
     response = HttpResponse(sw_content.strip(), content_type='application/javascript; charset=utf-8')

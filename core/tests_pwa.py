@@ -235,7 +235,7 @@ class PWAManifestTestCase(TestCase):
         self.assertEqual(response['Cache-Control'], 'no-cache, no-store, must-revalidate')
         self.assertEqual(response['X-Content-Type-Options'], 'nosniff')
         self.assertEqual(response['Service-Worker-Allowed'], f'/{self.band_a.slug}/')
-        self.assertContains(response, f'"{self.band_a.slug}-v1"')
+        self.assertContains(response, f'"{self.band_a.slug}-v2"')
         self.assertContains(response, f'"/{self.band_a.slug}/"')
         self.assertNotContains(response, self.band_b.slug)
         self.assertNotContains(response, 'skipWaiting')
