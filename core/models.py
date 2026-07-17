@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+import hashlib
 
 class Band(models.Model):
     name = models.CharField(max_length=100, verbose_name="Nome da Banda")
@@ -425,3 +426,100 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.event_type} para {self.recipient} na banda {self.band}"
 
+
+
+class WebPushSubscription(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="web_push_subscriptions", verbose_name="Usuário")
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name="web_push_subscriptions", verbose_name="Banda")
+    endpoint = models.TextField(verbose_name="Endpoint")
+    endpoint_hash = models.CharField(max_length=64, unique=True, editable=False, verbose_name="Hash do Endpoint")
+    p256dh = models.CharField(max_length=255, verbose_name="Chave Pública P256DH")
+    auth = models.CharField(max_length=255, verbose_name="Chave de Autenticação")
+    service_worker_scope = models.CharField(max_length=500, verbose_name="Scope do Service Worker")
+    user_agent = models.CharField(max_length=512, blank=True, default="", verbose_name="User Agent")
+    expiration_time = models.DateTimeField(null=True, blank=True, verbose_name="Data de Expiração")
+    is_active = models.BooleanField(default=True, verbose_name="Ativo")
+    failure_count = models.PositiveSmallIntegerField(default=0, verbose_name="Contagem de Falhas")
+    last_success_at = models.DateTimeField(null=True, blank=True, verbose_name="Último Sucesso")
+    last_failure_at = models.DateTimeField(null=True, blank=True, verbose_name="Última Falha")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Criado em")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Atualizado em")
+
+    class Meta:
+        verbose_name = "Inscrição Web Push"
+        verbose_name_plural = "Inscrições Web Push"
+        indexes = [
+            models.Index(fields=['user', 'band', 'is_active']),
+            models.Index(fields=['band', 'is_active']),
+        ]
+
+    def _refresh_endpoint_hash(self):
+        if not self.endpoint:
+            self.endpoint_hash = ""
+            return
+        import hashlib
+        self.endpoint_hash = hashlib.sha256(self.endpoint.encode('utf-8')).hexdigest()
+
+    def full_clean(self, exclude=None, validate_unique=True, validate_constraints=True):
+        self._refresh_endpoint_hash()
+        return super().full_clean(
+            exclude=exclude,
+            validate_unique=validate_unique,
+            validate_constraints=validate_constraints,
+        )
+
+    def save(self, *args, **kwargs):
+        self._refresh_endpoint_hash()
+
+        update_fields = kwargs.get('update_fields')
+        if update_fields is not None and 'endpoint' in update_fields:
+            if 'endpoint_hash' not in update_fields:
+                kwargs['update_fields'] = list(update_fields) + ['endpoint_hash']
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        if self.service_worker_scope:
+            from django.core.exceptions import ValidationError
+            import urllib.parse
+            import unicodedata
+            
+            scope = self.service_worker_scope
+            
+            # Anti-double encoding
+            decoded_once = urllib.parse.unquote(scope)
+            decoded_twice = urllib.parse.unquote(decoded_once)
+            
+            if decoded_once != decoded_twice:
+                raise ValidationError({'service_worker_scope': 'Double encoding detectado'})
+                
+            scope = decoded_once
+            
+            for char in scope:
+                if unicodedata.category(char).startswith('C'):
+                    raise ValidationError({'service_worker_scope': 'Não pode conter caracteres de controle'})
+
+            if '\\' in scope:
+                raise ValidationError({'service_worker_scope': 'Não pode conter backslash'})
+            
+            if not scope.startswith('/'):
+                raise ValidationError({'service_worker_scope': 'Deve começar com /'})
+            
+            if not scope.endswith('/'):
+                raise ValidationError({'service_worker_scope': 'Deve terminar com /'})
+            
+            if '//' in scope:
+                raise ValidationError({'service_worker_scope': 'Não pode conter //'})
+                
+            parsed = urllib.parse.urlsplit(scope)
+            if parsed.scheme or parsed.netloc:
+                raise ValidationError({'service_worker_scope': 'Não pode conter scheme ou netloc'})
+                
+            parts = parsed.path.split('/')
+            if '.' in parts or '..' in parts:
+                raise ValidationError({'service_worker_scope': 'Não pode conter segmentos . ou ..'})
+
+    def __str__(self):
+        return f"Push de {self.user.username} — {self.band.name} — {'Ativa' if self.is_active else 'Inativa'}"

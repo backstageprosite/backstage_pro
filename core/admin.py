@@ -5,7 +5,7 @@ from django.db import models
 from django.forms import Textarea
 from django.utils import timezone
 import datetime
-from .models import User, Show, FinancialReceipt, ContractDocument, Band, Contact, ShowPayment, ShowTeamCost, BandSubscription, BillingRecord
+from .models import User, Show, FinancialReceipt, ContractDocument, Band, Contact, ShowPayment, ShowTeamCost, BandSubscription, BillingRecord, WebPushSubscription
 
 def custom_get_app_list(self, request, app_label=None):
     # Depending on Django version, app_label might be passed
@@ -401,3 +401,54 @@ class BillingRecordAdmin(admin.ModelAdmin):
 admin.site.site_header = "Administração Backstage Pro"
 admin.site.site_title = "Admin Backstage Pro"
 admin.site.index_title = "Painel de Controle"
+
+@admin.register(WebPushSubscription)
+class WebPushSubscriptionAdmin(admin.ModelAdmin):
+    list_display = (
+        'user', 
+        'band', 
+        'get_masked_endpoint_hash', 
+        'is_active', 
+        'created_at'
+    )
+    search_fields = (
+        'user__username',
+        'user__email',
+        'band__name',
+    )
+    list_filter = ('band', 'is_active', 'created_at')
+    readonly_fields = (
+        'get_masked_endpoint', 
+        'get_masked_endpoint_hash', 
+        'user_agent', 
+        'service_worker_scope', 
+        'failure_count', 
+        'last_success_at', 
+        'last_failure_at',
+        'created_at',
+        'updated_at'
+    )
+    exclude = (
+        'endpoint', 
+        'endpoint_hash', 
+        'p256dh', 
+        'auth'
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def get_masked_endpoint(self, obj):
+        if obj.endpoint:
+            return obj.endpoint[:15] + "... [MASKS]"
+        return ""
+    get_masked_endpoint.short_description = "Endpoint (Mascarado)"
+
+    def get_masked_endpoint_hash(self, obj):
+        if obj.endpoint_hash:
+            return obj.endpoint_hash[:8] + "..." + obj.endpoint_hash[-8:]
+        return ""
+    get_masked_endpoint_hash.short_description = "Hash do Endpoint (Mascarado)"
