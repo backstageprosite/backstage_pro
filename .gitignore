@@ -37,6 +37,9 @@ test_error.py
 !.env.example
 *.pem
 *.key
+*.der
+private_key*
+public_key*
 local_settings.py
 
 # debug and logs

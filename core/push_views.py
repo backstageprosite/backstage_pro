@@ -12,6 +12,7 @@ from functools import wraps
 from core.models import Band
 from core.services import web_push_subscriptions
 from core.services.web_push_subscriptions import SubscriptionConflictError
+from core.services.vapid_config import load_vapid_configuration, VapidConfigurationError
 
 def set_no_store(response):
     response['Cache-Control'] = 'no-store'
@@ -187,14 +188,11 @@ def sanitize_user_agent(request):
 @require_json_get
 @api_band_auth_required
 def push_public_key(request, band_slug):
-    key = getattr(settings, 'VAPID_PUBLIC_KEY', None)
-    if not key or not isinstance(key, str):
+    try:
+        vapid_config = load_vapid_configuration()
+        return set_no_store(JsonResponse({"publicKey": vapid_config.public_key}))
+    except VapidConfigurationError:
         return set_no_store(JsonResponse({"error": "push_not_configured"}, status=503))
-        
-    if not validate_p256dh(key):
-        return set_no_store(JsonResponse({"error": "push_not_configured"}, status=503))
-        
-    return set_no_store(JsonResponse({"publicKey": key}))
 
 
 @api_band_auth_required

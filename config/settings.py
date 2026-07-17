@@ -26,6 +26,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'chave-local-insegura-para-desenvolvimento'
 
 # VAPID Public Key for Web Push
 VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '').strip()
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '').strip()
+VAPID_SUBJECT = os.environ.get('VAPID_SUBJECT', '').strip()
 
 # Custom CSRF Failure View
 CSRF_FAILURE_VIEW = 'core.push_views.custom_csrf_failure'

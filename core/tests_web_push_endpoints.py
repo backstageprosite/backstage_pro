@@ -163,7 +163,9 @@ class WebPushEndpointsTests(TestCase):
             self.assertEqual(resp.status_code, 503)
             
         # Válida (0x04 no início, 65 bytes)
-        with override_settings(VAPID_PUBLIC_KEY=VALID_P256DH):
+        with patch('core.push_views.load_vapid_configuration') as mock_load:
+            from core.services.vapid_config import VapidConfiguration
+            mock_load.return_value = VapidConfiguration(public_key=VALID_P256DH, private_key="dummy", subject="https://dummy")
             resp = self.client.get(url)
             self.assertEqual(resp.status_code, 200)
 
