@@ -93,6 +93,64 @@ class WebPushDashboardTests(TestCase):
         res = self.client.post(self.url, {"test": 1})
         self.assertEqual(res.status_code, 405)
 
+    def test_invalid_band_renders_correctly_and_preserves_filters(self):
+        self.client.force_login(self.superuser)
+        url = reverse("admin_painel:admin_web_push_dashboard")
+        res = self.client.get(url + "?band_slug=banda-inexistente&hours=42&stale_pending_minutes=43&stale_sending_minutes=44&limit=45")
+        
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.context['invalid_band_filter'])
+        self.assertEqual(res.context['current_hours'], 42)
+        self.assertEqual(res.context['current_stale_pending'], 43)
+        self.assertEqual(res.context['current_stale_sending'], 44)
+        self.assertEqual(res.context['current_limit'], 45)
+        
+        content = res.content.decode("utf-8", errors="replace")
+        self.assertIn("Filtro de banda", content)
+        # actually django escape might not escape á if we write it directly or it might
+        
+    def test_invalid_band_text(self):
+        self.client.force_login(self.superuser)
+        url = reverse("admin_painel:admin_web_push_dashboard")
+        res = self.client.get(url + "?band_slug=banda-inexistente")
+        content = res.content.decode("utf-8", errors="replace")
+        self.assertIn("Filtro de banda", content)
+        self.assertIn("porque a banda informada", content)
+        self.assertNotIn("Visão Administrativa Global", content)
+
+    def test_date_formatting(self):
+        from core.models import Band, Notification, WebPushSubscription, WebPushDelivery, User
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        user = User.objects.create_user(username="testuser999", password="pwd", email="999@example.com")
+        band = Band.objects.create(name="Band 999", slug="band-999")
+        band.users.add(user)
+        notification = Notification.objects.create(band=band, title="Test", message="Test", recipient=user)
+        sub = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://test9", p256dh="a", auth="a", service_worker_scope="/")
+        d1 = WebPushDelivery.objects.create(notification=notification, subscription=sub, status=WebPushDelivery.StatusChoices.PENDING)
+        
+        # force dates
+        now = timezone.now()
+        d1.created_at = now - timedelta(days=1)
+        d1.save()
+
+        self.client.force_login(self.superuser)
+        url = reverse("admin_painel:admin_web_push_dashboard")
+        res = self.client.get(url + "?band_slug=band-999")
+        content = res.content.decode("utf-8")
+        
+        # format we expect: d/m/Y às H:i (e.g. 17/07/2026 às 12:34)
+        from django.utils.timezone import localtime
+        expected_date = localtime(d1.created_at).strftime("%d/%m/%Y")
+        expected_time = localtime(d1.created_at).strftime("%H:%M")
+        
+        content = res.content.decode("utf-8", errors="replace")
+        self.assertIn(expected_date, content)
+        self.assertIn(expected_time, content)
+        self.assertNotIn(d1.created_at.isoformat(), content)
+
+
     def test_uses_snapshot(self):
         self.client.login(username="admin", password="pwd")
         res = self.client.get(self.url)

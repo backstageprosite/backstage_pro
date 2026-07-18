@@ -1,4 +1,5 @@
 {% extends "core/admin/base_admin.html" %}
+{% load web_push_tags %}
 
 {% block extra_head %}
 <style>
@@ -62,7 +63,12 @@
                 <div>
                     <h4 class="mb-1 fw-bold">Estado Geral: {{ overall_state }}</h4>
                     {% if current_band_slug %}
-                    <p class="mb-0 opacity-75">Filtrado para a banda: <strong>{{ current_band_slug }}</strong></p>
+                        {% if invalid_band_filter %}
+                            <p class="mb-0 opacity-75">Filtro de banda inválido</p>
+                            <p class="mb-0 small text-white-50">Nenhum dado foi carregado porque a banda informada não existe.</p>
+                        {% else %}
+                            <p class="mb-0 opacity-75">Filtrado para a banda: <strong>{{ current_band_slug }}</strong></p>
+                        {% endif %}
                     {% else %}
                     <p class="mb-0 opacity-75">Visão Administrativa Global</p>
                     {% endif %}
@@ -264,25 +270,25 @@
                     <li class="list-group-item px-0">
                         <div class="text-muted small fw-bold text-uppercase mb-1">PENDING Mais Antiga</div>
                         <div class="fw-medium text-dark">
-                            {% if snapshot.antiquity.oldest_pending_created_at %}{{ snapshot.antiquity.oldest_pending_created_at }}{% else %}Nenhum registro{% endif %}
+                            {{ snapshot.antiquity.oldest_pending_created_at|format_iso_date_br }}
                         </div>
                     </li>
                     <li class="list-group-item px-0">
                         <div class="text-muted small fw-bold text-uppercase mb-1">SENDING Mais Antiga</div>
                         <div class="fw-medium text-dark">
-                            {% if snapshot.antiquity.oldest_sending_last_attempt_at %}{{ snapshot.antiquity.oldest_sending_last_attempt_at }}{% else %}Nenhum registro{% endif %}
+                            {{ snapshot.antiquity.oldest_sending_last_attempt_at|format_iso_date_br }}
                         </div>
                     </li>
                     <li class="list-group-item px-0">
                         <div class="text-muted small fw-bold text-uppercase mb-1">Último Sucesso</div>
                         <div class="fw-medium text-success">
-                            {% if snapshot.antiquity.last_success_at %}{{ snapshot.antiquity.last_success_at }}{% else %}Nenhum registro{% endif %}
+                            {{ snapshot.antiquity.last_success_at|format_iso_date_br }}
                         </div>
                     </li>
                     <li class="list-group-item px-0">
                         <div class="text-muted small fw-bold text-uppercase mb-1">Última Falha</div>
                         <div class="fw-medium text-danger">
-                            {% if snapshot.antiquity.last_failure_at %}{{ snapshot.antiquity.last_failure_at }}{% else %}Nenhum registro{% endif %}
+                            {{ snapshot.antiquity.last_failure_at|format_iso_date_br }}
                         </div>
                     </li>
                 </ul>
@@ -354,9 +360,9 @@
                         <td>{{ d.attempt_count }}</td>
                         <td>{% if d.last_http_status %}{{ d.last_http_status }}{% else %}-{% endif %}</td>
                         <td class="text-danger small">{% if d.error_code %}{{ d.error_code }}{% else %}-{% endif %}</td>
-                        <td class="small">{{ d.created_at|date:"Y-m-d H:i:s" }}</td>
-                        <td class="small">{{ d.updated_at|date:"Y-m-d H:i:s" }}</td>
-                        <td class="small">{% if d.last_attempt_at %}{{ d.last_attempt_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</td>
+                        <td class="small">{{ d.created_at|format_iso_date_br }}</td>
+                        <td class="small">{{ d.updated_at|format_iso_date_br }}</td>
+                        <td class="small">{{ d.last_attempt_at|format_iso_date_br }}</td>
                     </tr>
                     {% empty %}
                     <tr>
