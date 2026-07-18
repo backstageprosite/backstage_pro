@@ -14,6 +14,16 @@ import datetime
 def is_admin_geral(user):
     return user.is_authenticated and user.is_superuser
 
+def is_admin_web_push(user):
+    return (
+        user.is_authenticated
+        and user.is_staff
+        and (
+            user.is_superuser
+            or user.has_perm("core.view_webpushdelivery")
+        )
+    )
+
 class AdminLoginView(LoginView):
     template_name = 'admin/login.html'
     redirect_authenticated_user = True
@@ -565,3 +575,120 @@ def admin_cobranca_change_status(request, pk, status):
                     
             messages.success(request, f"Status alterado para {record.get_status_display()}!")
     return redirect('admin_painel:cobrancas')
+
+def is_admin_web_push(user):
+    return user.is_authenticated and (user.is_superuser or user.has_perm('core.view_webpushdelivery'))
+
+class AdminWebPushRequiredMixin:
+    @method_decorator(user_passes_test(is_admin_web_push, login_url='/painel/login/'))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+from django.views.decorators.http import require_GET
+from core.services.web_push_operations import build_web_push_health_snapshot, build_web_push_operational_alerts, list_recent_problematic_deliveries
+
+@method_decorator(require_GET, name='dispatch')
+class AdminWebPushDashboardView(AdminWebPushRequiredMixin, TemplateView):
+    template_name = 'core/admin/web_push_dashboard.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        band_slug = self.request.GET.get('band_slug', '').strip() or None
+        
+        try:
+            hours = int(self.request.GET.get('hours', 24))
+            if not (1 <= hours <= 720):
+                hours = 24
+        except ValueError:
+            hours = 24
+            
+        try:
+            stale_pending_minutes = int(self.request.GET.get('stale_pending_minutes', 10))
+            if not (5 <= stale_pending_minutes <= 10080):
+                stale_pending_minutes = 10
+        except ValueError:
+            stale_pending_minutes = 10
+            
+        try:
+            stale_sending_minutes = int(self.request.GET.get('stale_sending_minutes', 15))
+            if not (5 <= stale_sending_minutes <= 10080):
+                stale_sending_minutes = 15
+        except ValueError:
+            stale_sending_minutes = 15
+
+        try:
+            limit = int(self.request.GET.get('limit', 50))
+            if not (1 <= limit <= 100):
+                limit = 50
+        except ValueError:
+            limit = 50
+            
+        if band_slug:
+            from core.models import Band
+            if not Band.objects.filter(slug=band_slug).exists():
+                messages.warning(self.request, "A banda informada não foi encontrada.")
+                snapshot = {
+                    "deliveries": {
+                        "total": {"total": 0, "PENDING": 0, "SENDING": 0, "SENT": 0, "TEMPORARY_FAILURE": 0, "PERMANENT_FAILURE": 0, "SKIPPED": 0},
+                        "recent_window": {"created": 0, "sent": 0, "temporary_failure": 0, "permanent_failure": 0, "skipped": 0},
+                        "rates": {"completed": 0, "success_rate": None}
+                    },
+                    "subscriptions": {"total": 0, "active": 0, "active_with_failures": 0},
+                    "anomalies": {"stale_sending_count": 0, "stale_pending_count": 0, "active_expired_subscriptions_count": 0}
+                }
+                alerts = []
+                problematic_deliveries = []
+                overall_state = "NO_DATA"
+                context.update({
+                    'snapshot': snapshot,
+                    'alerts': alerts,
+                    'problematic_deliveries': problematic_deliveries,
+                    'hours': hours,
+                    'stale_pending_minutes': stale_pending_minutes,
+                    'stale_sending_minutes': stale_sending_minutes,
+                    'limit': limit,
+                    'band_slug': band_slug,
+                    'invalid_band_filter': True,
+                    'overall_state': overall_state,
+                })
+                return context
+
+        snapshot = build_web_push_health_snapshot(
+            window_hours=hours,
+            stale_pending_minutes=stale_pending_minutes,
+            stale_sending_minutes=stale_sending_minutes,
+            band_slug=band_slug
+        )
+        alerts = build_web_push_operational_alerts(snapshot)
+        problematic_deliveries = list_recent_problematic_deliveries(band_slug=band_slug, hours=hours, limit=limit)
+        
+        has_critical = any(a['severity'] == 'CRITICAL' for a in alerts)
+        has_warning = any(a['severity'] == 'WARNING' for a in alerts)
+        
+        if has_critical:
+            overall_state = 'CRITICAL'
+        elif has_warning:
+            overall_state = 'ATTENTION'
+        elif snapshot['deliveries']['rates']['completed'] == 0:
+            overall_state = 'NO_DATA'
+        else:
+            overall_state = 'HEALTHY'
+        context['snapshot'] = snapshot
+        context['alerts'] = alerts
+        context['overall_state'] = overall_state
+        context['problematic_deliveries'] = problematic_deliveries
+        context['current_band_slug'] = band_slug
+        context['current_hours'] = hours
+        context['current_stale_pending'] = stale_pending_minutes
+        context['current_stale_sending'] = stale_sending_minutes
+        context['current_limit'] = limit
+        from core.models import Band
+        context['all_bands'] = Band.objects.all().order_by('name')
+        
+        return context
+
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+        response['Cache-Control'] = 'private, no-store'
+        return response

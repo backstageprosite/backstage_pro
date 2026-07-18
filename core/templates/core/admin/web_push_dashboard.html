@@ -1,0 +1,375 @@
+{% extends "core/admin/base_admin.html" %}
+
+{% block extra_head %}
+<style>
+    .status-badge { font-size: 0.85rem; padding: 0.35em 0.65em; }
+    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800"><i class="fa-solid fa-bell text-primary me-2"></i> Dashboard Operacional Web Push</h2>
+</div>
+
+<!-- Filtros GET seguros -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form method="get" action="{% url 'admin_painel:admin_web_push_dashboard' %}" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="band_slug" class="form-label fw-medium text-muted small">Banda (Deixe vazio para global)</label>
+                <select name="band_slug" id="band_slug" class="form-select">
+                    <option value="">-- Visão Global --</option>
+                    {% for band in all_bands %}
+                    <option value="{{ band.slug }}" {% if current_band_slug == band.slug %}selected{% endif %}>{{ band.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="hours" class="form-label fw-medium text-muted small">Janela (Horas)</label>
+                <input type="number" name="hours" id="hours" class="form-control" min="1" max="720" value="{{ current_hours }}">
+            </div>
+            <div class="col-md-3">
+                <label for="stale_pending_minutes" class="form-label fw-medium text-muted small">Minutos p/ PENDING stale</label>
+                <input type="number" name="stale_pending_minutes" id="stale_pending_minutes" class="form-control" min="5" max="10080" value="{{ current_stale_pending }}">
+            </div>
+            <div class="col-md-2">
+                <label for="stale_sending_minutes" class="form-label fw-medium text-muted small">Minutos p/ SENDING stale</label>
+                <input type="number" name="stale_sending_minutes" id="stale_sending_minutes" class="form-control" min="5" max="10080" value="{{ current_stale_sending }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Estado Geral -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 
+            {% if overall_state == 'CRITICAL' %}bg-danger text-white
+            {% elif overall_state == 'ATTENTION' %}bg-warning text-dark
+            {% elif overall_state == 'NO_DATA' %}bg-secondary text-white
+            {% else %}bg-success text-white{% endif %}">
+            <div class="card-body d-flex align-items-center">
+                <div class="fs-1 me-4">
+                    {% if overall_state == 'CRITICAL' %}<i class="fa-solid fa-triangle-exclamation"></i>
+                    {% elif overall_state == 'ATTENTION' %}<i class="fa-solid fa-circle-exclamation"></i>
+                    {% elif overall_state == 'NO_DATA' %}<i class="fa-solid fa-circle-info"></i>
+                    {% else %}<i class="fa-solid fa-circle-check"></i>{% endif %}
+                </div>
+                <div>
+                    <h4 class="mb-1 fw-bold">Estado Geral: {{ overall_state }}</h4>
+                    {% if current_band_slug %}
+                    <p class="mb-0 opacity-75">Filtrado para a banda: <strong>{{ current_band_slug }}</strong></p>
+                    {% else %}
+                    <p class="mb-0 opacity-75">Visão Administrativa Global</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertas Operacionais -->
+{% if alerts %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h4 class="h5 mb-3 fw-bold text-gray-800"><i class="fa-solid fa-siren-on me-2"></i> Alertas Ativos</h4>
+        <div class="d-flex flex-column gap-3">
+            {% for alert in alerts %}
+            <div class="card shadow-sm border-start border-4 
+                {% if alert.severity == 'CRITICAL' %}border-danger
+                {% elif alert.severity == 'WARNING' %}border-warning
+                {% else %}border-info{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                        <h5 class="card-title fw-bold mb-0 
+                            {% if alert.severity == 'CRITICAL' %}text-danger
+                            {% elif alert.severity == 'WARNING' %}text-warning
+                            {% else %}text-info{% endif %}">
+                            {{ alert.title }}
+                        </h5>
+                        {% if alert.count is not None %}
+                        <span class="badge rounded-pill 
+                            {% if alert.severity == 'CRITICAL' %}bg-danger
+                            {% elif alert.severity == 'WARNING' %}text-bg-warning
+                            {% else %}bg-info{% endif %}">
+                            {{ alert.count }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <p class="card-text text-muted mb-2">{{ alert.message }}</p>
+                    <div class="bg-light p-2 rounded small text-secondary">
+                        <i class="fa-solid fa-arrow-right me-1"></i> <strong>Ação Recomendada:</strong> {{ alert.recommended_action }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <!-- Visão Geral -->
+    <div class="col-lg-6 mb-4 mb-lg-0">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-chart-pie me-2 text-primary"></i> Visão Geral (Histórico)</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="border rounded p-3 text-center h-100">
+                            <div class="text-muted small fw-bold text-uppercase mb-1">Taxa de Sucesso</div>
+                            <div class="fs-3 fw-bold {% if snapshot.deliveries.rates.success_rate < 0.8 %}text-danger{% elif snapshot.deliveries.rates.success_rate < 0.95 %}text-warning{% else %}text-success{% endif %}">
+                                {% if snapshot.deliveries.rates.success_rate is not None %}
+                                    {% widthratio snapshot.deliveries.rates.success_rate 1 100 %}%
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-3 text-center h-100">
+                            <div class="text-muted small fw-bold text-uppercase mb-1">Total Entregas</div>
+                            <div class="fs-3 fw-bold text-dark">{{ snapshot.deliveries.total.total }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h6 class="mt-4 fw-bold text-muted small text-uppercase">Desempenho na Janela ({{ current_hours }}h)</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Criadas
+                        <span class="badge bg-secondary rounded-pill">{{ snapshot.deliveries.recent_window.created }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Enviadas
+                        <span class="badge bg-success rounded-pill">{{ snapshot.deliveries.recent_window.sent }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Falhas Temporárias
+                        <span class="badge bg-warning text-dark rounded-pill">{{ snapshot.deliveries.recent_window.temporary_failure }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Falhas Permanentes
+                        <span class="badge bg-danger rounded-pill">{{ snapshot.deliveries.recent_window.permanent_failure }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Atuais -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-check me-2 text-primary"></i> Status Atuais (Global)</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="badge bg-secondary">PENDING</span>
+                        <span class="fw-bold">{{ snapshot.deliveries.total.PENDING }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="badge bg-primary">SENDING</span>
+                        <span class="fw-bold">{{ snapshot.deliveries.total.SENDING }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="badge bg-success">SENT</span>
+                        <span class="fw-bold">{{ snapshot.deliveries.total.SENT }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="badge bg-warning text-dark">TEMPORARY_FAILURE</span>
+                        <span class="fw-bold">{{ snapshot.deliveries.total.TEMPORARY_FAILURE }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="badge bg-danger">PERMANENT_FAILURE</span>
+                        <span class="fw-bold">{{ snapshot.deliveries.total.PERMANENT_FAILURE }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="badge bg-dark">SKIPPED</span>
+                        <span class="fw-bold">{{ snapshot.deliveries.total.SKIPPED }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Subscriptions -->
+    <div class="col-lg-6 mb-4 mb-lg-0">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-users me-2 text-primary"></i> Subscrições</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-4">
+                        <div class="border rounded p-2 text-center">
+                            <div class="text-muted small fw-bold text-uppercase mb-1">Total</div>
+                            <div class="fs-4 fw-bold">{{ snapshot.subscriptions.total }}</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-2 text-center bg-success text-white">
+                            <div class="small fw-bold text-uppercase mb-1 opacity-75">Ativas</div>
+                            <div class="fs-4 fw-bold">{{ snapshot.subscriptions.active }}</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-2 text-center bg-danger text-white">
+                            <div class="small fw-bold text-uppercase mb-1 opacity-75">Inativas</div>
+                            <div class="fs-4 fw-bold">{{ snapshot.subscriptions.inactive }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Ativas com histórico de falhas
+                        <span class="badge bg-warning text-dark rounded-pill">{{ snapshot.subscriptions.active_with_failures }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Expiradas, mas ainda ativas
+                        <span class="badge bg-danger rounded-pill">{{ snapshot.subscriptions.expired_but_active }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Sucesso recente (na janela)
+                        <span class="badge bg-success rounded-pill">{{ snapshot.subscriptions.recent_success }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        Falha recente (na janela)
+                        <span class="badge bg-secondary rounded-pill">{{ snapshot.subscriptions.recent_failure }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Antiguidade -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="fa-regular fa-clock me-2 text-primary"></i> Antiguidade</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-0">
+                        <div class="text-muted small fw-bold text-uppercase mb-1">PENDING Mais Antiga</div>
+                        <div class="fw-medium text-dark">
+                            {% if snapshot.antiquity.oldest_pending_created_at %}{{ snapshot.antiquity.oldest_pending_created_at }}{% else %}Nenhum registro{% endif %}
+                        </div>
+                    </li>
+                    <li class="list-group-item px-0">
+                        <div class="text-muted small fw-bold text-uppercase mb-1">SENDING Mais Antiga</div>
+                        <div class="fw-medium text-dark">
+                            {% if snapshot.antiquity.oldest_sending_last_attempt_at %}{{ snapshot.antiquity.oldest_sending_last_attempt_at }}{% else %}Nenhum registro{% endif %}
+                        </div>
+                    </li>
+                    <li class="list-group-item px-0">
+                        <div class="text-muted small fw-bold text-uppercase mb-1">Último Sucesso</div>
+                        <div class="fw-medium text-success">
+                            {% if snapshot.antiquity.last_success_at %}{{ snapshot.antiquity.last_success_at }}{% else %}Nenhum registro{% endif %}
+                        </div>
+                    </li>
+                    <li class="list-group-item px-0">
+                        <div class="text-muted small fw-bold text-uppercase mb-1">Última Falha</div>
+                        <div class="fw-medium text-danger">
+                            {% if snapshot.antiquity.last_failure_at %}{{ snapshot.antiquity.last_failure_at }}{% else %}Nenhum registro{% endif %}
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Orientações -->
+{% if current_band_slug %}
+<div class="card shadow-sm border-0 mb-4 bg-dark text-light">
+    <div class="card-header bg-transparent border-bottom border-secondary py-3">
+        <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-terminal me-2"></i> Operações Seguras (Dry-Run)</h5>
+    </div>
+    <div class="card-body">
+        <p class="small text-white-50 mb-2">Para reconciliar SENDING travadas (apenas exibe relatório local, não altera produção):</p>
+        <pre class="bg-black p-3 rounded border border-secondary text-success mb-3"><code>python manage.py web_push_reconcile_stale \
+  --band-slug {{ current_band_slug }} \
+  --stale-minutes {{ current_stale_sending }} \
+  --limit 100</code></pre>
+        
+        <p class="small text-white-50 mb-2">Para re-tentar PENDING e TEMPORARY_FAILURE (apenas exibe relatório local, não altera produção):</p>
+        <pre class="bg-black p-3 rounded border border-secondary text-success mb-0"><code>python manage.py web_push_retry \
+  --band-slug {{ current_band_slug }} \
+  --status both \
+  --retry-after-minutes {{ current_stale_pending }} \
+  --max-attempts 3 \
+  --limit 50</code></pre>
+    </div>
+</div>
+{% endif %}
+
+<!-- Lista de Problemas Recentes -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list me-2 text-primary"></i> 50 Entregas Mais Relevantes para Diagnóstico</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 text-nowrap">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">ID</th>
+                        <th>Banda</th>
+                        <th>Status</th>
+                        <th>Tentativas</th>
+                        <th>HTTP</th>
+                        <th>Erro</th>
+                        <th>Criação</th>
+                        <th>Última Atualização</th>
+                        <th>Última Tentativa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in problematic_deliveries %}
+                    <tr>
+                        <td class="ps-4 text-muted">#{{ d.delivery_id }}</td>
+                        <td class="fw-medium">{{ d.band_slug }}</td>
+                        <td>
+                            <span class="badge status-badge
+                                {% if d.status == 'PENDING' %}bg-secondary
+                                {% elif d.status == 'SENDING' %}bg-primary
+                                {% elif d.status == 'TEMPORARY_FAILURE' %}bg-warning text-dark
+                                {% elif d.status == 'PERMANENT_FAILURE' %}bg-danger
+                                {% else %}bg-dark{% endif %}">
+                                {{ d.status }}
+                            </span>
+                        </td>
+                        <td>{{ d.attempt_count }}</td>
+                        <td>{% if d.last_http_status %}{{ d.last_http_status }}{% else %}-{% endif %}</td>
+                        <td class="text-danger small">{% if d.error_code %}{{ d.error_code }}{% else %}-{% endif %}</td>
+                        <td class="small">{{ d.created_at|date:"Y-m-d H:i:s" }}</td>
+                        <td class="small">{{ d.updated_at|date:"Y-m-d H:i:s" }}</td>
+                        <td class="small">{% if d.last_attempt_at %}{{ d.last_attempt_at|date:"Y-m-d H:i:s" }}{% else %}-{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="fa-regular fa-face-smile fa-2x mb-2"></i><br>
+                            Nenhum registro problemático encontrado no momento.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -35,5 +35,8 @@ urlpatterns = [
     
     path('relatorios/', admin_views.AdminRelatoriosView.as_view(), name='relatorios'),
     path('relatorios/financeiro/', admin_views.AdminRelatorioFinanceiroView.as_view(), name='relatorio_financeiro'),
+    
+    path('web-push/', admin_views.AdminWebPushDashboardView.as_view(), name='admin_web_push_dashboard'),
+    
     path('configuracoes/', admin_views.AdminConfiguracoesView.as_view(), name='configuracoes'),
 ]

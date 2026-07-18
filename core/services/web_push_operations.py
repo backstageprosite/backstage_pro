@@ -402,3 +402,173 @@ def retry_web_push_deliveries(*, band_slug: str, status_filter: str = 'both', re
             )
             
     return {"candidates": candidates, "summary": summary}
+
+def build_web_push_operational_alerts(snapshot):
+    alerts = []
+    
+    success_rate = snapshot["deliveries"]["rates"]["success_rate"]
+    stale_sending_count = snapshot["anomalies"]["stale_sending_count"]
+    stale_pending_count = snapshot["anomalies"]["stale_pending_count"]
+    recent_tf = snapshot["deliveries"]["recent_window"]["temporary_failure"]
+    recent_pf = snapshot["deliveries"]["recent_window"]["permanent_failure"]
+    active_expired_subs = snapshot["anomalies"]["active_expired_subscriptions_count"]
+    active_subs_with_failures = snapshot["subscriptions"]["active_with_failures"]
+    created_in_window = snapshot["deliveries"]["recent_window"]["created"]
+    completed = snapshot["deliveries"]["rates"]["completed"]
+    
+    if stale_sending_count > 0:
+        alerts.append({
+            "code": "stale_sending",
+            "severity": "CRITICAL",
+            "title": "SENDING Obsoletas",
+            "message": f"Há {stale_sending_count} envios travados no estado SENDING por mais tempo que o permitido.",
+            "count": stale_sending_count,
+            "recommended_action": "Execute primeiro o dry-run com: python manage.py web_push_reconcile_stale ..."
+        })
+        
+    if success_rate is not None and success_rate < 0.80 and completed > 0:
+        alerts.append({
+            "code": "critical_success_rate",
+            "severity": "CRITICAL",
+            "title": "Taxa de Sucesso Crítica",
+            "message": f"A taxa de sucesso está em {success_rate * 100:.1f}%, abaixo do aceitável (80%).",
+            "count": completed,
+            "recommended_action": "Analise as PERMANENT_FAILURE recentes para identificar se há problemas de configuração."
+        })
+        
+    if stale_pending_count > 0:
+        alerts.append({
+            "code": "stale_pending",
+            "severity": "WARNING",
+            "title": "PENDING Obsoletas",
+            "message": f"Existem {stale_pending_count} notificações aguardando envio além da janela esperada.",
+            "count": stale_pending_count,
+            "recommended_action": "Execute primeiro o dry-run com: python manage.py web_push_retry ..."
+        })
+        
+    if recent_tf > 0:
+        alerts.append({
+            "code": "recent_temporary_failures",
+            "severity": "WARNING",
+            "title": "Falhas Temporárias Recentes",
+            "message": f"Houve {recent_tf} falhas de rede ou timeout recentes.",
+            "count": recent_tf,
+            "recommended_action": "Execute primeiro o dry-run com: python manage.py web_push_retry ..."
+        })
+        
+    if recent_pf > 0:
+        alerts.append({
+            "code": "recent_permanent_failures",
+            "severity": "WARNING",
+            "title": "Falhas Permanentes Recentes",
+            "message": f"Houve {recent_pf} inscrições inválidas ou revogadas recentemente.",
+            "count": recent_pf,
+            "recommended_action": "Nenhuma ação automática. Inscrições foram desativadas."
+        })
+        
+    if active_expired_subs > 0:
+        alerts.append({
+            "code": "active_expired_subscriptions",
+            "severity": "WARNING",
+            "title": "Inscrições Expiradas Ativas",
+            "message": f"Existem {active_expired_subs} inscrições ativas vencidas.",
+            "count": active_expired_subs,
+            "recommended_action": "Verifique a rotina de saneamento de inscrições."
+        })
+        
+    if active_subs_with_failures > 0:
+        alerts.append({
+            "code": "active_subscriptions_with_failures",
+            "severity": "WARNING",
+            "title": "Inscrições Ativas com Falhas",
+            "message": f"{active_subs_with_failures} inscrições possuem falhas.",
+            "count": active_subs_with_failures,
+            "recommended_action": "Acompanhe para confirmar se virarão PERMANENT_FAILURE."
+        })
+        
+    if success_rate is not None and 0.80 <= success_rate < 0.95:
+        alerts.append({
+            "code": "moderate_success_rate",
+            "severity": "WARNING",
+            "title": "Atenção na Taxa de Sucesso",
+            "message": f"A taxa de sucesso está em {success_rate * 100:.1f}%, abaixo do ideal (95%).",
+            "count": completed,
+            "recommended_action": "Monitore os relatórios nas próximas horas."
+        })
+        
+    if created_in_window == 0:
+        alerts.append({
+            "code": "no_recent_deliveries",
+            "severity": "INFO",
+            "title": "Sem Envios Recentes",
+            "message": "Nenhum novo envio foi registrado nesta janela de horas.",
+            "count": 0,
+            "recommended_action": "Nenhuma ação necessária se não houve shows."
+        })
+    elif completed == 0 or success_rate is None:
+        alerts.append({
+            "code": "no_completed_deliveries",
+            "severity": "INFO",
+            "title": "Aguardando Conclusões",
+            "message": "Não há envios concluídos na janela selecionada para calcular a taxa de sucesso.",
+            "count": 0,
+            "recommended_action": "Aguarde os retornos de rede."
+        })
+
+    return alerts
+
+def list_recent_problematic_deliveries(band_slug: str | None = None, hours: int = 24, limit: int = 50) -> list[dict]:
+    from django.utils import timezone
+    from datetime import timedelta
+    cutoff = timezone.now() - timedelta(hours=hours)
+
+    qs = WebPushDelivery.objects.filter(
+        created_at__gte=cutoff,
+        status__in=[
+            WebPushDelivery.StatusChoices.PENDING,
+            WebPushDelivery.StatusChoices.SENDING,
+            WebPushDelivery.StatusChoices.TEMPORARY_FAILURE,
+            WebPushDelivery.StatusChoices.PERMANENT_FAILURE,
+            WebPushDelivery.StatusChoices.SKIPPED
+        ]
+    )
+    if band_slug:
+        qs = qs.filter(notification__band__slug=band_slug)
+        
+    qs = qs.annotate(
+        status_order=Case(
+            When(status=WebPushDelivery.StatusChoices.SENDING, then=Value(1)),
+            When(status=WebPushDelivery.StatusChoices.PENDING, then=Value(2)),
+            When(status=WebPushDelivery.StatusChoices.TEMPORARY_FAILURE, then=Value(3)),
+            When(status=WebPushDelivery.StatusChoices.PERMANENT_FAILURE, then=Value(4)),
+            When(status=WebPushDelivery.StatusChoices.SKIPPED, then=Value(5)),
+            default=Value(6),
+            output_field=IntegerField(),
+        )
+    ).order_by('status_order', '-updated_at', 'pk')[:limit]
+    
+    results = []
+    for d in qs.values(
+        'id', 
+        'notification__band__slug', 
+        'status', 
+        'attempt_count', 
+        'last_http_status', 
+        'error_code', 
+        'created_at', 
+        'updated_at', 
+        'last_attempt_at'
+    ):
+        results.append({
+            "delivery_id": d['id'],
+            "band_slug": d['notification__band__slug'],
+            "status": d['status'],
+            "attempt_count": d['attempt_count'],
+            "last_http_status": d['last_http_status'],
+            "error_code": d['error_code'],
+            "created_at": d['created_at'].isoformat() if d['created_at'] else None,
+            "updated_at": d['updated_at'].isoformat() if d['updated_at'] else None,
+            "last_attempt_at": d['last_attempt_at'].isoformat() if d['last_attempt_at'] else None
+        })
+        
+    return results

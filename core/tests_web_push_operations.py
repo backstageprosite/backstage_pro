@@ -16,6 +16,129 @@ from core.services.web_push_operations import (
 )
 
 class WebPushOperationsTests(TestCase):
+
+    def test_list_recent_problematic_deliveries_statuses_and_fields(self):
+        from core.services.web_push_operations import list_recent_problematic_deliveries
+        from core.models import WebPushDelivery, Notification, Band, User, WebPushSubscription
+        from django.utils import timezone
+
+        user = User.objects.create_user(username="testuser999", password="pwd", email="999@example.com")
+        band = Band.objects.create(name="Band 999", slug="band-999")
+        band.users.add(user)
+        notification = Notification.objects.create(
+            band=band, title="Test", message="Test", recipient=user
+        )
+        
+        sub1 = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://t1", p256dh="a", auth="a", service_worker_scope="/")
+        sub2 = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://t2", p256dh="a", auth="a", service_worker_scope="/")
+        sub3 = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://t3", p256dh="a", auth="a", service_worker_scope="/")
+        sub4 = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://t4", p256dh="a", auth="a", service_worker_scope="/")
+        sub5 = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://t5", p256dh="a", auth="a", service_worker_scope="/")
+        sub6 = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://t6", p256dh="a", auth="a", service_worker_scope="/")
+        
+        d1 = WebPushDelivery.objects.create(notification=notification, subscription=sub1, status=WebPushDelivery.StatusChoices.PENDING)
+        d2 = WebPushDelivery.objects.create(notification=notification, subscription=sub2, status=WebPushDelivery.StatusChoices.SENDING)
+        d3 = WebPushDelivery.objects.create(notification=notification, subscription=sub3, status=WebPushDelivery.StatusChoices.TEMPORARY_FAILURE)
+        d4 = WebPushDelivery.objects.create(notification=notification, subscription=sub4, status=WebPushDelivery.StatusChoices.PERMANENT_FAILURE)
+        d5 = WebPushDelivery.objects.create(notification=notification, subscription=sub5, status=WebPushDelivery.StatusChoices.SKIPPED)
+        d6 = WebPushDelivery.objects.create(notification=notification, subscription=sub6, status=WebPushDelivery.StatusChoices.SENT)
+        
+        results = list_recent_problematic_deliveries(band_slug="band-999")
+        
+        self.assertEqual(len(results), 5)
+        statuses = [r["status"] for r in results]
+        self.assertNotIn("SENT", statuses)
+        self.assertEqual(results[0]["status"], "SENDING")
+        self.assertEqual(results[1]["status"], "PENDING")
+        self.assertEqual(results[2]["status"], "TEMPORARY_FAILURE")
+        self.assertEqual(results[3]["status"], "PERMANENT_FAILURE")
+        self.assertEqual(results[4]["status"], "SKIPPED")
+        
+        expected_keys = {"delivery_id", "band_slug", "status", "attempt_count", "last_http_status", "error_code", "created_at", "updated_at", "last_attempt_at"}
+        self.assertEqual(set(results[0].keys()), expected_keys)
+        self.assertEqual(results[0]["band_slug"], "band-999")
+        
+    def test_list_recent_problematic_deliveries_band_isolation(self):
+        from core.services.web_push_operations import list_recent_problematic_deliveries
+        from core.models import WebPushDelivery, Notification, Band, User, WebPushSubscription
+        from django.utils import timezone
+
+        user = User.objects.create_user(username="testuser888", password="pwd", email="888@example.com")
+        band1 = Band.objects.create(name="Band 1", slug="band-1")
+        band2 = Band.objects.create(name="Band 2", slug="band-2")
+        band1.users.add(user)
+        band2.users.add(user)
+        
+        n1 = Notification.objects.create(band=band1, title="Test1", message="Test1", recipient=user)
+        n2 = Notification.objects.create(band=band2, title="Test2", message="Test2", recipient=user)
+        
+        sub1 = WebPushSubscription.objects.create(user=user, band=band1, endpoint="http://test81", p256dh="a", auth="a", service_worker_scope="/")
+        sub2 = WebPushSubscription.objects.create(user=user, band=band2, endpoint="http://test82", p256dh="a", auth="a", service_worker_scope="/")
+        
+        WebPushDelivery.objects.create(notification=n1, subscription=sub1, status=WebPushDelivery.StatusChoices.PENDING)
+        WebPushDelivery.objects.create(notification=n2, subscription=sub2, status=WebPushDelivery.StatusChoices.PENDING)
+        
+        res1 = list_recent_problematic_deliveries(band_slug="band-1")
+        self.assertEqual(len(res1), 1)
+        self.assertEqual(res1[0]["band_slug"], "band-1")
+        
+        res_all = list_recent_problematic_deliveries()
+        self.assertGreaterEqual(len(res_all), 2)
+
+
+
+    def _make_snapshot_with_success_rate(self, rate, completed=10):
+        return {
+            "deliveries": {
+                "recent_window": {"created": 1, "temporary_failure": 0, "permanent_failure": 0},
+                "rates": {"completed": completed, "success_rate": rate}
+            },
+            "anomalies": {"stale_sending_count": 0, "stale_pending_count": 0, "active_expired_subscriptions_count": 0},
+            "subscriptions": {"active_with_failures": 0}
+        }
+
+    def test_success_rate_1_0_no_alerts(self):
+        from core.services.web_push_operations import build_web_push_operational_alerts
+        snap = self._make_snapshot_with_success_rate(1.0)
+        alerts = build_web_push_operational_alerts(snap)
+        self.assertFalse(any(a["severity"] in ["WARNING", "CRITICAL"] for a in alerts))
+
+    def test_success_rate_0_95_no_alerts(self):
+        from core.services.web_push_operations import build_web_push_operational_alerts
+        snap = self._make_snapshot_with_success_rate(0.95)
+        alerts = build_web_push_operational_alerts(snap)
+        self.assertFalse(any(a["severity"] in ["WARNING", "CRITICAL"] for a in alerts))
+
+    def test_success_rate_0_90_warning(self):
+        from core.services.web_push_operations import build_web_push_operational_alerts
+        snap = self._make_snapshot_with_success_rate(0.90)
+        alerts = build_web_push_operational_alerts(snap)
+        self.assertTrue(any(a["severity"] == "WARNING" and a["code"] == "moderate_success_rate" for a in alerts))
+
+    def test_success_rate_0_80_warning(self):
+        from core.services.web_push_operations import build_web_push_operational_alerts
+        snap = self._make_snapshot_with_success_rate(0.80)
+        alerts = build_web_push_operational_alerts(snap)
+        self.assertTrue(any(a["severity"] == "WARNING" and a["code"] == "moderate_success_rate" for a in alerts))
+
+    def test_success_rate_0_79_critical(self):
+        from core.services.web_push_operations import build_web_push_operational_alerts
+        snap = self._make_snapshot_with_success_rate(0.79)
+        alerts = build_web_push_operational_alerts(snap)
+        self.assertTrue(any(a["severity"] == "CRITICAL" and a["code"] == "critical_success_rate" for a in alerts))
+
+    def test_success_rate_0_0_with_completed_critical(self):
+        from core.services.web_push_operations import build_web_push_operational_alerts
+        snap = self._make_snapshot_with_success_rate(0.0, completed=10)
+        alerts = build_web_push_operational_alerts(snap)
+        self.assertTrue(any(a["severity"] == "CRITICAL" and a["code"] == "critical_success_rate" for a in alerts))
+
+    def test_success_rate_none_info(self):
+        from core.services.web_push_operations import build_web_push_operational_alerts
+        snap = self._make_snapshot_with_success_rate(None, completed=0)
+        alerts = build_web_push_operational_alerts(snap)
+        self.assertFalse(any(a["severity"] == "CRITICAL" for a in alerts))
+        self.assertTrue(any(a["severity"] == "INFO" and a["code"] == "no_completed_deliveries" for a in alerts))
     def setUp(self):
         # Proteção contra rede
         self.patcher1 = patch('core.services.web_push_delivery.webpush', side_effect=Exception("Rede bloqueada"))
