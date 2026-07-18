@@ -174,7 +174,17 @@
     <div class="col-lg-6">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-check me-2 text-primary"></i> Status Atuais (Global)</h5>
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-check me-2 text-primary"></i> 
+                    {% if current_band_slug %}
+                        {% if invalid_band_filter %}
+                            Status Atuais &mdash; nenhum dado carregado
+                        {% else %}
+                            Status Atuais
+                        {% endif %}
+                    {% else %}
+                        Status Atuais (Global)
+                    {% endif %}
+                </h5>
             </div>
             <div class="card-body">
                 <ul class="list-group list-group-flush">
@@ -298,18 +308,22 @@
 </div>
 
 <!-- Orientações -->
-{% if current_band_slug %}
+{% if current_band_slug and not invalid_band_filter %}
+{% if snapshot.anomalies.stale_sending_count > 0 or snapshot.anomalies.stale_pending_count > 0 or snapshot.deliveries.recent_window.temporary_failure > 0 %}
 <div class="card shadow-sm border-0 mb-4 bg-dark text-light">
     <div class="card-header bg-transparent border-bottom border-secondary py-3">
         <h5 class="mb-0 fw-bold text-white"><i class="fa-solid fa-terminal me-2"></i> Operações Seguras (Dry-Run)</h5>
     </div>
     <div class="card-body">
+        {% if snapshot.anomalies.stale_sending_count > 0 %}
         <p class="small text-white-50 mb-2">Para reconciliar SENDING travadas (apenas exibe relatório local, não altera produção):</p>
         <pre class="bg-black p-3 rounded border border-secondary text-success mb-3"><code>python manage.py web_push_reconcile_stale \
   --band-slug {{ current_band_slug }} \
   --stale-minutes {{ current_stale_sending }} \
   --limit 100</code></pre>
+        {% endif %}
         
+        {% if snapshot.anomalies.stale_pending_count > 0 or snapshot.deliveries.recent_window.temporary_failure > 0 %}
         <p class="small text-white-50 mb-2">Para re-tentar PENDING e TEMPORARY_FAILURE (apenas exibe relatório local, não altera produção):</p>
         <pre class="bg-black p-3 rounded border border-secondary text-success mb-0"><code>python manage.py web_push_retry \
   --band-slug {{ current_band_slug }} \
@@ -317,8 +331,10 @@
   --retry-after-minutes {{ current_stale_pending }} \
   --max-attempts 3 \
   --limit 50</code></pre>
+        {% endif %}
     </div>
 </div>
+{% endif %}
 {% endif %}
 
 <!-- Lista de Problemas Recentes -->

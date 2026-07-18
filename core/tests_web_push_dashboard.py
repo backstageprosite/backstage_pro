@@ -93,6 +93,93 @@ class WebPushDashboardTests(TestCase):
         res = self.client.post(self.url, {"test": 1})
         self.assertEqual(res.status_code, 405)
 
+    def test_invalid_band_text_status(self):
+        self.client.force_login(self.superuser)
+        url = reverse("admin_painel:admin_web_push_dashboard")
+        res = self.client.get(url + "?band_slug=banda-inexistente")
+        content = res.content.decode("utf-8", errors="replace")
+        self.assertIn("Status Atuais &mdash; nenhum dado carregado", content)
+        self.assertNotIn("Status Atuais (Global)", content)
+        self.assertNotIn("web_push_reconcile_stale", content)
+        self.assertNotIn("web_push_retry", content)
+
+    def test_operational_commands_healthy(self):
+        # Health state without anomalies
+        self.client.force_login(self.superuser)
+        url = reverse("admin_painel:admin_web_push_dashboard")
+        res = self.client.get(url + "?band_slug=band-a")
+        content = res.content.decode("utf-8", errors="replace")
+        self.assertNotIn("web_push_reconcile_stale", content)
+        self.assertNotIn("web_push_retry", content)
+        self.assertNotIn("--execute", content)
+
+    def test_operational_commands_stale_sending(self):
+        from core.models import Band, Notification, WebPushSubscription, WebPushDelivery, User
+        from django.utils import timezone
+        import datetime
+        now = timezone.now()
+        
+        user = User.objects.create_user(username="test_sending", password="pwd", email="s@example.com")
+        band = Band.objects.create(name="Band S", slug="band-s")
+        band.users.add(user)
+        notification = Notification.objects.create(band=band, title="Test", message="Test", recipient=user)
+        sub = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://testS", p256dh="a", auth="a", service_worker_scope="/band-s/", is_active=True)
+        d = WebPushDelivery.objects.create(notification=notification, subscription=sub, status=WebPushDelivery.StatusChoices.SENDING, updated_at=now - datetime.timedelta(hours=2))
+        
+        self.client.force_login(self.superuser)
+        url = reverse("admin_painel:admin_web_push_dashboard")
+        res = self.client.get(url + "?band_slug=band-s")
+        content = res.content.decode("utf-8", errors="replace")
+        
+        self.assertIn("web_push_reconcile_stale", content)
+        self.assertNotIn("web_push_retry", content)
+        self.assertNotIn("--execute", content)
+
+    def test_operational_commands_stale_pending(self):
+        from core.models import Band, Notification, WebPushSubscription, WebPushDelivery, User
+        from django.utils import timezone
+        import datetime
+        now = timezone.now()
+        
+        user = User.objects.create_user(username="test_pending", password="pwd", email="p@example.com")
+        band = Band.objects.create(name="Band P", slug="band-p")
+        band.users.add(user)
+        notification = Notification.objects.create(band=band, title="Test", message="Test", recipient=user)
+        sub = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://testP", p256dh="a", auth="a", service_worker_scope="/band-p/", is_active=True)
+        d = WebPushDelivery.objects.create(notification=notification, subscription=sub, status=WebPushDelivery.StatusChoices.PENDING, updated_at=now - datetime.timedelta(hours=2))
+        
+        self.client.force_login(self.superuser)
+        url = reverse("admin_painel:admin_web_push_dashboard")
+        res = self.client.get(url + "?band_slug=band-p")
+        content = res.content.decode("utf-8", errors="replace")
+        
+        self.assertNotIn("web_push_reconcile_stale", content)
+        self.assertIn("web_push_retry", content)
+        self.assertNotIn("--execute", content)
+
+    def test_operational_commands_recent_temporary_failure(self):
+        from core.models import Band, Notification, WebPushSubscription, WebPushDelivery, User
+        from django.utils import timezone
+        import datetime
+        now = timezone.now()
+        
+        user = User.objects.create_user(username="test_tf", password="pwd", email="tf@example.com")
+        band = Band.objects.create(name="Band TF", slug="band-tf")
+        band.users.add(user)
+        notification = Notification.objects.create(band=band, title="Test", message="Test", recipient=user)
+        sub = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://testTF", p256dh="a", auth="a", service_worker_scope="/band-tf/", is_active=True)
+        d = WebPushDelivery.objects.create(notification=notification, subscription=sub, status=WebPushDelivery.StatusChoices.TEMPORARY_FAILURE, updated_at=now - datetime.timedelta(minutes=5))
+        
+        self.client.force_login(self.superuser)
+        url = reverse("admin_painel:admin_web_push_dashboard")
+        res = self.client.get(url + "?band_slug=band-tf")
+        content = res.content.decode("utf-8", errors="replace")
+        
+        self.assertNotIn("web_push_reconcile_stale", content)
+        self.assertIn("web_push_retry", content)
+        self.assertNotIn("--execute", content)
+
+
     def test_invalid_band_renders_correctly_and_preserves_filters(self):
         self.client.force_login(self.superuser)
         url = reverse("admin_painel:admin_web_push_dashboard")
