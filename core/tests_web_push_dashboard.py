@@ -4,32 +4,32 @@ from django.urls import reverse
 from django.utils import timezone
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from core.models import User, Band, WebPushDelivery, WebPushSubscription, Notification
+from core.models import User, Band, WebPushDelivery, WebPushSubscription, Notification, WebPushOperationalAlert
 
 class WebPushDashboardTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.now = timezone.now()
-        
+
         # Test users
         self.anon_user = None
         self.normal_user = User.objects.create_user(username="normal", email="n@n.com", password="pwd")
         self.band_member = User.objects.create_user(username="member", email="m@m.com", password="pwd")
         self.staff_unauth = User.objects.create_user(username="staff", email="s@s.com", password="pwd", is_staff=True)
-        
+
         self.staff_auth = User.objects.create_user(username="staff2", email="s2@s.com", password="pwd", is_staff=True)
         # Give permission
         ct = ContentType.objects.get_for_model(WebPushDelivery)
         perm, _ = Permission.objects.get_or_create(codename='view_webpushdelivery', content_type=ct)
         self.staff_auth.user_permissions.add(perm)
-        
+
         self.superuser = User.objects.create_superuser(username="admin", email="a@a.com", password="pwd")
-        
+
         # Bands and data
         self.band = Band.objects.create(name="Band A", slug="band-a")
         self.band_member.band = self.band
         self.band_member.save()
-        
+
         self.sub = WebPushSubscription.objects.create(
             user=self.band_member,
             band=self.band,
@@ -39,14 +39,14 @@ class WebPushDashboardTests(TestCase):
             service_worker_scope="/band-a/",
             is_active=True
         )
-        
+
         self.notification = Notification.objects.create(
             band=self.band,
             recipient=self.band_member,
             title="Test",
             message="Msg"
         )
-        
+
         self.url = reverse('admin_painel:admin_web_push_dashboard')
 
     def test_permission_anonymous(self):
@@ -81,13 +81,13 @@ class WebPushDashboardTests(TestCase):
         self.client.login(username="admin", password="pwd")
         res = self.client.get(self.url)
         self.assertEqual(res.status_code, 200)
-        
+
     def test_menu_item_visible_only_to_authorized(self):
         self.client.login(username="admin", password="pwd")
         res = self.client.get(reverse('admin_painel:dashboard'))
         self.assertContains(res, "Web Push")
         self.assertContains(res, self.url)
-        
+
     def test_view_only_get(self):
         self.client.login(username="admin", password="pwd")
         res = self.client.post(self.url, {"test": 1})
@@ -114,67 +114,69 @@ class WebPushDashboardTests(TestCase):
         self.assertNotIn("--execute", content)
 
     def test_operational_commands_stale_sending(self):
-        from core.models import Band, Notification, WebPushSubscription, WebPushDelivery, User
+        from core.models import Band, WebPushOperationalAlert, Notification, WebPushSubscription, WebPushDelivery, User
         from django.utils import timezone
         import datetime
         now = timezone.now()
-        
+
         user = User.objects.create_user(username="test_sending", password="pwd", email="s@example.com")
         band = Band.objects.create(name="Band S", slug="band-s")
         band.users.add(user)
         notification = Notification.objects.create(band=band, title="Test", message="Test", recipient=user)
         sub = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://testS", p256dh="a", auth="a", service_worker_scope="/band-s/", is_active=True)
-        d = WebPushDelivery.objects.create(notification=notification, subscription=sub, status=WebPushDelivery.StatusChoices.SENDING, updated_at=now - datetime.timedelta(hours=2))
-        
+        d = WebPushDelivery.objects.create(notification=notification, subscription=sub, status=WebPushDelivery.StatusChoices.SENDING)
+        WebPushDelivery.objects.filter(id=d.id).update(created_at=now - datetime.timedelta(hours=2), updated_at=now - datetime.timedelta(hours=2))
+
         self.client.force_login(self.superuser)
         url = reverse("admin_painel:admin_web_push_dashboard")
         res = self.client.get(url + "?band_slug=band-s")
         content = res.content.decode("utf-8", errors="replace")
-        
+
         self.assertIn("web_push_reconcile_stale", content)
         self.assertNotIn("web_push_retry", content)
         self.assertNotIn("--execute", content)
 
     def test_operational_commands_stale_pending(self):
-        from core.models import Band, Notification, WebPushSubscription, WebPushDelivery, User
+        from core.models import Band, WebPushOperationalAlert, Notification, WebPushSubscription, WebPushDelivery, User
         from django.utils import timezone
         import datetime
         now = timezone.now()
-        
+
         user = User.objects.create_user(username="test_pending", password="pwd", email="p@example.com")
         band = Band.objects.create(name="Band P", slug="band-p")
         band.users.add(user)
         notification = Notification.objects.create(band=band, title="Test", message="Test", recipient=user)
         sub = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://testP", p256dh="a", auth="a", service_worker_scope="/band-p/", is_active=True)
-        d = WebPushDelivery.objects.create(notification=notification, subscription=sub, status=WebPushDelivery.StatusChoices.PENDING, updated_at=now - datetime.timedelta(hours=2))
-        
+        d = WebPushDelivery.objects.create(notification=notification, subscription=sub, status=WebPushDelivery.StatusChoices.PENDING)
+        WebPushDelivery.objects.filter(id=d.id).update(created_at=now - datetime.timedelta(hours=2), updated_at=now - datetime.timedelta(hours=2))
+
         self.client.force_login(self.superuser)
         url = reverse("admin_painel:admin_web_push_dashboard")
         res = self.client.get(url + "?band_slug=band-p")
         content = res.content.decode("utf-8", errors="replace")
-        
+
         self.assertNotIn("web_push_reconcile_stale", content)
         self.assertIn("web_push_retry", content)
         self.assertNotIn("--execute", content)
 
     def test_operational_commands_recent_temporary_failure(self):
-        from core.models import Band, Notification, WebPushSubscription, WebPushDelivery, User
+        from core.models import Band, WebPushOperationalAlert, Notification, WebPushSubscription, WebPushDelivery, User
         from django.utils import timezone
         import datetime
         now = timezone.now()
-        
+
         user = User.objects.create_user(username="test_tf", password="pwd", email="tf@example.com")
         band = Band.objects.create(name="Band TF", slug="band-tf")
         band.users.add(user)
         notification = Notification.objects.create(band=band, title="Test", message="Test", recipient=user)
         sub = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://testTF", p256dh="a", auth="a", service_worker_scope="/band-tf/", is_active=True)
         d = WebPushDelivery.objects.create(notification=notification, subscription=sub, status=WebPushDelivery.StatusChoices.TEMPORARY_FAILURE, updated_at=now - datetime.timedelta(minutes=5))
-        
+
         self.client.force_login(self.superuser)
         url = reverse("admin_painel:admin_web_push_dashboard")
         res = self.client.get(url + "?band_slug=band-tf")
         content = res.content.decode("utf-8", errors="replace")
-        
+
         self.assertNotIn("web_push_reconcile_stale", content)
         self.assertIn("web_push_retry", content)
         self.assertNotIn("--execute", content)
@@ -184,18 +186,18 @@ class WebPushDashboardTests(TestCase):
         self.client.force_login(self.superuser)
         url = reverse("admin_painel:admin_web_push_dashboard")
         res = self.client.get(url + "?band_slug=banda-inexistente&hours=42&stale_pending_minutes=43&stale_sending_minutes=44&limit=45")
-        
+
         self.assertEqual(res.status_code, 200)
         self.assertTrue(res.context['invalid_band_filter'])
         self.assertEqual(res.context['current_hours'], 42)
         self.assertEqual(res.context['current_stale_pending'], 43)
         self.assertEqual(res.context['current_stale_sending'], 44)
         self.assertEqual(res.context['current_limit'], 45)
-        
+
         content = res.content.decode("utf-8", errors="replace")
         self.assertIn("Filtro de banda", content)
         # actually django escape might not escape á if we write it directly or it might
-        
+
     def test_invalid_band_text(self):
         self.client.force_login(self.superuser)
         url = reverse("admin_painel:admin_web_push_dashboard")
@@ -206,17 +208,17 @@ class WebPushDashboardTests(TestCase):
         self.assertNotIn("Visão Administrativa Global", content)
 
     def test_date_formatting(self):
-        from core.models import Band, Notification, WebPushSubscription, WebPushDelivery, User
+        from core.models import Band, WebPushOperationalAlert, Notification, WebPushSubscription, WebPushDelivery, User
         from django.utils import timezone
         from datetime import timedelta
-        
+
         user = User.objects.create_user(username="testuser999", password="pwd", email="999@example.com")
         band = Band.objects.create(name="Band 999", slug="band-999")
         band.users.add(user)
         notification = Notification.objects.create(band=band, title="Test", message="Test", recipient=user)
         sub = WebPushSubscription.objects.create(user=user, band=band, endpoint="http://test9", p256dh="a", auth="a", service_worker_scope="/")
         d1 = WebPushDelivery.objects.create(notification=notification, subscription=sub, status=WebPushDelivery.StatusChoices.PENDING)
-        
+
         # force dates
         now = timezone.now()
         d1.created_at = now - timedelta(days=1)
@@ -226,12 +228,12 @@ class WebPushDashboardTests(TestCase):
         url = reverse("admin_painel:admin_web_push_dashboard")
         res = self.client.get(url + "?band_slug=band-999")
         content = res.content.decode("utf-8")
-        
+
         # format we expect: d/m/Y às H:i (e.g. 17/07/2026 às 12:34)
         from django.utils.timezone import localtime
         expected_date = localtime(d1.created_at).strftime("%d/%m/%Y")
         expected_time = localtime(d1.created_at).strftime("%H:%M")
-        
+
         content = res.content.decode("utf-8", errors="replace")
         self.assertIn(expected_date, content)
         self.assertIn(expected_time, content)
@@ -261,7 +263,7 @@ class WebPushDashboardTests(TestCase):
         self.client.login(username="admin", password="pwd")
         res = self.client.get(self.url, {"band_slug": "band-a"})
         self.assertEqual(res.context['current_band_slug'], "band-a")
-        
+
 
 
 
@@ -374,7 +376,7 @@ class WebPushDashboardTests(TestCase):
         self.client.login(username="admin", password="pwd")
         res = self.client.get(self.url)
         self.assertContains(res, "Nenhum registro")
-        
+
     def test_responsiveness_and_template(self):
         self.client.login(username="admin", password="pwd")
         res = self.client.get(self.url)
@@ -383,7 +385,7 @@ class WebPushDashboardTests(TestCase):
         # should not contain form method="post"
         self.assertNotContains(res, 'method="post"')
         self.assertNotContains(res, 'method="POST"')
-        
+
     def test_no_mutations(self):
         # We ensure no notifications are created just by accessing dashboard
         notifs_before = Notification.objects.count()
@@ -426,7 +428,7 @@ class WebPushDashboardTests(TestCase):
         self.assertNotIn('https://secure-endpoint.com/x', content)
         self.assertNotIn('p256', content)
         self.assertNotIn('auth', content)
-        
+
     def test_nonexistent_band_no_global_data(self):
         WebPushDelivery.objects.create(
             notification=self.notification,
@@ -519,7 +521,7 @@ class WebPushDashboardTests(TestCase):
         import inspect
         sig = inspect.signature(list_recent_problematic_deliveries)
         self.assertIn("hours", sig.parameters)
-        
+
     def test_view_hours_and_limit_no_typeerror(self):
         self.client.login(username="admin", password="pwd")
         res = self.client.get(self.url + "?hours=48&limit=25")
@@ -540,6 +542,59 @@ class WebPushDashboardTests(TestCase):
         res = self.client.get(self.url + "?hours=abc&limit=def")
         self.assertEqual(res.context["current_hours"], 24)
         self.assertEqual(res.context["current_limit"], 50)
+    def test_dashboard_global_scope(self):
+        # superuser sem banda acessa visão GLOBAL
+        WebPushOperationalAlert.objects.create(scope_type="GLOBAL", dedupe_key="g1", code="c1", severity="INFO", status="ACTIVE", title="T1", message="M1")
+        WebPushOperationalAlert.objects.create(scope_type="BAND", band=self.band, dedupe_key="b1", code="c2", severity="INFO", status="ACTIVE", title="T2", message="M2")
+
+        self.client.force_login(self.superuser)
+        res = self.client.get(self.url)
+        self.assertEqual(res.status_code, 200)
+        self.assertIsNone(res.context['current_band_slug'])
+
+        active_incidents = res.context['active_incidents']
+        self.assertEqual(len(active_incidents), 1)
+        self.assertEqual(active_incidents[0]['scope_type'], 'GLOBAL')
+
+        # nenhum Model ou QuerySet chega ao template
+        self.assertIsInstance(active_incidents, list)
+        self.assertIsInstance(active_incidents[0], dict)
+        self.assertNotIn('title', active_incidents[0])
+        self.assertNotIn('message', active_incidents[0])
+
+    def test_dashboard_band_scope_isolation(self):
+        b2 = Band.objects.create(name="B2", slug="b2")
+        WebPushOperationalAlert.objects.create(scope_type="GLOBAL", dedupe_key="g1", code="c1", severity="INFO", status="ACTIVE", title="T1", message="M1")
+        WebPushOperationalAlert.objects.create(scope_type="BAND", band=self.band, dedupe_key="b1", code="c2", severity="INFO", status="ACTIVE", title="T2", message="M2")
+        WebPushOperationalAlert.objects.create(scope_type="BAND", band=b2, dedupe_key="b2", code="c3", severity="INFO", status="ACTIVE", title="T3", message="M3")
+
+        self.client.force_login(self.superuser)
+        res = self.client.get(self.url + f'?band_slug={self.band.slug}')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.context['current_band_slug'], self.band.slug)
+
+        active_incidents = res.context['active_incidents']
+        # banda A contém apenas incidentes BAND da banda A
+        self.assertEqual(len(active_incidents), 1)
+        self.assertEqual(active_incidents[0]['scope_type'], 'BAND')
+        self.assertEqual(active_incidents[0]['band_slug'], self.band.slug)
+
+        # banda A não mostra banda B
+        # banda selecionada não mostra GLOBAL
+
+    def test_dashboard_invalid_band_scope(self):
+        WebPushOperationalAlert.objects.create(scope_type="GLOBAL", dedupe_key="g1", code="c1", severity="INFO", status="ACTIVE", title="T1", message="M1")
+        WebPushOperationalAlert.objects.create(scope_type="BAND", band=self.band, dedupe_key="b1", code="c2", severity="INFO", status="ACTIVE", title="T2", message="M2")
+
+        self.client.force_login(self.superuser)
+        res = self.client.get(self.url + '?band_slug=invalid-slug')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.context['current_band_slug'], 'invalid-slug')
+
+        # banda inválida não mostra nenhum incidente
+        self.assertEqual(res.context['active_incidents'], [])
+        self.assertEqual(res.context['recently_resolved'], [])
+
 class ContextProcessorTests(TestCase):
     def setUp(self):
         from django.test import RequestFactory
@@ -551,39 +606,39 @@ class ContextProcessorTests(TestCase):
         from django.contrib.auth.models import AnonymousUser, Permission
         from django.contrib.contenttypes.models import ContentType
         from core.models import WebPushDelivery, User
-        
+
         # Anônimo
         request = self.factory.get('/')
         request.user = AnonymousUser()
         ctx = web_push_admin(request)
         self.assertIsInstance(ctx['user_has_admin_web_push_perm'], bool)
         self.assertFalse(ctx['user_has_admin_web_push_perm'])
-        
+
         # Usuário Comum
         user_comum = User.objects.create_user(username='comum', password='123', email='comum@test.com')
         request.user = user_comum
         ctx = web_push_admin(request)
         self.assertIsInstance(ctx['user_has_admin_web_push_perm'], bool)
         self.assertFalse(ctx['user_has_admin_web_push_perm'])
-        
+
         # Staff sem permissão
         user_staff_no_perm = User.objects.create_user(username='staff1', password='123', email='staff1@test.com', is_staff=True)
         request.user = user_staff_no_perm
         ctx = web_push_admin(request)
         self.assertIsInstance(ctx['user_has_admin_web_push_perm'], bool)
         self.assertFalse(ctx['user_has_admin_web_push_perm'])
-        
+
         # Staff com permissão
         user_staff_perm = User.objects.create_user(username='staff2', password='123', email='staff2@test.com', is_staff=True)
         ct = ContentType.objects.get_for_model(WebPushDelivery)
         perm, _ = Permission.objects.get_or_create(codename='view_webpushdelivery', content_type=ct)
         user_staff_perm.user_permissions.add(perm)
-        
+
         request.user = user_staff_perm
         ctx = web_push_admin(request)
         self.assertIsInstance(ctx['user_has_admin_web_push_perm'], bool)
         self.assertTrue(ctx['user_has_admin_web_push_perm'])
-        
+
         # Superuser
         user_superuser = User.objects.create_superuser(username='super', password='123', email='super@test.com')
         request.user = user_superuser

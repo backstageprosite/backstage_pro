@@ -48,7 +48,7 @@
 <!-- Estado Geral -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card shadow-sm border-0 
+        <div class="card shadow-sm border-0
             {% if overall_state == 'CRITICAL' %}bg-danger text-white
             {% elif overall_state == 'ATTENTION' %}bg-warning text-dark
             {% elif overall_state == 'NO_DATA' %}bg-secondary text-white
@@ -85,20 +85,20 @@
         <h4 class="h5 mb-3 fw-bold text-gray-800"><i class="fa-solid fa-siren-on me-2"></i> Alertas Ativos</h4>
         <div class="d-flex flex-column gap-3">
             {% for alert in alerts %}
-            <div class="card shadow-sm border-start border-4 
+            <div class="card shadow-sm border-start border-4
                 {% if alert.severity == 'CRITICAL' %}border-danger
                 {% elif alert.severity == 'WARNING' %}border-warning
                 {% else %}border-info{% endif %}">
                 <div class="card-body">
                     <div class="d-flex w-100 justify-content-between align-items-center mb-2">
-                        <h5 class="card-title fw-bold mb-0 
+                        <h5 class="card-title fw-bold mb-0
                             {% if alert.severity == 'CRITICAL' %}text-danger
                             {% elif alert.severity == 'WARNING' %}text-warning
                             {% else %}text-info{% endif %}">
                             {{ alert.title }}
                         </h5>
                         {% if alert.count is not None %}
-                        <span class="badge rounded-pill 
+                        <span class="badge rounded-pill
                             {% if alert.severity == 'CRITICAL' %}bg-danger
                             {% elif alert.severity == 'WARNING' %}text-bg-warning
                             {% else %}bg-info{% endif %}">
@@ -146,7 +146,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <h6 class="mt-4 fw-bold text-muted small text-uppercase">Desempenho na Janela ({{ current_hours }}h)</h6>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
@@ -169,12 +169,12 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Status Atuais -->
     <div class="col-lg-6">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-check me-2 text-primary"></i> 
+                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-check me-2 text-primary"></i>
                     {% if current_band_slug %}
                         {% if invalid_band_filter %}
                             Status Atuais &mdash; nenhum dado carregado
@@ -246,7 +246,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <ul class="list-group list-group-flush small">
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                         Ativas com histórico de falhas
@@ -268,7 +268,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Antiguidade -->
     <div class="col-lg-6">
         <div class="card shadow-sm border-0 h-100">
@@ -322,7 +322,7 @@
   --stale-minutes {{ current_stale_sending }} \
   --limit 100</code></pre>
         {% endif %}
-        
+
         {% if snapshot.anomalies.stale_pending_count > 0 or snapshot.deliveries.recent_window.temporary_failure > 0 %}
         <p class="small text-white-50 mb-2">Para re-tentar PENDING e TEMPORARY_FAILURE (apenas exibe relatório local, não altera produção):</p>
         <pre class="bg-black p-3 rounded border border-secondary text-success mb-0"><code>python manage.py web_push_retry \
@@ -337,7 +337,97 @@
 {% endif %}
 {% endif %}
 
+
+<!-- Incidentes Operacionais Persistentes -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-triangle-exclamation me-2 text-danger"></i> Incidentes Operacionais Persistentes</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if not active_incidents and not recently_resolved %}
+        <div class="p-4 text-center text-muted">
+            Nenhum incidente operacional persistente.
+        </div>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 text-nowrap">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Status / Severidade</th>
+                        <th>Escopo / Código</th>
+                        <th>Abertura</th>
+                        <th>Última Detecção</th>
+                        <th>Resolução</th>
+                        <th>Contagens</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inc in active_incidents %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="badge bg-primary">{{ inc.status }}</span>
+                            {% if inc.severity == 'CRITICAL' %}
+                            <span class="badge bg-danger">{{ inc.severity }}</span>
+                            {% elif inc.severity == 'WARNING' %}
+                            <span class="badge bg-warning text-dark">{{ inc.severity }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ inc.severity }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if inc.scope_type == 'GLOBAL' %}
+                                <span class="badge bg-dark">GLOBAL</span>
+                            {% else %}
+                                <span class="badge bg-info">BAND: {{ inc.band_slug }}</span>
+                            {% endif %}
+                            <br><small class="text-muted">{{ inc.code }}</small>
+                        </td>
+                        <td>{{ inc.first_detected_at|format_iso_date_br }}</td>
+                        <td>{{ inc.last_detected_at|format_iso_date_br }}</td>
+                        <td><span class="text-muted">-</span></td>
+                        <td>
+                            <small>
+                            Atual: {{ inc.current_count }}<br>
+                            Aberturas: {{ inc.opened_count }}
+                            </small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    {% for inc in recently_resolved %}
+                    <tr class="text-muted opacity-75">
+                        <td class="ps-4">
+                            <span class="badge bg-secondary">{{ inc.status }}</span>
+                            <span class="badge bg-light text-dark border">{{ inc.severity }}</span>
+                        </td>
+                        <td>
+                            {% if inc.scope_type == 'GLOBAL' %}
+                                <span class="badge bg-dark">GLOBAL</span>
+                            {% else %}
+                                <span class="badge bg-info">BAND: {{ inc.band_slug }}</span>
+                            {% endif %}
+                            <br><small>{{ inc.code }}</small>
+                        </td>
+                        <td>{{ inc.first_detected_at|format_iso_date_br }}</td>
+                        <td>{{ inc.last_detected_at|format_iso_date_br }}</td>
+                        <td>{{ inc.resolved_at|format_iso_date_br }}</td>
+                        <td>
+                            <small>
+                            Atual: {{ inc.current_count }}<br>
+                            Aberturas: {{ inc.opened_count }}
+                            </small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
 <!-- Lista de Problemas Recentes -->
+
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-header bg-white py-3">
         <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list me-2 text-primary"></i> 50 Entregas Mais Relevantes para Diagnóstico</h5>

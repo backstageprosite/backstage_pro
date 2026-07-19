@@ -27,7 +27,7 @@ class Band(models.Model):
     class Meta:
         verbose_name = "Banda"
         verbose_name_plural = "Bandas"
-        
+
     def __str__(self):
         return self.name
 
@@ -69,14 +69,14 @@ class Show(models.Model):
     event_name = models.CharField(max_length=200, blank=True, null=True, verbose_name='Nome do Evento')
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='PRE_RESERVADO', verbose_name='Status do Show')
     date = models.DateField(blank=True, null=True, verbose_name='Data')
-    
+
     # Localização
     city = models.CharField(max_length=100, blank=True, null=True, verbose_name='Cidade')
     venue = models.CharField(max_length=200, blank=True, null=True, verbose_name='Local do Show')
     address = models.CharField(max_length=300, blank=True, null=True, verbose_name='Endereço Completo')
     address_link = models.URLField(max_length=500, blank=True, null=True, verbose_name='Link de Localização')
     attractions = models.TextField(blank=True, null=True, verbose_name='Outras Atrações')
-    
+
     # Cronograma
     departure_location = models.CharField(max_length=200, blank=True, null=True, verbose_name='Local de Saída')
     departure_location_link = models.URLField(max_length=500, blank=True, null=True, verbose_name='Link de Localização')
@@ -88,14 +88,14 @@ class Show(models.Model):
     show_time = models.TimeField(blank=True, null=True, verbose_name='Início do Show')
     show_end_time = models.TimeField(blank=True, null=True, verbose_name='Final do Show')
     duration = models.CharField(max_length=50, blank=True, null=True, help_text='Ex: 2 horas', verbose_name='Duração do Show')
-    
+
     # Financeiro & Contrato (Restrito)
     contractor_name = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contratante')
     contractor_phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='Telefone do Contratante')
     contract_type = models.CharField(max_length=100, blank=True, null=True, verbose_name='Tipo de Contratação', help_text='Ex: Prefeitura, Empresário, Bilheteria, etc.')
     fee = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name='Valor do Cachê')
     payment_status = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='PENDENTE', verbose_name='Status do Pagamento')
-    
+
     # Logística
     transport = models.TextField(blank=True, null=True, verbose_name='Transporte')
     flight_number = models.CharField(max_length=50, blank=True, null=True, verbose_name='Número do Voo (Aéreo)')
@@ -113,20 +113,20 @@ class Show(models.Model):
     wardrobe = models.TextField(blank=True, null=True, verbose_name='Figurino')
     transfer = models.TextField(blank=True, null=True, verbose_name='Palco/Baldeação')
     transfer_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Palco/Baldeação)')
-    
+
     # Informações Técnicas
     sound_system = models.CharField(max_length=255, blank=True, null=True, verbose_name='Sistema de Sonorização')
     sound_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Som)')
-    
+
     lighting_system = models.CharField(max_length=255, blank=True, null=True, verbose_name='Sistema de Iluminação')
     lighting_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Luz)')
-    
+
     led_system = models.CharField(max_length=255, blank=True, null=True, verbose_name='Sistema de LED')
     led_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (LED)')
-    
+
     backline = models.CharField(max_length=255, blank=True, null=True, verbose_name='Backline')
     backline_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Backline)')
-    
+
     pyrotechnics = models.CharField(max_length=255, blank=True, null=True, verbose_name='Efeitos Pirotecnia')
     pyrotechnics_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Pirotecnia)')
 
@@ -136,11 +136,11 @@ class Show(models.Model):
     loaders_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Carregadores)')
     local_production = models.CharField(max_length=255, blank=True, null=True, verbose_name='Produção Local')
     local_production_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Produção Local)')
-    
+
     # Observações
     internal_notes = models.TextField(blank=True, null=True, help_text='Visível apenas para a produção.', verbose_name='Observações Internas')
     band_notes = models.TextField(blank=True, null=True, help_text='Visível para todos os integrantes.', verbose_name='Observações para a Banda')
-    
+
     # Revisão de Notificações
     notification_revision = models.PositiveBigIntegerField(default=0, editable=False)
 
@@ -212,7 +212,7 @@ class ShowPayment(models.Model):
         ('CHEQUE', 'Cheque'),
         ('OUTRO', 'Outro'),
     )
-    
+
     STATUS_CHOICES = (
         ('PENDENTE', 'Pendente'),
         ('RECEBIDO', 'Recebido'),
@@ -229,7 +229,7 @@ class ShowPayment(models.Model):
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='RECEBIDO', verbose_name='Status')
     file = models.FileField(upload_to=payment_upload_path, blank=True, null=True, verbose_name='Arquivo / Comprovante')
     observations = models.TextField(blank=True, null=True, verbose_name='Observações')
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_payments', verbose_name='Criado por')
@@ -248,7 +248,7 @@ class ShowTeamCost(models.Model):
     date = models.DateField(blank=True, null=True, verbose_name='Data')
     role = models.CharField(max_length=100, blank=True, null=True, verbose_name='Função')
     value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor (R$)')
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_team_costs', verbose_name='Criado por')
 
@@ -269,7 +269,7 @@ class Contact(models.Model):
         ('HOSPEDAGEM', 'Hospedagem'),
         ('PRODUTOR', 'Produtor (a)'),
     )
-    
+
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='contacts', verbose_name='Banda')
     name = models.CharField(max_length=200, verbose_name='Nome')
     contact_type = models.CharField(max_length=50, choices=CONTACT_TYPE_CHOICES, default='FORNECEDOR', verbose_name='Tipo')
@@ -319,12 +319,12 @@ class BandSubscription(models.Model):
     next_due_date = models.DateField(blank=True, null=True, verbose_name='Próximo Vencimento')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='TESTE', verbose_name='Status da Assinatura')
     payment_method_preference = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES, default='PIX', verbose_name='Preferência de Pagamento')
-    
+
     financial_responsible_name = models.CharField(max_length=200, blank=True, null=True, verbose_name='Responsável Financeiro')
     billing_phone = models.CharField(max_length=30, blank=True, null=True, verbose_name='Telefone de Cobrança (WhatsApp)')
     billing_email = models.EmailField(blank=True, null=True, verbose_name='E-mail de Cobrança')
     internal_notes = models.TextField(blank=True, null=True, verbose_name='Observações Internas')
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -365,7 +365,7 @@ class BillingRecord(models.Model):
     payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES, blank=True, null=True, verbose_name='Forma de Pagamento')
     proof_file = models.FileField(upload_to=billing_proof_upload_path, blank=True, null=True, verbose_name='Comprovante')
     notes = models.TextField(blank=True, null=True, verbose_name='Observações')
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_billings', verbose_name='Criado por')
@@ -389,15 +389,15 @@ class Notification(models.Model):
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='notifications', verbose_name='Banda')
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications', verbose_name='Destinatário')
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications_as_actor', verbose_name='Ator')
-    
+
     event_type = models.CharField(max_length=50, choices=EVENT_CHOICES, verbose_name='Tipo de Evento')
     title = models.CharField(max_length=200, verbose_name='Título')
     message = models.TextField(verbose_name='Mensagem')
     target_url = models.CharField(max_length=500, verbose_name='URL de Destino')
-    
+
     related_show = models.ForeignKey('Show', on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications', verbose_name='Show Relacionado')
     event_key = models.CharField(max_length=255, verbose_name='Chave de Idempotência')
-    
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
     read_at = models.DateTimeField(null=True, blank=True, verbose_name='Lido em')
 
@@ -485,38 +485,38 @@ class WebPushSubscription(models.Model):
             from django.core.exceptions import ValidationError
             import urllib.parse
             import unicodedata
-            
+
             scope = self.service_worker_scope
-            
+
             # Anti-double encoding
             decoded_once = urllib.parse.unquote(scope)
             decoded_twice = urllib.parse.unquote(decoded_once)
-            
+
             if decoded_once != decoded_twice:
                 raise ValidationError({'service_worker_scope': 'Double encoding detectado'})
-                
+
             scope = decoded_once
-            
+
             for char in scope:
                 if unicodedata.category(char).startswith('C'):
                     raise ValidationError({'service_worker_scope': 'Não pode conter caracteres de controle'})
 
             if '\\' in scope:
                 raise ValidationError({'service_worker_scope': 'Não pode conter backslash'})
-            
+
             if not scope.startswith('/'):
                 raise ValidationError({'service_worker_scope': 'Deve começar com /'})
-            
+
             if not scope.endswith('/'):
                 raise ValidationError({'service_worker_scope': 'Deve terminar com /'})
-            
+
             if '//' in scope:
                 raise ValidationError({'service_worker_scope': 'Não pode conter //'})
-                
+
             parsed = urllib.parse.urlsplit(scope)
             if parsed.scheme or parsed.netloc:
                 raise ValidationError({'service_worker_scope': 'Não pode conter scheme ou netloc'})
-                
+
             parts = parsed.path.split('/')
             if '.' in parts or '..' in parts:
                 raise ValidationError({'service_worker_scope': 'Não pode conter segmentos . ou ..'})
@@ -536,14 +536,14 @@ class WebPushDelivery(models.Model):
     notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='web_push_deliveries', verbose_name='Notificação')
     subscription = models.ForeignKey(WebPushSubscription, on_delete=models.CASCADE, related_name='deliveries', verbose_name='Inscrição Web Push')
     status = models.CharField(max_length=50, choices=StatusChoices.choices, default=StatusChoices.PENDING, verbose_name='Status')
-    
+
     attempt_count = models.PositiveSmallIntegerField(default=0, verbose_name='Tentativas')
     last_http_status = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name='Último Status HTTP')
     error_code = models.CharField(max_length=64, blank=True, default='', verbose_name='Código de Erro')
-    
+
     last_attempt_at = models.DateTimeField(null=True, blank=True, verbose_name='Última Tentativa')
     sent_at = models.DateTimeField(null=True, blank=True, verbose_name='Enviado em')
-    
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
 
@@ -560,3 +560,75 @@ class WebPushDelivery(models.Model):
 
     def __str__(self):
         return f"Notif {self.notification_id} — Sub {self.subscription_id} — {self.status}"
+
+from django.utils import timezone
+
+class WebPushOperationalAlert(models.Model):
+    class ScopeChoices(models.TextChoices):
+        GLOBAL = 'GLOBAL', 'Global'
+        BAND = 'BAND', 'Banda'
+
+    class SeverityChoices(models.TextChoices):
+        INFO = 'INFO', 'Info'
+        WARNING = 'WARNING', 'Warning'
+        CRITICAL = 'CRITICAL', 'Critical'
+
+    class StatusChoices(models.TextChoices):
+        ACTIVE = 'ACTIVE', 'Ativo'
+        RESOLVED = 'RESOLVED', 'Resolvido'
+
+    scope_type = models.CharField(max_length=20, choices=ScopeChoices.choices)
+    band = models.ForeignKey(Band, on_delete=models.PROTECT, null=True, blank=True, related_name='web_push_operational_alerts')
+    dedupe_key = models.CharField(max_length=255, unique=True)
+    code = models.CharField(max_length=100)
+    severity = models.CharField(max_length=20, choices=SeverityChoices.choices)
+    status = models.CharField(max_length=20, choices=StatusChoices.choices)
+
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    recommended_action = models.TextField(blank=True)
+
+    current_count = models.IntegerField(default=0)
+    opened_count = models.IntegerField(default=1)
+
+    first_detected_at = models.DateTimeField(default=timezone.now)
+    last_detected_at = models.DateTimeField(default=timezone.now)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Alerta Operacional Web Push'
+        verbose_name_plural = 'Alertas Operacionais Web Push'
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    (models.Q(scope_type='GLOBAL') & models.Q(band__isnull=True)) |
+                    (models.Q(scope_type='BAND') & models.Q(band__isnull=False))
+                ),
+                name='wp_alert_scope_band_consistency'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(current_count__gte=0),
+                name='wp_alert_current_count_gte_zero'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(opened_count__gte=1),
+                name='wp_alert_opened_count_gte_one'
+            ),
+            models.CheckConstraint(
+                condition=(
+                    (models.Q(status='ACTIVE') & models.Q(resolved_at__isnull=True)) |
+                    (models.Q(status='RESOLVED') & models.Q(resolved_at__isnull=False))
+                ),
+                name='wp_alert_status_resolved_at_consistency'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['status', 'severity']),
+            models.Index(fields=['band', 'status']),
+        ]
+
+    def __str__(self):
+        return f"[{self.status}] {self.severity} - {self.dedupe_key}"

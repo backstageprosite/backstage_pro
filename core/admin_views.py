@@ -27,7 +27,7 @@ def is_admin_web_push(user):
 class AdminLoginView(LoginView):
     template_name = 'admin/login.html'
     redirect_authenticated_user = True
-    
+
     def get_success_url(self):
         return reverse_lazy('admin_painel:dashboard')
 
@@ -42,7 +42,7 @@ class AdminRequiredMixin:
 
 class AdminDashboardView(AdminRequiredMixin, TemplateView):
     template_name = 'core/admin/dashboard.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from django.db.models import Sum
@@ -52,19 +52,19 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
         context['total_bandas'] = Band.objects.count()
         context['bandas_ativas'] = Band.objects.filter(is_active=True).count()
         context['total_usuarios'] = User.objects.count()
-        
+
         # Financeiro SaaS
         context['assinaturas_ativas'] = BandSubscription.objects.filter(status='ATIVO').count()
-        
+
         receita_prevista = BandSubscription.objects.filter(status='ATIVO').aggregate(total=Sum('contracted_value'))['total'] or 0
         context['receita_prevista'] = receita_prevista
-        
+
         receita_recebida = BillingRecord.objects.filter(status='PAGO', paid_date__month=today.month, paid_date__year=today.year).aggregate(total=Sum('amount'))['total'] or 0
         context['receita_recebida'] = receita_recebida
-        
+
         context['cobrancas_pendentes'] = BillingRecord.objects.filter(status='PENDENTE').count()
         context['cobrancas_atrasadas'] = BillingRecord.objects.filter(status='ATRASADO').count()
-        
+
         # Alertas Vencimentos
         context['bandas_vencidas'] = BandSubscription.objects.filter(status='VENCIDO')
         context['bandas_vencendo_7d'] = BandSubscription.objects.filter(next_due_date__gt=today, next_due_date__lte=seven_days_from_now)
@@ -77,42 +77,42 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
             context['show_alert_modal'] = False
 
         context['total_shows'] = Show.objects.count()
-        
+
         # Shows no mes atual
         context['shows_mes_atual'] = Show.objects.filter(date__year=today.year, date__month=today.month).count()
-        
+
         # Shows futuros
         context['shows_futuros'] = Show.objects.filter(date__gte=today).count()
-        
+
         # Bandas com assinatura vencida (se date for menor que hoje)
         context['assinaturas_vencidas'] = Band.objects.filter(subscription_due_date__lt=today).count()
-        
+
         # Bandas vencendo nos proximos 7 dias
         next_week = today + datetime.timedelta(days=7)
         context['assinaturas_vencendo'] = Band.objects.filter(subscription_due_date__gte=today, subscription_due_date__lte=next_week).count()
-        
+
         return context
 
 class AdminBandListView(AdminRequiredMixin, ListView):
     model = Band
     template_name = 'core/admin/bandas.html'
     context_object_name = 'bandas'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form_create'] = AdminBandForm()
         return context
-    
+
 class AdminUserListView(AdminRequiredMixin, ListView):
     model = User
     template_name = 'core/admin/usuarios.html'
     context_object_name = 'usuarios'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form_create'] = AdminUserCreateForm()
         return context
-    
+
 class AdminShowListView(AdminRequiredMixin, ListView):
     model = Show
     template_name = 'core/admin/shows.html'
@@ -129,7 +129,7 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
         q = self.request.GET.get('q', '')
         status = self.request.GET.get('status', '')
         cycle = self.request.GET.get('cycle', '')
-        
+
         if q:
             qs = qs.filter(band__name__icontains=q) | qs.filter(financial_responsible_name__icontains=q)
         if status:
@@ -140,7 +140,7 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
                 qs = qs.filter(status=status)
         if cycle:
             qs = qs.filter(billing_cycle=cycle)
-            
+
         return qs.distinct()
 
     def get_context_data(self, **kwargs):
@@ -159,7 +159,7 @@ class AdminCobrancasView(AdminRequiredMixin, ListView):
         q = self.request.GET.get('q', '')
         status = self.request.GET.get('status', '')
         period = self.request.GET.get('period', '')
-        
+
         if q:
             qs = qs.filter(band__name__icontains=q)
         if period:
@@ -173,7 +173,7 @@ class AdminCobrancasView(AdminRequiredMixin, ListView):
                 qs = qs.filter(status='PENDENTE', due_date__lt=today)
             else:
                 qs = qs.filter(status=status)
-                
+
         return qs
 
     def get_context_data(self, **kwargs):
@@ -192,9 +192,9 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         import json
         from django.db.models import Sum, Q
-        
+
         today = datetime.date.today()
-        
+
         # Filtros
         start_date = self.request.GET.get('start_date')
         end_date = self.request.GET.get('end_date')
@@ -233,7 +233,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         # Base Querysets
         billings = BillingRecord.objects.all()
         subs = BandSubscription.objects.all()
-        
+
         # Applying Filters
         if band_id:
             billings = billings.filter(band_id=band_id)
@@ -249,8 +249,8 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
         # 1. Valores Recebidos (PAGO no período baseado em paid_date)
         recebido = billings.filter(
-            status='PAGO', 
-            paid_date__gte=start_date, 
+            status='PAGO',
+            paid_date__gte=start_date,
             paid_date__lte=end_date
         ).aggregate(total=Sum('amount'))['total'] or 0
 
@@ -276,18 +276,18 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
         # 5. Receita Prevista Mensal (Valor Contratado das assinaturas ATIVAS)
         receita_prevista_mensal = BandSubscription.objects.filter(status='ATIVO').aggregate(total=Sum('contracted_value'))['total'] or 0
-        
+
         # 6. Total de Bandas Ativas Pagantes
         total_bandas_ativas = BandSubscription.objects.filter(status='ATIVO').count()
 
         # Gráficos Data
-        
+
         # Gráfico 1: Recebido x Pendente x Futuro x Atrasado
         chart_bars = {
             'labels': ['Recebido', 'Pendente', 'Futuro', 'Atrasado'],
             'data': [float(recebido), float(pendente), float(futuro), float(atrasado)]
         }
-        
+
         # Gráfico 2: Pizza de Status
         status_counts = billings.values('status').annotate(total=Count('id'))
         status_labels = []
@@ -295,12 +295,12 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         for s in status_counts:
             status_labels.append(s['status'])
             status_data.append(s['total'])
-            
+
         chart_pie = {
             'labels': status_labels,
             'data': status_data
         }
-        
+
         # Gráfico 3: Receita por Ciclo
         cycle_revenue = subs.values('billing_cycle').annotate(total=Sum('contracted_value'))
         cycle_labels = []
@@ -308,12 +308,12 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         for c in cycle_revenue:
             cycle_labels.append(c['billing_cycle'])
             cycle_data.append(float(c['total'] or 0))
-            
+
         chart_cycle = {
             'labels': cycle_labels,
             'data': cycle_data
         }
-        
+
         # Gráfico 4: Top Bandas
         top_bandas = billings.filter(status='PAGO', paid_date__gte=start_date, paid_date__lte=end_date).values('band__name').annotate(total=Sum('amount')).order_by('-total')[:5]
         top_bandas_labels = []
@@ -321,27 +321,27 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         for tb in top_bandas:
             top_bandas_labels.append(tb['band__name'])
             top_bandas_data.append(float(tb['total']))
-            
+
         chart_top_bandas = {
             'labels': top_bandas_labels,
             'data': top_bandas_data
         }
 
         # Tabelas
-        
+
         # Tabela 1: Resumo por Banda
         band_summaries = []
         all_bands = Band.objects.filter(subscription__isnull=False)
         if band_id:
             all_bands = all_bands.filter(id=band_id)
-            
+
         for band in all_bands:
             band_billings = billings.filter(band=band)
             rec = band_billings.filter(status='PAGO', paid_date__gte=start_date, paid_date__lte=end_date).aggregate(total=Sum('amount'))['total'] or 0
             pend = band_billings.filter(status='PENDENTE', due_date__gte=today, due_date__lte=end_date).aggregate(total=Sum('amount'))['total'] or 0
             fut = band_billings.filter(status='PENDENTE', due_date__gt=today).aggregate(total=Sum('amount'))['total'] or 0
             atr = band_billings.filter(Q(status='ATRASADO') | Q(status='PENDENTE', due_date__lt=today)).aggregate(total=Sum('amount'))['total'] or 0
-            
+
             band_summaries.append({
                 'band': band,
                 'subscription': band.subscription,
@@ -350,7 +350,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
                 'futuro': fut,
                 'atrasado': atr
             })
-            
+
         # Context Update
         context.update({
             'start_date': start_date.strftime('%Y-%m-%d') if isinstance(start_date, datetime.date) else start_date,
@@ -360,24 +360,24 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'plan': plan,
             'cycle': cycle,
             'period': period,
-            
+
             'kpi_recebido': recebido,
             'kpi_pendente': pendente,
             'kpi_futuro': futuro,
             'kpi_atrasado': atrasado,
             'kpi_receita_prevista': receita_prevista_mensal,
             'kpi_total_bandas': total_bandas_ativas,
-            
+
             'chart_bars': json.dumps(chart_bars),
             'chart_pie': json.dumps(chart_pie),
             'chart_cycle': json.dumps(chart_cycle),
             'chart_top_bandas': json.dumps(chart_top_bandas),
-            
+
             'band_summaries': band_summaries,
             'billings': billings.order_by('-due_date')[:100], # limit to 100 to avoid huge tables initially
             'all_bands': Band.objects.filter(subscription__isnull=False).order_by('name'),
         })
-        
+
         return context
 
 class AdminConfiguracoesView(AdminRequiredMixin, TemplateView):
@@ -463,7 +463,7 @@ def admin_user_reset_password(request, pk):
         user = get_object_or_404(User, pk=pk)
         new_password = request.POST.get('new_password')
         confirm_password = request.POST.get('confirm_password')
-        
+
         if not new_password or not confirm_password:
             messages.error(request, "As senhas não podem ser vazias.")
         elif new_password != confirm_password:
@@ -472,7 +472,7 @@ def admin_user_reset_password(request, pk):
             user.set_password(new_password)
             user.save()
             messages.success(request, f"Senha do usuário {user.username} redefinida com sucesso!")
-            
+
     return redirect('admin_painel:usuarios')
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
@@ -519,14 +519,14 @@ def admin_cobranca_create(request):
             record = form.save(commit=False)
             record.created_by = request.user
             record.save()
-            
+
             # Auto-ativa a assinatura se a fatura for paga
             if record.status == 'PAGO' and record.subscription:
                 sub = record.subscription
                 if sub.status != 'ATIVO':
                     sub.status = 'ATIVO'
                     sub.save(update_fields=['status'])
-                    
+
             messages.success(request, "Cobrança gerada com sucesso!")
         else:
             for field, errors in form.errors.items():
@@ -541,14 +541,14 @@ def admin_cobranca_edit(request, pk):
         form = AdminBillingRecordForm(request.POST, request.FILES, instance=record)
         if form.is_valid():
             record = form.save()
-            
+
             # Auto-ativa a assinatura se a fatura for paga
             if record.status == 'PAGO' and record.subscription:
                 sub = record.subscription
                 if sub.status != 'ATIVO':
                     sub.status = 'ATIVO'
                     sub.save(update_fields=['status'])
-                    
+
             messages.success(request, "Cobrança atualizada com sucesso!")
         else:
             for field, errors in form.errors.items():
@@ -565,14 +565,14 @@ def admin_cobranca_change_status(request, pk, status):
             if status == 'PAGO' and not record.paid_date:
                 record.paid_date = datetime.date.today()
             record.save()
-            
+
             # Auto-ativa a assinatura se a fatura for paga
             if status == 'PAGO' and record.subscription:
                 sub = record.subscription
                 if sub.status != 'ATIVO':
                     sub.status = 'ATIVO'
                     sub.save(update_fields=['status'])
-                    
+
             messages.success(request, f"Status alterado para {record.get_status_display()}!")
     return redirect('admin_painel:cobrancas')
 
@@ -590,26 +590,26 @@ from core.services.web_push_operations import build_web_push_health_snapshot, bu
 @method_decorator(require_GET, name='dispatch')
 class AdminWebPushDashboardView(AdminWebPushRequiredMixin, TemplateView):
     template_name = 'core/admin/web_push_dashboard.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
+
         band_slug = self.request.GET.get('band_slug', '').strip() or None
-        
+
         try:
             hours = int(self.request.GET.get('hours', 24))
             if not (1 <= hours <= 720):
                 hours = 24
         except ValueError:
             hours = 24
-            
+
         try:
             stale_pending_minutes = int(self.request.GET.get('stale_pending_minutes', 10))
             if not (5 <= stale_pending_minutes <= 10080):
                 stale_pending_minutes = 10
         except ValueError:
             stale_pending_minutes = 10
-            
+
         try:
             stale_sending_minutes = int(self.request.GET.get('stale_sending_minutes', 15))
             if not (5 <= stale_sending_minutes <= 10080):
@@ -623,7 +623,7 @@ class AdminWebPushDashboardView(AdminWebPushRequiredMixin, TemplateView):
                 limit = 50
         except ValueError:
             limit = 50
-            
+
         if band_slug:
             from core.models import Band
             if not Band.objects.filter(slug=band_slug).exists():
@@ -651,6 +651,8 @@ class AdminWebPushDashboardView(AdminWebPushRequiredMixin, TemplateView):
                     'current_limit': limit,
                     'invalid_band_filter': True,
                     'overall_state': overall_state,
+                    'active_incidents': [],
+                    'recently_resolved': [],
                 })
                 return context
 
@@ -662,10 +664,10 @@ class AdminWebPushDashboardView(AdminWebPushRequiredMixin, TemplateView):
         )
         alerts = build_web_push_operational_alerts(snapshot)
         problematic_deliveries = list_recent_problematic_deliveries(band_slug=band_slug, hours=hours, limit=limit)
-        
+
         has_critical = any(a['severity'] == 'CRITICAL' for a in alerts)
         has_warning = any(a['severity'] == 'WARNING' for a in alerts)
-        
+
         if has_critical:
             overall_state = 'CRITICAL'
         elif has_warning:
@@ -674,10 +676,58 @@ class AdminWebPushDashboardView(AdminWebPushRequiredMixin, TemplateView):
             overall_state = 'NO_DATA'
         else:
             overall_state = 'HEALTHY'
+
+        active_incidents = []
+        recently_resolved = []
+
+        from core.models import WebPushOperationalAlert
+        scope_filter = {"scope_type": "BAND", "band__slug": band_slug} if band_slug else {"scope_type": "GLOBAL", "band__isnull": True}
+
+        qs_active = WebPushOperationalAlert.objects.filter(status="ACTIVE", **scope_filter).order_by("-last_detected_at")[:100]
+        active_incidents = [
+            {
+                "alert_id": alert.id,
+                "scope_type": alert.scope_type,
+                "band_slug": alert.band.slug if alert.band else None,
+                "code": alert.code,
+                "severity": alert.severity,
+                "status": alert.status,
+                "current_count": alert.current_count,
+                "first_detected_at": alert.first_detected_at,
+                "last_detected_at": alert.last_detected_at,
+                "resolved_at": alert.resolved_at,
+                "opened_count": alert.opened_count,
+                "recommended_action": alert.recommended_action,
+            }
+            for alert in qs_active
+        ]
+
+        qs_resolved = WebPushOperationalAlert.objects.filter(status="RESOLVED", **scope_filter).order_by("-resolved_at")[:20]
+        recently_resolved = [
+            {
+                "alert_id": alert.id,
+                "scope_type": alert.scope_type,
+                "band_slug": alert.band.slug if alert.band else None,
+                "code": alert.code,
+                "severity": alert.severity,
+                "status": alert.status,
+                "current_count": alert.current_count,
+                "first_detected_at": alert.first_detected_at,
+                "last_detected_at": alert.last_detected_at,
+                "resolved_at": alert.resolved_at,
+                "opened_count": alert.opened_count,
+                "recommended_action": alert.recommended_action,
+            }
+            for alert in qs_resolved
+        ]
+
         context['snapshot'] = snapshot
         context['alerts'] = alerts
         context['overall_state'] = overall_state
         context['problematic_deliveries'] = problematic_deliveries
+        context['active_incidents'] = active_incidents
+        context['recently_resolved'] = recently_resolved
+
         context['current_band_slug'] = band_slug
         context['current_hours'] = hours
         context['current_stale_pending'] = stale_pending_minutes
@@ -685,7 +735,7 @@ class AdminWebPushDashboardView(AdminWebPushRequiredMixin, TemplateView):
         context['current_limit'] = limit
         from core.models import Band
         context['all_bands'] = Band.objects.all().order_by('name')
-        
+
         return context
 
     def dispatch(self, request, *args, **kwargs):
