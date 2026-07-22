@@ -104,7 +104,40 @@ def dashboard_view(request, band_slug):
     total_users = User.objects.filter(band=band).count()
     total_contacts = Contact.objects.filter(band=band).count()
 
-    dashboard_pending_items = BandDashboardPendingItem.objects.filter(band=band).select_related('show', 'created_by')
+    from django.db.models import Case, When, Value, IntegerField, F
+    from django.utils import timezone
+
+    today = timezone.localdate()
+
+    dashboard_pending_items = (
+        BandDashboardPendingItem.objects
+        .filter(band=band)
+        .select_related("show", "created_by")
+        .annotate(
+            date_group=Case(
+                When(show__date__isnull=True, then=Value(3)),
+                When(show__date__gte=today, then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            ),
+            future_date=Case(
+                When(show__date__gte=today, then=F('show__date')),
+                default=None,
+            ),
+            past_date=Case(
+                When(show__date__lt=today, then=F('show__date')),
+                default=None,
+            )
+        )
+        .order_by(
+            'date_group',
+            F('future_date').asc(nulls_last=True),
+            F('past_date').desc(nulls_last=True),
+            'show__show_time',
+            'show__title',
+            'pk'
+        )
+    )
 
     # Shows for the select in the Add modal (only for producer)
     pending_item_form = None

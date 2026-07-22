@@ -454,3 +454,137 @@ class DashboardPendingItemsTests(TestCase):
     def test_pending_feature_is_not_exposed_in_admin_panel(self):
         from django.contrib import admin
         self.assertFalse(admin.site.is_registered(BandDashboardPendingItem))
+    def test_pending_items_are_ordered_by_show_date(self):
+        from django.utils import timezone
+        import datetime
+        today = timezone.localdate()
+
+        show1 = Show.objects.create(band=self.band_a, title='Show 1', date=today + datetime.timedelta(days=2))
+        show2 = Show.objects.create(band=self.band_a, title='Show 2', date=today + datetime.timedelta(days=5))
+        show3 = Show.objects.create(band=self.band_a, title='Show 3', date=today + datetime.timedelta(days=1))
+
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show1, description='P1', created_by=self.produtor_a)
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show2, description='P2', created_by=self.produtor_a)
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show3, description='P3', created_by=self.produtor_a)
+
+        self.client.force_login(self.produtor_a)
+        response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
+        items = list(response.context['dashboard_pending_items'])
+
+        self.assertEqual(len(items), 3)
+        self.assertEqual(items[0].show, show3) # +1 day
+        self.assertEqual(items[1].show, show1) # +2 days
+        self.assertEqual(items[2].show, show2) # +5 days
+
+    def test_newer_pending_item_does_not_override_show_date_order(self):
+        from django.utils import timezone
+        import datetime
+        today = timezone.localdate()
+
+        show_distante = Show.objects.create(band=self.band_a, title='Distante', date=today + datetime.timedelta(days=10))
+        show_proximo = Show.objects.create(band=self.band_a, title='Proximo', date=today + datetime.timedelta(days=2))
+
+        # Cria a do show distante primeiro
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_distante, description='D', created_by=self.produtor_a)
+        # Cria a do show prximo depois
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_proximo, description='P', created_by=self.produtor_a)
+
+        self.client.force_login(self.produtor_a)
+        response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
+        items = list(response.context['dashboard_pending_items'])
+
+        self.assertEqual(len(items), 2)
+        self.assertEqual(items[0].show, show_proximo)
+        self.assertEqual(items[1].show, show_distante)
+
+    def test_pending_items_same_date_are_ordered_by_show_time(self):
+        from django.utils import timezone
+        import datetime
+        today = timezone.localdate()
+
+        show_tarde = Show.objects.create(band=self.band_a, title='Tarde', date=today + datetime.timedelta(days=3), show_time=datetime.time(15, 0))
+        show_cedo = Show.objects.create(band=self.band_a, title='Cedo', date=today + datetime.timedelta(days=3), show_time=datetime.time(10, 0))
+
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_tarde, description='T', created_by=self.produtor_a)
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_cedo, description='C', created_by=self.produtor_a)
+
+        self.client.force_login(self.produtor_a)
+        response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
+        items = list(response.context['dashboard_pending_items'])
+
+        self.assertEqual(items[0].show, show_cedo)
+        self.assertEqual(items[1].show, show_tarde)
+
+    def test_pending_items_without_show_date_are_last(self):
+        from django.utils import timezone
+        import datetime
+        today = timezone.localdate()
+
+        show_sem_data = Show.objects.create(band=self.band_a, title='Sem Data', date=None)
+        show_futuro = Show.objects.create(band=self.band_a, title='Futuro', date=today + datetime.timedelta(days=5))
+
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_sem_data, description='S', created_by=self.produtor_a)
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_futuro, description='F', created_by=self.produtor_a)
+
+        self.client.force_login(self.produtor_a)
+        response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
+        items = list(response.context['dashboard_pending_items'])
+
+        self.assertEqual(items[0].show, show_futuro)
+        self.assertEqual(items[1].show, show_sem_data)
+
+    def test_past_show_pending_items_come_after_future_items(self):
+        from django.utils import timezone
+        import datetime
+        today = timezone.localdate()
+
+        show_passado = Show.objects.create(band=self.band_a, title='Passado', date=today - datetime.timedelta(days=2))
+        show_futuro = Show.objects.create(band=self.band_a, title='Futuro', date=today + datetime.timedelta(days=2))
+
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_passado, description='P', created_by=self.produtor_a)
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_futuro, description='F', created_by=self.produtor_a)
+
+        self.client.force_login(self.produtor_a)
+        response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
+        items = list(response.context['dashboard_pending_items'])
+
+        self.assertEqual(items[0].show, show_futuro)
+        self.assertEqual(items[1].show, show_passado)
+
+    def test_past_show_pending_items_are_ordered_newest_first(self):
+        from django.utils import timezone
+        import datetime
+        today = timezone.localdate()
+
+        # mais antigo
+        show_antigo = Show.objects.create(band=self.band_a, title='Antigo', date=today - datetime.timedelta(days=10))
+        # mais recente (passado prximo)
+        show_recente = Show.objects.create(band=self.band_a, title='Recente', date=today - datetime.timedelta(days=2))
+
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_antigo, description='A', created_by=self.produtor_a)
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_recente, description='R', created_by=self.produtor_a)
+
+        self.client.force_login(self.produtor_a)
+        response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
+        items = list(response.context['dashboard_pending_items'])
+
+        self.assertEqual(items[0].show, show_recente)
+        self.assertEqual(items[1].show, show_antigo)
+
+    def test_pending_order_is_isolated_by_band(self):
+        from django.utils import timezone
+        import datetime
+        today = timezone.localdate()
+
+        show_a = Show.objects.create(band=self.band_a, title='Show A', date=today + datetime.timedelta(days=5))
+        show_b = Show.objects.create(band=self.band_b, title='Show B', date=today + datetime.timedelta(days=1))
+
+        BandDashboardPendingItem.objects.create(band=self.band_a, show=show_a, description='A', created_by=self.produtor_a)
+        BandDashboardPendingItem.objects.create(band=self.band_b, show=show_b, description='B', created_by=self.produtor_b)
+
+        self.client.force_login(self.produtor_a)
+        response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
+        items = list(response.context['dashboard_pending_items'])
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0].show, show_a)
