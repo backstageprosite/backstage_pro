@@ -169,3 +169,33 @@ class DashboardPendingItemsTests(TestCase):
         url = reverse('delete_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug, 'pending_id': item.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 405) # require_POST
+
+    def test_pending_item_form_labels(self):
+        self.client.login(username='prod_a', password='pwd')
+        
+        import datetime
+        from .forms import BandDashboardPendingItemForm
+        from .models import Show
+        
+        show1 = self.show_a
+        show1.date = datetime.date(2026, 7, 22)
+        show1.title = 'EVENTO BAND'
+        show1.save()
+        
+        show2 = Show.objects.create(band=self.band_a, title='SEM DATA SHOW', date=None)
+        show3 = Show.objects.create(band=self.band_b, title='OTHER BAND SHOW', date=datetime.date(2026, 7, 24))
+        
+        form = BandDashboardPendingItemForm(shows_qs=Show.objects.filter(band=self.band_a))
+        
+        # Get the rendered HTML for the select field
+        rendered_select = str(form['show'])
+        
+        # Test default option
+        self.assertIn('<option value="" selected>Selecione um show</option>', rendered_select)
+        
+        # Test formatted options
+        self.assertIn('22/07/2026 - EVENTO BAND', rendered_select)
+        self.assertIn('Data n\xe3o informada - SEM DATA SHOW', rendered_select)
+        
+        # Test other band show is excluded (because queryset is filtered by band_a)
+        self.assertNotIn('OTHER BAND SHOW', rendered_select)

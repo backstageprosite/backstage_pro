@@ -230,3 +230,23 @@ FinancialReceiptFormSet = inlineformset_factory(
     extra=1,
     can_delete=True
 )
+
+from .models import BandDashboardPendingItem
+
+class ShowChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        date_str = obj.date.strftime('%d/%m/%Y') if obj.date else 'Data não informada'
+        name = obj.title or obj.event_name or obj.city or f'Show ID {obj.id}'
+        return f'{date_str} - {name.upper()}'
+
+class BandDashboardPendingItemForm(forms.ModelForm):
+    show = ShowChoiceField(queryset=None, empty_label='Selecione um show', widget=forms.Select(attrs={'class': 'form-select', 'style': 'border-radius: 8px;'}))
+    class Meta:
+        model = BandDashboardPendingItem
+        fields = ['description', 'show']
+    def __init__(self, *args, **kwargs):
+        shows_qs = kwargs.pop('shows_qs', None)
+        super().__init__(*args, **kwargs)
+        self.fields['description'].widget.attrs.update({'class': 'form-control', 'rows': 3, 'placeholder': 'Digite a pendência...', 'maxlength': '500', 'style': 'border-radius: 8px; resize: none;'})
+        if shows_qs is not None:
+            self.fields['show'].queryset = shows_qs

@@ -201,17 +201,12 @@
                 {% csrf_token %}
                 <div class="modal-body pt-3 pb-2">
                     <div class="mb-3">
-                        <label for="id_description" class="form-label fw-semibold text-dark small">Pendência</label>
-                        <textarea class="form-control" id="id_description" name="description" rows="3" placeholder="Digite a pendência..." maxlength="500" required style="border-radius: 8px; resize: none;"></textarea>
+                        <label for="{{ pending_item_form.description.id_for_label }}" class="form-label fw-semibold text-dark small">Pendência</label>
+                        {{ pending_item_form.description }}
                     </div>
                     <div class="mb-3">
-                        <label for="id_show" class="form-label fw-semibold text-dark small">Show</label>
-                        <select class="form-select" id="id_show" name="show" required style="border-radius: 8px;">
-                            <option value="">Selecione um show</option>
-                            {% for show_item in shows %}
-                                <option value="{{ show_item.id }}">{{ show_item.date|date:"d/m/Y" }} — {% if show_item.city %}{{ show_item.city }}{% else %}Show ID {{ show_item.id }}{% endif %}</option>
-                            {% endfor %}
-                        </select>
+                        <label for="{{ pending_item_form.show.id_for_label }}" class="form-label fw-semibold text-dark small">Show</label>
+                        {{ pending_item_form.show }}
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-2">

@@ -107,9 +107,11 @@ def dashboard_view(request, band_slug):
     dashboard_pending_items = BandDashboardPendingItem.objects.filter(band=band).select_related('show', 'created_by')
 
     # Shows for the select in the Add modal (only for producer)
-    shows = None
+    pending_item_form = None
     if request.user.is_superuser or getattr(request.user, 'role', '') == 'PRODUTOR':
         shows = Show.objects.filter(band=band, date__gte=datetime.date.today()).order_by('date', 'show_time')
+        from .forms import BandDashboardPendingItemForm
+        pending_item_form = BandDashboardPendingItemForm(shows_qs=shows)
 
     context = {
         'band': band,
@@ -118,7 +120,7 @@ def dashboard_view(request, band_slug):
         'total_users': total_users,
         'total_contacts': total_contacts,
         'dashboard_pending_items': dashboard_pending_items,
-        'shows': shows,
+        'pending_item_form': pending_item_form,
     }
     return render(request, 'core/dashboard.html', context)
 
