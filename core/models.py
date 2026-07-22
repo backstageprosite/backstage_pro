@@ -85,6 +85,7 @@ class Show(models.Model):
     travel_time = models.CharField(max_length=100, blank=True, null=True, verbose_name="Tempo de Deslocamento")
     distance_km = models.CharField(max_length=100, blank=True, null=True, verbose_name="Distância")
     soundcheck_time = models.TimeField(blank=True, null=True, verbose_name="Passagem de Som")
+    soundcheck_end_time = models.TimeField(blank=True, null=True, verbose_name="Final da passagem de som")
     show_time = models.TimeField(blank=True, null=True, verbose_name='Início do Show')
     show_end_time = models.TimeField(blank=True, null=True, verbose_name='Final do Show')
     duration = models.CharField(max_length=50, blank=True, null=True, help_text='Ex: 2 horas', verbose_name='Duração do Show')

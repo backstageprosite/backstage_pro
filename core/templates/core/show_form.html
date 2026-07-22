@@ -143,22 +143,41 @@
                     </div>
 
                     <h5 class="fw-bold mb-4 text-primary pb-2 border-top pt-4">No Local</h5>
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">{{ form.soundcheck_time.label }}</label>
-                            {{ form.soundcheck_time }}
+                    
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Passagem de som</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Início</label>
+                                {{ form.soundcheck_time }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Final</label>
+                                {{ form.soundcheck_end_time }}
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">{{ form.show_time.label }}</label>
-                            {{ form.show_time }}
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Show</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-success">Início</label>
+                                {{ form.show_time }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-danger">Final</label>
+                                {{ form.show_end_time }}
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">{{ form.show_end_time.label }}</label>
-                            {{ form.show_end_time }}
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">{{ form.duration.label }}</label>
-                            {{ form.duration }}
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Duração do Show</h6>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                {{ form.duration }}
+                            </div>
                         </div>
                     </div>
                     

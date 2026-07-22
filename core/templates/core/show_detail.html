@@ -106,21 +106,25 @@
                         {% if show.arrival_time %}<strong>Previsão Chegada:</strong> {{ show.arrival_time|time:"H:i" }}{% endif %}
                     </li>
                     {% endif %}
-                    {% if show.soundcheck_time %}
-                    <li class="list-group-item bg-transparent text-warning border-secondary">
-                        <strong>Passagem de Som:</strong> {{ show.soundcheck_time|time:"H:i" }}
+                    {% if show.soundcheck_time or show.soundcheck_end_time %}
+                    <li class="list-group-item bg-transparent text-light border-secondary">
+                        <strong>Passagem de som</strong><br>
+                        {% if show.soundcheck_time %}Início: {{ show.soundcheck_time|time:"H:i" }}{% endif %}
+                        {% if show.soundcheck_time and show.soundcheck_end_time %}<br>{% endif %}
+                        {% if show.soundcheck_end_time %}Final: {{ show.soundcheck_end_time|time:"H:i" }}{% endif %}
                     </li>
                     {% endif %}
                     {% if show.show_time or show.show_end_time %}
                     <li class="list-group-item bg-transparent border-secondary">
-                        {% if show.show_time %}<span class="text-success"><strong>Início do Show:</strong> {{ show.show_time|time:"H:i" }}</span>{% endif %}
-                        {% if show.show_time and show.show_end_time %} <span class="text-light mx-1">|</span> {% endif %}
-                        {% if show.show_end_time %}<span class="text-danger"><strong>Final do Show:</strong> {{ show.show_end_time|time:"H:i" }}</span>{% endif %}
+                        <strong>Show</strong><br>
+                        {% if show.show_time %}<span class="text-success">Início: {{ show.show_time|time:"H:i" }}</span>{% endif %}
+                        {% if show.show_time and show.show_end_time %} <br> {% endif %}
+                        {% if show.show_end_time %}<span class="text-danger">Final: {{ show.show_end_time|time:"H:i" }}</span>{% endif %}
                     </li>
                     {% endif %}
                     {% if show.duration %}
                     <li class="list-group-item bg-transparent text-light border-secondary">
-                        <strong>Duração:</strong> {{ show.duration }}
+                        <strong>Duração do Show:</strong> {{ show.duration }}
                     </li>
                     {% endif %}
                 </ul>

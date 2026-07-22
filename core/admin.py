@@ -346,8 +346,8 @@ class ShowAdmin(admin.ModelAdmin):
                 ('departure_location', 'departure_location_link'),
                 ('distance_km', 'travel_time'),
                 ('departure_time', 'arrival_time'),
-                ('soundcheck_time', 'duration'),
-                ('show_time', 'show_end_time'),
+                ('soundcheck_time', 'soundcheck_end_time'),
+                ('show_time', 'show_end_time', 'duration'),
                 'band_notes'
             )
         }),
