@@ -632,3 +632,83 @@ class WebPushOperationalAlert(models.Model):
 
     def __str__(self):
         return f"[{self.status}] {self.severity} - {self.dedupe_key}"
+class WebPushOperationalAlertEmailDelivery(models.Model):
+    EVENT_TYPE_CHOICES = (
+        ('OPENED', 'Opened'),
+        ('REOPENED', 'Reopened'),
+        ('ESCALATED', 'Escalated'),
+        ('RESOLVED', 'Resolved'),
+    )
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('SENDING', 'Sending'),
+        ('SENT', 'Sent'),
+        ('TEMPORARY_FAILURE', 'Temporary Failure'),
+        ('PERMANENT_FAILURE', 'Permanent Failure'),
+        ('SKIPPED', 'Skipped'),
+    )
+
+    alert = models.ForeignKey(WebPushOperationalAlert, on_delete=models.PROTECT, related_name='email_deliveries')
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPE_CHOICES)
+    event_key = models.CharField(max_length=255, unique=True)
+
+    severity_snapshot = models.CharField(max_length=50)
+    scope_type_snapshot = models.CharField(max_length=20)
+    band_slug_snapshot = models.CharField(max_length=255, null=True, blank=True)
+    code_snapshot = models.CharField(max_length=100)
+    current_count_snapshot = models.IntegerField()
+    opened_count_snapshot = models.IntegerField()
+
+    recipient_set_hash = models.CharField(max_length=255)
+    recipient_count = models.IntegerField()
+
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='PENDING')
+    attempt_count = models.IntegerField(default=0)
+    max_attempts = models.IntegerField(default=3)
+
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    next_attempt_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    last_error_code = models.CharField(max_length=100, null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'web_push_operational_alert_email_delivery'
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(recipient_count__gte=1),
+                name='wp_alert_email_recip_gte_one'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(attempt_count__gte=0),
+                name='wp_alert_email_attempt_gte_zero'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(max_attempts__gte=1),
+                name='wp_alert_email_max_attempts_gte_one'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(attempt_count__lte=models.F('max_attempts')),
+                name='wp_alert_email_attempt_lte_max'
+            ),
+            models.CheckConstraint(
+                condition=(
+                    (models.Q(status='SENT') & models.Q(sent_at__isnull=False)) |
+                    (~models.Q(status='SENT') & models.Q(sent_at__isnull=True))
+                ),
+                name='wp_alert_email_status_sent_at'
+            )
+        ]
+
+class WebPushOperationalAlertCycleLease(models.Model):
+    key = models.CharField(max_length=100, unique=True, default='web_push_operational_alert_cycle')
+    owner_token = models.CharField(max_length=255)
+    locked_until = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'web_push_operational_alert_cycle_lease'

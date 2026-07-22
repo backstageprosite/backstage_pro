@@ -188,3 +188,13 @@ AUTH_USER_MODEL = 'core.User'
 
 # Global login/logout redirects removed to prevent NoReverseMatch
 # Custom views will handle their own redirects using band_slug
+
+# Web Push Operational Alerts Email Channel
+WEB_PUSH_ALERT_EMAIL_ENABLED = os.getenv('WEB_PUSH_ALERT_EMAIL_ENABLED', 'False') == 'True'
+WEB_PUSH_ALERT_EMAIL_RECIPIENTS = os.getenv('WEB_PUSH_ALERT_EMAIL_RECIPIENTS', '')
+WEB_PUSH_ALERT_EMAIL_FROM = os.getenv('WEB_PUSH_ALERT_EMAIL_FROM', 'webmaster@localhost')
+WEB_PUSH_ALERT_DASHBOARD_URL = os.getenv('WEB_PUSH_ALERT_DASHBOARD_URL', 'http://localhost:8000/painel/web-push/')
+WEB_PUSH_ALERT_EMAIL_MIN_SEVERITY = os.getenv('WEB_PUSH_ALERT_EMAIL_MIN_SEVERITY', 'WARNING')
+WEB_PUSH_ALERT_EMAIL_MAX_ATTEMPTS = int(os.getenv('WEB_PUSH_ALERT_EMAIL_MAX_ATTEMPTS', '3'))
+WEB_PUSH_ALERT_EMAIL_RETRY_MINUTES = int(os.getenv('WEB_PUSH_ALERT_EMAIL_RETRY_MINUTES', '15'))
+WEB_PUSH_ALERT_CYCLE_LOCK_MINUTES = int(os.getenv('WEB_PUSH_ALERT_CYCLE_LOCK_MINUTES', '10'))

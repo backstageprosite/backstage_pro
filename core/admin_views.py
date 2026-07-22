@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.views import LoginView
@@ -720,6 +720,48 @@ class AdminWebPushDashboardView(AdminWebPushRequiredMixin, TemplateView):
             }
             for alert in qs_resolved
         ]
+
+        from core.services.web_push_alert_email import get_web_push_alert_email_config
+        from core.models import WebPushOperationalAlertEmailDelivery
+
+        try:
+            email_config = get_web_push_alert_email_config()
+            email_enabled = email_config['enabled']
+            email_severity = email_config['min_severity']
+            recipient_count = email_config['recipient_count']
+        except ValueError:
+            email_enabled = False
+            email_severity = 'WARNING'
+            recipient_count = 0
+
+        qs_email = WebPushOperationalAlertEmailDelivery.objects.all().order_by('-created_at')
+
+        email_recent_deliveries = []
+        for d in qs_email[:20]:
+            email_recent_deliveries.append({
+                "event_type": d.event_type,
+                "code_snapshot": d.code_snapshot,
+                "severity_snapshot": d.severity_snapshot,
+                "scope_type_snapshot": d.scope_type_snapshot,
+                "band_slug_snapshot": d.band_slug_snapshot,
+                "status": d.status,
+                "attempt_count": d.attempt_count,
+                "last_error_code": d.last_error_code,
+                "created_at": d.created_at,
+                "sent_at": d.sent_at
+            })
+
+        pending_count = WebPushOperationalAlertEmailDelivery.objects.filter(status='PENDING').count()
+        temp_fail_count = WebPushOperationalAlertEmailDelivery.objects.filter(status='TEMPORARY_FAILURE').count()
+        perm_fail_count = WebPushOperationalAlertEmailDelivery.objects.filter(status='PERMANENT_FAILURE').count()
+
+        context['WEB_PUSH_ALERT_EMAIL_ENABLED'] = email_enabled
+        context['WEB_PUSH_ALERT_EMAIL_MIN_SEVERITY'] = email_severity
+        context['email_channel_recipient_count'] = recipient_count
+        context['email_pending_count'] = pending_count
+        context['email_temporary_failure_count'] = temp_fail_count
+        context['email_permanent_failure_count'] = perm_fail_count
+        context['email_recent_deliveries'] = email_recent_deliveries
 
         context['snapshot'] = snapshot
         context['alerts'] = alerts

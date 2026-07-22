@@ -196,7 +196,7 @@ class WebPushDashboardTests(TestCase):
 
         content = res.content.decode("utf-8", errors="replace")
         self.assertIn("Filtro de banda", content)
-        # actually django escape might not escape á if we write it directly or it might
+        # actually django escape might not escape Ã¡ if we write it directly or it might
 
     def test_invalid_band_text(self):
         self.client.force_login(self.superuser)
@@ -229,7 +229,7 @@ class WebPushDashboardTests(TestCase):
         res = self.client.get(url + "?band_slug=band-999")
         content = res.content.decode("utf-8")
 
-        # format we expect: d/m/Y às H:i (e.g. 17/07/2026 às 12:34)
+        # format we expect: d/m/Y Ã s H:i (e.g. 17/07/2026 Ã s 12:34)
         from django.utils.timezone import localtime
         expected_date = localtime(d1.created_at).strftime("%d/%m/%Y")
         expected_time = localtime(d1.created_at).strftime("%H:%M")
@@ -645,3 +645,88 @@ class ContextProcessorTests(TestCase):
         ctx = web_push_admin(request)
         self.assertIsInstance(ctx['user_has_admin_web_push_perm'], bool)
         self.assertTrue(ctx['user_has_admin_web_push_perm'])
+from django.test import TestCase, override_settings, Client
+from django.urls import reverse
+from django.contrib.auth import get_user_model
+from core.models import WebPushOperationalAlertEmailDelivery, WebPushOperationalAlert
+
+User = get_user_model()
+
+class WebPushEmailDashboardTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser('admin@example.com', 'password123')
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.url = reverse('admin_painel:admin_web_push_dashboard')
+
+    @override_settings(WEB_PUSH_ALERT_EMAIL_ENABLED=True, WEB_PUSH_ALERT_EMAIL_RECIPIENTS='a@a.com', WEB_PUSH_ALERT_EMAIL_FROM='a@a.com', WEB_PUSH_ALERT_DASHBOARD_URL='http://a.com')
+    def test_email_dashboard_section_visible(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['WEB_PUSH_ALERT_EMAIL_ENABLED'])
+        self.assertEqual(response.context['email_channel_recipient_count'], 1)
+
+    @override_settings(WEB_PUSH_ALERT_EMAIL_ENABLED=True, WEB_PUSH_ALERT_EMAIL_RECIPIENTS='a@a.com', WEB_PUSH_ALERT_EMAIL_FROM='a@a.com', WEB_PUSH_ALERT_DASHBOARD_URL='http://a.com')
+    def test_email_dashboard_context_is_primitive(self):
+        alert = WebPushOperationalAlert.objects.create(scope_type="GLOBAL", dedupe_key="a", code="a", severity="WARNING", status="ACTIVE", current_count=1, opened_count=1)
+        WebPushOperationalAlertEmailDelivery.objects.create(
+            alert=alert, event_key="1", event_type="OPENED", status="PENDING",
+            recipient_count=1, recipient_set_hash="hash", severity_snapshot="WARNING", max_attempts=3,
+            scope_type_snapshot="GLOBAL", code_snapshot="a", current_count_snapshot=1, opened_count_snapshot=1
+        )
+        response = self.client.get(self.url)
+        deliveries = response.context['email_recent_deliveries']
+        self.assertEqual(len(deliveries), 1)
+        self.assertIsInstance(deliveries[0], dict)
+        self.assertNotIn('recipient_set_hash', deliveries[0])
+
+    @override_settings(WEB_PUSH_ALERT_EMAIL_ENABLED=True, WEB_PUSH_ALERT_EMAIL_RECIPIENTS='a@a.com', WEB_PUSH_ALERT_EMAIL_FROM='a@a.com', WEB_PUSH_ALERT_DASHBOARD_URL='http://a.com')
+    def test_email_dashboard_recent_deliveries_limit_20(self):
+        alert = WebPushOperationalAlert.objects.create(scope_type="GLOBAL", dedupe_key="a", code="a", severity="WARNING", status="ACTIVE", current_count=1, opened_count=1)
+        for i in range(25):
+            WebPushOperationalAlertEmailDelivery.objects.create(
+                alert=alert, event_key=f"e{i}", event_type="OPENED", status="PENDING",
+                recipient_count=1, recipient_set_hash="hash", severity_snapshot="WARNING", max_attempts=3,
+                scope_type_snapshot="GLOBAL", code_snapshot="a", current_count_snapshot=1, opened_count_snapshot=1
+            )
+        response = self.client.get(self.url)
+        self.assertEqual(len(response.context['email_recent_deliveries']), 20)
+
+    @override_settings(WEB_PUSH_ALERT_EMAIL_ENABLED=True, WEB_PUSH_ALERT_EMAIL_RECIPIENTS='secret@example.com', WEB_PUSH_ALERT_EMAIL_FROM='a@a.com', WEB_PUSH_ALERT_DASHBOARD_URL='http://a.com')
+    def test_email_dashboard_does_not_expose_addresses(self):
+        response = self.client.get(self.url)
+        content = response.content.decode('utf-8')
+        self.assertNotIn('secret@example.com', content)
+        self.assertNotIn('secret@example.com', str(response.context))
+
+    @override_settings(WEB_PUSH_ALERT_EMAIL_ENABLED=True, WEB_PUSH_ALERT_EMAIL_RECIPIENTS='a@a.com', WEB_PUSH_ALERT_EMAIL_FROM='a@a.com', WEB_PUSH_ALERT_DASHBOARD_URL='http://a.com')
+    def test_email_dashboard_does_not_expose_recipient_hash(self):
+        alert = WebPushOperationalAlert.objects.create(scope_type="GLOBAL", dedupe_key="a", code="a", severity="WARNING", status="ACTIVE", current_count=1, opened_count=1)
+        WebPushOperationalAlertEmailDelivery.objects.create(
+            alert=alert, event_key="1", event_type="OPENED", status="PENDING",
+            recipient_count=1, recipient_set_hash="SUPERSECRETHASH123", severity_snapshot="WARNING", max_attempts=3,
+            scope_type_snapshot="GLOBAL", code_snapshot="a", current_count_snapshot=1, opened_count_snapshot=1
+        )
+        response = self.client.get(self.url)
+        content = response.content.decode('utf-8')
+        self.assertNotIn('SUPERSECRETHASH123', content)
+
+    @override_settings(WEB_PUSH_ALERT_EMAIL_ENABLED=True, WEB_PUSH_ALERT_EMAIL_RECIPIENTS='a@a.com', WEB_PUSH_ALERT_EMAIL_FROM='a@a.com', WEB_PUSH_ALERT_DASHBOARD_URL='http://a.com')
+    def test_email_dashboard_get_does_not_send(self):
+        from unittest.mock import patch
+        with patch('django.core.mail.EmailMultiAlternatives.send') as mock:
+            self.client.get(self.url)
+            mock.assert_not_called()
+
+    @override_settings(WEB_PUSH_ALERT_EMAIL_ENABLED=True, WEB_PUSH_ALERT_EMAIL_RECIPIENTS='a@a.com', WEB_PUSH_ALERT_EMAIL_FROM='a@a.com', WEB_PUSH_ALERT_DASHBOARD_URL='http://a.com')
+    def test_email_dashboard_post_returns_405(self):
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 405)
+
+    @override_settings(WEB_PUSH_ALERT_EMAIL_ENABLED=True, WEB_PUSH_ALERT_EMAIL_RECIPIENTS='a@a.com', WEB_PUSH_ALERT_EMAIL_FROM='a@a.com', WEB_PUSH_ALERT_DASHBOARD_URL='http://a.com')
+    def test_email_dashboard_empty_state(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.context['email_pending_count'], 0)
+        self.assertEqual(response.context['email_temporary_failure_count'], 0)
+        self.assertEqual(response.context['email_permanent_failure_count'], 0)
+        self.assertEqual(len(response.context['email_recent_deliveries']), 0)

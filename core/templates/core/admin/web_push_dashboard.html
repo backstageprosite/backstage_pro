@@ -484,4 +484,114 @@
     </div>
 </div>
 
+
+﻿<!-- Canal Administrativo por E-mail -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-envelope me-2 text-primary"></i> Canal Administrativo por E-mail</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="p-3 bg-light border-bottom">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Status do Canal</span>
+                    {% if WEB_PUSH_ALERT_EMAIL_ENABLED %}
+                        <span class="badge bg-success">HABILITADO</span>
+                    {% else %}
+                        <span class="badge bg-secondary">DESABILITADO</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Severidade Mnima</span>
+                    <span class="fw-bold">{{ WEB_PUSH_ALERT_EMAIL_MIN_SEVERITY }}</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Qtd. Destinatrios</span>
+                    <span class="fw-bold">{{ email_channel_recipient_count }}</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Emails Pendentes</span>
+                    <span class="fw-bold">{{ email_pending_count }}</span>
+                </div>
+            </div>
+            <div class="row text-center mt-3">
+                <div class="col-md-6">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Falhas Temporrias (Fila)</span>
+                    <span class="fw-bold text-warning">{{ email_temporary_failure_count }}</span>
+                </div>
+                <div class="col-md-6">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Falhas Permanentes</span>
+                    <span class="fw-bold text-danger">{{ email_permanent_failure_count }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 text-nowrap">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Evento / Cdigo</th>
+                        <th>Escopo / Banda</th>
+                        <th>Severidade</th>
+                        <th>Status</th>
+                        <th>Tentativas</th>
+                        <th>Cricao / Envio</th>
+                        <th>Falha / Erro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in email_recent_deliveries %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-bold">{{ d.event_type }}</span><br>
+                            <small class="text-muted">{{ d.code_snapshot }}</small>
+                        </td>
+                        <td>
+                            {% if d.scope_type_snapshot == 'GLOBAL' %}
+                                <span class="badge bg-dark">GLOBAL</span>
+                            {% else %}
+                                <span class="badge bg-info">BAND: {{ d.band_slug_snapshot }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if d.severity_snapshot == 'CRITICAL' %}
+                                <span class="badge bg-danger">{{ d.severity_snapshot }}</span>
+                            {% elif d.severity_snapshot == 'WARNING' %}
+                                <span class="badge bg-warning text-dark">{{ d.severity_snapshot }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ d.severity_snapshot }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge status-badge
+                                {% if d.status == 'PENDING' %}bg-secondary
+                                {% elif d.status == 'SENDING' %}bg-primary
+                                {% elif d.status == 'TEMPORARY_FAILURE' %}bg-warning text-dark
+                                {% elif d.status == 'PERMANENT_FAILURE' %}bg-danger
+                                {% elif d.status == 'SENT' %}bg-success
+                                {% else %}bg-dark{% endif %}">
+                                {{ d.status }}
+                            </span>
+                        </td>
+                        <td>{{ d.attempt_count }}</td>
+                        <td>
+                            <small>
+                                Cri: {{ d.created_at|format_iso_date_br }}<br>
+                                Env: {% if d.sent_at %}{{ d.sent_at|format_iso_date_br }}{% else %}-{% endif %}
+                            </small>
+                        </td>
+                        <td class="text-danger small">{% if d.last_error_code %}{{ d.last_error_code }}{% else %}-{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            Nenhum envio de e-mail administrativo registrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
