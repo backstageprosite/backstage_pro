@@ -257,20 +257,20 @@ class DashboardPendingItemsTests(TestCase):
         from django.utils import timezone
         from django.db.models import Q, F
         from .models import Show
-        
+
         # Test that the boundary effectively acts upon localdate
         Show.objects.all().delete()
-        
+
         today = timezone.localdate()
         yesterday = today - datetime.timedelta(days=1)
-        
+
         Show.objects.create(band=self.band_a, title='SHOW DE HOJE', date=today)
         Show.objects.create(band=self.band_a, title='SHOW DE ONTEM', date=yesterday)
-        
+
         shows = Show.objects.filter(
             Q(band=self.band_a) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
         ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
-        
+
         titles = [s.title for s in shows]
         self.assertIn('SHOW DE HOJE', titles)
         self.assertNotIn('SHOW DE ONTEM', titles)
@@ -342,8 +342,115 @@ class DashboardPendingItemsTests(TestCase):
         past_show = Show.objects.create(band=self.band_a, title='PAST SHOW', date=datetime.date(2000, 1, 1))
         item = BandDashboardPendingItem.objects.create(band=self.band_a, show=past_show, description="Task", created_by=self.produtor_a)
         self.client.login(username="prod_a", password="pwd")
-        
+
         response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
         # In edit form, the PAST SHOW will be included
         self.assertContains(response, 'PAST SHOW')
 
+    # 6. MULTI-TENANT ISOLATION TESTS
+    def test_produtor_band_a_cannot_add_pending_item_to_band_b(self):
+        self.client.login(username="prod_a", password="pwd")
+        url = reverse('add_dashboard_pending_item', kwargs={'band_slug': self.band_b.slug})
+        data = {'description': 'Test', 'show': self.show_b.id}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_produtor_band_a_cannot_edit_band_b_pending_item(self):
+        item = BandDashboardPendingItem.objects.create(band=self.band_b, show=self.show_b, description="Task B", created_by=self.produtor_b)
+        self.client.login(username="prod_a", password="pwd")
+        url = reverse('edit_dashboard_pending_item', kwargs={'band_slug': self.band_b.slug, 'pending_id': item.id})
+        data = {f'edit_{item.id}-description': 'Updated', f'edit_{item.id}-show': self.show_b.id}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_superuser_without_band_role_cannot_add_pending_item(self):
+        superuser = User.objects.create_superuser(username="su", email="su@test.com", password="pwd")
+        self.client.login(username="su", password="pwd")
+        url = reverse('add_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug})
+        data = {'description': 'Test', 'show': self.show_a.id}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_superuser_without_band_role_cannot_edit_pending_item(self):
+        User.objects.create_superuser(username="su_edit", email="su2@test.com", password="pwd")
+        item = BandDashboardPendingItem.objects.create(band=self.band_a, show=self.show_a, description="Task", created_by=self.produtor_a)
+        self.client.login(username="su_edit", password="pwd")
+        url = reverse('edit_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug, 'pending_id': item.id})
+        data = {f'edit_{item.id}-description': 'Updated', f'edit_{item.id}-show': self.show_a.id}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_superuser_without_band_role_cannot_delete_pending_item(self):
+        User.objects.create_superuser(username="su_del", email="su3@test.com", password="pwd")
+        item = BandDashboardPendingItem.objects.create(band=self.band_a, show=self.show_a, description="Task", created_by=self.produtor_a)
+        self.client.login(username="su_del", password="pwd")
+        url = reverse('delete_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug, 'pending_id': item.id})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_pending_edit_preserves_band_created_by_created_at_and_updates_updated_at(self):
+        item = BandDashboardPendingItem.objects.create(band=self.band_a, show=self.show_a, description="Task A", created_by=self.produtor_a)
+        original_band = item.band
+        original_created_by = item.created_by
+        original_created_at = item.created_at
+        original_updated_at = item.updated_at
+
+        # Mock passage of time for DB update
+        import time
+        time.sleep(0.01)
+
+        self.client.login(username="prod_a", password="pwd")
+        url = reverse('edit_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug, 'pending_id': item.id})
+        data = {f'edit_{item.id}-description': 'Updated Task A', f'edit_{item.id}-show': self.show_a.id}
+        self.client.post(url, data)
+
+        item.refresh_from_db()
+        self.assertEqual(item.band, original_band)
+        self.assertEqual(item.created_by, original_created_by)
+        self.assertEqual(item.created_at, original_created_at)
+        self.assertGreater(item.updated_at, original_updated_at)
+
+    def test_pending_edit_rejects_other_band_show(self):
+        item = BandDashboardPendingItem.objects.create(band=self.band_a, show=self.show_a, description="Task A", created_by=self.produtor_a)
+        self.client.login(username="prod_a", password="pwd")
+        url = reverse('edit_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug, 'pending_id': item.id})
+        data = {f'edit_{item.id}-description': 'Updated Task A', f'edit_{item.id}-show': self.show_b.id}
+        response = self.client.post(url, data)
+        # Assuming the form rejects it and redirects back to dashboard with errors
+        self.assertEqual(response.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.show, self.show_a) # Not changed to show_b
+
+    def test_pending_operations_do_not_create_side_effects(self):
+        from .models import Notification, WebPushDelivery
+
+        notif_before = Notification.objects.count()
+        wp_before = WebPushDelivery.objects.count()
+
+        # Create
+        self.client.login(username="prod_a", password="pwd")
+        url = reverse('add_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug})
+        self.client.post(url, {'description': 'Test', 'show': self.show_a.id})
+
+        self.assertEqual(Notification.objects.count(), notif_before)
+        self.assertEqual(WebPushDelivery.objects.count(), wp_before)
+
+        item = BandDashboardPendingItem.objects.first()
+
+        # Edit
+        url = reverse('edit_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug, 'pending_id': item.id})
+        self.client.post(url, {f'edit_{item.id}-description': 'Updated', f'edit_{item.id}-show': self.show_a.id})
+
+        self.assertEqual(Notification.objects.count(), notif_before)
+        self.assertEqual(WebPushDelivery.objects.count(), wp_before)
+
+        # Delete
+        url = reverse('delete_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug, 'pending_id': item.id})
+        self.client.post(url)
+
+        self.assertEqual(Notification.objects.count(), notif_before)
+        self.assertEqual(WebPushDelivery.objects.count(), wp_before)
+
+    def test_pending_feature_is_not_exposed_in_admin_panel(self):
+        from django.contrib import admin
+        self.assertFalse(admin.site.is_registered(BandDashboardPendingItem))

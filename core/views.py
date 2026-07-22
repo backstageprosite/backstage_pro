@@ -108,7 +108,7 @@ def dashboard_view(request, band_slug):
 
     # Shows for the select in the Add modal (only for producer)
     pending_item_form = None
-    if request.user.is_superuser or getattr(request.user, 'role', '') == 'PRODUTOR':
+    if request.user.band == band and getattr(request.user, 'role', '') == 'PRODUTOR':
         from django.utils import timezone
         from django.db.models import Q, F
         shows = Show.objects.filter(
@@ -1185,9 +1185,9 @@ def receipt_delete_view(request, band_slug, pk):
 @band_required
 @require_POST
 def add_dashboard_pending_item(request, band_slug):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores podem gerenciar pendências.")
     band = get_object_or_404(Band, slug=band_slug)
+    if request.user.band != band or getattr(request.user, 'role', '') != 'PRODUTOR':
+        return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
     
     from django.utils import timezone
     from django.db.models import Q, F
@@ -1214,9 +1214,9 @@ def add_dashboard_pending_item(request, band_slug):
 @band_required
 @require_POST
 def delete_dashboard_pending_item(request, band_slug, pending_id):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores podem gerenciar pendências.")
     band = get_object_or_404(Band, slug=band_slug)
+    if request.user.band != band or getattr(request.user, 'role', '') != 'PRODUTOR':
+        return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
     pending_item = get_object_or_404(BandDashboardPendingItem, id=pending_id, band=band)
 
     pending_item.delete()
@@ -1228,9 +1228,9 @@ def delete_dashboard_pending_item(request, band_slug, pending_id):
 @band_required
 @require_POST
 def edit_dashboard_pending_item(request, band_slug, pending_id):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores podem gerenciar pendências.")
     band = get_object_or_404(Band, slug=band_slug)
+    if request.user.band != band or getattr(request.user, 'role', '') != 'PRODUTOR':
+        return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
     pending_item = get_object_or_404(BandDashboardPendingItem, id=pending_id, band=band)
     
     from django.utils import timezone

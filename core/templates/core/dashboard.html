@@ -107,11 +107,12 @@
     </div>
 
     <!-- Pendências -->
+    {% if request.user.band == band %}
     <div class="col-lg-4">
         <div class="card shadow-sm border-0 h-100 bg-white" style="border-radius: 12px; display: flex; flex-direction: column;">
             <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center" style="border-top-left-radius: 12px; border-top-right-radius: 12px; flex-shrink: 0;">
                 <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-clipboard-list text-muted me-2"></i> Pendências</h5>
-                {% if request.user.is_superuser or request.user.role == 'PRODUTOR' %}
+                {% if request.user.role == 'PRODUTOR' %}
                 <button type="button" class="btn btn-sm btn-success fw-medium" data-bs-toggle="modal" data-bs-target="#addPendingModal" style="border-radius: 6px;">
                     <i class="fa-solid fa-plus me-1"></i> Adicionar
                 </button>
@@ -126,7 +127,7 @@
                                 <tr>
                                     <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 50%;">Pendência</th>
                                     <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 35%;">Show</th>
-                                    {% if request.user.is_superuser or request.user.role == 'PRODUTOR' %}
+                                    {% if request.user.role == 'PRODUTOR' %}
                                     <th class="py-3 px-4 text-muted fw-semibold small text-uppercase text-end" style="width: 15%;">Ações</th>
                                     {% endif %}
                                 </tr>
@@ -142,7 +143,7 @@
                                         </a>
                                         {% endif %}
                                     </td>
-                                    {% if request.user.is_superuser or request.user.role == 'PRODUTOR' %}
+                                    {% if request.user.role == 'PRODUTOR' %}
                                     <td class="py-3 px-4">
                                         <div class="d-flex justify-content-end align-items-center gap-2">
                                             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editPendingModal{{ item.id }}" style="border-radius: 6px; font-size: 0.8rem;">
@@ -219,12 +220,12 @@
                         <span class="fw-medium">Nenhuma pendência no momento.</span>
                     </div>
                 {% endif %}
-            </div>
         </div>
     </div>
+    {% endif %}
 </div>
 
-{% if request.user.is_superuser or request.user.role == 'PRODUTOR' %}
+{% if request.user.role == 'PRODUTOR' %}
 <!-- Add Pending Modal -->
 <div class="modal fade" id="addPendingModal" tabindex="-1" aria-labelledby="addPendingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
