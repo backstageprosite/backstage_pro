@@ -12,7 +12,7 @@ from django.urls import reverse
 from functools import wraps
 from django.http import HttpResponseForbidden
 from django.db.models import Sum
-from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem
+from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem, AdministrativeBandNotice
 from .forms import FinancialReceiptForm, UserForm, UserEditForm, ContactForm, ShowForm, ContractDocumentFormSet, FinancialReceiptFormSet, ShowPaymentForm, ShowTeamCostForm, ContractDocumentForm
 from decimal import Decimal
 
@@ -140,8 +140,12 @@ def dashboard_view(request, band_slug):
     )
 
     # Shows for the select in the Add modal (only for producer)
+    # Shows for the select in the Add modal (only for producer)
     pending_item_form = None
-    if request.user.band == band and getattr(request.user, 'role', '') == 'PRODUTOR':
+    administrative_notices = None
+    user_is_band_producer = request.user.band == band and getattr(request.user, 'role', '') == 'PRODUTOR'
+
+    if user_is_band_producer:
         from django.utils import timezone
         from django.db.models import Q, F
         shows = Show.objects.filter(
@@ -156,6 +160,10 @@ def dashboard_view(request, band_slug):
             ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
             item.edit_form = BandDashboardPendingItemForm(instance=item, shows_qs=item_shows, prefix=f"edit_{item.id}")
 
+        administrative_notices = AdministrativeBandNotice.objects.filter(
+            Q(band=band) | Q(band__isnull=True)
+        ).order_by('-created_at')
+
     context = {
         'band': band,
         'shows_proximos': shows_proximos,
@@ -164,6 +172,8 @@ def dashboard_view(request, band_slug):
         'total_contacts': total_contacts,
         'dashboard_pending_items': dashboard_pending_items,
         'pending_item_form': pending_item_form,
+        'administrative_notices': administrative_notices,
+        'user_is_band_producer': user_is_band_producer,
     }
     return render(request, 'core/dashboard.html', context)
 

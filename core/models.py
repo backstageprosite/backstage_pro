@@ -731,3 +731,19 @@ class BandDashboardPendingItem(models.Model):
 
     def __str__(self):
         return f'{self.show.title or self.show.city} - {self.description[:50]}'
+
+class AdministrativeBandNotice(models.Model):
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='administrative_notices', null=True, blank=True, verbose_name='Banda Destino', help_text='Deixe em branco para enviar a todas as bandas (Todos).')
+    title = models.CharField(max_length=200, verbose_name='Título')
+    message = models.TextField(verbose_name='Mensagem')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Última Atualização')
+
+    class Meta:
+        verbose_name = 'Aviso Administrativo'
+        verbose_name_plural = 'Avisos Administrativos'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        dest = self.band.name if self.band else 'Todos os Produtores'
+        return f"{self.title} ({dest})"
