@@ -176,7 +176,7 @@
                 
                 <!-- Logo da Banda Acima do Menu -->
                 <div class="mb-4 px-2 text-center text-lg-start">
-                    <a href="{% if band %}{% url 'calendario' band.slug %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none">
+                    <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none">
                         {% if band and band.logo %}
                             <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid w-100" style="border-radius: 8px; object-fit: contain;">
                         {% else %}
@@ -187,6 +187,12 @@
                 </div>
 
                 <ul class="nav nav-pills flex-column mb-auto gap-2">
+
+                    <li class="nav-item">
+                        <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'dashboard' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-gauge fa-fw me-2 {% if request.resolver_match.url_name != 'dashboard' %}opacity-75{% endif %}"></i> Dashboard
+                        </a>
+                    </li>
 
                     <li class="nav-item">
                         <a href="{% if band %}{% url 'calendario' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'calendario' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">

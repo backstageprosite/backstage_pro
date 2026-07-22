@@ -11,6 +11,7 @@ urlpatterns = [
     path('push/status/', push_views.push_subscription_status, name='push_subscription_status'),
     path('push/inscrever/', push_views.push_subscribe, name='push_subscribe'),
     path('push/desinscrever/', push_views.push_unsubscribe, name='push_unsubscribe'),
+    path('', views.band_root_redirect_view, name='band_root'),
     path('calendario/', views.calendario, name='calendario'),
     path('painel/', views.dashboard_view, name='dashboard'),
     path('shows/', views.shows_list_view, name='shows_list'),

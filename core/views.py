@@ -49,6 +49,15 @@ def band_required(view_func):
         return view_func(request, band_slug, *args, **kwargs)
     return _wrapped_view
 
+
+def band_root_redirect_view(request, band_slug):
+    if request.user.is_authenticated:
+        if request.user.is_superuser:
+            return redirect('admin_painel:dashboard')
+        if request.user.band and request.user.band.slug != band_slug:
+            return redirect('dashboard', band_slug=request.user.band.slug)
+    return redirect('dashboard', band_slug=band_slug)
+
 class BandLoginView(LoginView):
     template_name = 'core/login.html'
     
@@ -60,7 +69,12 @@ class BandLoginView(LoginView):
         return context
 
     def get_success_url(self):
-        return reverse('calendario', kwargs={'band_slug': self.kwargs.get('band_slug')})
+        user = self.request.user
+        if user.is_superuser:
+            return reverse('admin_painel:dashboard')
+        if user.band:
+            return reverse('dashboard', kwargs={'band_slug': user.band.slug})
+        return reverse('dashboard', kwargs={'band_slug': self.kwargs.get('band_slug')})
 
     def form_valid(self, form):
         user = form.get_user()
