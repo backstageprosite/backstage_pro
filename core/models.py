@@ -712,3 +712,17 @@ class WebPushOperationalAlertCycleLease(models.Model):
 
     class Meta:
         db_table = 'web_push_operational_alert_cycle_lease'
+
+class BandDashboardPendingItem(models.Model):
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='dashboard_pending_items')
+    show = models.ForeignKey(Show, on_delete=models.CASCADE, related_name='dashboard_pending_items')
+    description = models.CharField(max_length=500)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='dashboard_pending_items_created')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+
+    def __str__(self):
+        return f'{self.show.title or self.show.city} - {self.description[:50]}'

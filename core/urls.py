@@ -5,7 +5,7 @@ urlpatterns = [
     path('manifest.webmanifest', pwa_views.band_manifest, name='manifest'),
     path('sw.js', pwa_views.band_service_worker, name='band_sw'),
     path('pwa/<str:filename>', pwa_views.band_icon_view, name='band_icon'),
-    
+
     # Web Push Endpoints (Etapa 7B.1)
     path('push/chave-publica/', push_views.push_public_key, name='push_public_key'),
     path('push/status/', push_views.push_subscription_status, name='push_subscription_status'),
@@ -14,6 +14,8 @@ urlpatterns = [
     path('', views.band_root_redirect_view, name='band_root'),
     path('calendario/', views.calendario, name='calendario'),
     path('painel/', views.dashboard_view, name='dashboard'),
+    path('dashboard/pendencias/adicionar/', views.add_dashboard_pending_item, name='add_dashboard_pending_item'),
+    path('dashboard/pendencias/<int:pending_id>/excluir/', views.delete_dashboard_pending_item, name='delete_dashboard_pending_item'),
     path('shows/', views.shows_list_view, name='shows_list'),
     path('shows/add/', views.show_create_view, name='shows_add'),
     path('shows/<int:pk>/change/', views.show_edit_view, name='shows_edit'),
@@ -26,7 +28,7 @@ urlpatterns = [
     path('contatos/add/', views.contato_create_view, name='contatos_add'),
     path('contatos/<int:pk>/change/', views.contato_edit_view, name='contatos_edit'),
     path('contatos/<int:pk>/delete/', views.contato_delete_view, name='contatos_delete'),
-    
+
     path('login/', views.BandLoginView.as_view(), name='login'),
     path('logout/', views.band_logout, name='logout'),
     path('show/<int:pk>/', views.show_detail, name='show_detail'),
@@ -39,16 +41,16 @@ urlpatterns = [
     path('relatorios/relatorio-financeiro/', views.relatorios_view, name='relatorio_financeiro'),
     path('arquivos/', views.arquivos_view, name='arquivos'),
     path('configuracoes/', views.configuracoes_view, name='configuracoes'),
-    
+
     path('shows/<int:show_id>/pagamentos/novo/', views.payment_create_view, name='payment_create'),
     path('pagamentos/<int:pk>/editar/', views.payment_edit_view, name='payment_edit'),
     path('pagamentos/<int:pk>/excluir/', views.payment_delete_view, name='payment_delete'),
-    
+
     path('comprovantes/<int:pk>/editar/', views.receipt_edit_view, name='receipt_edit'),
     path('comprovantes/<int:pk>/excluir/', views.receipt_delete_view, name='receipt_delete'),
     path('documentos/<int:pk>/editar/', views.document_edit_view, name='document_edit'),
     path('documentos/<int:pk>/excluir/', views.document_delete_view, name='document_delete'),
-    
+
     path('shows/<int:show_id>/equipe/gerenciar/', views.manage_team_costs_view, name='manage_team_costs'),
     path('equipe/custo/<int:pk>/excluir/', views.teamcost_delete_view, name='teamcost_delete'),
     path('equipe/custo/<int:pk>/editar/', views.teamcost_edit_view, name='teamcost_edit'),
