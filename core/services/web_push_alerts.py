@@ -1,4 +1,4 @@
-﻿import datetime
+import datetime
 from django.utils import timezone
 from django.db import transaction, IntegrityError
 from core.models import WebPushOperationalAlert, Band
@@ -120,6 +120,13 @@ def apply_web_push_operational_alert_plan(plan: dict, *, execute: bool = False) 
     if scope_type == "BAND" and not band_slug:
         raise ValueError("band_slug missing for BAND scope")
 
+    band = None
+    if scope_type == "BAND":
+        try:
+            band = Band.objects.get(slug=band_slug)
+        except Band.DoesNotExist:
+            raise ValueError("invalid band slug")
+
     valid_severities = ["INFO", "WARNING", "CRITICAL"]
     for key in ['to_open', 'to_update', 'to_resolve', 'unchanged']:
         items = plan.get(key, [])
@@ -135,7 +142,7 @@ def apply_web_push_operational_alert_plan(plan: dict, *, execute: bool = False) 
             if scope_type == "GLOBAL" and not item["dedupe_key"].startswith("global:"):
                 raise ValueError("dedupe_key incompatible with GLOBAL scope")
 
-            if scope_type == "BAND" and not item["dedupe_key"].startswith(f"band:{band_slug}:"):
+            if scope_type == "BAND" and not item["dedupe_key"].startswith(f"band:{band.id}:"):
                 raise ValueError("dedupe_key incompatible with BAND scope")
 
             if "severity" in item and item["severity"] not in valid_severities:
@@ -169,9 +176,7 @@ def apply_web_push_operational_alert_plan(plan: dict, *, execute: bool = False) 
     unchanged = 0
     errors = 0
 
-    band = None
-    if scope_type == "BAND":
-        band = Band.objects.get(slug=band_slug)
+    # band is already loaded at the top
 
     now = timezone.now()
 

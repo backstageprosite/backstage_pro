@@ -187,7 +187,7 @@ class WebPushOperationalAlertPlanTests(TestCase):
         self.assertEqual(len(plan['to_update']), 0)
         self.assertEqual(len(plan['to_resolve']), 0)
         self.assertEqual(len(plan['unchanged']), 0)
-        
+
     @patch('core.services.web_push_alerts.build_web_push_operational_alerts')
     @patch('core.services.web_push_alerts.build_web_push_health_snapshot')
     def test_plan_update_alert(self, mock_snapshot, mock_alerts):
@@ -212,7 +212,7 @@ class WebPushOperationalAlertPlanTests(TestCase):
         plan = plan_web_push_operational_alerts(band_slug=None, window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
         self.assertEqual(len(plan['unchanged']), 1)
         self.assertEqual(len(plan['to_update']), 0)
-        
+
     @patch('core.services.web_push_alerts.build_web_push_operational_alerts')
     @patch('core.services.web_push_alerts.build_web_push_health_snapshot')
     def test_plan_resolve_alert(self, mock_snapshot, mock_alerts):
@@ -273,7 +273,7 @@ class WebPushOperationalAlertPlanTests(TestCase):
         mock_alerts.return_value = [{'code': 'test_8', 'severity': 'CRITICAL', 'title': 'Test 8', 'message': 'Msg 8 mod', 'recommended_action': 'Action 8', 'count': 2}]
         plan = plan_web_push_operational_alerts(band_slug=None, window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
         apply_web_push_operational_alert_plan(plan, execute=True)
-        
+
         alert = WebPushOperationalAlert.objects.first()
         self.assertEqual(alert.severity, 'CRITICAL')
         self.assertEqual(alert.message, 'Msg 8 mod')
@@ -288,7 +288,7 @@ class WebPushOperationalAlertPlanTests(TestCase):
         mock_alerts.return_value = []
         plan = plan_web_push_operational_alerts(band_slug=None, window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
         apply_web_push_operational_alert_plan(plan, execute=True)
-        
+
         alert = WebPushOperationalAlert.objects.first()
         self.assertEqual(alert.status, 'RESOLVED')
         self.assertIsNotNone(alert.resolved_at)
@@ -304,7 +304,7 @@ class WebPushOperationalAlertPlanTests(TestCase):
         mock_alerts.return_value = [{'code': 'test_10', 'severity': 'WARNING', 'title': 'Test 10', 'message': 'Msg 10', 'recommended_action': 'Action 10', 'count': 1}]
         plan = plan_web_push_operational_alerts(band_slug=None, window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
         apply_web_push_operational_alert_plan(plan, execute=True)
-        
+
         alert = WebPushOperationalAlert.objects.first()
         self.assertEqual(alert.status, 'ACTIVE')
         self.assertIsNone(alert.resolved_at)
@@ -313,7 +313,7 @@ class WebPushOperationalAlertPlanTests(TestCase):
     def test_apply_plan_invalid_structure(self):
         with self.assertRaisesRegex(ValueError, "Plan must be a dict"):
             apply_web_push_operational_alert_plan([])
-            
+
         with self.assertRaisesRegex(ValueError, "Missing required key"):
             apply_web_push_operational_alert_plan({"scope": {"scope_type": "GLOBAL"}})
 
@@ -340,8 +340,9 @@ class WebPushOperationalAlertPlanTests(TestCase):
         with self.assertRaisesRegex(ValueError, "dedupe_key incompatible with GLOBAL scope"):
             apply_web_push_operational_alert_plan(plan)
 
+        band = Band.objects.create(name="test-band", slug="test-band")
         plan = {
-            "scope": {"scope_type": "BAND", "band_slug": "test-band"},
+            "scope": {"scope_type": "BAND", "band_slug": band.slug},
             "to_open": [{"dedupe_key": "global:1", "code": "c", "severity": "WARNING", "title": "t", "message": "m", "recommended_action": "", "current_count": 1}],
             "to_update": [], "to_resolve": [], "unchanged": []
         }
@@ -376,7 +377,7 @@ class WebPushOperationalAlertPlanTests(TestCase):
         self.assertEqual(res1["updated"], 0)
         self.assertEqual(res1["resolved"], 0)
         self.assertEqual(res1["unchanged"], 0)
-        
+
         plan2 = plan_web_push_operational_alerts(band_slug=None, window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
         res2 = apply_web_push_operational_alert_plan(plan2, execute=True)
         self.assertEqual(res2["opened"], 0)
@@ -391,22 +392,22 @@ class WebPushOperationalAlertPlanTests(TestCase):
         # We simulate that the create will raise IntegrityError (like concurrent creation)
         # and it should fall back to select_for_update().get() and update the existing.
         from django.db import IntegrityError
-        
+
         WebPushOperationalAlert.objects.create(
             scope_type="GLOBAL", dedupe_key="global:test_concurrent", code="c",
             severity="WARNING", status="ACTIVE", title="Old", message="Old", current_count=1
         )
-        
+
         plan = {
             "scope": {"scope_type": "GLOBAL", "band_slug": None},
             "to_open": [{"dedupe_key": "global:test_concurrent", "code": "c", "severity": "CRITICAL", "title": "New", "message": "New", "recommended_action": "", "current_count": 2}],
             "to_update": [], "to_resolve": [], "unchanged": []
         }
-        
+
         with patch('core.services.web_push_alerts.WebPushOperationalAlert.objects.create') as mock_create:
             mock_create.side_effect = IntegrityError("Unique violation")
             res = apply_web_push_operational_alert_plan(plan, execute=True)
-        
+
         # It should have recovered and updated the existing record
         self.assertEqual(res["errors"], 0)
         self.assertEqual(res["updated"], 1)
@@ -420,23 +421,23 @@ class WebPushOperationalAlertPlanTests(TestCase):
     def test_isolation_scopes(self, mock_snapshot, mock_alerts):
         b1 = Band.objects.create(name="B1", slug="b1")
         b2 = Band.objects.create(name="B2", slug="b2")
-        
+
         # Create global alert
         WebPushOperationalAlert.objects.create(scope_type="GLOBAL", dedupe_key="global:test_iso", code="c", severity="WARNING", status="ACTIVE", title="T", message="M", current_count=1)
-        
+
         # Create b1 alert
         WebPushOperationalAlert.objects.create(scope_type="BAND", band=b1, dedupe_key="band:b1:test_iso", code="c", severity="WARNING", status="ACTIVE", title="T", message="M", current_count=1)
-        
+
         # Plan for B2 should resolve B2's alerts if any, but since B2 has none, it should not resolve B1 or GLOBAL
         mock_alerts.return_value = []
         plan_b2 = plan_web_push_operational_alerts(band_slug="b2", window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
         self.assertEqual(len(plan_b2["to_resolve"]), 0)
-        
+
         # Plan for B1 should resolve ONLY B1
         plan_b1 = plan_web_push_operational_alerts(band_slug="b1", window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
         self.assertEqual(len(plan_b1["to_resolve"]), 1)
         self.assertEqual(plan_b1["to_resolve"][0]["dedupe_key"], "band:b1:test_iso")
-        
+
         # Plan for GLOBAL should resolve ONLY GLOBAL
         plan_global = plan_web_push_operational_alerts(band_slug=None, window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
         self.assertEqual(len(plan_global["to_resolve"]), 1)
@@ -504,7 +505,7 @@ class WebPushOperationalAlertCommandTests(TestCase):
         mock_plan.return_value = {"to_open": [], "to_update": [], "to_resolve": [], "unchanged": []}
         import io
         call_command('web_push_operational_alerts', '--all-bands', stdout=io.StringIO())
-        
+
         self.assertEqual(mock_plan.call_count, 2)
         mock_plan.assert_any_call(band_slug='b1', window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
         mock_plan.assert_any_call(band_slug='b2', window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
@@ -519,14 +520,14 @@ class WebPushOperationalAlertCommandTests(TestCase):
                 raise Exception("SEGREDO_INTERNO_DATABASE_PASSWORD")
             return {"to_open": [], "to_update": [], "to_resolve": [], "unchanged": []}
         mock_plan.side_effect = side_effect
-        
+
         import io
         out = io.StringIO()
         err = io.StringIO()
         call_command('web_push_operational_alerts', '--all-bands', stdout=out, stderr=err)
-        
+
         self.assertEqual(mock_plan.call_count, 2)
-        
+
         err_output = err.getvalue()
         self.assertIn("Erro ao processar o escopo b1.", err_output)
         self.assertNotIn("SEGREDO_INTERNO_DATABASE_PASSWORD", err_output)
@@ -554,13 +555,13 @@ class WebPushOperationalAlertCommandTests(TestCase):
         # 11. somente --execute persiste;
         mock_plan.return_value = {"to_open": [], "to_update": [], "to_resolve": [], "unchanged": []}
         mock_apply.return_value = {'opened': 0, 'updated': 0, 'resolved': 0, 'unchanged': 0, 'errors': 0, 'results': []}
-        
+
         import io
         call_command('web_push_operational_alerts', '--global', stdout=io.StringIO())
         mock_apply.assert_called_once_with(mock_plan.return_value, execute=False)
-        
+
         mock_apply.reset_mock()
-        
+
         call_command('web_push_operational_alerts', '--global', '--execute', stdout=io.StringIO())
         mock_apply.assert_called_once_with(mock_plan.return_value, execute=True)
 
@@ -570,7 +571,7 @@ class WebPushOperationalAlertCommandTests(TestCase):
         import io, json
         out = io.StringIO()
         call_command('web_push_operational_alerts', '--global', '--json', stdout=out)
-        
+
         data = json.loads(out.getvalue())
         self.assertIsInstance(data, dict)
         self.assertEqual(data['mode'], 'DRY_RUN')
@@ -582,7 +583,7 @@ class WebPushOperationalAlertCommandTests(TestCase):
         from django.core.management.base import CommandError
         with self.assertRaisesMessage(CommandError, 'hours deve estar entre 1 e 720'):
             call_command('web_push_operational_alerts', '--global', '--hours', '0')
-            
+
         with self.assertRaisesMessage(CommandError, 'hours deve estar entre 1 e 720'):
             call_command('web_push_operational_alerts', '--global', '--hours', '721')
 
@@ -591,7 +592,7 @@ class WebPushOperationalAlertCommandTests(TestCase):
         from django.core.management.base import CommandError
         with self.assertRaisesMessage(CommandError, 'stale-pending-minutes deve estar entre 5 e 10080'):
             call_command('web_push_operational_alerts', '--global', '--stale-pending-minutes', '4')
-            
+
         with self.assertRaisesMessage(CommandError, 'stale-pending-minutes deve estar entre 5 e 10080'):
             call_command('web_push_operational_alerts', '--global', '--stale-pending-minutes', '10081')
 
@@ -600,7 +601,7 @@ class WebPushOperationalAlertCommandTests(TestCase):
         from django.core.management.base import CommandError
         with self.assertRaisesMessage(CommandError, 'stale-sending-minutes deve estar entre 5 e 10080'):
             call_command('web_push_operational_alerts', '--global', '--stale-sending-minutes', '4')
-            
+
         with self.assertRaisesMessage(CommandError, 'stale-sending-minutes deve estar entre 5 e 10080'):
             call_command('web_push_operational_alerts', '--global', '--stale-sending-minutes', '10081')
 
@@ -614,15 +615,15 @@ class WebPushOperationalAlertCommandTests(TestCase):
         # 19. saída humana não contém dados sensíveis;
         # 20. saída JSON não contém dados sensíveis;
         import io, json
-        
+
         out_human = io.StringIO()
         call_command('web_push_operational_alerts', '--global', stdout=out_human)
         human_str = out_human.getvalue().lower()
-        
+
         out_json = io.StringIO()
         call_command('web_push_operational_alerts', '--global', '--json', stdout=out_json)
         json_str = out_json.getvalue().lower()
-        
+
         banned_words = ['endpoint', 'p256dh', 'auth', 'vapid', 'recipient', 'username', 'e-mail', 'payload', 'cookie']
         for word in banned_words:
             self.assertNotIn(word, human_str)
@@ -653,3 +654,109 @@ class WebPushOperationalAlertCommandTests(TestCase):
         mock_post.assert_not_called()
         mock_delivery.assert_not_called()
         mock_notification.assert_not_called()
+
+    @patch('core.services.web_push_alerts.build_web_push_operational_alerts')
+    def test_band_plan_and_apply_use_band_id_dedupe_key(self, mock_build):
+        mock_build.return_value = [
+            {"code": "test_code", "severity": "WARNING", "title": "t", "message": "m", "description": "d", "action_required": False, "recommended_action": "a", "count": 1}
+        ]
+        band = Band.objects.create(name="dedupe-band", slug="dedupe-band")
+        plan = plan_web_push_operational_alerts(
+            band_slug=band.slug, window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15
+        )
+        self.assertEqual(len(plan['to_open']), 1)
+        self.assertTrue(plan['to_open'][0]['dedupe_key'].startswith(f"band:{band.id}:"))
+
+        result = apply_web_push_operational_alert_plan(plan)
+        self.assertEqual(result['errors'], 0)
+        self.assertEqual(result['opened'], 1)
+
+    def test_band_apply_accepts_matching_band_id_key(self):
+        band = Band.objects.create(name="matching-id-band", slug="matching-id-band")
+        plan = {
+            "scope": {"scope_type": "BAND", "band_slug": band.slug},
+            "to_open": [
+                {
+                    "dedupe_key": f"band:{band.id}:test_code",
+                    "severity": "INFO",
+                    "code": "test_code",
+                    "message": "msg",
+                    "title": "t",
+                    "description": "d",
+                    "action_required": False,
+                    "recommended_action": "action",
+                    "current_count": 1
+                }
+            ],
+            "to_update": [], "to_resolve": [], "unchanged": []
+        }
+        result = apply_web_push_operational_alert_plan(plan, execute=True)
+        self.assertEqual(result['errors'], 0)
+        self.assertEqual(result['opened'], 1)
+
+    def test_band_apply_rejects_other_band_id_key(self):
+        band1 = Band.objects.create(name="dedupe-reject-b1", slug="dedupe-reject-b1")
+        band2 = Band.objects.create(name="dedupe-reject-b2", slug="dedupe-reject-b2")
+        plan = {
+            "scope": {"scope_type": "BAND", "band_slug": band1.slug},
+            "to_open": [
+                {
+                    "dedupe_key": f"band:{band2.id}:test_code",
+                    "severity": "INFO",
+                    "code": "test_code",
+                    "message": "msg",
+                    "title": "t",
+                    "description": "d",
+                    "action_required": False,
+                    "recommended_action": "action",
+                    "current_count": 1
+                }
+            ],
+            "to_update": [], "to_resolve": [], "unchanged": []
+        }
+        with self.assertRaisesMessage(ValueError, "dedupe_key incompatible with BAND scope"):
+            apply_web_push_operational_alert_plan(plan, execute=True)
+        self.assertEqual(WebPushOperationalAlert.objects.count(), 0)
+
+    def test_band_apply_does_not_use_slug_as_dedupe_key(self):
+        band = Band.objects.create(name="dedupe-b-slug", slug="dedupe-b-slug")
+        plan = {
+            "scope": {"scope_type": "BAND", "band_slug": band.slug},
+            "to_open": [
+                {
+                    "dedupe_key": f"band:{band.slug}:test_code",
+                    "severity": "INFO",
+                    "code": "test_code",
+                    "message": "msg",
+                    "title": "t",
+                    "description": "d",
+                    "action_required": False,
+                    "recommended_action": "action",
+                    "current_count": 1
+                }
+            ],
+            "to_update": [], "to_resolve": [], "unchanged": []
+        }
+        with self.assertRaisesMessage(ValueError, "dedupe_key incompatible with BAND scope"):
+            apply_web_push_operational_alert_plan(plan, execute=True)
+
+    def test_global_dedupe_key_regression(self):
+        plan = {
+            "scope": {"scope_type": "GLOBAL", "band_slug": None},
+            "to_open": [
+                {
+                    "dedupe_key": "global:test_code",
+                    "severity": "INFO",
+                    "code": "test_code",
+                    "message": "msg",
+                    "title": "t",
+                    "description": "d",
+                    "action_required": False,
+                    "recommended_action": "action",
+                    "current_count": 1
+                }
+            ],
+            "to_update": [], "to_resolve": [], "unchanged": []
+        }
+        result = apply_web_push_operational_alert_plan(plan, execute=True)
+        self.assertEqual(result['errors'], 0)

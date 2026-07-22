@@ -2,7 +2,7 @@ import json
 import datetime
 from django.test import TestCase, override_settings, TransactionTestCase
 from django.utils import timezone
-from core.models import WebPushOperationalAlertEmailDelivery, WebPushOperationalAlertCycleLease, WebPushOperationalAlert
+from core.models import WebPushOperationalAlertEmailDelivery, WebPushOperationalAlertCycleLease, WebPushOperationalAlert, Band
 from core.services.web_push_alert_email import (
     get_web_push_alert_email_config,
     acquire_web_push_operational_alert_cycle_lease,
@@ -99,7 +99,7 @@ class TestWebPushAlertCommands(TransactionTestCase):
             {"alert_id": self.alert.id, "event_type": "ESCALATED", "severity": "CRITICAL", "opened_count": 5},
             {"alert_id": self.alert.id, "event_type": "RESOLVED", "severity": "WARNING", "opened_count": 5},
         ]
-        
+
         # Cria uma delivery SENT anterior mas diferente para permitir o RESOLVED
         WebPushOperationalAlertEmailDelivery.objects.create(
             alert_id=self.alert.id, event_key=f"alert:{self.alert.id}:open:5:opened", event_type="OPENED", status="SENT",
@@ -107,8 +107,8 @@ class TestWebPushAlertCommands(TransactionTestCase):
             scope_type_snapshot="GLOBAL", code_snapshot="c", current_count_snapshot=1, opened_count_snapshot=5,
             sent_at=timezone.now()
         )
-        
-        # Agora o to_queue não deve conter 'opened' porque j existe e est SENDING? 
+
+        # Agora o to_queue não deve conter 'opened' porque j existe e est SENDING?
         # No, wait, if 'opened' is SENT, it will try to plan 'opened' again and queue it but fails on IntegrityError later.
         # However, the instruction says: "para permitir RESOLVED, criar uma delivery SENT anterior com uma chave diferente que satisfaa a regra, sem colidir com a chave que est sendo planejada."
         # OK, let's delete the OPENED one from events so we don't try to queue it again, or we change the SENT delivery to be for opened_count 4?
@@ -125,19 +125,19 @@ class TestWebPushAlertCommands(TransactionTestCase):
             scope_type_snapshot="GLOBAL", code_snapshot="c", current_count_snapshot=1, opened_count_snapshot=5,
             sent_at=timezone.now()
         )
-        
+
         events = [
             {"alert_id": self.alert.id, "event_type": "OPENED", "severity": "WARNING", "opened_count": 5},
             {"alert_id": self.alert.id, "event_type": "REOPENED", "severity": "WARNING", "opened_count": 5},
             {"alert_id": self.alert.id, "event_type": "RESOLVED", "severity": "WARNING", "opened_count": 5},
         ]
-        
+
         plan = plan_web_push_operational_alert_email_deliveries(events)
         keys = [item["event_key"] for item in plan["to_queue"]]
         self.assertIn(f"alert:{self.alert.id}:open:5:opened", keys)
         self.assertIn(f"alert:{self.alert.id}:open:5:reopened", keys)
         self.assertIn(f"alert:{self.alert.id}:open:5:resolved", keys)
-        
+
         # Test exact match of critical
         events_critical = [{"alert_id": self.alert.id, "event_type": "ESCALATED", "severity": "CRITICAL", "opened_count": 6}]
         plan_c = plan_web_push_operational_alert_email_deliveries(events_critical)
@@ -347,6 +347,7 @@ class TestWebPushAtomicClaim(TransactionTestCase):
                 send_web_push_alert_email_delivery(1)
 
 from django.core.management import call_command
+from django.core.management.base import CommandError
 import io
 
 class TestWebPushAlertCycleCommand(TransactionTestCase):
@@ -485,6 +486,132 @@ class TestWebPushAlertCycleCommand(TransactionTestCase):
             # If it runs inside a transaction, the code in the command is flawed, but the command uses separate functions without an outer atomic block.
             mock.assert_called_once()
 
+    @patch('core.management.commands.web_push_operational_alerts_cycle.plan_web_push_operational_alerts')
+    def test_cycle_operational_parameters_defaults(self, mock_plan):
+        mock_plan.return_value = {"summary": {}, "transition_events": []}
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', stdout=out)
+        self.assertEqual(mock_plan.call_count, 1 + Band.objects.count())
+        mock_plan.assert_any_call(band_slug=None, window_hours=24, stale_pending_minutes=10, stale_sending_minutes=15)
+
+    @patch('core.management.commands.web_push_operational_alerts_cycle.plan_web_push_operational_alerts')
+    def test_cycle_operational_parameters_custom_values(self, mock_plan):
+        mock_plan.return_value = {"summary": {}, "transition_events": []}
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--hours', '48', '--stale-pending-minutes', '20', '--stale-sending-minutes', '30', stdout=out)
+        self.assertEqual(mock_plan.call_count, 1 + Band.objects.count())
+        mock_plan.assert_any_call(band_slug=None, window_hours=48, stale_pending_minutes=20, stale_sending_minutes=30)
+
+    def test_cycle_hours_lower_bound(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--hours', '1', stdout=out)
+        self.assertIn('Janela: 1 horas', out.getvalue())
+
+    def test_cycle_hours_upper_bound(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--hours', '720', stdout=out)
+        self.assertIn('Janela: 720 horas', out.getvalue())
+
+    def test_cycle_hours_below_minimum_rejected(self):
+        with self.assertRaisesMessage(CommandError, 'hours deve estar entre 1 e 720'):
+            call_command('web_push_operational_alerts_cycle', '--hours', '0')
+
+    def test_cycle_hours_above_maximum_rejected(self):
+        with self.assertRaisesMessage(CommandError, 'hours deve estar entre 1 e 720'):
+            call_command('web_push_operational_alerts_cycle', '--hours', '721')
+
+    def test_cycle_stale_pending_lower_bound(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--stale-pending-minutes', '5', stdout=out)
+        self.assertIn('PENDING stale: 5 minutos', out.getvalue())
+
+    def test_cycle_stale_pending_upper_bound(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--stale-pending-minutes', '10080', stdout=out)
+        self.assertIn('PENDING stale: 10080 minutos', out.getvalue())
+
+    def test_cycle_stale_pending_out_of_range_rejected(self):
+        with self.assertRaisesMessage(CommandError, 'stale-pending-minutes deve estar entre 5 e 10080'):
+            call_command('web_push_operational_alerts_cycle', '--stale-pending-minutes', '4')
+        with self.assertRaisesMessage(CommandError, 'stale-pending-minutes deve estar entre 5 e 10080'):
+            call_command('web_push_operational_alerts_cycle', '--stale-pending-minutes', '10081')
+
+    def test_cycle_stale_sending_lower_bound(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--stale-sending-minutes', '5', stdout=out)
+        self.assertIn('SENDING stale: 5 minutos', out.getvalue())
+
+    def test_cycle_stale_sending_upper_bound(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--stale-sending-minutes', '10080', stdout=out)
+        self.assertIn('SENDING stale: 10080 minutos', out.getvalue())
+
+    def test_cycle_stale_sending_out_of_range_rejected(self):
+        with self.assertRaisesMessage(CommandError, 'stale-sending-minutes deve estar entre 5 e 10080'):
+            call_command('web_push_operational_alerts_cycle', '--stale-sending-minutes', '4')
+        with self.assertRaisesMessage(CommandError, 'stale-sending-minutes deve estar entre 5 e 10080'):
+            call_command('web_push_operational_alerts_cycle', '--stale-sending-minutes', '10081')
+
+    def test_cycle_parameters_appear_in_json(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--hours', '48', '--stale-pending-minutes', '20', '--stale-sending-minutes', '30', '--json', stdout=out)
+        data = json.loads(out.getvalue())
+        self.assertEqual(data['parameters']['hours'], 48)
+        self.assertEqual(data['parameters']['stale_pending_minutes'], 20)
+        self.assertEqual(data['parameters']['stale_sending_minutes'], 30)
+
+    def test_cycle_parameters_appear_in_human_output(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--hours', '48', '--stale-pending-minutes', '20', '--stale-sending-minutes', '30', stdout=out)
+        output = out.getvalue()
+        self.assertIn('Janela: 48 horas', output)
+        self.assertIn('PENDING stale: 20 minutos', output)
+        self.assertIn('SENDING stale: 30 minutos', output)
+        self.assertIn('Ciclo concluído em modo DRY_RUN.', output)
+
+    @override_settings(WEB_PUSH_ALERT_EMAIL_ENABLED=True, WEB_PUSH_ALERT_EMAIL_RECIPIENTS='a@a.com', WEB_PUSH_ALERT_EMAIL_FROM='a@a.com', WEB_PUSH_ALERT_DASHBOARD_URL='http://a.com')
+    def test_cycle_custom_parameters_dry_run_has_no_side_effects(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--hours', '48', '--stale-pending-minutes', '20', '--stale-sending-minutes', '30', stdout=out)
+        self.assertEqual(WebPushOperationalAlert.objects.count(), 0)
+        self.assertEqual(WebPushOperationalAlertCycleLease.objects.count(), 0)
+        self.assertEqual(WebPushOperationalAlertEmailDelivery.objects.count(), 0)
+
+    def test_cycle_blank_band_slug_does_not_call_planner(self):
+        Band.objects.create(name='Blank Band', slug='   ')
+        Band.objects.create(name='Valid Band', slug='valid-band')
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--json', stdout=out)
+        data = json.loads(out.getvalue())
+
+        global_errors = [e for e in data['errors'] if e.get('scope') == 'GLOBAL']
+        band_errors = [e for e in data['errors'] if e.get('scope') == 'BAND' and e.get('error') == 'invalid_band_slug']
+
+        self.assertEqual(len(global_errors), 0, "No global errors expected")
+        self.assertEqual(len(band_errors), 1, "Expected exactly one invalid_band_slug error")
+
+        # Verify planner was called exactly once for GLOBAL (global result is a single dict, not a list of dicts, and not duplicated)
+        self.assertIsNotNone(data.get('global'))
+
+        # Verify the valid band was processed
+        processed_slugs = [b['band_slug'] for b in data['bands']]
+        self.assertIn('valid-band', processed_slugs)
+        self.assertNotIn('', processed_slugs)
+        self.assertNotIn('   ', processed_slugs)
+
+    def test_cycle_help_lists_operational_parameters(self):
+        import contextlib
+        out = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(out):
+                call_command('web_push_operational_alerts_cycle', '--help')
+        except SystemExit:
+            pass
+        help_text = out.getvalue()
+        self.assertIn('--hours', help_text)
+        self.assertIn('--stale-pending-minutes', help_text)
+        self.assertIn('--stale-sending-minutes', help_text)
+
 class TestWebPushTestCommand(TestCase):
     @override_settings(WEB_PUSH_ALERT_EMAIL_ENABLED=True, WEB_PUSH_ALERT_EMAIL_RECIPIENTS='a@a.com', WEB_PUSH_ALERT_EMAIL_FROM='a@a.com', WEB_PUSH_ALERT_DASHBOARD_URL='http://a.com')
     def test_dry_run_does_not_send(self):
@@ -532,3 +659,66 @@ class TestWebPushTestCommand(TestCase):
         self.assertEqual(Notification.objects.count(), 0)
         self.assertEqual(WebPushDelivery.objects.count(), 0)
 
+
+    def test_cycle_valid_bands_do_not_return_unexpected_error(self):
+        Band.objects.create(name="Valid Band", slug="valid-band")
+        Band.objects.create(name="Empty Band", slug="  ")
+
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--json', stdout=out)
+        data = json.loads(out.getvalue())
+
+        # GLOBAL is processed once
+        self.assertIsNotNone(data.get('global'))
+
+        # Valid band does not have unexpected_error
+        valid_errors = [e for e in data['errors'] if e.get('scope') == 'BAND:valid-band']
+        self.assertEqual(len(valid_errors), 0)
+
+        # Empty band has invalid_band_slug
+        empty_errors = [e for e in data['errors'] if e.get('error') == 'invalid_band_slug']
+        self.assertEqual(len(empty_errors), 1)
+
+    def test_cycle_human_output_utf8_without_bom(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', stdout=out)
+        text = out.getvalue()
+
+        self.assertFalse(text.startswith('\ufeff'))
+        self.assertIn("Ciclo concluído em modo DRY_RUN.", text)
+        self.assertNotIn("Ciclo concluÝdo", text)
+
+    def test_cycle_json_output_starts_with_brace(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--json', stdout=out)
+        text = out.getvalue()
+
+        self.assertFalse(text.startswith('\ufeff'))
+        self.assertTrue(text.startswith("{"))
+
+    def test_cycle_json_output_parses_without_sanitization(self):
+        out = io.StringIO()
+        call_command('web_push_operational_alerts_cycle', '--json', stdout=out)
+        text = out.getvalue()
+
+        self.assertFalse(text.startswith('\ufeff'))
+
+        raw_bytes = text.encode('utf-8')
+        import json
+        data = json.loads(raw_bytes)
+        self.assertEqual(data.get('mode'), 'DRY_RUN')
+
+    def test_cycle_help_utf8(self):
+        import contextlib
+        import io
+        from django.core.management import call_command
+        out = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(out):
+                call_command('web_push_operational_alerts_cycle', '--help')
+        except SystemExit:
+            pass
+
+        text = out.getvalue()
+        self.assertIn("Avaliação", text)
+        self.assertIn("Saída", text)
