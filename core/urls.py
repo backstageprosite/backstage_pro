@@ -15,6 +15,7 @@ urlpatterns = [
     path('calendario/', views.calendario, name='calendario'),
     path('painel/', views.dashboard_view, name='dashboard'),
     path('dashboard/pendencias/adicionar/', views.add_dashboard_pending_item, name='add_dashboard_pending_item'),
+    path('dashboard/pendencias/<int:pending_id>/editar/', views.edit_dashboard_pending_item, name='edit_dashboard_pending_item'),
     path('dashboard/pendencias/<int:pending_id>/excluir/', views.delete_dashboard_pending_item, name='delete_dashboard_pending_item'),
     path('shows/', views.shows_list_view, name='shows_list'),
     path('shows/add/', views.show_create_view, name='shows_add'),

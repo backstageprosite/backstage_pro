@@ -308,3 +308,42 @@ class DashboardPendingItemsTests(TestCase):
         content = response.content.decode('utf-8')
         self.assertIn('22/07/2026 - EVENTO BAND', content)
         self.assertIn('<option value="" selected>Selecione um show</option>', content)
+
+    # 5. EDIT TESTS
+    def test_produtor_can_edit_pending_item(self):
+        item = BandDashboardPendingItem.objects.create(band=self.band_a, show=self.show_a, description="Task A", created_by=self.produtor_a)
+        self.client.login(username="prod_a", password="pwd")
+        url = reverse('edit_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug, 'pending_id': item.id})
+        data = {
+            f'edit_{item.id}-description': 'Updated Task A',
+            f'edit_{item.id}-show': self.show_a.id
+        }
+        response = self.client.post(url, data)
+        self.assertRedirects(response, reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
+        item.refresh_from_db()
+        self.assertEqual(item.description, 'Updated Task A')
+
+    def test_integrante_cannot_edit_pending_item(self):
+        item = BandDashboardPendingItem.objects.create(band=self.band_a, show=self.show_a, description="Task A", created_by=self.produtor_a)
+        self.client.login(username="int_a", password="pwd")
+        url = reverse('edit_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug, 'pending_id': item.id})
+        data = {
+            f'edit_{item.id}-description': 'Updated Task A',
+            f'edit_{item.id}-show': self.show_a.id
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 403)
+        item.refresh_from_db()
+        self.assertEqual(item.description, 'Task A')
+
+    def test_edit_includes_current_show_even_if_past(self):
+        import datetime
+        from .models import Show
+        past_show = Show.objects.create(band=self.band_a, title='PAST SHOW', date=datetime.date(2000, 1, 1))
+        item = BandDashboardPendingItem.objects.create(band=self.band_a, show=past_show, description="Task", created_by=self.produtor_a)
+        self.client.login(username="prod_a", password="pwd")
+        
+        response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
+        # In edit form, the PAST SHOW will be included
+        self.assertContains(response, 'PAST SHOW')
+

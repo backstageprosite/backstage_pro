@@ -235,9 +235,7 @@ from .models import BandDashboardPendingItem
 
 class ShowChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
-        date_str = obj.date.strftime('%d/%m/%Y') if obj.date else 'Data não informada'
-        name = obj.title or obj.event_name or obj.city or f'Show ID {obj.id}'
-        return f'{date_str} - {name.upper()}'
+        return obj.get_display_label()
 
 class BandDashboardPendingItemForm(forms.ModelForm):
     show = ShowChoiceField(queryset=None, empty_label='Selecione um show', widget=forms.Select(attrs={'class': 'form-select', 'style': 'border-radius: 8px;'}))

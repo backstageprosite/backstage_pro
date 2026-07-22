@@ -112,7 +112,7 @@
             <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center" style="border-top-left-radius: 12px; border-top-right-radius: 12px; flex-shrink: 0;">
                 <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-clipboard-list text-muted me-2"></i> Pendências</h5>
                 {% if request.user.is_superuser or request.user.role == 'PRODUTOR' %}
-                <button type="button" class="btn btn-sm btn-outline-primary fw-medium" data-bs-toggle="modal" data-bs-target="#addPendingModal" style="border-radius: 6px;">
+                <button type="button" class="btn btn-sm btn-success fw-medium" data-bs-toggle="modal" data-bs-target="#addPendingModal" style="border-radius: 6px;">
                     <i class="fa-solid fa-plus me-1"></i> Adicionar
                 </button>
                 {% endif %}
@@ -138,15 +138,51 @@
                                     <td class="py-3 px-4 text-muted small">
                                         {% if band %}
                                         <a href="{% url 'shows_edit' band.slug item.show.id %}" class="text-decoration-none text-primary fw-medium">
-                                            {% if item.show.city %}{{ item.show.city }} — {% endif %}{{ item.show.date|date:"d/m/Y" }}
+                                            {{ item.show.get_display_label }}
                                         </a>
                                         {% endif %}
                                     </td>
                                     {% if request.user.is_superuser or request.user.role == 'PRODUTOR' %}
-                                    <td class="py-3 px-4 text-end">
-                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePendingModal{{ item.id }}" style="border-radius: 6px; font-size: 0.8rem;">
-                                            Excluir
-                                        </button>
+                                    <td class="py-3 px-4">
+                                        <div class="d-flex justify-content-end align-items-center gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editPendingModal{{ item.id }}" style="border-radius: 6px; font-size: 0.8rem;">
+                                                Editar
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePendingModal{{ item.id }}" style="border-radius: 6px; font-size: 0.8rem;">
+                                                Excluir
+                                            </button>
+                                        </div>
+
+                                        <!-- Edit Modal -->
+                                        <div class="modal fade text-start" id="editPendingModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content" style="border-radius: 12px; border: none;">
+                                                    <div class="modal-header border-bottom-0 pb-0">
+                                                        <h5 class="modal-title fw-bold text-dark">Editar Pendência</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <form method="post" action="{% url 'edit_dashboard_pending_item' band.slug item.id %}">
+                                                        {% csrf_token %}
+                                                        <div class="modal-body pt-3 pb-2">
+                                                            {% if item.edit_form %}
+                                                                <div class="mb-3">
+                                                                    <label for="{{ item.edit_form.description.id_for_label }}" class="form-label fw-semibold text-dark small">Pendência</label>
+                                                                    {{ item.edit_form.description }}
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="{{ item.edit_form.show.id_for_label }}" class="form-label fw-semibold text-dark small">Show</label>
+                                                                    {{ item.edit_form.show }}
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="modal-footer border-top-0 pt-2">
+                                                            <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                                                            <button type="submit" class="btn btn-primary fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Salvar</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
 
                                         <!-- Delete Modal -->
                                         <div class="modal fade text-start" id="deletePendingModal{{ item.id }}" tabindex="-1" aria-hidden="true">
@@ -211,7 +247,7 @@
                 </div>
                 <div class="modal-footer border-top-0 pt-2">
                     <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Adicionar</button>
+                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Adicionar</button>
                 </div>
             </form>
         </div>

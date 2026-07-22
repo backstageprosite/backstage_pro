@@ -116,6 +116,12 @@ def dashboard_view(request, band_slug):
         ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
         from .forms import BandDashboardPendingItemForm
         pending_item_form = BandDashboardPendingItemForm(shows_qs=shows)
+        
+        for item in dashboard_pending_items:
+            item_shows = Show.objects.filter(
+                Q(band=band) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True) | Q(pk=item.show_id))
+            ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
+            item.edit_form = BandDashboardPendingItemForm(instance=item, shows_qs=item_shows, prefix=f"edit_{item.id}")
 
     context = {
         'band': band,
@@ -1217,3 +1223,35 @@ def delete_dashboard_pending_item(request, band_slug, pending_id):
 
     messages.success(request, "Pendência excluída com sucesso.")
     return redirect('dashboard', band_slug=band.slug)
+
+@login_required
+@band_required
+@require_POST
+def edit_dashboard_pending_item(request, band_slug, pending_id):
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem gerenciar pendências.")
+    band = get_object_or_404(Band, slug=band_slug)
+    pending_item = get_object_or_404(BandDashboardPendingItem, id=pending_id, band=band)
+    
+    from django.utils import timezone
+    from django.db.models import Q, F
+    
+    shows = Show.objects.filter(
+        Q(band=band) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True) | Q(pk=pending_item.show_id))
+    ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
+    
+    from .forms import BandDashboardPendingItemForm
+    form = BandDashboardPendingItemForm(request.POST, instance=pending_item, shows_qs=shows, prefix=f"edit_{pending_item.id}")
+    
+    if form.is_valid():
+        updated_item = form.save(commit=False)
+        updated_item.band = band
+        updated_item.save()
+        messages.success(request, "Pendência atualizada com sucesso.")
+    else:
+        for field in form.errors:
+            messages.error(request, form.errors[field][0])
+            break
+            
+    return redirect('dashboard', band_slug=band.slug)
+

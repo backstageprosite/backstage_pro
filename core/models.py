@@ -154,6 +154,11 @@ class Show(models.Model):
             return f"{self.date.strftime('%d/%m/%Y')} - {self.title} ({self.city})"
         return f"Sem data - {self.title} ({self.city})"
 
+    def get_display_label(self):
+        date_str = self.date.strftime('%d/%m/%Y') if self.date else 'Data não informada'
+        name = (self.title or self.event_name or 'SHOW SEM NOME').upper()
+        return f'{date_str} - {name}'
+
     @property
     def is_past(self):
         from datetime import date
