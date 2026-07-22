@@ -109,7 +109,10 @@ def dashboard_view(request, band_slug):
     # Shows for the select in the Add modal (only for producer)
     pending_item_form = None
     if request.user.is_superuser or getattr(request.user, 'role', '') == 'PRODUTOR':
-        shows = Show.objects.filter(band=band, date__gte=datetime.date.today()).order_by('date', 'show_time')
+        from django.db.models import Q, F
+        shows = Show.objects.filter(
+            Q(band=band) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time')
         from .forms import BandDashboardPendingItemForm
         pending_item_form = BandDashboardPendingItemForm(shows_qs=shows)
 
@@ -1178,31 +1181,25 @@ def add_dashboard_pending_item(request, band_slug):
     if not request.user.is_produtor():
         return HttpResponseForbidden("Apenas produtores podem gerenciar pendências.")
     band = get_object_or_404(Band, slug=band_slug)
-    description = request.POST.get('description', '').strip()
-    show_id = request.POST.get('show')
-
-    if not description:
-        messages.error(request, "Digite uma pendência válida.")
-        return redirect('dashboard', band_slug=band.slug)
-
-    if len(description) > 500:
-        messages.error(request, "A pendência deve ter no máximo 500 caracteres.")
-        return redirect('dashboard', band_slug=band.slug)
-
-    if not show_id:
-        messages.error(request, "Selecione um show.")
-        return redirect('dashboard', band_slug=band.slug)
-
-    show = get_object_or_404(Show, id=show_id, band=band)
-
-    BandDashboardPendingItem.objects.create(
-        band=band,
-        show=show,
-        description=description,
-        created_by=request.user
-    )
-
-    messages.success(request, "Pendência adicionada com sucesso.")
+    
+    from django.db.models import Q, F
+    shows = Show.objects.filter(
+        Q(band=band) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
+    ).order_by(F('date').asc(nulls_last=True), 'show_time')
+    
+    from .forms import BandDashboardPendingItemForm
+    form = BandDashboardPendingItemForm(request.POST, shows_qs=shows)
+    
+    if form.is_valid():
+        pending_item = form.save(commit=False)
+        pending_item.band = band
+        pending_item.created_by = request.user
+        pending_item.save()
+        messages.success(request, "Pendência adicionada com sucesso.")
+    else:
+        for field in form.errors:
+            messages.error(request, form.errors[field][0])
+            break
     return redirect('dashboard', band_slug=band.slug)
 
 @login_required

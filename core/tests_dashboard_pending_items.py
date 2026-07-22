@@ -122,7 +122,7 @@ class DashboardPendingItemsTests(TestCase):
         self.client.login(username="prod_a", password="pwd")
         url = reverse('add_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug})
         response = self.client.post(url, {'description': 'Test', 'show': self.show_b.id})
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 302)
         self.assertEqual(BandDashboardPendingItem.objects.count(), 0)
 
     def test_empty_description_rejected(self):
@@ -170,32 +170,114 @@ class DashboardPendingItemsTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 405) # require_POST
 
-    def test_pending_item_form_labels(self):
-        self.client.login(username='prod_a', password='pwd')
-        
+    def test_pending_form_empty_label(self):
+        from .forms import BandDashboardPendingItemForm
+        from .models import Show
+        form = BandDashboardPendingItemForm(shows_qs=Show.objects.filter(band=self.band_a))
+        rendered_select = str(form['show'])
+        self.assertIn('<option value="" selected>Selecione um show</option>', rendered_select)
+
+    def test_pending_form_show_label_with_date(self):
         import datetime
         from .forms import BandDashboardPendingItemForm
         from .models import Show
-        
-        show1 = self.show_a
-        show1.date = datetime.date(2026, 7, 22)
-        show1.title = 'EVENTO BAND'
-        show1.save()
-        
-        show2 = Show.objects.create(band=self.band_a, title='SEM DATA SHOW', date=None)
-        show3 = Show.objects.create(band=self.band_b, title='OTHER BAND SHOW', date=datetime.date(2026, 7, 24))
-        
+        self.show_a.date = datetime.date(2026, 7, 22)
+        self.show_a.title = 'EVENTO BAND'
+        self.show_a.save()
         form = BandDashboardPendingItemForm(shows_qs=Show.objects.filter(band=self.band_a))
-        
-        # Get the rendered HTML for the select field
         rendered_select = str(form['show'])
-        
-        # Test default option
-        self.assertIn('<option value="" selected>Selecione um show</option>', rendered_select)
-        
-        # Test formatted options
         self.assertIn('22/07/2026 - EVENTO BAND', rendered_select)
-        self.assertIn('Data n\xe3o informada - SEM DATA SHOW', rendered_select)
-        
-        # Test other band show is excluded (because queryset is filtered by band_a)
-        self.assertNotIn('OTHER BAND SHOW', rendered_select)
+
+    def test_pending_form_show_without_date_label(self):
+        from .forms import BandDashboardPendingItemForm
+        from .models import Show
+        Show.objects.create(band=self.band_a, title='SHOW SEM DATA', date=None)
+        form = BandDashboardPendingItemForm(shows_qs=Show.objects.filter(band=self.band_a))
+        rendered_select = str(form['show'])
+        self.assertIn('Data n\xe3o informada - SHOW SEM DATA', rendered_select)
+
+    def test_pending_form_orders_dated_shows_first(self):
+        import datetime
+        from django.db.models import Q, F
+        from .models import Show
+        Show.objects.all().delete()
+        Show.objects.create(band=self.band_a, title='SHOW A', date=datetime.date(2026, 8, 1))
+        Show.objects.create(band=self.band_a, title='SHOW B', date=datetime.date(2026, 7, 30))
+        shows = Show.objects.filter(
+            Q(band=self.band_a) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time')
+        titles = [s.title for s in shows]
+        # SHOW B is earlier than SHOW A
+        self.assertIn('SHOW B', titles)
+        self.assertIn('SHOW A', titles)
+        idx_b = titles.index('SHOW B')
+        idx_a = titles.index('SHOW A')
+        self.assertTrue(idx_b < idx_a)
+
+    def test_pending_form_places_undated_shows_last(self):
+        import datetime
+        from django.db.models import Q, F
+        from .models import Show
+        Show.objects.all().delete()
+        Show.objects.create(band=self.band_a, title='SHOW SEM DATA', date=None)
+        Show.objects.create(band=self.band_a, title='SHOW DATADO', date=datetime.date(2026, 12, 1))
+        shows = Show.objects.filter(
+            Q(band=self.band_a) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time')
+        self.assertEqual(shows.last().title, 'SHOW SEM DATA')
+
+    def test_pending_form_excludes_past_shows(self):
+        import datetime
+        from django.db.models import Q, F
+        from .models import Show
+        Show.objects.create(band=self.band_a, title='SHOW PASSADO', date=datetime.date(2000, 1, 1))
+        shows = Show.objects.filter(
+            Q(band=self.band_a) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time')
+        titles = [s.title for s in shows]
+        self.assertNotIn('SHOW PASSADO', titles)
+
+    def test_pending_form_excludes_other_band_shows(self):
+        import datetime
+        from django.db.models import Q, F
+        from .models import Show
+        Show.objects.create(band=self.band_b, title='OTHER BAND SHOW', date=datetime.date(2026, 7, 24))
+        shows = Show.objects.filter(
+            Q(band=self.band_a) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time')
+        titles = [s.title for s in shows]
+        self.assertNotIn('OTHER BAND SHOW', titles)
+
+    def test_pending_create_rejects_other_band_show(self):
+        self.client.login(username='prod_a', password='pwd')
+        url = reverse('add_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug})
+        response = self.client.post(url, {
+            'description': 'Test reject',
+            'show': self.show_b.id
+        })
+        self.assertEqual(BandDashboardPendingItem.objects.filter(description='Test reject').count(), 0)
+        # Should redirect back or show error
+        self.assertEqual(response.status_code, 302)
+
+    def test_pending_create_uses_form_and_persists_show(self):
+        self.client.login(username='prod_a', password='pwd')
+        url = reverse('add_dashboard_pending_item', kwargs={'band_slug': self.band_a.slug})
+        self.client.post(url, {
+            'description': 'Valid Task',
+            'show': self.show_a.id
+        })
+        item = BandDashboardPendingItem.objects.get(description='Valid Task')
+        self.assertEqual(item.show, self.show_a)
+        self.assertEqual(item.band, self.band_a)
+        self.assertEqual(item.created_by, self.produtor_a)
+
+    def test_dashboard_modal_renders_form_labels(self):
+        self.client.login(username='prod_a', password='pwd')
+        import datetime
+        self.show_a.date = datetime.date(2026, 7, 22)
+        self.show_a.title = 'EVENTO BAND'
+        self.show_a.save()
+        response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
+        content = response.content.decode('utf-8')
+        self.assertIn('22/07/2026 - EVENTO BAND', content)
+        self.assertIn('<option value="" selected>Selecione um show</option>', content)
