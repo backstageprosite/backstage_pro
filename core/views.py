@@ -109,10 +109,11 @@ def dashboard_view(request, band_slug):
     # Shows for the select in the Add modal (only for producer)
     pending_item_form = None
     if request.user.is_superuser or getattr(request.user, 'role', '') == 'PRODUTOR':
+        from django.utils import timezone
         from django.db.models import Q, F
         shows = Show.objects.filter(
-            Q(band=band) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
-        ).order_by(F('date').asc(nulls_last=True), 'show_time')
+            Q(band=band) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
         from .forms import BandDashboardPendingItemForm
         pending_item_form = BandDashboardPendingItemForm(shows_qs=shows)
 
@@ -1182,10 +1183,11 @@ def add_dashboard_pending_item(request, band_slug):
         return HttpResponseForbidden("Apenas produtores podem gerenciar pendências.")
     band = get_object_or_404(Band, slug=band_slug)
     
+    from django.utils import timezone
     from django.db.models import Q, F
     shows = Show.objects.filter(
-        Q(band=band) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
-    ).order_by(F('date').asc(nulls_last=True), 'show_time')
+        Q(band=band) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
+    ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
     
     from .forms import BandDashboardPendingItemForm
     form = BandDashboardPendingItemForm(request.POST, shows_qs=shows)

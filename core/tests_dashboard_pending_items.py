@@ -198,14 +198,15 @@ class DashboardPendingItemsTests(TestCase):
 
     def test_pending_form_orders_dated_shows_first(self):
         import datetime
+        from django.utils import timezone
         from django.db.models import Q, F
         from .models import Show
         Show.objects.all().delete()
         Show.objects.create(band=self.band_a, title='SHOW A', date=datetime.date(2026, 8, 1))
         Show.objects.create(band=self.band_a, title='SHOW B', date=datetime.date(2026, 7, 30))
         shows = Show.objects.filter(
-            Q(band=self.band_a) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
-        ).order_by(F('date').asc(nulls_last=True), 'show_time')
+            Q(band=self.band_a) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
         titles = [s.title for s in shows]
         # SHOW B is earlier than SHOW A
         self.assertIn('SHOW B', titles)
@@ -216,37 +217,63 @@ class DashboardPendingItemsTests(TestCase):
 
     def test_pending_form_places_undated_shows_last(self):
         import datetime
+        from django.utils import timezone
         from django.db.models import Q, F
         from .models import Show
         Show.objects.all().delete()
         Show.objects.create(band=self.band_a, title='SHOW SEM DATA', date=None)
         Show.objects.create(band=self.band_a, title='SHOW DATADO', date=datetime.date(2026, 12, 1))
         shows = Show.objects.filter(
-            Q(band=self.band_a) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
-        ).order_by(F('date').asc(nulls_last=True), 'show_time')
+            Q(band=self.band_a) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
         self.assertEqual(shows.last().title, 'SHOW SEM DATA')
 
     def test_pending_form_excludes_past_shows(self):
         import datetime
+        from django.utils import timezone
         from django.db.models import Q, F
         from .models import Show
         Show.objects.create(band=self.band_a, title='SHOW PASSADO', date=datetime.date(2000, 1, 1))
         shows = Show.objects.filter(
-            Q(band=self.band_a) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
-        ).order_by(F('date').asc(nulls_last=True), 'show_time')
+            Q(band=self.band_a) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
         titles = [s.title for s in shows]
         self.assertNotIn('SHOW PASSADO', titles)
 
     def test_pending_form_excludes_other_band_shows(self):
         import datetime
+        from django.utils import timezone
         from django.db.models import Q, F
         from .models import Show
         Show.objects.create(band=self.band_b, title='OTHER BAND SHOW', date=datetime.date(2026, 7, 24))
         shows = Show.objects.filter(
-            Q(band=self.band_a) & (Q(date__gte=datetime.date.today()) | Q(date__isnull=True))
-        ).order_by(F('date').asc(nulls_last=True), 'show_time')
+            Q(band=self.band_a) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
         titles = [s.title for s in shows]
         self.assertNotIn('OTHER BAND SHOW', titles)
+
+    def test_pending_form_uses_local_date_boundary(self):
+        import datetime
+        from django.utils import timezone
+        from django.db.models import Q, F
+        from .models import Show
+        
+        # Test that the boundary effectively acts upon localdate
+        Show.objects.all().delete()
+        
+        today = timezone.localdate()
+        yesterday = today - datetime.timedelta(days=1)
+        
+        Show.objects.create(band=self.band_a, title='SHOW DE HOJE', date=today)
+        Show.objects.create(band=self.band_a, title='SHOW DE ONTEM', date=yesterday)
+        
+        shows = Show.objects.filter(
+            Q(band=self.band_a) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
+        
+        titles = [s.title for s in shows]
+        self.assertIn('SHOW DE HOJE', titles)
+        self.assertNotIn('SHOW DE ONTEM', titles)
 
     def test_pending_create_rejects_other_band_show(self):
         self.client.login(username='prod_a', password='pwd')
