@@ -108,18 +108,18 @@
                     {% endif %}
                     {% if show.soundcheck_time or show.soundcheck_end_time %}
                     <li class="list-group-item bg-transparent text-light border-secondary">
-                        <strong>Passagem de som</strong><br>
-                        {% if show.soundcheck_time %}Início: {{ show.soundcheck_time|time:"H:i" }}{% endif %}
-                        {% if show.soundcheck_time and show.soundcheck_end_time %}<br>{% endif %}
-                        {% if show.soundcheck_end_time %}Final: {{ show.soundcheck_end_time|time:"H:i" }}{% endif %}
+                        <div class="d-flex flex-wrap gap-3">
+                            <span style="white-space: nowrap;"><strong>Início Passagem:</strong> {% if show.soundcheck_time %}{{ show.soundcheck_time|time:"H:i" }}{% else %}Não informado{% endif %}</span>
+                            <span style="white-space: nowrap;"><strong>Final Passagem:</strong> {% if show.soundcheck_end_time %}{{ show.soundcheck_end_time|time:"H:i" }}{% else %}Não informado{% endif %}</span>
+                        </div>
                     </li>
                     {% endif %}
                     {% if show.show_time or show.show_end_time %}
                     <li class="list-group-item bg-transparent border-secondary">
-                        <strong>Show</strong><br>
-                        {% if show.show_time %}<span class="text-success">Início: {{ show.show_time|time:"H:i" }}</span>{% endif %}
-                        {% if show.show_time and show.show_end_time %} <br> {% endif %}
-                        {% if show.show_end_time %}<span class="text-danger">Final: {{ show.show_end_time|time:"H:i" }}</span>{% endif %}
+                        <div class="d-flex flex-wrap gap-3">
+                            {% if show.show_time %}<span style="white-space: nowrap;" class="text-success"><strong>Início do Show:</strong> {{ show.show_time|time:"H:i" }}</span>{% endif %}
+                            {% if show.show_end_time %}<span style="white-space: nowrap;" class="text-danger"><strong>Final do Show:</strong> {{ show.show_end_time|time:"H:i" }}</span>{% endif %}
+                        </div>
                     </li>
                     {% endif %}
                     {% if show.duration %}

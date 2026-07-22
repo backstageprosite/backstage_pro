@@ -159,12 +159,40 @@ class ShowScheduleTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('utf-8')
         
+        self.assertIn('Início Passagem:', content)
         self.assertIn('14:00', content)
+        self.assertIn('Final Passagem:', content)
         self.assertIn('16:00', content)
+        self.assertIn('Início do Show:', content)
         self.assertIn('22:00', content)
+        self.assertIn('Final do Show:', content)
         self.assertIn('00:00', content)
         self.assertIn('2 horas', content)
         self.assertNotIn('None', content)
         self.assertNotIn('14:00:00', content) # no seconds
         self.assertIn('text-success', content)
         self.assertIn('text-danger', content)
+
+    def test_detail_page_contains_inline_labels(self):
+        self.show.soundcheck_time = datetime.time(12, 0)
+        self.show.soundcheck_end_time = datetime.time(13, 30)
+        self.show.show_time = datetime.time(22, 0)
+        self.show.show_end_time = datetime.time(0, 0)
+        self.show.duration = "02:00"
+        self.show.save()
+
+        url = reverse('show_detail', args=[self.band.slug, self.show.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        
+        self.assertIn('Início Passagem:', content)
+        self.assertIn('12:00', content)
+        self.assertIn('Final Passagem:', content)
+        self.assertIn('13:30', content)
+        self.assertIn('Início do Show:', content)
+        self.assertIn('22:00', content)
+        self.assertIn('Final do Show:', content)
+        self.assertIn('00:00', content)
+        self.assertIn('Duração do Show:', content)
+        self.assertIn('02:00', content)
