@@ -21,6 +21,11 @@ urlpatterns = [
     path('usuarios/<int:pk>/desativar/', admin_views.admin_user_toggle_active, name='usuarios_desativar'),
     path('usuarios/<int:pk>/resetar-senha/', admin_views.admin_user_reset_password, name='usuarios_resetar_senha'),
     
+    path('avisos/', admin_views.AdminAvisosView.as_view(), name='avisos'),
+    path('avisos/novo/', admin_views.admin_aviso_create, name='avisos_novo'),
+    path('avisos/<int:pk>/editar/', admin_views.admin_aviso_edit, name='avisos_editar'),
+    path('avisos/<int:pk>/excluir/', admin_views.admin_aviso_delete, name='avisos_excluir'),
+    
     path('shows/', admin_views.AdminShowListView.as_view(), name='shows'),
     
     path('assinaturas/', admin_views.AdminAssinaturasView.as_view(), name='assinaturas'),

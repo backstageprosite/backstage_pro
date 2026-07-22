@@ -1,0 +1,159 @@
+{% extends 'core/admin/base_admin.html' %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 fw-bold text-dark mb-0">
+        <i class="fa-solid fa-bullhorn text-primary me-2"></i> Avisos
+    </h1>
+    <button type="button" class="btn btn-success fw-bold rounded-pill px-3 py-2 shadow-sm text-white" data-bs-toggle="modal" data-bs-target="#addAvisoModal">
+        <i class="fa-solid fa-plus me-1"></i> Adicionar
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-hover-premium align-middle mb-0">
+                <thead class="table-light text-muted small fw-bold text-uppercase">
+                    <tr>
+                        <th class="ps-4 py-3" style="width: 40%">Aviso</th>
+                        <th class="py-3">Data de envio</th>
+                        <th class="py-3">Banda</th>
+                        <th class="text-center pe-4 py-3" style="width: 200px">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for aviso in avisos %}
+                    <tr>
+                        <td class="ps-4 py-3">
+                            <span class="d-block text-dark">{{ aviso.message|linebreaksbr }}</span>
+                        </td>
+                        <td class="py-3">
+                            <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> {{ aviso.created_at|date:"d/m/Y H:i" }}</span>
+                        </td>
+                        <td class="py-3">
+                            {% if aviso.band %}
+                                <span class="badge bg-primary"><i class="fa-solid fa-guitar me-1"></i> {{ aviso.band.name }}</span>
+                            {% else %}
+                                <span class="badge bg-dark"><i class="fa-solid fa-globe me-1"></i> Todos</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-4 py-3">
+                            <div class="d-flex justify-content-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary fw-medium px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#editAvisoModal{{ aviso.pk }}">
+                                    Editar
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger fw-medium px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#deleteAvisoModal{{ aviso.pk }}">
+                                    Excluir
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Edit Modal -->
+                    <div class="modal fade" id="editAvisoModal{{ aviso.pk }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content rounded-4 border-0 shadow">
+                                <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square text-primary me-2"></i>Editar aviso</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form action="{% url 'admin_painel:avisos_editar' aviso.pk %}" method="post">
+                                    {% csrf_token %}
+                                    <div class="modal-body px-4 py-3">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold text-dark">Banda</label>
+                                            <select name="band_id" class="form-select bg-light border-0 py-2">
+                                                <option value="all" {% if not aviso.band %}selected{% endif %}>Todos</option>
+                                                {% for b in bandas %}
+                                                    <option value="{{ b.pk }}" {% if aviso.band and aviso.band.pk == b.pk %}selected{% endif %}>{{ b.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold text-dark">Aviso</label>
+                                            <textarea name="message" class="form-control bg-light border-0" rows="5" required maxlength="1000" placeholder="Digite o aviso...">{{ aviso.message }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+                                        <button type="button" class="btn btn-light fw-medium rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 text-white">Salvar alterações</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delete Modal -->
+                    <div class="modal fade" id="deleteAvisoModal{{ aviso.pk }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content rounded-4 border-0 shadow">
+                                <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Deseja excluir este aviso?</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form action="{% url 'admin_painel:avisos_excluir' aviso.pk %}" method="post">
+                                    {% csrf_token %}
+                                    <div class="modal-body px-4 py-3 text-muted">
+                                        Esta ação não pode ser desfeita.
+                                    </div>
+                                    <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+                                        <button type="button" class="btn btn-light fw-medium rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-danger fw-bold rounded-pill px-4 text-white">Excluir</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="fa-solid fa-bullhorn fa-3x mb-3 text-light"></i>
+                                <h5 class="fw-bold mb-1">Nenhum aviso no momento</h5>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addAvisoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-plus-circle text-success me-2"></i>Adicionar aviso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'admin_painel:avisos_novo' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body px-4 py-3">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">Banda</label>
+                        <select name="band_id" class="form-select bg-light border-0 py-2" required>
+                            <option value="" disabled selected>Selecione o destino</option>
+                            <option value="all">Todos</option>
+                            {% for b in bandas %}
+                                <option value="{{ b.pk }}">{{ b.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">Aviso</label>
+                        <textarea name="message" class="form-control bg-light border-0" rows="5" required maxlength="1000" placeholder="Digite o aviso..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light fw-medium rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 text-white">Adicionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

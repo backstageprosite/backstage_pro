@@ -5,7 +5,7 @@ from django.db import models
 from django.forms import Textarea
 from django.utils import timezone
 import datetime
-from .models import User, Show, FinancialReceipt, ContractDocument, Band, Contact, ShowPayment, ShowTeamCost, BandSubscription, BillingRecord, WebPushSubscription, WebPushDelivery, AdministrativeBandNotice
+from .models import User, Show, FinancialReceipt, ContractDocument, Band, Contact, ShowPayment, ShowTeamCost, BandSubscription, BillingRecord, WebPushSubscription, WebPushDelivery
 
 
 def custom_get_app_list(self, request, app_label=None):
@@ -27,8 +27,7 @@ def custom_get_app_list(self, request, app_label=None):
                 'Shows': 1,
                 'Banco de Dados': 2,
                 'Usuários': 3,
-                'Avisos Administrativos': 4,
-                'Bandas': 5,
+                'Bandas': 4,
             }
             app['models'].sort(key=lambda x: ordering.get(x['name'], 99))
         else:
@@ -469,12 +468,4 @@ class WebPushDeliveryAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
-@admin.register(AdministrativeBandNotice)
-class AdministrativeBandNoticeAdmin(admin.ModelAdmin):
-    list_display = ('title', 'get_destination', 'created_at', 'updated_at')
-    list_filter = ('band', 'created_at')
-    search_fields = ('title', 'message')
 
-    def get_destination(self, obj):
-        return obj.band.name if obj.band else 'Todos os Produtores'
-    get_destination.short_description = 'Destino'

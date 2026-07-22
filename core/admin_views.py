@@ -1,4 +1,4 @@
-﻿from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.views import LoginView
@@ -7,7 +7,7 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView
 from django.db.models import Count
-from core.models import Band, User, Show, BandSubscription, BillingRecord
+from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice
 from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm
 import datetime
 
@@ -247,14 +247,14 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             subs = subs.filter(billing_cycle=cycle)
             billings = billings.filter(subscription__billing_cycle=cycle)
 
-        # 1. Valores Recebidos (PAGO no período baseado em paid_date)
+        # 1. Valores Recebidos (PAGO no perÃ­odo baseado em paid_date)
         recebido = billings.filter(
             status='PAGO',
             paid_date__gte=start_date,
             paid_date__lte=end_date
         ).aggregate(total=Sum('amount'))['total'] or 0
 
-        # 2. Valores Pendentes (PENDENTE no período baseado em due_date, >= hoje)
+        # 2. Valores Pendentes (PENDENTE no perÃ­odo baseado em due_date, >= hoje)
         pendente = billings.filter(
             status='PENDENTE',
             due_date__gte=max(today, start_date),
@@ -262,8 +262,8 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         ).aggregate(total=Sum('amount'))['total'] or 0
 
         # 3. Valores Futuros (PENDENTE com due_date > hoje)
-        # Vamos pegar todo o valor futuro, ou limitar ao período se aplicável.
-        # A regra diz: "soma de cobranças futuras ainda não pagas, com due_date maior que hoje. Pode incluir BillingRecord com status PENDENTE e vencimento futuro."
+        # Vamos pegar todo o valor futuro, ou limitar ao perÃ­odo se aplicÃ¡vel.
+        # A regra diz: "soma de cobranÃ§as futuras ainda não pagas, com due_date maior que hoje. Pode incluir BillingRecord com status PENDENTE e vencimento futuro."
         futuro = billings.filter(
             status='PENDENTE',
             due_date__gt=today
@@ -280,15 +280,15 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         # 6. Total de Bandas Ativas Pagantes
         total_bandas_ativas = BandSubscription.objects.filter(status='ATIVO').count()
 
-        # Gráficos Data
+        # GrÃ¡ficos Data
 
-        # Gráfico 1: Recebido x Pendente x Futuro x Atrasado
+        # GrÃ¡fico 1: Recebido x Pendente x Futuro x Atrasado
         chart_bars = {
             'labels': ['Recebido', 'Pendente', 'Futuro', 'Atrasado'],
             'data': [float(recebido), float(pendente), float(futuro), float(atrasado)]
         }
 
-        # Gráfico 2: Pizza de Status
+        # GrÃ¡fico 2: Pizza de Status
         status_counts = billings.values('status').annotate(total=Count('id'))
         status_labels = []
         status_data = []
@@ -301,7 +301,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'data': status_data
         }
 
-        # Gráfico 3: Receita por Ciclo
+        # GrÃ¡fico 3: Receita por Ciclo
         cycle_revenue = subs.values('billing_cycle').annotate(total=Sum('contracted_value'))
         cycle_labels = []
         cycle_data = []
@@ -314,7 +314,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'data': cycle_data
         }
 
-        # Gráfico 4: Top Bandas
+        # GrÃ¡fico 4: Top Bandas
         top_bandas = billings.filter(status='PAGO', paid_date__gte=start_date, paid_date__lte=end_date).values('band__name').annotate(total=Sum('amount')).order_by('-total')[:5]
         top_bandas_labels = []
         top_bandas_data = []
@@ -426,7 +426,7 @@ def admin_user_create(request):
         form = AdminUserCreateForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Usuário cadastrado com sucesso!")
+            messages.success(request, "UsuÃ¡rio cadastrado com sucesso!")
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -440,7 +440,7 @@ def admin_user_edit(request, pk):
         form = AdminUserEditForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
-            messages.success(request, "Usuário atualizado com sucesso!")
+            messages.success(request, "UsuÃ¡rio atualizado com sucesso!")
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -454,7 +454,7 @@ def admin_user_toggle_active(request, pk):
         user.is_active = not user.is_active
         user.save()
         status = "ativado" if user.is_active else "desativado"
-        messages.success(request, f"Usuário {status} com sucesso!")
+        messages.success(request, f"UsuÃ¡rio {status} com sucesso!")
     return redirect('admin_painel:usuarios')
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
@@ -471,7 +471,7 @@ def admin_user_reset_password(request, pk):
         else:
             user.set_password(new_password)
             user.save()
-            messages.success(request, f"Senha do usuário {user.username} redefinida com sucesso!")
+            messages.success(request, f"Senha do usuÃ¡rio {user.username} redefinida com sucesso!")
 
     return redirect('admin_painel:usuarios')
 
@@ -527,7 +527,7 @@ def admin_cobranca_create(request):
                     sub.status = 'ATIVO'
                     sub.save(update_fields=['status'])
 
-            messages.success(request, "Cobrança gerada com sucesso!")
+            messages.success(request, "CobranÃ§a gerada com sucesso!")
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -549,7 +549,7 @@ def admin_cobranca_edit(request, pk):
                     sub.status = 'ATIVO'
                     sub.save(update_fields=['status'])
 
-            messages.success(request, "Cobrança atualizada com sucesso!")
+            messages.success(request, "CobranÃ§a atualizada com sucesso!")
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -784,3 +784,69 @@ class AdminWebPushDashboardView(AdminWebPushRequiredMixin, TemplateView):
         response = super().dispatch(request, *args, **kwargs)
         response['Cache-Control'] = 'private, no-store'
         return response
+
+# --- AVISOS ADMINISTRATIVOS ---
+class AdminAvisosView(AdminRequiredMixin, ListView):
+    model = AdministrativeBandNotice
+    template_name = 'core/admin/avisos.html'
+    context_object_name = 'avisos'
+    
+    def get_queryset(self):
+        return AdministrativeBandNotice.objects.all().order_by('-created_at', '-pk')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['bandas'] = Band.objects.filter(is_active=True).order_by('name')
+        return context
+
+@user_passes_test(is_admin_geral, login_url='/painel/login/')
+def admin_aviso_create(request):
+    if request.method == 'POST':
+        band_id = request.POST.get('band_id')
+        message = request.POST.get('message', '').strip()
+        
+        if not message:
+            messages.error(request, 'O aviso não pode ficar vazio.')
+            return redirect('admin_painel:avisos')
+            
+        band = None
+        if band_id and band_id != 'all':
+            band = get_object_or_404(Band, pk=band_id)
+            
+        AdministrativeBandNotice.objects.create(
+            band=band,
+            message=message,
+            created_by=request.user
+        )
+        messages.success(request, 'Aviso enviado com sucesso.')
+    return redirect('admin_painel:avisos')
+
+@user_passes_test(is_admin_geral, login_url='/painel/login/')
+def admin_aviso_edit(request, pk):
+    aviso = get_object_or_404(AdministrativeBandNotice, pk=pk)
+    if request.method == 'POST':
+        band_id = request.POST.get('band_id')
+        message = request.POST.get('message', '').strip()
+        
+        if not message:
+            messages.error(request, 'O aviso não pode ficar vazio.')
+            return redirect('admin_painel:avisos')
+            
+        if band_id and band_id != 'all':
+            aviso.band = get_object_or_404(Band, pk=band_id)
+        else:
+            aviso.band = None
+            
+        aviso.message = message
+        aviso.save()
+        messages.success(request, 'Aviso atualizado com sucesso.')
+    return redirect('admin_painel:avisos')
+
+@user_passes_test(is_admin_geral, login_url='/painel/login/')
+def admin_aviso_delete(request, pk):
+    if request.method == 'POST':
+        aviso = get_object_or_404(AdministrativeBandNotice, pk=pk)
+        aviso.delete()
+        messages.success(request, 'Aviso excluído com sucesso.')
+    return redirect('admin_painel:avisos')
+

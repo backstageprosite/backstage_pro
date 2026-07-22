@@ -42,43 +42,43 @@ class AdministrativeBandNoticeVisibilityTests(TestCase):
         )
 
     def test_band_producer_sees_specific_notice(self):
-        notice = AdministrativeBandNotice.objects.create(band=self.band_a, title="Notice A", message="Msg A")
+        notice = AdministrativeBandNotice.objects.create(band=self.band_a, message="Msg A", created_by=self.superuser)
         self.client.force_login(self.produtor_a)
         response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
         self.assertEqual(response.status_code, 200)
         self.assertIn('administrative_notices', response.context)
         notices = list(response.context['administrative_notices'])
         self.assertIn(notice, notices)
-        self.assertContains(response, "Notice A")
+        self.assertContains(response, "Msg A")
         self.assertContains(response, "Avisos")
 
     def test_band_producer_sees_global_notice(self):
-        notice = AdministrativeBandNotice.objects.create(band=None, title="Global Notice", message="Global Msg")
+        notice = AdministrativeBandNotice.objects.create(band=None, message="Global Msg", created_by=self.superuser)
         self.client.force_login(self.produtor_a)
         response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
         notices = list(response.context['administrative_notices'])
         self.assertIn(notice, notices)
-        self.assertContains(response, "Global Notice")
+        self.assertContains(response, "Global Msg")
 
     def test_band_producer_does_not_see_other_band_notice(self):
-        notice_b = AdministrativeBandNotice.objects.create(band=self.band_b, title="Notice B", message="Msg B")
+        notice_b = AdministrativeBandNotice.objects.create(band=self.band_b, message="Msg B", created_by=self.superuser)
         self.client.force_login(self.produtor_a)
         response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
         notices = list(response.context['administrative_notices'])
         self.assertNotIn(notice_b, notices)
-        self.assertNotContains(response, "Notice B")
+        self.assertNotContains(response, "Msg B")
 
     def test_band_member_does_not_see_specific_notice(self):
-        notice = AdministrativeBandNotice.objects.create(band=self.band_a, title="Notice A Member", message="Msg")
+        notice = AdministrativeBandNotice.objects.create(band=self.band_a, message="Msg Member", created_by=self.superuser)
         self.client.force_login(self.integrante_a)
         response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
-        self.assertNotContains(response, "Notice A Member")
+        self.assertNotContains(response, "Msg Member")
 
     def test_band_member_does_not_see_global_notice(self):
-        notice = AdministrativeBandNotice.objects.create(band=None, title="Global Notice Member", message="Msg")
+        notice = AdministrativeBandNotice.objects.create(band=None, message="Global Msg Member", created_by=self.superuser)
         self.client.force_login(self.integrante_a)
         response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
-        self.assertNotContains(response, "Global Notice Member")
+        self.assertNotContains(response, "Global Msg Member")
 
     def test_band_member_does_not_render_notices_card(self):
         self.client.force_login(self.integrante_a)
@@ -106,7 +106,7 @@ class AdministrativeBandNoticeVisibilityTests(TestCase):
         self.assertIsNone(response.context.get('administrative_notices'))
 
     def test_superuser_without_producer_role_does_not_see_band_notice_card(self):
-        AdministrativeBandNotice.objects.create(band=None, title="Global Notice", message="Msg")
+        AdministrativeBandNotice.objects.create(band=None, message="Msg Global", created_by=self.superuser)
         # Admin trying to view Band A dashboard
         self.client.force_login(self.superuser)
         response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
@@ -120,37 +120,37 @@ class AdministrativeBandNoticeVisibilityTests(TestCase):
         self.assertIsNone(response2.context.get('administrative_notices'))
 
     def test_admin_can_manage_notices_in_admin_panel(self):
-        # Admin can access the Django admin page for the model
+        # Admin can access the custom admin page for notices
         self.client.force_login(self.superuser)
-        response = self.client.get(reverse('admin:core_administrativebandnotice_changelist'))
+        response = self.client.get(reverse('admin_painel:avisos'))
         self.assertEqual(response.status_code, 200)
 
     def test_band_user_cannot_access_admin_notice_routes(self):
         # Produtor shouldn't be able to access the admin page for notices
         self.client.force_login(self.produtor_a)
-        response = self.client.get(reverse('admin:core_administrativebandnotice_changelist'))
-        # Should redirect or 403
-        self.assertNotEqual(response.status_code, 200)
+        response = self.client.get(reverse('admin_painel:avisos'))
+        # Should redirect to login
+        self.assertRedirects(response, '/painel/login/?next=/painel/avisos/', fetch_redirect_response=False)
         
         self.client.force_login(self.integrante_a)
-        response = self.client.get(reverse('admin:core_administrativebandnotice_changelist'))
-        self.assertNotEqual(response.status_code, 200)
+        response = self.client.get(reverse('admin_painel:avisos'))
+        self.assertRedirects(response, '/painel/login/?next=/painel/avisos/', fetch_redirect_response=False)
 
     def test_global_notice_means_all_producers_only(self):
-        AdministrativeBandNotice.objects.create(band=None, title="Global 123", message="Msg")
+        AdministrativeBandNotice.objects.create(band=None, message="Global Msg 123", created_by=self.superuser)
         
         self.client.force_login(self.produtor_a)
         resp1 = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
-        self.assertContains(resp1, "Global 123")
+        self.assertContains(resp1, "Global Msg 123")
         
         self.client.force_login(self.produtor_b)
         resp2 = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_b.slug}))
-        self.assertContains(resp2, "Global 123")
+        self.assertContains(resp2, "Global Msg 123")
         
         self.client.force_login(self.integrante_a)
         resp3 = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
-        self.assertNotContains(resp3, "Global 123")
+        self.assertNotContains(resp3, "Global Msg 123")
         
         self.client.force_login(self.integrante_b)
         resp4 = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_b.slug}))
-        self.assertNotContains(resp4, "Global 123")
+        self.assertNotContains(resp4, "Global Msg 123")

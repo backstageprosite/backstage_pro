@@ -734,9 +734,9 @@ class BandDashboardPendingItem(models.Model):
 
 class AdministrativeBandNotice(models.Model):
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='administrative_notices', null=True, blank=True, verbose_name='Banda Destino', help_text='Deixe em branco para enviar a todas as bandas (Todos).')
-    title = models.CharField(max_length=200, verbose_name='Título')
+    created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_administrative_notices', verbose_name='Criado por')
     message = models.TextField(verbose_name='Mensagem')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Data de Envio')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Última Atualização')
 
     class Meta:
@@ -746,4 +746,4 @@ class AdministrativeBandNotice(models.Model):
 
     def __str__(self):
         dest = self.band.name if self.band else 'Todos os Produtores'
-        return f"{self.title} ({dest})"
+        return f"Aviso de {self.created_at.strftime('%d/%m/%Y')} para {dest}"
