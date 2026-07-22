@@ -79,9 +79,13 @@
             .bg-secondary { background-color: #6c757d !important; color: white !important; }
 
             .no-print { display: none !important; }
-            body { padding: 0; margin: 0; }
+            .print-only { display: block !important; }
+            body { padding: 0; margin: 0; margin-bottom: 30px; }
             .pdf-container { padding: 0; max-width: 100%; }
             @page { margin: 1cm; } /* Margens menores na página A4 */
+        }
+        @media screen {
+            .print-only { display: none !important; }
         }
     </style>
 </head>
@@ -102,10 +106,10 @@
 
         <!-- Agrupamento por Mês e Ano -->
         {% regroup shows by date|date:"F Y" as shows_by_month %}
-        
+
         {% for month in shows_by_month %}
             <h4 class="month-header">{{ month.grouper }}</h4>
-            
+
             {% for show in month.list %}
                 <div class="show-item d-flex align-items-center {% if show.date < today %}past-show{% endif %}">
                     <div class="show-date">
@@ -117,7 +121,7 @@
                     <div class="ms-3">
                         <div class="show-title">{{ show.title }}</div>
                         <p class="show-details text-muted">
-                            <i class="fa-solid fa-location-dot"></i> {{ show.city }} - {{ show.state }} 
+                            <i class="fa-solid fa-location-dot"></i> {{ show.city }} - {{ show.state }}
                             {% if show.venue %}| {{ show.venue }}{% endif %}
                         </p>
                     </div>
@@ -138,16 +142,21 @@
             {% empty %}
                 <p>Nenhum show cadastrado neste mês.</p>
             {% endfor %}
-            
+
         {% empty %}
             <p class="text-center mt-5 text-muted">Nenhum show cadastrado na agenda.</p>
         {% endfor %}
-        
+
         <!-- Botões de Ação (não aparecem na impressão) -->
         <div class="text-center mt-5 no-print">
             <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print me-2"></i> Imprimir / Salvar PDF</button>
             <button onclick="window.close()" class="btn btn-outline-secondary ms-2">Fechar aba</button>
         </div>
+    </div>
+
+    <!-- Rodapé Exclusivo de Impressão -->
+    <div id="print-footer" class="print-only" style="position: fixed; bottom: 0; left: 0; width: 100%; border-top: 1px solid #ddd; padding-top: 5px; padding-bottom: 5px; background: white;">
+        {% include 'core/pdf/_backstage_footer.html' %}
     </div>
 </body>
 </html>

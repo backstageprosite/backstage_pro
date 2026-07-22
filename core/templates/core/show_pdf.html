@@ -9,36 +9,36 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { 
-            background-color: #ffffff; 
-            color: #000000; 
-            font-family: sans-serif; 
-            padding: 20px; 
+        body {
+            background-color: #ffffff;
+            color: #000000;
+            font-family: sans-serif;
+            padding: 20px;
             font-size: 12px;
         }
-        .card { 
-            border: 1px solid #dee2e6; 
-            margin-bottom: 20px; 
-            page-break-inside: avoid; 
+        .card {
+            border: 1px solid #dee2e6;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
         }
-        .card-header { 
-            font-weight: bold; 
+        .card-header {
+            font-weight: bold;
             font-size: 13px;
             padding: 4px 8px !important;
             /* Force background colors to print */
-            -webkit-print-color-adjust: exact; 
+            -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
-        
+
         /* Cores dos Cabeçalhos (iguais ao site) */
         .header-dados { background-color: #212529 !important; color: #0dcaf0 !important; border-bottom: 2px solid #212529; } /* bg-dark text-primary (cyan) */
         .header-cronograma { background-color: #212529 !important; color: #0dcaf0 !important; border-bottom: 2px solid #212529; }
         .header-logistica { background-color: #198754 !important; color: #ffffff !important; border-bottom: 2px solid #198754; } /* bg-success text-white */
         .header-tecnicas { background-color: #ffc107 !important; color: #212529 !important; border-bottom: 2px solid #ffc107; } /* bg-warning text-dark */
-        
-        .list-group-item { 
-            padding: 4px 8px; 
-            border-bottom: 1px solid #eee; 
+
+        .list-group-item {
+            padding: 4px 8px;
+            border-bottom: 1px solid #eee;
             background: transparent;
         }
         .card-body { padding: 8px 12px; }
@@ -47,7 +47,7 @@
         h6 { font-weight: bold; margin-bottom: 2px; color: #444; font-size: 11px; }
         p { margin-bottom: 0; }
         a { color: #0f7fb1; text-decoration: none; font-weight: 500; }
-        
+
         /* Print Styles */
         @media screen {
             .print-only { display: none !important; }
@@ -63,10 +63,10 @@
             .container { max-width: 100% !important; width: 100% !important; padding: 0; margin: 0; }
             .text-muted { color: #6c757d !important; }
             .print-only { display: flex !important; }
-            
+
             /* Margens menores para aproveitar a folha inteira */
             @page { margin: 0.8cm; }
-            
+
             /* Custom Fixed Footer */
             #print-footer {
                 position: fixed;
@@ -75,10 +75,11 @@
                 width: 100%;
                 border-top: 1px solid #ddd;
                 padding-top: 5px;
+                padding-bottom: 5px;
                 font-size: 10px;
                 color: #777;
                 display: flex;
-                justify-content: space-between;
+                flex-direction: column;
                 background: white;
             }
         }
@@ -88,7 +89,7 @@
     <div class="container">
         <!-- Cabeçalho com Logo na Esquerda e Títulos Centralizados -->
         <div class="mb-3 border-bottom pb-2 d-flex align-items-center">
-            
+
             <!-- Logo da Banda -->
             <div style="width: 150px; text-align: left;">
                 {% if show.band.logo %}
@@ -103,7 +104,7 @@
                 <h5 class="text-secondary mt-1">{{ show.event_name }}</h5>
                 {% endif %}
             </div>
-            
+
         </div>
 
         <div class="row">
@@ -390,8 +391,11 @@
 
     <!-- Rodapé Exclusivo de Impressão -->
     <div id="print-footer" class="print-only">
-        <span><strong>Documento:</strong> [{{ show.date|date:"d-m-Y" }}] {{ show.title }}</span>
-        <span><strong>Gerado em:</strong> <span id="current-datetime"></span></span>
+        <div class="d-flex w-100 justify-content-between mb-1 px-1">
+            <span><strong>Documento:</strong> [{{ show.date|date:"d-m-Y" }}] {{ show.title }}</span>
+            <span><strong>Gerado em:</strong> <span id="current-datetime"></span></span>
+        </div>
+        {% include 'core/pdf/_backstage_footer.html' %}
     </div>
 
     <script>

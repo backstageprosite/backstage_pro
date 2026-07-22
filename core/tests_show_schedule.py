@@ -30,7 +30,7 @@ class ShowScheduleTests(TestCase):
     def test_new_field_accepts_time_and_null(self):
         # Accepts null
         self.assertIsNone(self.show.soundcheck_end_time)
-        
+
         # Accepts time
         self.show.soundcheck_end_time = datetime.time(16, 0)
         self.show.save()
@@ -106,7 +106,7 @@ class ShowScheduleTests(TestCase):
     def test_edit_only_start_preserves_end(self):
         self.show.soundcheck_end_time = datetime.time(16, 0)
         self.show.save()
-        
+
         url = reverse('shows_edit', args=[self.band.slug, self.show.id])
         data = {
             'title': 'Show Editado',
@@ -158,7 +158,7 @@ class ShowScheduleTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('utf-8')
-        
+
         self.assertIn('Início Passagem:', content)
         self.assertIn('14:00', content)
         self.assertIn('Final Passagem:', content)
@@ -185,7 +185,7 @@ class ShowScheduleTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('utf-8')
-        
+
         self.assertIn('Início Passagem:', content)
         self.assertIn('12:00', content)
         self.assertIn('Final Passagem:', content)
@@ -196,3 +196,22 @@ class ShowScheduleTests(TestCase):
         self.assertIn('00:00', content)
         self.assertIn('Duração do Show:', content)
         self.assertIn('02:00', content)
+
+    def test_pdf_contains_backstage_footer(self):
+        url = reverse('show_pdf', args=[self.band.slug, self.show.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        self.assertIn('Desenvolvido por Backstage Pro - @backstagepro.site', content)
+        # Verify it only appears once in the template part (plus possibly in the included partial, but we check the rendered output)
+        self.assertEqual(content.count('Desenvolvido por Backstage Pro - @backstagepro.site'), 1)
+
+    def test_agenda_pdf_contains_backstage_footer(self):
+        url = reverse('agenda_pdf', args=[self.band.slug])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        self.assertIn('Desenvolvido por Backstage Pro - @backstagepro.site', content)
+        self.assertEqual(content.count('Desenvolvido por Backstage Pro - @backstagepro.site'), 1)
