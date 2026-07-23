@@ -3,11 +3,13 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <div class="d-flex align-items-center">
-        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-secondary rounded-pill me-3 px-3 shadow-sm" style="border-color: #dee2e6; color: #6c757d;">
+    <div>
+        <h2 class="fw-bold m-0"><i class="fa-solid fa-headset me-2" style="color: #0d6efd;"></i> Fale Conosco</h2>
+    </div>
+    <div>
+        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-secondary rounded-pill px-3 shadow-sm" style="border-color: #dee2e6; color: #6c757d;">
             <i class="fa-solid fa-arrow-left me-1"></i> Voltar
         </a>
-        <h3 class="fw-bold m-0"><i class="fa-solid fa-headset text-primary me-2"></i> Fale Conosco - Atendimentos</h3>
     </div>
 </div>
 
@@ -47,13 +49,13 @@
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
-                <tr>
-                    <th>ID</th>
-                    <th>Banda</th>
-                    <th>Status</th>
-                    <th>Última Mensagem</th>
-                    <th>Produtor</th>
-                    <th class="text-end">Ação</th>
+                <tr class="text-uppercase" style="font-size: 0.85rem;">
+                    <th class="ps-4">ID</th>
+                    <th>BANDA</th>
+                    <th>STATUS</th>
+                    <th>ÚLTIMA MENSAGEM</th>
+                    <th>PRODUTOR</th>
+                    <th class="text-end pe-4">AÇÃO</th>
                 </tr>
             </thead>
             <tbody>
