@@ -107,6 +107,14 @@ class PartnerTests(TestCase):
         self.assertContains(response, 'target=\"_blank\"')
         self.assertContains(response, 'rel=\"noopener noreferrer\"')
 
+        # verificar a estrutura do layout conforme correção de largura
+        self.assertNotContains(response, 'row justify-content-center')
+        self.assertNotContains(response, 'col-lg-6')
+        self.assertNotContains(response, 'col-md-8')
+        self.assertNotContains(response, 'mx-auto')
+        self.assertContains(response, 'partners-grid')
+        self.assertContains(response, 'partner-card-wrapper')
+
     def test_band_view_isolation(self):
         self.client.login(username='outro', password='123')
         # Tenta acessar parceiros da 'banda-teste'
