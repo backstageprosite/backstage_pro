@@ -1,6 +1,5 @@
 from django.urls import path
-from . import views, pwa_views, file_views, notification_views, push_views
-
+from . import views, pwa_views, file_views, notification_views, push_views, views_support
 urlpatterns = [
     path('manifest.webmanifest', pwa_views.band_manifest, name='manifest'),
     path('sw.js', pwa_views.band_service_worker, name='band_sw'),
@@ -40,6 +39,13 @@ urlpatterns = [
     path('parceiros/', views.partners_list_view, name='parceiros'),
     path('relatorios/assinatura/', views.minha_assinatura_view, name='minha_assinatura'),
     path('relatorios/relatorio-financeiro/', views.relatorios_view, name='relatorio_financeiro'),
+    
+    # Fale Conosco - Produtor
+    path('relatorios/fale-conosco/', views_support.support_list_view, name='support_list'),
+    path('relatorios/fale-conosco/novo/', views_support.support_create_view, name='support_create'),
+    path('relatorios/fale-conosco/<int:pk>/', views_support.support_detail_view, name='support_detail'),
+    path('relatorios/fale-conosco/<int:pk>/reabrir/', views_support.support_reopen_view, name='support_reopen'),
+
     path('arquivos/', views.arquivos_view, name='arquivos'),
     path('configuracoes/', views.configuracoes_view, name='configuracoes'),
 
@@ -69,4 +75,7 @@ urlpatterns = [
     path('financeiro/recebimentos/<int:pk>/download/', file_views.download_receipt, name='download_receipt'),
     path('financeiro/pagamentos/<int:pk>/download/', file_views.download_payment, name='download_payment'),
     path('faturas/<int:pk>/download/', file_views.download_billing, name='download_billing'),
+    
+    # Anexos do Fale Conosco
+    path('fale-conosco/anexos/<int:pk>/download/', file_views.download_support_attachment, name='download_support_attachment'),
 ]

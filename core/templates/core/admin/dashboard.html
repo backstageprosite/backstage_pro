@@ -7,6 +7,16 @@
     <h3 class="fw-bold m-0"><i class="fa-solid fa-chart-pie me-2 text-dark"></i> Dashboard</h3>
 </div>
 
+{% if support_unread_count > 0 %}
+<div class="alert alert-warning shadow-sm border-0 d-flex align-items-center" role="alert" style="border-radius: 12px;">
+    <i class="fa-solid fa-bell fs-4 me-3 text-warning"></i>
+    <div>
+        <h5 class="fw-bold mb-1">Novas Mensagens no Fale Conosco</h5>
+        <p class="mb-0">Você tem <strong>{{ support_unread_count }}</strong> chamados aguardando resposta administrativa. <a href="{% url 'admin_painel:support_list' %}" class="alert-link">Clique aqui para ver</a>.</p>
+    </div>
+</div>
+{% endif %}
+
 <div class="row g-4 mb-4">
     <!-- Bandas Ativas -->
     <div class="col-sm-6 col-lg-3">

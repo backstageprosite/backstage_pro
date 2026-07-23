@@ -844,3 +844,85 @@ class Partner(models.Model):
             
         return self.phone
 
+
+
+class SupportTicket(models.Model):
+    STATUS_CHOICES = [
+        ('NEW', 'Nova'),
+        ('IN_PROGRESS', 'Em análise'),
+        ('WAITING_PRODUCER', 'Aguardando produtor'),
+        ('WAITING_ADMIN', 'Aguardando administração'),
+        ('RESOLVED', 'Resolvida'),
+        ('ARCHIVED', 'Arquivada'),
+    ]
+
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='support_tickets')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_support_tickets')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NEW')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_message_at = models.DateTimeField(auto_now_add=True)
+    
+    admin_last_read_at = models.DateTimeField(null=True, blank=True)
+    producer_last_read_at = models.DateTimeField(null=True, blank=True)
+    
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Atendimento"
+        verbose_name_plural = "Atendimentos"
+        ordering = ['-last_message_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['band']),
+        ]
+
+    def __str__(self):
+        return f"Ticket #{self.id} - {self.band.name} ({self.get_status_display()})"
+
+
+class SupportTicketMessage(models.Model):
+    SENDER_CHOICES = [
+        ('ADMIN', 'Administração'),
+        ('PRODUCER', 'Produtor'),
+    ]
+
+    ticket = models.ForeignKey(SupportTicket, on_delete=models.CASCADE, related_name='messages')
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    body = models.TextField()
+    sender_type = models.CharField(max_length=20, choices=SENDER_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Mensagem do Atendimento"
+        verbose_name_plural = "Mensagens do Atendimento"
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Mensagem de {self.author} em {self.created_at}"
+
+
+def support_ticket_attachment_path(instance, filename):
+    import os
+    from core.file_views import sanitize_filename
+    safe_name = sanitize_filename(filename)
+    return os.path.join('support_tickets', str(instance.message.ticket.id), safe_name)
+
+class SupportTicketAttachment(models.Model):
+    message = models.ForeignKey(SupportTicketMessage, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to=support_ticket_attachment_path)
+    original_name = models.CharField(max_length=255)
+    mime_type = models.CharField(max_length=100)
+    size_bytes = models.PositiveIntegerField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Anexo do Atendimento"
+        verbose_name_plural = "Anexos do Atendimento"
+        ordering = ['uploaded_at']
+
+    def __str__(self):
+        return self.original_name
+

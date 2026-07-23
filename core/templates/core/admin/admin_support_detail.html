@@ -1,0 +1,110 @@
+{% extends 'core/admin/base_admin.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+        <a href="{% url 'admin_painel:support_list' %}" class="btn btn-outline-secondary rounded-pill me-3 px-3 shadow-sm" style="border-color: #dee2e6; color: #6c757d;">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+        </a>
+        <div>
+            <h3 class="fw-bold m-0 text-dark">Atendimento #{{ ticket.id }} - {{ ticket.band.name }}</h3>
+            <span class="badge {% if ticket.status == 'RESOLVED' or ticket.status == 'ARCHIVED' %}bg-secondary{% elif ticket.status == 'WAITING_ADMIN' or ticket.status == 'NEW' %}bg-warning text-dark{% else %}bg-info{% endif %} mt-1">
+                {{ ticket.get_status_display }}
+            </span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        {% if ticket.status != 'IN_PROGRESS' and ticket.status not in 'RESOLVED,ARCHIVED' %}
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="status_in_progress">
+                <button type="submit" class="btn btn-outline-primary rounded-pill fw-bold"><i class="fa-solid fa-spinner me-1"></i> Marcar Em Análise</button>
+            </form>
+        {% endif %}
+        
+        {% if ticket.status != 'WAITING_PRODUCER' and ticket.status not in 'RESOLVED,ARCHIVED' %}
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="status_waiting_producer">
+                <button type="submit" class="btn btn-outline-info rounded-pill fw-bold"><i class="fa-solid fa-user-clock me-1"></i> Aguardar Produtor</button>
+            </form>
+        {% endif %}
+
+        {% if ticket.status != 'RESOLVED' and ticket.status != 'ARCHIVED' %}
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="status_resolved">
+                <button type="submit" class="btn btn-outline-success rounded-pill fw-bold"><i class="fa-solid fa-check me-1"></i> Resolver</button>
+            </form>
+        {% endif %}
+
+        {% if ticket.status != 'ARCHIVED' %}
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="status_archived">
+                <button type="submit" class="btn btn-outline-secondary rounded-pill fw-bold"><i class="fa-solid fa-box-archive me-1"></i> Arquivar</button>
+            </form>
+        {% endif %}
+        
+        <form method="POST" action="{% url 'admin_painel:support_delete' ticket.id %}" onsubmit="return confirm('Tem certeza que deseja excluir este chamado e todo o seu histórico? Esta ação é irreversível.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger rounded-pill fw-bold"><i class="fa-solid fa-trash me-1"></i></button>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; overflow: hidden;">
+    <div class="card-body p-0">
+        <div class="chat-history p-4" style="background-color: #f8f9fa;">
+            {% for msg in messages %}
+                <div class="d-flex flex-column mb-4 {% if msg.sender_type == 'ADMIN' %}align-items-end{% else %}align-items-start{% endif %}">
+                    <div class="mb-1 text-muted small">
+                        <strong>{{ msg.author.get_full_name|default:msg.author.username }}</strong> 
+                        {% if msg.sender_type == 'ADMIN' %}<span class="badge bg-primary ms-1" style="font-size: 0.6rem;">Admin</span>{% endif %}
+                        <span class="mx-1">•</span>
+                        {{ msg.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                    <div class="p-3 shadow-sm" style="max-width: 80%; border-radius: 16px; {% if msg.sender_type == 'ADMIN' %}background-color: var(--primary-color); color: white; border-bottom-right-radius: 4px;{% else %}background-color: white; color: #212529; border-bottom-left-radius: 4px; border: 1px solid #dee2e6;{% endif %}">
+                        {{ msg.body|linebreaksbr }}
+                    </div>
+                    {% if msg.attachments.all %}
+                        <div class="mt-2 d-flex flex-wrap gap-2 {% if msg.sender_type == 'ADMIN' %}justify-content-end{% else %}justify-content-start{% endif %}" style="max-width: 80%;">
+                            {% for att in msg.attachments.all %}
+                                <a href="{% url 'download_support_attachment' att.id %}" target="_blank" class="btn btn-sm btn-light border rounded-pill text-truncate shadow-sm" style="max-width: 200px;" title="{{ att.original_name }}">
+                                    <i class="fa-solid fa-paperclip me-1"></i> {{ att.original_name }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if ticket.status not in 'RESOLVED,ARCHIVED' %}
+            <div class="p-4 bg-white border-top">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reply">
+                    <div class="mb-3">
+                        <label for="messageBody" class="form-label fw-bold text-dark">Sua resposta (Administrador)</label>
+                        <textarea class="form-control" id="messageBody" name="message" rows="4" required placeholder="Digite sua resposta... (O status mudará automaticamente para Aguardando Produtor)"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div>
+                            <label for="attachments" class="form-label text-muted small mb-1">Anexos (até 3 arquivos, max 10MB)</label>
+                            <input class="form-control form-control-sm" type="file" id="attachments" name="attachments" multiple accept=".pdf,.png,.jpg,.jpeg,.webp" style="max-width: 300px;">
+                        </div>
+                        <button type="submit" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Enviar resposta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        {% else %}
+            <div class="p-4 bg-light border-top text-center">
+                <p class="text-muted mb-0"><i class="fa-solid fa-lock me-2"></i> Este atendimento foi encerrado. Reabra o status se precisar enviar mensagens.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold m-0"><i class="fa-solid fa-headset text-primary me-2"></i> Fale Conosco</h2>
+        <p class="text-muted m-0">Entre em contato com a administração do Backstage Pro.</p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-success fw-bold px-4 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#newTicketModal">
+            <i class="fa-solid fa-plus me-1"></i> Nova mensagem
+        </button>
+    </div>
+</div>
+
+{% if tickets %}
+    <div class="list-group shadow-sm" style="border-radius: 12px; overflow: hidden;">
+        {% for ticket in tickets %}
+            <a href="{% url 'support_detail' band.slug ticket.pk %}" class="list-group-item list-group-item-action p-4">
+                <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                    <h5 class="mb-1 fw-bold text-dark">
+                        {{ ticket.get_status_display }}
+                        {% if ticket.has_new_message %}
+                            <span class="badge bg-danger ms-2 rounded-pill">Nova resposta</span>
+                        {% endif %}
+                    </h5>
+                    <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>{{ ticket.last_message_at|date:"d/m/Y H:i" }}</small>
+                </div>
+                <p class="mb-1 text-muted text-truncate" style="max-width: 80%;">
+                    {% with first_msg=ticket.messages.first %}
+                        {{ first_msg.body|default:"(Sem mensagem)" }}
+                    {% endwith %}
+                </p>
+                <small class="text-muted">Aberto em {{ ticket.created_at|date:"d/m/Y" }} por {{ ticket.created_by.get_full_name|default:ticket.created_by.username }}</small>
+            </a>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-body text-center py-5">
+            <i class="fa-solid fa-envelope-open-text text-muted mb-3" style="font-size: 3rem; opacity: 0.5;"></i>
+            <h5 class="text-muted fw-bold">Você ainda não enviou nenhuma mensagem para a administração.</h5>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Modal Nova Mensagem -->
+<div class="modal fade" id="newTicketModal" tabindex="-1" aria-labelledby="newTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="newTicketModalLabel">Nova mensagem</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'support_create' band.slug %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="messageBody" class="form-label fw-bold text-dark">Mensagem <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="messageBody" name="message" rows="5" required placeholder="Escreva sua mensagem detalhadamente..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="attachments" class="form-label fw-bold text-dark">Anexos (opcional)</label>
+                        <input class="form-control" type="file" id="attachments" name="attachments" multiple accept=".pdf,.png,.jpg,.jpeg,.webp">
+                        <div class="form-text">
+                            Você pode anexar até 3 arquivos em PDF, PNG, JPG, JPEG ou WebP, com até 10 MB por arquivo.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light fw-bold rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4">Enviar mensagem</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

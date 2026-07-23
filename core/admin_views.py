@@ -7,7 +7,7 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView
 from django.db.models import Count
-from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner
+from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket
 from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm, AdminPartnerForm
 import datetime
 
@@ -83,6 +83,19 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
 
         # Shows futuros
         context['shows_futuros'] = Show.objects.filter(date__gte=today).count()
+
+        # Fale Conosco (Mensagens não lidas pelo administrador)
+        unread_tickets = SupportTicket.objects.filter(
+            status__in=['NEW', 'WAITING_ADMIN']
+        ).order_by('-last_message_at')
+        
+        unread_tickets_list = []
+        for t in unread_tickets:
+            if not t.admin_last_read_at or t.last_message_at > t.admin_last_read_at:
+                unread_tickets_list.append(t)
+                
+        context['support_unread_count'] = len(unread_tickets_list)
+        context['support_unread_tickets'] = unread_tickets_list[:5] # mostrar até 5 no dashboard
 
         # Bandas com assinatura vencida (se date for menor que hoje)
         context['assinaturas_vencidas'] = Band.objects.filter(subscription_due_date__lt=today).count()
@@ -184,6 +197,21 @@ class AdminCobrancasView(AdminRequiredMixin, ListView):
 
 class AdminRelatoriosView(AdminRequiredMixin, TemplateView):
     template_name = 'core/admin/relatorios.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Fale Conosco (Mensagens não lidas)
+        unread_tickets = SupportTicket.objects.filter(
+            status__in=['NEW', 'WAITING_ADMIN']
+        )
+        count = 0
+        for t in unread_tickets:
+            if not t.admin_last_read_at or t.last_message_at > t.admin_last_read_at:
+                count += 1
+        context['support_unread_count'] = count
+        
+        return context
 
 class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
     template_name = 'core/admin/relatorio_financeiro.html'

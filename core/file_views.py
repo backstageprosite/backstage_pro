@@ -7,7 +7,7 @@ from django.utils.text import get_valid_filename
 from django.contrib.auth.decorators import login_required
 from functools import wraps
 
-from core.models import Band, ContractDocument, FinancialReceipt, ShowPayment, BillingRecord
+from core.models import Band, ContractDocument, FinancialReceipt, ShowPayment, BillingRecord, SupportTicketAttachment
 
 def is_admin_geral(user):
     """Identifica o Admin Geral nativo do Django."""
@@ -159,6 +159,13 @@ def download_billing(request, band_slug, pk):
     """Download protegido de BillingRecord"""
     doc = get_object_or_404(BillingRecord, pk=pk, band=request.band)
     return serve_private_file(doc.proof_file)
+
+
+@private_download_required
+def download_support_attachment(request, band_slug, pk):
+    """Download protegido de SupportTicketAttachment"""
+    doc = get_object_or_404(SupportTicketAttachment, pk=pk, message__ticket__band=request.band)
+    return serve_private_file(doc.file)
 
 
 def public_band_logo(request, band_slug):

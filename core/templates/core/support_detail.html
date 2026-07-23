@@ -1,0 +1,77 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'support_list' band.slug %}" class="btn btn-outline-secondary rounded-pill me-3 px-3 shadow-sm" style="border-color: #dee2e6; color: #6c757d;">
+        <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+    </a>
+    <div>
+        <h3 class="fw-bold m-0 text-dark">Atendimento #{{ ticket.id }}</h3>
+        <span class="badge {% if ticket.status == 'RESOLVED' or ticket.status == 'ARCHIVED' %}bg-secondary{% else %}bg-primary{% endif %} mt-1">
+            {{ ticket.get_status_display }}
+        </span>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; overflow: hidden;">
+    <div class="card-body p-0">
+        <div class="chat-history p-4" style="background-color: #f8f9fa;">
+            {% for msg in messages %}
+                <div class="d-flex flex-column mb-4 {% if msg.sender_type == 'PRODUCER' %}align-items-end{% else %}align-items-start{% endif %}">
+                    <div class="mb-1 text-muted small">
+                        <strong>{{ msg.author.get_full_name|default:msg.author.username }}</strong>
+                        <span class="mx-1">•</span>
+                        {{ msg.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                    <div class="p-3 shadow-sm" style="max-width: 80%; border-radius: 16px; {% if msg.sender_type == 'PRODUCER' %}background-color: var(--primary-color); color: white; border-bottom-right-radius: 4px;{% else %}background-color: white; color: #212529; border-bottom-left-radius: 4px; border: 1px solid #dee2e6;{% endif %}">
+                        {{ msg.body|linebreaksbr }}
+                    </div>
+                    {% if msg.attachments.all %}
+                        <div class="mt-2 d-flex flex-wrap gap-2 {% if msg.sender_type == 'PRODUCER' %}justify-content-end{% else %}justify-content-start{% endif %}" style="max-width: 80%;">
+                            {% for att in msg.attachments.all %}
+                                <a href="{% url 'download_support_attachment' att.id %}" target="_blank" class="btn btn-sm btn-light border rounded-pill text-truncate shadow-sm" style="max-width: 200px;" title="{{ att.original_name }}">
+                                    <i class="fa-solid fa-paperclip me-1"></i> {{ att.original_name }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if ticket.status not in 'RESOLVED,ARCHIVED' %}
+            <div class="p-4 bg-white border-top">
+                <form method="POST" action="{% url 'support_detail' band.slug ticket.pk %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="messageBody" class="form-label fw-bold text-dark">Sua resposta</label>
+                        <textarea class="form-control" id="messageBody" name="message" rows="4" required placeholder="Digite sua resposta..."></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div>
+                            <label for="attachments" class="form-label text-muted small mb-1">Anexos (até 3 arquivos, max 10MB)</label>
+                            <input class="form-control form-control-sm" type="file" id="attachments" name="attachments" multiple accept=".pdf,.png,.jpg,.jpeg,.webp" style="max-width: 300px;">
+                        </div>
+                        <button type="submit" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Enviar resposta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        {% else %}
+            <div class="p-4 bg-light border-top text-center">
+                <p class="text-muted mb-3"><i class="fa-solid fa-lock me-2"></i> Este atendimento foi encerrado e não pode receber novas mensagens diretamente.</p>
+                {% if ticket.status == 'RESOLVED' %}
+                    <form method="POST" action="{% url 'support_reopen' band.slug ticket.pk %}" class="d-inline-block">
+                        {% csrf_token %}
+                        <input type="hidden" name="message" value="O produtor reabriu este atendimento para novas tratativas.">
+                        <button type="submit" class="btn btn-warning fw-bold rounded-pill shadow-sm px-4">
+                            <i class="fa-solid fa-folder-open me-1"></i> Reabrir atendimento
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
