@@ -15,8 +15,8 @@
                 <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
                     <tr>
                         <th class="ps-4 py-3">Nome do Usuário</th>
-                        <th class="py-3 d-none d-md-table-cell">E-mail de Acesso</th>
-                        <th class="py-3">Perfil / Acesso</th>
+                        <th class="py-3 d-none d-md-table-cell">E-MAIL</th>
+                        <th class="py-3">PERFIL</th>
                         <th class="py-3">Status</th>
                         <th class="pe-4 py-3 text-end">Ações</th>
                     </tr>
@@ -37,10 +37,12 @@
                         </td>
                         <td class="text-muted d-none d-md-table-cell">{{ usuario.email|default:"Sem e-mail" }}</td>
                         <td>
-                            {% if usuario.role == 'PRODUTOR' or usuario.is_superuser %}
-                                <span class="badge bg-primary px-3 py-2"><i class="fa-solid fa-crown me-1"></i> Produtor</span>
+                            {% if usuario.is_superuser %}
+                                <span class="badge bg-dark rounded-pill px-2"><i class="fa-solid fa-shield"></i> Admin Geral</span>
+                            {% elif usuario.role == 'PRODUTOR' %}
+                                <span class="badge bg-primary rounded-pill px-2"><i class="fa-solid fa-crown"></i> Produtor</span>
                             {% else %}
-                                <span class="badge bg-secondary px-3 py-2"><i class="fa-solid fa-guitar me-1"></i> Integrante</span>
+                                <span class="badge bg-secondary rounded-pill px-2"><i class="fa-solid fa-guitar"></i> Integrante</span>
                             {% endif %}
                         </td>
                         <td>
