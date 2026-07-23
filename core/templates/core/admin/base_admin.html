@@ -202,13 +202,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if user_has_admin_web_push_perm %}
-                    <li class="nav-item">
-                        <a href="{% url 'admin_painel:admin_web_push_dashboard' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'admin_web_push_dashboard' %}active text-white bg-primary fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
-                            <i class="fa-solid fa-bell fa-fw me-2 {% if request.resolver_match.url_name != 'admin_web_push_dashboard' %}opacity-75{% endif %}"></i> Web Push
-                        </a>
-                    </li>
-                    {% endif %}
+
 
                     {% include 'core/includes/pwa_install.html' %}
                 </ul>
