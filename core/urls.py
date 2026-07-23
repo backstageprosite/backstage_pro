@@ -24,6 +24,7 @@ urlpatterns = [
     path('usuarios/add/', views.usuario_create_view, name='usuarios_add'),
     path('usuarios/<int:pk>/change/', views.usuario_edit_view, name='usuarios_edit'),
     path('usuarios/<int:pk>/delete/', views.usuario_delete_view, name='usuarios_delete'),
+    path('usuarios/<int:pk>/reset-password/', views.usuario_reset_password_view, name='usuarios_reset_password'),
     path('contatos/', views.contatos_list_view, name='contatos_list'),
     path('contatos/add/', views.contato_create_view, name='contatos_add'),
     path('contatos/<int:pk>/change/', views.contato_edit_view, name='contatos_edit'),

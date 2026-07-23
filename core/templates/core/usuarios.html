@@ -57,6 +57,9 @@
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold shadow-sm me-1" data-bs-toggle="modal" data-bs-target="#editUserModal{{ usuario.id }}">
                                     Editar
                                 </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold shadow-sm me-1" data-bs-toggle="modal" data-bs-target="#modalResetPass{{ usuario.id }}" title="Resetar Senha">
+                                    <i class="fa-solid fa-key"></i>
+                                </button>
                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ usuario.id }}">
                                     Excluir
                                 </button>
@@ -67,8 +70,39 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow" style="position: absolute;">
                                     <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editUserModal{{ usuario.id }}">Editar</button></li>
+                                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalResetPass{{ usuario.id }}">Resetar Senha</button></li>
                                     <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ usuario.id }}"><i class="fa-solid fa-trash me-2"></i> Excluir</button></li>
                                 </ul>
+                            </div>
+
+                            <!-- Modal Resetar Senha -->
+                            <div class="modal fade text-start" id="modalResetPass{{ usuario.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content border-0 shadow">
+                                        <div class="modal-header bg-light border-0">
+                                            <h5 class="modal-title fw-bold text-warning"><i class="fa-solid fa-key me-2"></i>Resetar Senha</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form method="POST" action="{% url 'usuarios_reset_password' band.slug usuario.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-body p-4 text-wrap" style="white-space: normal;">
+                                                <p class="text-muted small mb-4">Atenção: Ao redefinir a senha, o usuário perderá o acesso com a senha antiga. Ele precisará usar esta nova senha para o próximo login.</p>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Nova Senha</label>
+                                                    <input type="password" name="new_password" class="form-control" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold small">Confirmar Nova Senha</label>
+                                                    <input type="password" name="confirm_password" class="form-control" required>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer bg-light border-0 justify-content-center">
+                                                <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                                                <button type="submit" class="btn btn-warning fw-bold px-4 rounded-pill shadow-sm">Salvar Senha</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Modal Editar Usuário -->

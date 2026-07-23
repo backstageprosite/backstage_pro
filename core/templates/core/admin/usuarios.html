@@ -203,68 +203,68 @@
 </div>
 
 <!-- Modal Create User -->
-<div class="modal fade" id="modalCreateUser" tabindex="-1" aria-labelledby="modalCreateUserLabel" aria-hidden="true">
+<div class="modal fade text-start" id="modalCreateUser" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-            <div class="modal-header bg-light border-bottom-0">
-                <h5 class="modal-title fw-bold text-primary" id="modalCreateUserLabel"><i class="fa-solid fa-user-plus me-2"></i>Novo Usuário</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+        <div class="modal-content border-0 shadow">
             <form method="POST" action="{% url 'admin_painel:usuarios_novo' %}">
                 {% csrf_token %}
-                <div class="modal-body py-4 text-start">
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label class="form-label fw-semibold">Nome</label>
-                            <input type="text" name="first_name" class="form-control" required placeholder="Ex: Danniel">
+                <div class="modal-header bg-light border-0">
+                    <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-user-plus me-2"></i>Novo Usuário</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-wrap" style="white-space: normal;">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold small">Nome</label>
+                            <input type="text" name="first_name" class="form-control" placeholder="Ex: Danniel" required>
                         </div>
-                        <div class="col-6 mb-3">
-                            <label class="form-label fw-semibold">Sobrenome</label>
-                            <input type="text" name="last_name" class="form-control" required placeholder="Ex: Vieira">
+                        <div class="col-6">
+                            <label class="form-label fw-bold small">Sobrenome</label>
+                            <input type="text" name="last_name" class="form-control" placeholder="Ex: Vieira" required>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Login</label>
-                        <input type="text" name="username" class="form-control" required placeholder="Ex: danniel_v">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">E-mail</label>
-                        <input type="email" name="email" class="form-control" required placeholder="email@exemplo.com">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Banda Vinculada</label>
-                        <select name="band" class="form-select" required>
-                            <option value="">-- Selecione uma banda --</option>
-                            {% for band in form_create.fields.band.queryset %}
-                                <option value="{{ band.id }}">{{ band.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Perfil</label>
-                        <select name="role" class="form-select" required>
-                            <option value="INTEGRANTE">Integrante</option>
-                            <option value="PRODUTOR">Produtor</option>
-                        </select>
-                    </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label class="form-label fw-semibold">Senha</label>
-                            <input type="password" name="password" class="form-control" required>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">Login</label>
+                            <input type="text" name="username" class="form-control" placeholder="Ex: danniel_v" required>
                         </div>
-                        <div class="col-6 mb-3">
-                            <label class="form-label fw-semibold">Confirmar Senha</label>
-                            <input type="password" name="confirm_password" class="form-control" required>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">E-mail</label>
+                            <input type="email" name="email" class="form-control" placeholder="email@exemplo.com" required>
                         </div>
-                    </div>
-                    <div class="form-check form-switch mt-3">
-                        <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserCreate" checked>
-                        <label class="form-check-label fw-semibold" for="isActiveUserCreate">Usuário Ativo (Pode logar)</label>
+                        <div class="col-6">
+                            <label class="form-label fw-bold small">Senha</label>
+                            <input type="password" name="password" class="form-control" placeholder="Senha" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold small">Confirmar Senha</label>
+                            <input type="password" name="confirm_password" class="form-control" placeholder="Confirmar Senha" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">Perfil de Acesso</label>
+                            <select name="role" class="form-select" required>
+                                <option value="INTEGRANTE">Integrante</option>
+                                <option value="PRODUTOR">Produtor</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">Banda Vinculada</label>
+                            <select name="band" class="form-select" required>
+                                <option value="">-- Selecione uma banda --</option>
+                                {% for band in form_create.fields.band.queryset %}
+                                    <option value="{{ band.id }}">{{ band.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserCreate" checked>
+                                <label class="form-check-label fw-bold small ms-2" for="isActiveUserCreate">Usuário Ativo (Pode logar)</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top-0">
-                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Criar Usuário</button>
+                <div class="modal-footer bg-light border-0 justify-content-center">
+                    <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm btn-loading">Criar Usuário</button>
                 </div>
             </form>
         </div>

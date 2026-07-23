@@ -896,6 +896,30 @@ def usuario_delete_view(request, band_slug, pk):
 
 @login_required
 @band_required
+def usuario_reset_password_view(request, band_slug, pk):
+    if not request.user.is_produtor() and not request.user.is_superuser:
+        return HttpResponseForbidden("Apenas produtores podem redefinir senhas.")
+
+    band = get_object_or_404(Band, slug=band_slug)
+    user_to_edit = get_object_or_404(User, pk=pk, band=band)
+
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if not new_password or not confirm_password:
+            messages.error(request, "As senhas não podem ser vazias.")
+        elif new_password != confirm_password:
+            messages.error(request, "As senhas não conferem. Tente novamente.")
+        else:
+            user_to_edit.set_password(new_password)
+            user_to_edit.save()
+            messages.success(request, f"Senha do usuário {user_to_edit.username} redefinida com sucesso!")
+
+    return redirect('usuarios_list', band_slug=band.slug)
+
+@login_required
+@band_required
 def contatos_list_view(request, band_slug):
     if not request.user.is_produtor():
         return HttpResponseForbidden("Apenas produtores.")
