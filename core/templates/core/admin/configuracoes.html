@@ -2,14 +2,49 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold m-0"><i class="fa-solid fa-gear me-2 text-dark"></i> Configurações Globais</h3>
+    <h3 class="fw-bold m-0"><i class="fa-solid fa-gear me-2" style="color: #0d6efd;"></i> Configurações Globais</h3>
 </div>
 
-<div class="card border-0 shadow-sm" style="border-radius: 12px;">
-    <div class="card-body text-center py-5">
-        <i class="fa-solid fa-person-digging fa-4x text-muted mb-3 opacity-50"></i>
-        <h4 class="fw-bold">Módulo em Desenvolvimento</h4>
-        <p class="text-muted">As configurações gerais do painel administrador serão implementadas na Etapa 2.</p>
+<div class="row">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-4">Identidade Visual</h5>
+                
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-muted">Logo Atual</label>
+                        <div class="d-flex align-items-center p-3 bg-light rounded border">
+                            {% if system_settings and system_settings.logo %}
+                                <img src="{{ system_settings.logo.url }}" alt="Backstage Pro" class="me-3" style="max-height: 80px; border-radius: 6px; object-fit: contain;">
+                            {% else %}
+                                <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="me-3" style="max-height: 80px; border-radius: 6px; object-fit: contain;">
+                            {% endif %}
+                            <div>
+                                <h6 class="fw-bold mb-1">Backstage Pro</h6>
+                                <small class="text-muted">{% if system_settings and system_settings.logo %}Logo customizada carregada.{% else %}Logo padrão.{% endif %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="logo" class="form-label fw-bold text-muted">Alterar Logo do Sistema</label>
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                        <div class="form-text">Recomendamos imagens com fundo transparente (PNG) e altura máxima de 90px para a barra lateral.</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary px-4 fw-bold rounded-pill">
+                            <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
+

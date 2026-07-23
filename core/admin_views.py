@@ -7,7 +7,7 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView
 from django.db.models import Count
-from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket
+from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket, SystemSettings
 from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm, AdminPartnerForm
 import datetime
 
@@ -410,6 +410,17 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
 class AdminConfiguracoesView(AdminRequiredMixin, TemplateView):
     template_name = 'core/admin/configuracoes.html'
+
+    def post(self, request, *args, **kwargs):
+        settings = SystemSettings.get_settings()
+        
+        if 'logo' in request.FILES:
+            settings.logo = request.FILES['logo']
+            settings.save()
+            messages.success(request, "Identidade visual atualizada com sucesso.")
+            
+        return redirect('admin_painel:configuracoes')
+
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_band_create(request):

@@ -926,3 +926,18 @@ class SupportTicketAttachment(models.Model):
     def __str__(self):
         return self.original_name
 
+class SystemSettings(models.Model):
+    """
+    Configurações globais do sistema Backstage Pro (Etapa 2), incluindo identidade visual.
+    """
+    logo = models.ImageField(upload_to='system_logos/', null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Configuração do Sistema"
+        verbose_name_plural = "Configurações do Sistema"
+
+    @classmethod
+    def get_settings(cls):
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+

@@ -142,9 +142,13 @@
             <div class="offcanvas-body d-flex flex-column px-3 py-4 overflow-y-auto pt-lg-4">
                 
                 <!-- Logo Admin -->
-                <div class="mb-4 px-2 text-center">
-                    <a href="{% url 'admin_painel:dashboard' %}" class="d-flex align-items-center justify-content-center text-decoration-none">
-                        <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" style="max-height: 90px; max-width: 200px; object-fit: contain;">
+                <div class="px-4 py-4 text-center">
+                    <a href="{% url 'admin_painel:dashboard' %}" class="d-block text-decoration-none">
+                        {% if system_settings and system_settings.logo %}
+                            <img src="{{ system_settings.logo.url }}" alt="Backstage Pro" style="max-height: 90px; max-width: 200px; object-fit: contain;">
+                        {% else %}
+                            <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" style="max-height: 90px; max-width: 200px; object-fit: contain;">
+                        {% endif %}
                     </a>
                 </div>
 
