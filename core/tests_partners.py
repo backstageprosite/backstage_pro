@@ -224,3 +224,25 @@ class PartnerTests(TestCase):
         # e abaixo de Relatórios
         # Apenas verificamos se o menu Parceiros existe.
         self.assertContains(response, '<i class=\"fa-solid fa-handshake fa-fw me-2')
+
+    def test_navigation_tenant_isolation(self):
+        self.client.login(username='produtor', password='123')
+        response = self.client.get(reverse('parceiros', args=['banda-teste']))
+        self.assertEqual(response.status_code, 200)
+        
+        self.assertEqual(response.context['band'], self.banda)
+        
+        dashboard_url = reverse('dashboard', args=['banda-teste'])
+        self.assertContains(response, dashboard_url)
+        
+        agenda_url = reverse('calendario', args=['banda-teste'])
+        self.assertContains(response, agenda_url)
+        
+        relatorios_url = reverse('relatorios_index', args=['banda-teste'])
+        self.assertContains(response, relatorios_url)
+        
+        agenda_response = self.client.get(agenda_url)
+        self.assertEqual(agenda_response.status_code, 200)
+        
+        dashboard_response = self.client.get(dashboard_url)
+        self.assertEqual(dashboard_response.status_code, 200)

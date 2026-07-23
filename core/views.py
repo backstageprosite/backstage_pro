@@ -1304,4 +1304,4 @@ from .models import Partner
 @band_required
 def partners_list_view(request, band_slug):
     partners = Partner.objects.filter(is_active=True)
-    return render(request, 'core/partners.html', {'partners': partners})
+    return render(request, 'core/partners.html', {'partners': partners, 'band': request.band})
