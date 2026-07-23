@@ -209,7 +209,7 @@
             <form method="POST" action="{% url 'admin_painel:usuarios_novo' %}">
                 {% csrf_token %}
                 <div class="modal-header bg-light border-0">
-                    <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-user-plus me-2"></i>Novo Usuário</h5>
+                    <h5 class="modal-title fw-bold" style="color: #0d6efd;"><i class="fa-solid fa-user-plus me-2"></i>Novo Usuário</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 text-wrap" style="white-space: normal;">
@@ -264,7 +264,7 @@
                 </div>
                 <div class="modal-footer bg-light border-0 justify-content-center">
                     <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm btn-loading">Criar Usuário</button>
+                    <button type="submit" class="btn fw-bold px-4 rounded-pill shadow-sm btn-loading text-white" style="background-color: #0d6efd; border-color: #0d6efd;">Criar Usuário</button>
                 </div>
             </form>
         </div>
