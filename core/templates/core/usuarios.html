@@ -90,7 +90,7 @@
                                                         <input type="text" name="last_name" class="form-control" value="{{ usuario.last_name }}" required>
                                                     </div>
                                                     <div class="col-12">
-                                                        <label class="form-label fw-bold small">Nome de Usuário (Login)</label>
+                                                        <label class="form-label fw-bold small">Login</label>
                                                         <input type="text" name="username" class="form-control bg-light" value="{{ usuario.username }}" readonly>
                                                     </div>
                                                     <div class="col-12">
@@ -188,7 +188,7 @@
                             <input type="text" name="last_name" class="form-control" placeholder="Ex: Vieira" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold small">Nome de Usuário (Login)</label>
+                            <label class="form-label fw-bold small">Login</label>
                             <input type="text" name="username" class="form-control" placeholder="Ex: danniel_v" required>
                         </div>
                         <div class="col-12">
@@ -196,10 +196,14 @@
                             <input type="email" name="email" class="form-control" placeholder="email@exemplo.com" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-bold small">Senha de Acesso</label>
+                            <label class="form-label fw-bold small">Senha</label>
                             <input type="password" name="password" class="form-control" placeholder="Senha" required>
                         </div>
                         <div class="col-6">
+                            <label class="form-label fw-bold small">Confirmar Senha</label>
+                            <input type="password" name="confirm_password" class="form-control" placeholder="Confirmar Senha" required>
+                        </div>
+                        <div class="col-12">
                             <label class="form-label fw-bold small">Perfil de Acesso</label>
                             <select name="role" class="form-select">
                                 <option value="INTEGRANTE">Integrante</option>
