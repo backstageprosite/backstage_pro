@@ -23,3 +23,12 @@ urlpatterns = [
 
     path('<slug:band_slug>/', include('core.urls')),
 ]
+
+from django.conf import settings
+from django.urls import re_path
+from django.views.static import serve
+import os
+
+urlpatterns += [
+    re_path(r'^media/partners/logos/(?P<path>.*)$', serve, {'document_root': os.path.join(settings.MEDIA_ROOT, 'partners', 'logos')}),
+]

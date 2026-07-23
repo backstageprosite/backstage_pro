@@ -3,18 +3,17 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-1">
-                <li class="breadcrumb-item"><a href="{% url 'admin_painel:relatorios' %}">Relatórios Globais</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Parceiros</li>
-            </ol>
-        </nav>
         <h2 class="fw-bold m-0"><i class="fa-solid fa-handshake text-primary me-2"></i> Parceiros</h2>
         <p class="text-muted mb-0">Gerencie os parceiros exibidos para todas as bandas.</p>
     </div>
-    <button class="btn btn-success fw-bold rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addPartnerModal">
-        <i class="fa-solid fa-plus me-1"></i> Adicionar
-    </button>
+    <div class="d-flex gap-2">
+        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-secondary rounded-pill shadow-sm">
+            <i class="fa-solid fa-arrow-left me-2"></i>Voltar
+        </a>
+        <button class="btn btn-success fw-bold rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#addPartnerModal">
+            <i class="fa-solid fa-plus me-1"></i> Adicionar
+        </button>
+    </div>
 </div>
 
 <div class="card shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
@@ -37,11 +36,11 @@
                     <tr>
                         <td class="ps-4">
                             {% if partner.image %}
-                            <div class="border rounded bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; padding: 4px;">
+                            <div class="border rounded bg-light d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; padding: 4px;">
                                 <img src="{{ partner.image.url }}" alt="{{ partner.name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                             </div>
                             {% else %}
-                            <div class="border rounded bg-light text-muted d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <div class="border rounded bg-light text-muted d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
                                 <i class="fa-solid fa-image"></i>
                             </div>
                             {% endif %}
@@ -57,7 +56,7 @@
                         </td>
                         <td>
                             {% if partner.phone %}
-                            <a href="{{ partner.whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-muted"><i class="fa-brands fa-whatsapp me-1"></i>{{ partner.phone }}</a>
+                            <a href="{{ partner.whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-muted"><i class="fa-brands fa-whatsapp me-1"></i>{{ partner.formatted_phone }}</a>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}

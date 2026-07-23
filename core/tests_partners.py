@@ -118,6 +118,28 @@ class PartnerTests(TestCase):
         response = self.client.get(reverse('admin_painel:parceiros'))
         self.assertEqual(response.status_code, 200)
 
+    def test_admin_header_ui(self):
+        self.client.login(username='admin', password='123')
+        response = self.client.get(reverse('admin_painel:parceiros'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, '<nav aria-label="breadcrumb">')
+        self.assertContains(response, 'fa-arrow-left')
+        self.assertContains(response, reverse('admin_painel:relatorios'))
+
+    def test_formatted_phone(self):
+        p1 = Partner(phone='71991733743')
+        self.assertEqual(p1.formatted_phone, '(71) 99173-3743')
+        
+        p2 = Partner(phone='5571991733743')
+        self.assertEqual(p2.formatted_phone, '(71) 99173-3743')
+        
+        p3 = Partner(phone='7133334444')
+        self.assertEqual(p3.formatted_phone, '(71) 3333-4444')
+        
+        # WhatsApp link continua 55...
+        self.assertEqual(p1.whatsapp_url, 'https://wa.me/5571991733743')
+        self.assertEqual(p2.whatsapp_url, 'https://wa.me/5571991733743')
+
     def test_admin_access_denied_for_users(self):
         self.client.login(username='produtor', password='123')
         response = self.client.get(reverse('admin_painel:parceiros'))

@@ -824,3 +824,23 @@ class Partner(models.Model):
             return None
             
         return f'https://wa.me/{num}'
+
+    @property
+    def formatted_phone(self):
+        if not self.phone:
+            return None
+        import re
+        num = re.sub(r'\D', '', self.phone)
+        if not num:
+            return self.phone
+            
+        if num.startswith('55') and len(num) in (12, 13):
+            num = num[2:]
+            
+        if len(num) == 11:
+            return f"({num[:2]}) {num[2:7]}-{num[7:]}"
+        elif len(num) == 10:
+            return f"({num[:2]}) {num[2:6]}-{num[6:]}"
+            
+        return self.phone
+
