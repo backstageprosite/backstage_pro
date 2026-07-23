@@ -189,7 +189,19 @@
       </div>
       <form action="{% url 'agenda_pdf' band.slug %}" method="GET" target="_blank">
           <div class="modal-body">
-            <p class="text-muted small mb-3">Selecione os status dos eventos que deseja incluir no PDF:</p>
+            <p class="text-muted small mb-2">Filtre os shows por período (opcional):</p>
+            <div class="row mb-3">
+                <div class="col-6">
+                    <label for="data_inicio_pdf_shows" class="form-label small fw-bold text-muted mb-1">De:</label>
+                    <input type="date" class="form-control form-control-sm" name="data_inicio" id="data_inicio_pdf_shows">
+                </div>
+                <div class="col-6">
+                    <label for="data_fim_pdf_shows" class="form-label small fw-bold text-muted mb-1">Até:</label>
+                    <input type="date" class="form-control form-control-sm" name="data_fim" id="data_fim_pdf_shows">
+                </div>
+            </div>
+            
+            <p class="text-muted small mb-2">Selecione os status dos eventos que deseja incluir no PDF:</p>
             
             <div class="form-check mb-2">
               <input class="form-check-input" type="checkbox" name="status" value="CONFIRMADO" id="chkConfirmado_shows" checked>
