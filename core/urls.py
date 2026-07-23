@@ -36,8 +36,8 @@ urlpatterns = [
     path('show/<int:pk>/financeiro/', views.show_finance_detail_view, name='show_finance_detail'),
     path('show/<int:pk>/pdf/', views.show_pdf_view, name='show_pdf'),
     path('agenda/pdf/', views.agenda_pdf_view, name='agenda_pdf'),
-
     path('relatorios/', views.relatorios_index_view, name='relatorios_index'),
+    path('parceiros/', views.partners_list_view, name='parceiros'),
     path('relatorios/assinatura/', views.minha_assinatura_view, name='minha_assinatura'),
     path('relatorios/relatorio-financeiro/', views.relatorios_view, name='relatorio_financeiro'),
     path('arquivos/', views.arquivos_view, name='arquivos'),

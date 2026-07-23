@@ -41,6 +41,11 @@ urlpatterns = [
     path('relatorios/', admin_views.AdminRelatoriosView.as_view(), name='relatorios'),
     path('relatorios/financeiro/', admin_views.AdminRelatorioFinanceiroView.as_view(), name='relatorio_financeiro'),
     
+    path('relatorios/parceiros/', admin_views.AdminPartnerListView.as_view(), name='parceiros'),
+    path('relatorios/parceiros/novo/', admin_views.admin_partner_create, name='parceiros_novo'),
+    path('relatorios/parceiros/<int:pk>/editar/', admin_views.admin_partner_edit, name='parceiros_editar'),
+    path('relatorios/parceiros/<int:pk>/desativar/', admin_views.admin_partner_toggle_active, name='parceiros_desativar'),
+    path('relatorios/parceiros/<int:pk>/excluir/', admin_views.admin_partner_delete, name='parceiros_excluir'),
     path('web-push/', admin_views.AdminWebPushDashboardView.as_view(), name='admin_web_push_dashboard'),
     
     path('configuracoes/', admin_views.AdminConfiguracoesView.as_view(), name='configuracoes'),

@@ -748,3 +748,75 @@ class AdministrativeBandNotice(models.Model):
     def __str__(self):
         dest = self.band.name if self.band else 'Todos os Produtores'
         return f"Aviso de {self.created_at.strftime('%d/%m/%Y')} para {dest}"
+
+class Partner(models.Model):
+    name = models.CharField(max_length=200, verbose_name='Nome do Parceiro')
+    segment = models.CharField(max_length=100, verbose_name='Segmento de Atuação')
+    instagram = models.CharField(max_length=200, blank=True, null=True, verbose_name='Instagram')
+    phone = models.CharField(max_length=50, blank=True, null=True, verbose_name='Telefone')
+    image = models.ImageField(upload_to='partners/logos/', verbose_name='Logomarca ou Imagem')
+    is_active = models.BooleanField(default=True, verbose_name='Ativo')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Parceiro'
+        verbose_name_plural = 'Parceiros'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def instagram_url(self):
+        if not self.instagram:
+            return None
+        ig = self.instagram.strip()
+        if not ig:
+            return None
+        # Remove queries se houver
+        if '?' in ig:
+            ig = ig.split('?')[0]
+        # Remove trailing slash
+        if ig.endswith('/'):
+            ig = ig[:-1]
+            
+        if ig.startswith('http'):
+            # Verifica se já é a url correta
+            if 'instagram.com/' in ig:
+                username = ig.split('instagram.com/')[-1].replace('/', '')
+                return f'https://www.instagram.com/{username}/'
+            return ig
+            
+        if 'instagram.com/' in ig:
+            username = ig.split('instagram.com/')[-1].replace('/', '')
+            return f'https://www.instagram.com/{username}/'
+            
+        ig = ig.replace('@', '')
+        return f'https://www.instagram.com/{ig}/'
+
+    @property
+    def instagram_display(self):
+        if not self.instagram:
+            return None
+        ig = self.instagram.strip()
+        if 'instagram.com/' in ig:
+            ig = ig.split('instagram.com/')[-1].replace('/', '')
+        if '?' in ig:
+            ig = ig.split('?')[0]
+        ig = ig.replace('@', '').replace('/', '')
+        return f'@{ig}'
+
+    @property
+    def whatsapp_url(self):
+        if not self.phone:
+            return None
+        import re
+        # Remove everything except digits
+        num = re.sub(r'\D', '', self.phone)
+        if not num:
+            return None
+        if len(num) <= 11:
+            num = '55' + num
+        return f'https://wa.me/{num}'

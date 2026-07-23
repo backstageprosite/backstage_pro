@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+    <div>
+        <h2 class="fw-bold m-0"><i class="fa-solid fa-handshake text-primary me-2"></i> Parceiros</h2>
+        <p class="text-muted mb-0">Conheça os parceiros do Backstage Pro.</p>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 pb-5">
+    {% for partner in partners %}
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0 card-hover-premium" style="border-radius: 12px; overflow: hidden;">
+            <!-- Área da Logomarca -->
+            <div class="bg-white d-flex align-items-center justify-content-center p-3 border-bottom" style="height: 160px;">
+                {% if partner.image %}
+                    <img src="{{ partner.image.url }}" alt="{{ partner.name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                {% else %}
+                    <i class="fa-solid fa-image text-muted" style="font-size: 3rem;"></i>
+                {% endif %}
+            </div>
+            
+            <!-- Detalhes do Parceiro -->
+            <div class="card-body d-flex flex-column">
+                <h5 class="fw-bold text-dark mb-1">{{ partner.name }}</h5>
+                <p class="text-muted small mb-3">{{ partner.segment }}</p>
+                
+                <div class="mt-auto d-flex flex-column gap-2">
+                    {% if partner.instagram %}
+                    <a href="{{ partner.instagram_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary text-start rounded-pill w-100">
+                        <i class="fa-brands fa-instagram text-danger me-2"></i> {{ partner.instagram_display }}
+                    </a>
+                    {% endif %}
+                    
+                    {% if partner.phone %}
+                    <a href="{{ partner.whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-success text-start rounded-pill w-100">
+                        <i class="fa-brands fa-whatsapp me-2"></i> {{ partner.phone }}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <i class="fa-solid fa-handshake-slash text-muted mb-3" style="font-size: 3rem;"></i>
+        <h4 class="fw-bold text-dark">Nenhum parceiro disponível no momento.</h4>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

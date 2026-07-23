@@ -224,6 +224,13 @@
                         </a>
                     </li>
                     {% endif %}
+                    
+                    <li class="nav-item">
+                        <a href="{% if band %}{% url 'parceiros' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'parceiros' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-handshake fa-fw me-2 {% if request.resolver_match.url_name != 'parceiros' %}opacity-75{% endif %}"></i> Parceiros
+                        </a>
+                    </li>
+
                     {% include 'core/includes/pwa_install.html' %}
                 </ul>
                 

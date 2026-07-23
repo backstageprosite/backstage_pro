@@ -7,8 +7,8 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView
 from django.db.models import Count
-from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice
-from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm
+from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner
+from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm, AdminPartnerForm
 import datetime
 
 def is_admin_geral(user):
@@ -850,3 +850,57 @@ def admin_aviso_delete(request, pk):
         messages.success(request, 'Aviso excluído com sucesso.')
     return redirect('admin_painel:avisos')
 
+
+# -----------------------------------------------------------------------------
+# PARCEIROS GLOBAIS
+# -----------------------------------------------------------------------------
+
+class AdminPartnerListView(AdminRequiredMixin, ListView):
+    model = Partner
+    template_name = 'core/admin/partners_list.html'
+    context_object_name = 'partners'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = AdminPartnerForm()
+        return context
+
+@user_passes_test(is_admin_geral, login_url='/painel/login/')
+def admin_partner_create(request):
+    if request.method == 'POST':
+        form = AdminPartnerForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Parceiro adicionado com sucesso!')
+        else:
+            messages.error(request, 'Erro ao adicionar parceiro. Verifique os dados e tente novamente.')
+    return redirect('admin_painel:parceiros')
+
+@user_passes_test(is_admin_geral, login_url='/painel/login/')
+def admin_partner_edit(request, pk):
+    partner = get_object_or_404(Partner, pk=pk)
+    if request.method == 'POST':
+        form = AdminPartnerForm(request.POST, request.FILES, instance=partner)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Parceiro atualizado com sucesso!')
+        else:
+            messages.error(request, 'Erro ao atualizar parceiro.')
+    return redirect('admin_painel:parceiros')
+
+@user_passes_test(is_admin_geral, login_url='/painel/login/')
+def admin_partner_toggle_active(request, pk):
+    if request.method == 'POST':
+        partner = get_object_or_404(Partner, pk=pk)
+        partner.is_active = not partner.is_active
+        partner.save()
+        messages.success(request, f'Parceiro {'ativado' if partner.is_active else 'desativado'} com sucesso.')
+    return redirect('admin_painel:parceiros')
+
+@user_passes_test(is_admin_geral, login_url='/painel/login/')
+def admin_partner_delete(request, pk):
+    if request.method == 'POST':
+        partner = get_object_or_404(Partner, pk=pk)
+        partner.delete()
+        messages.success(request, 'Parceiro excluído com sucesso.')
+    return redirect('admin_painel:parceiros')

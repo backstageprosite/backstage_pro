@@ -1298,3 +1298,10 @@ def edit_dashboard_pending_item(request, band_slug, pending_id):
             
     return redirect('dashboard', band_slug=band.slug)
 
+
+from .models import Partner
+
+@band_required
+def partners_list_view(request, band_slug):
+    partners = Partner.objects.filter(is_active=True)
+    return render(request, 'core/partners.html', {'partners': partners})

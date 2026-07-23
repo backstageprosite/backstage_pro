@@ -64,3 +64,18 @@ class AdminBillingRecordForm(forms.ModelForm):
             'due_date': forms.DateInput(attrs={'type': 'date'}),
             'paid_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+from core.models import Partner
+
+class AdminPartnerForm(forms.ModelForm):
+    class Meta:
+        model = Partner
+        fields = ['name', 'segment', 'instagram', 'phone', 'image', 'is_active']
+        
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+        if image:
+            # Validação simples de tamanho de arquivo (max 5MB)
+            if hasattr(image, 'size') and image.size > 5 * 1024 * 1024:
+                raise forms.ValidationError('A imagem não pode ultrapassar 5MB.')
+        return image

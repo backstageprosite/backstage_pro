@@ -1,0 +1,218 @@
+{% extends 'core/admin/base_admin.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'admin_painel:relatorios' %}">Relatórios Globais</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Parceiros</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold m-0"><i class="fa-solid fa-handshake text-primary me-2"></i> Parceiros</h2>
+        <p class="text-muted mb-0">Gerencie os parceiros exibidos para todas as bandas.</p>
+    </div>
+    <button class="btn btn-success fw-bold rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addPartnerModal">
+        <i class="fa-solid fa-plus me-1"></i> Adicionar
+    </button>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 table-hover-premium">
+                <thead class="table-light text-secondary">
+                    <tr>
+                        <th class="ps-4">Logo</th>
+                        <th>Nome</th>
+                        <th>Segmento</th>
+                        <th>Instagram</th>
+                        <th>Telefone</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for partner in partners %}
+                    <tr>
+                        <td class="ps-4">
+                            {% if partner.image %}
+                            <div class="border rounded bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; padding: 4px;">
+                                <img src="{{ partner.image.url }}" alt="{{ partner.name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                            </div>
+                            {% else %}
+                            <div class="border rounded bg-light text-muted d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <i class="fa-solid fa-image"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">{{ partner.name }}</td>
+                        <td>{{ partner.segment }}</td>
+                        <td>
+                            {% if partner.instagram %}
+                            <a href="{{ partner.instagram_url }}" target="_blank" class="text-decoration-none text-muted"><i class="fa-brands fa-instagram me-1"></i>{{ partner.instagram_display }}</a>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if partner.phone %}
+                            <a href="{{ partner.whatsapp_url }}" target="_blank" class="text-decoration-none text-muted"><i class="fa-brands fa-whatsapp me-1"></i>{{ partner.phone }}</a>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if partner.is_active %}
+                                <span class="badge bg-success rounded-pill px-3">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary rounded-pill px-3">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill me-1" data-bs-toggle="modal" data-bs-target="#editPartnerModal{{ partner.id }}" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <form action="{% url 'admin_painel:parceiros_desativar' partner.id %}" method="POST" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm {% if partner.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %} rounded-pill me-1" title="{% if partner.is_active %}Desativar{% else %}Ativar{% endif %}">
+                                    <i class="fa-solid {% if partner.is_active %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
+                                </button>
+                            </form>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill" data-bs-toggle="modal" data-bs-target="#deletePartnerModal{{ partner.id }}" title="Excluir">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Edit Partner Modal -->
+                    <div class="modal fade" id="editPartnerModal{{ partner.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow">
+                                <div class="modal-header bg-light border-0">
+                                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen text-primary me-2"></i>Editar Parceiro</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form action="{% url 'admin_painel:parceiros_editar' partner.id %}" method="POST" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="modal-body p-4">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Nome *</label>
+                                            <input type="text" name="name" class="form-control" value="{{ partner.name }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Segmento *</label>
+                                            <input type="text" name="segment" class="form-control" value="{{ partner.segment }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Instagram</label>
+                                            <input type="text" name="instagram" class="form-control" value="{{ partner.instagram|default:'' }}" placeholder="@empresa ou URL">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Telefone / WhatsApp</label>
+                                            <input type="text" name="phone" class="form-control" value="{{ partner.phone|default:'' }}" placeholder="(71) 99999-9999">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Logomarca (nova)</label>
+                                            <input type="file" name="image" class="form-control" accept="image/*">
+                                            <small class="text-muted d-block mt-1">Se não enviar um novo arquivo, a imagem atual será mantida.</small>
+                                        </div>
+                                        <div class="form-check form-switch mt-4">
+                                            <input class="form-check-input" type="checkbox" name="is_active" id="isActiveEdit{{ partner.id }}" {% if partner.is_active %}checked{% endif %}>
+                                            <label class="form-check-label fw-medium" for="isActiveEdit{{ partner.id }}">Parceiro Ativo</label>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer bg-light border-0">
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Salvar Alterações</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delete Partner Modal -->
+                    <div class="modal fade" id="deletePartnerModal{{ partner.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow">
+                                <div class="modal-header bg-danger text-white border-0">
+                                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Excluir Parceiro</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-4 text-center">
+                                    <i class="fa-solid fa-trash-can text-danger mb-3" style="font-size: 3rem;"></i>
+                                    <p class="fs-5 mb-1">Tem certeza de que deseja excluir o parceiro <strong>{{ partner.name }}</strong>?</p>
+                                    <p class="text-muted small">Esta ação não pode ser desfeita.</p>
+                                </div>
+                                <div class="modal-footer bg-light border-0 justify-content-center">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                    <form action="{% url 'admin_painel:parceiros_excluir' partner.id %}" method="POST">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Sim, Excluir</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-handshake-slash mb-3" style="font-size: 2.5rem;"></i>
+                            <p class="mb-0 fs-5">Nenhum parceiro cadastrado.</p>
+                            <p class="small">Clique em "+ Adicionar" para cadastrar o primeiro parceiro.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Partner Modal -->
+<div class="modal fade" id="addPartnerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light border-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-plus text-success me-2"></i>Novo Parceiro</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'admin_painel:parceiros_novo' %}" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nome *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Segmento *</label>
+                        <input type="text" name="segment" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Instagram</label>
+                        <input type="text" name="instagram" class="form-control" placeholder="@empresa ou URL">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Telefone / WhatsApp</label>
+                        <input type="text" name="phone" class="form-control" placeholder="(71) 99999-9999">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Logomarca *</label>
+                        <input type="file" name="image" class="form-control" accept="image/*" required>
+                        <small class="text-muted d-block mt-1">Envie o logo (PNG, JPG, WebP) com fundo transparente se possível. Máx 5MB.</small>
+                    </div>
+                    <div class="form-check form-switch mt-4">
+                        <input class="form-check-input" type="checkbox" name="is_active" id="isActiveNew" checked>
+                        <label class="form-check-label fw-medium" for="isActiveNew">Ativo imediatamente</label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">Salvar Parceiro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
