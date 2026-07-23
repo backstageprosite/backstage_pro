@@ -20,14 +20,14 @@
                 <tbody class="border-top-0">
                     {% for s in shows %}
                     <tr>
-                        <td class="ps-4 fw-bold">
+                        <td class="ps-4">
                             {% if s.date %}
                                 {{ s.date|date:"d/m/Y" }}
                             {% else %}
                                 Sem data
                             {% endif %}
                         </td>
-                        <td class="fw-bold text-dark">{{ s.title|default:"-" }}</td>
+                        <td class="text-dark">{{ s.title|default:"-" }}</td>
                         <td class="text-end pe-4">
                             {% if s.band %}
                                 <span class="badge {{ s.band.name|band_color }} rounded-pill px-3 py-1">
