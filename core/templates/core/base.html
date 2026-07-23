@@ -273,9 +273,12 @@
                             {% endif %}
                         </span>
                         {% if band %}
-                            <a href="{% url 'logout' band.slug %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold">
-                                <i class="fa-solid fa-right-from-bracket me-1"></i> Sair
-                            </a>
+                            <form method="post" action="{% url 'logout' band.slug %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold">
+                                    <i class="fa-solid fa-right-from-bracket me-1"></i> Sair
+                                </button>
+                            </form>
                         {% endif %}
                     </div>
                 </div>

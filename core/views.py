@@ -62,6 +62,23 @@ def band_root_redirect_view(request, band_slug):
 class BandLoginView(LoginView):
     template_name = 'core/login.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            band_slug = self.kwargs.get('band_slug')
+            band = get_object_or_404(Band, slug=band_slug)
+            
+            if request.user.is_superuser:
+                return redirect('admin_painel:dashboard')
+                
+            if request.user.band:
+                if request.user.band != band:
+                    raise PermissionDenied("Você não pertence a esta banda.")
+                return redirect('dashboard', band_slug=band.slug)
+            else:
+                raise PermissionDenied("Você não pertence a esta banda.")
+                
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         band_slug = self.kwargs.get('band_slug')
@@ -91,6 +108,7 @@ class BandLoginView(LoginView):
             return self.form_invalid(form)
         return super().form_valid(form)
 
+@require_POST
 def band_logout(request, band_slug):
     logout(request)
     return redirect('login', band_slug=band_slug)
