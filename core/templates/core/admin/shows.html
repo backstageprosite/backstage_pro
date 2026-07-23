@@ -3,20 +3,18 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold m-0"><i class="fa-solid fa-microphone-lines me-2 text-dark"></i> Gestão Geral de Shows</h3>
+    <h3 class="fw-bold m-0"><i class="fa-solid fa-microphone-lines me-2" style="color: #0d6efd;"></i> Gerenciador de Shows Geral</h3>
 </div>
 
 <div class="card border-0 shadow-sm" style="border-radius: 12px;">
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover table-hover-premium align-middle mb-0">
-                <thead class="table-light">
+                <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
                     <tr>
-                        <th class="ps-4 border-0 rounded-start">Data</th>
-                        <th class="border-0">Banda</th>
-                        <th class="border-0">Show / Evento</th>
-                        <th class="border-0">Cidade</th>
-                        <th class="text-end pe-4 border-0 rounded-end">Status</th>
+                        <th class="ps-4 py-3 border-0 rounded-start">DATA</th>
+                        <th class="py-3 border-0">EVENTO / LOCAL</th>
+                        <th class="py-3 border-0 text-end pe-4 rounded-end">BANDA</th>
                     </tr>
                 </thead>
                 <tbody class="border-top-0">
@@ -29,7 +27,8 @@
                                 Sem data
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="fw-bold text-dark">{{ s.title|default:"-" }}</td>
+                        <td class="text-end pe-4">
                             {% if s.band %}
                                 <span class="badge {{ s.band.name|band_color }} rounded-pill px-3 py-1">
                                     {{ s.band.name }}
@@ -38,21 +37,10 @@
                                 <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td class="fw-bold text-dark">{{ s.title|default:"-" }}</td>
-                        <td class="text-muted">{{ s.city|default:"-" }}</td>
-                        <td class="text-end pe-4">
-                            {% if s.status == 'CONFIRMADO' %}
-                                <span class="badge bg-success text-white rounded-pill px-3 py-1">Confirmado</span>
-                            {% elif s.status == 'CANCELADO' %}
-                                <span class="badge bg-danger text-white rounded-pill px-3 py-1">Cancelado</span>
-                            {% else %}
-                                <span class="badge bg-warning text-dark rounded-pill px-3 py-1">Reserva</span>
-                            {% endif %}
-                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
+                        <td colspan="3" class="text-center py-5 text-muted">
                             <i class="fa-solid fa-calendar-xmark fa-3x mb-3 text-secondary opacity-50"></i>
                             <h5 class="fw-bold">Nenhum show cadastrado no sistema global</h5>
                         </td>
