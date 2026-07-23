@@ -50,14 +50,14 @@
                         <td>{{ partner.segment }}</td>
                         <td>
                             {% if partner.instagram %}
-                            <a href="{{ partner.instagram_url }}" target="_blank" class="text-decoration-none text-muted"><i class="fa-brands fa-instagram me-1"></i>{{ partner.instagram_display }}</a>
+                            <a href="{{ partner.instagram_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-muted"><i class="fa-brands fa-instagram me-1"></i>{{ partner.instagram_display }}</a>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if partner.phone %}
-                            <a href="{{ partner.whatsapp_url }}" target="_blank" class="text-decoration-none text-muted"><i class="fa-brands fa-whatsapp me-1"></i>{{ partner.phone }}</a>
+                            <a href="{{ partner.whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-muted"><i class="fa-brands fa-whatsapp me-1"></i>{{ partner.phone }}</a>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}

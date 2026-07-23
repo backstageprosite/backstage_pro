@@ -66,8 +66,16 @@ class AdminBillingRecordForm(forms.ModelForm):
         }
 
 from core.models import Partner
+from django.core.validators import FileExtensionValidator
+from PIL import Image
 
 class AdminPartnerForm(forms.ModelForm):
+    image = forms.ImageField(
+        label='Logomarca ou Imagem',
+        required=False,
+        validators=[FileExtensionValidator(allowed_extensions=['png', 'jpg', 'jpeg', 'webp'])]
+    )
+    
     class Meta:
         model = Partner
         fields = ['name', 'segment', 'instagram', 'phone', 'image', 'is_active']
@@ -75,7 +83,22 @@ class AdminPartnerForm(forms.ModelForm):
     def clean_image(self):
         image = self.cleaned_data.get('image')
         if image:
-            # Validação simples de tamanho de arquivo (max 5MB)
+            # Validação de tamanho (max 5MB)
             if hasattr(image, 'size') and image.size > 5 * 1024 * 1024:
                 raise forms.ValidationError('A imagem não pode ultrapassar 5MB.')
+            
+            # Validação real com Pillow
+            try:
+                img = Image.open(image)
+                img.verify() # Verifica se é uma imagem válida sem carregar na memória inteira
+                
+                # Rejeita SVG (Pillow não suporta SVG nativamente com verify, mas garantimos pelo formato)
+                if img.format.lower() not in ['png', 'jpeg', 'jpg', 'webp']:
+                    raise forms.ValidationError('Formato de imagem inválido. Use PNG, JPG ou WebP.')
+            except Exception:
+                raise forms.ValidationError('O arquivo enviado não é uma imagem válida.')
+                
+            # Resetar o ponteiro do arquivo após usar o Pillow
+            image.seek(0)
+            
         return image

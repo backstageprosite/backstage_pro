@@ -763,7 +763,7 @@ class Partner(models.Model):
     class Meta:
         verbose_name = 'Parceiro'
         verbose_name_plural = 'Parceiros'
-        ordering = ['name']
+        ordering = ['-is_active', 'name']
 
     def __str__(self):
         return self.name
@@ -775,48 +775,52 @@ class Partner(models.Model):
         ig = self.instagram.strip()
         if not ig:
             return None
-        # Remove queries se houver
-        if '?' in ig:
-            ig = ig.split('?')[0]
-        # Remove trailing slash
-        if ig.endswith('/'):
-            ig = ig[:-1]
             
-        if ig.startswith('http'):
-            # Verifica se já é a url correta
-            if 'instagram.com/' in ig:
-                username = ig.split('instagram.com/')[-1].replace('/', '')
-                return f'https://www.instagram.com/{username}/'
-            return ig
-            
-        if 'instagram.com/' in ig:
-            username = ig.split('instagram.com/')[-1].replace('/', '')
-            return f'https://www.instagram.com/{username}/'
-            
-        ig = ig.replace('@', '')
+        import urllib.parse
+        import re
+        if ig.startswith('http://') or ig.startswith('https://'):
+            parsed = urllib.parse.urlparse(ig)
+            if parsed.scheme not in ['http', 'https']:
+                return None
+            path_parts = [p for p in parsed.path.split('/') if p]
+            if path_parts:
+                ig = path_parts[0]
+            else:
+                return None
+        elif '://' in ig or (':' in ig and not ig.startswith('@')):
+            # Prevent things like javascript:, ftp://, etc when not using http
+            return None
+        
+        ig = ig.split('?')[0].split('#')[0]
+        ig = ig.replace('@', '').replace('/', '')
+        
+        if not ig or not re.match(r'^[\w\.]+$', ig):
+            return None
         return f'https://www.instagram.com/{ig}/'
 
     @property
     def instagram_display(self):
         if not self.instagram:
             return None
-        ig = self.instagram.strip()
-        if 'instagram.com/' in ig:
-            ig = ig.split('instagram.com/')[-1].replace('/', '')
-        if '?' in ig:
-            ig = ig.split('?')[0]
-        ig = ig.replace('@', '').replace('/', '')
-        return f'@{ig}'
+        url = self.instagram_url
+        if not url:
+            return None
+        username = url.rstrip('/').split('/')[-1]
+        return f'@{username}'
 
     @property
     def whatsapp_url(self):
         if not self.phone:
             return None
         import re
-        # Remove everything except digits
         num = re.sub(r'\D', '', self.phone)
         if not num:
             return None
-        if len(num) <= 11:
+        
+        if len(num) in (10, 11):
             num = '55' + num
+            
+        if not num.startswith('55') or len(num) < 12:
+            return None
+            
         return f'https://wa.me/{num}'
