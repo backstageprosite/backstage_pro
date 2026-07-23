@@ -11,6 +11,7 @@ class SupportContactTestCase(TestCase):
         self.producer = User.objects.create_user(
             username='producer', 
             password='123',
+            email='producer@test.com',
             role='PRODUTOR',
             band=self.band
         )
@@ -18,6 +19,7 @@ class SupportContactTestCase(TestCase):
         self.admin = User.objects.create_user(
             username='admin', 
             password='123',
+            email='admin@test.com',
             is_staff=True,
             is_superuser=True
         )
