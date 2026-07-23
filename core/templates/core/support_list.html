@@ -2,9 +2,14 @@
 
 {% block content %}
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-    <div>
-        <h2 class="fw-bold m-0"><i class="fa-solid fa-headset text-primary me-2"></i> Fale Conosco</h2>
-        <p class="text-muted m-0">Entre em contato com a administração do Backstage Pro.</p>
+    <div class="d-flex align-items-center">
+        <a href="{% url 'relatorios' band.slug %}" class="btn btn-outline-secondary rounded-pill me-3 px-3 shadow-sm" style="border-color: #dee2e6; color: #6c757d;">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+        </a>
+        <div>
+            <h2 class="fw-bold m-0"><i class="fa-solid fa-headset text-primary me-2"></i> Fale Conosco</h2>
+            <p class="text-muted m-0">Entre em contato com a administração do Backstage Pro.</p>
+        </div>
     </div>
     <div>
         <button type="button" class="btn btn-success fw-bold px-4 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#newTicketModal">

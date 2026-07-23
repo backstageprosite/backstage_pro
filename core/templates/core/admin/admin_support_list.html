@@ -3,7 +3,12 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold m-0"><i class="fa-solid fa-headset text-primary me-2"></i> Fale Conosco - Atendimentos</h3>
+    <div class="d-flex align-items-center">
+        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-secondary rounded-pill me-3 px-3 shadow-sm" style="border-color: #dee2e6; color: #6c757d;">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+        </a>
+        <h3 class="fw-bold m-0"><i class="fa-solid fa-headset text-primary me-2"></i> Fale Conosco - Atendimentos</h3>
+    </div>
 </div>
 
 <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
