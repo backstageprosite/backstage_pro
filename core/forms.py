@@ -55,8 +55,13 @@ class ContractDocumentForm(forms.ModelForm):
 
 class UserForm(forms.ModelForm):
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Senha de acesso'}),
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Senha'}),
         label='Senha',
+        required=True
+    )
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirmar Senha'}),
+        label='Confirmar Senha',
         required=True
     )
     
@@ -74,11 +79,21 @@ class UserForm(forms.ModelForm):
         labels = {
             'first_name': 'Nome',
             'last_name': 'Sobrenome',
-            'username': 'Nome de Usuário (Login)',
+            'username': 'Login',
             'email': 'E-mail',
             'role': 'Perfil de Acesso',
             'is_active': 'Usuário Ativo?',
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get('password')
+        confirm_password = cleaned_data.get('confirm_password')
+
+        if password and confirm_password and password != confirm_password:
+            self.add_error('confirm_password', 'As senhas não coincidem.')
+            
+        return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)

@@ -10,12 +10,30 @@ class AdminBandForm(forms.ModelForm):
         }
 
 class AdminUserCreateForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput, label='Senha Inicial')
-    confirm_password = forms.CharField(widget=forms.PasswordInput, label='Confirmar Senha')
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Senha'}), label='Senha')
+    confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirmar Senha'}), label='Confirmar Senha')
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'band', 'role', 'is_active']
+        fields = ['first_name', 'last_name', 'username', 'email', 'band', 'role', 'is_active']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Danniel'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Vieira'}),
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: danniel_v'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@exemplo.com'}),
+            'band': forms.Select(attrs={'class': 'form-select'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
+        }
+        labels = {
+            'first_name': 'Nome',
+            'last_name': 'Sobrenome',
+            'username': 'Login',
+            'email': 'E-mail',
+            'band': 'Banda Vinculada',
+            'role': 'Perfil de Acesso',
+            'is_active': 'Usuário Ativo?',
+        }
         
     def clean(self):
         cleaned_data = super().clean()
@@ -37,7 +55,7 @@ class AdminUserCreateForm(forms.ModelForm):
 class AdminUserEditForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'email', 'band', 'role', 'is_active']
+        fields = ['first_name', 'last_name', 'username', 'email', 'band', 'role', 'is_active']
 
 class AdminSubscriptionForm(forms.ModelForm):
     class Meta:

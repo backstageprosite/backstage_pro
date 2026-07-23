@@ -71,12 +71,22 @@
                                 <form method="POST" action="{% url 'admin_painel:usuarios_editar' u.id %}">
                                     {% csrf_token %}
                                     <div class="modal-body py-4 text-start">
+                                        <div class="row">
+                                            <div class="col-6 mb-3">
+                                                <label class="form-label fw-semibold">Nome</label>
+                                                <input type="text" name="first_name" class="form-control" value="{{ u.first_name }}" required>
+                                            </div>
+                                            <div class="col-6 mb-3">
+                                                <label class="form-label fw-semibold">Sobrenome</label>
+                                                <input type="text" name="last_name" class="form-control" value="{{ u.last_name }}" required>
+                                            </div>
+                                        </div>
                                         <div class="mb-3">
-                                            <label class="form-label fw-semibold">Nome (Username)</label>
+                                            <label class="form-label fw-semibold">Login</label>
                                             <input type="text" name="username" class="form-control" value="{{ u.username }}" required>
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label fw-semibold">E-mail (Login)</label>
+                                            <label class="form-label fw-semibold">E-mail</label>
                                             <input type="email" name="email" class="form-control" value="{{ u.email }}" required>
                                         </div>
                                         <div class="mb-3">
@@ -189,19 +199,29 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
             <div class="modal-header bg-light border-bottom-0">
-                <h5 class="modal-title fw-bold" id="modalCreateUserLabel"><i class="fa-solid fa-user-plus me-2"></i>Novo Usuário</h5>
+                <h5 class="modal-title fw-bold text-primary" id="modalCreateUserLabel"><i class="fa-solid fa-user-plus me-2"></i>Novo Usuário</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="{% url 'admin_painel:usuarios_novo' %}">
                 {% csrf_token %}
                 <div class="modal-body py-4 text-start">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Nome (Username)</label>
-                        <input type="text" name="username" class="form-control" required placeholder="Ex: Joao Silva">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Nome</label>
+                            <input type="text" name="first_name" class="form-control" required placeholder="Ex: Danniel">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Sobrenome</label>
+                            <input type="text" name="last_name" class="form-control" required placeholder="Ex: Vieira">
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">E-mail (Login)</label>
-                        <input type="email" name="email" class="form-control" required placeholder="joao@email.com">
+                        <label class="form-label fw-semibold">Login</label>
+                        <input type="text" name="username" class="form-control" required placeholder="Ex: danniel_v">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">E-mail</label>
+                        <input type="email" name="email" class="form-control" required placeholder="email@exemplo.com">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Banda Vinculada</label>
@@ -221,7 +241,7 @@
                     </div>
                     <div class="row">
                         <div class="col-6 mb-3">
-                            <label class="form-label fw-semibold">Senha Inicial</label>
+                            <label class="form-label fw-semibold">Senha</label>
                             <input type="password" name="password" class="form-control" required>
                         </div>
                         <div class="col-6 mb-3">
@@ -236,7 +256,7 @@
                 </div>
                 <div class="modal-footer bg-light border-top-0">
                     <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Cadastrar Usuário</button>
+                    <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Criar Usuário</button>
                 </div>
             </form>
         </div>
