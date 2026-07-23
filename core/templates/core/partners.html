@@ -8,9 +8,9 @@
     </div>
 </div>
 
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 pb-5">
+<div class="row justify-content-center g-4 pb-5">
     {% for partner in partners %}
-    <div class="col">
+    <div class="col-12 col-md-8 col-lg-6">
         <div class="card h-100 shadow-sm border-0 card-hover-premium" style="border-radius: 12px; overflow: hidden;">
             <!-- Área da Logomarca -->
             <div class="bg-white d-flex align-items-center justify-content-center p-3 border-bottom" style="height: 160px;">
@@ -26,17 +26,30 @@
                 <h5 class="fw-bold text-dark mb-1">{{ partner.name }}</h5>
                 <p class="text-muted small mb-3">{{ partner.segment }}</p>
                 
-                <div class="mt-auto d-grid gap-2" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
-                    {% if partner.instagram %}
-                    <a href="{{ partner.instagram_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary rounded-pill w-100 px-1" style="font-size: 0.85rem;" title="{{ partner.instagram_display }}">
-                        <i class="fa-brands fa-instagram text-danger"></i> {{ partner.instagram_display }}
-                    </a>
-                    {% endif %}
-                    
-                    {% if partner.phone %}
-                    <a href="{{ partner.whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-success rounded-pill w-100 px-1" style="font-size: 0.85rem;" title="{{ partner.formatted_phone }}">
-                        <i class="fa-brands fa-whatsapp"></i> {{ partner.formatted_phone }}
-                    </a>
+                <div class="mt-auto row gx-2 justify-content-center">
+                    {% if partner.instagram and partner.phone %}
+                        <div class="col-6">
+                            <a href="{{ partner.instagram_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary rounded-pill w-100 px-1 text-truncate" style="font-size: 0.85rem;" title="{{ partner.instagram_display }}">
+                                <i class="fa-brands fa-instagram text-danger"></i> {{ partner.instagram_display }}
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ partner.whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-success rounded-pill w-100 px-1 text-truncate" style="font-size: 0.85rem;" title="{{ partner.formatted_phone }}">
+                                <i class="fa-brands fa-whatsapp"></i> {{ partner.formatted_phone }}
+                            </a>
+                        </div>
+                    {% elif partner.instagram %}
+                        <div class="col-12">
+                            <a href="{{ partner.instagram_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary rounded-pill w-100 px-1 text-truncate" style="font-size: 0.85rem;" title="{{ partner.instagram_display }}">
+                                <i class="fa-brands fa-instagram text-danger"></i> {{ partner.instagram_display }}
+                            </a>
+                        </div>
+                    {% elif partner.phone %}
+                        <div class="col-12">
+                            <a href="{{ partner.whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-success rounded-pill w-100 px-1 text-truncate" style="font-size: 0.85rem;" title="{{ partner.formatted_phone }}">
+                                <i class="fa-brands fa-whatsapp"></i> {{ partner.formatted_phone }}
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>

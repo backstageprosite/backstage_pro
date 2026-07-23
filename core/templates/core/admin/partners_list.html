@@ -69,17 +69,17 @@
                             {% endif %}
                         </td>
                         <td class="text-end pe-4">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill me-1" data-bs-toggle="modal" data-bs-target="#editPartnerModal{{ partner.id }}" title="Editar">
-                                <i class="fa-solid fa-pen"></i>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill me-1 px-3" data-bs-toggle="modal" data-bs-target="#editPartnerModal{{ partner.id }}" title="Editar">
+                                Editar
                             </button>
                             <form action="{% url 'admin_painel:parceiros_desativar' partner.id %}" method="POST" class="d-inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm {% if partner.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %} rounded-pill me-1" title="{% if partner.is_active %}Desativar{% else %}Ativar{% endif %}">
+                                <button type="submit" class="btn btn-sm {% if partner.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %} rounded-pill me-1 px-3" title="{% if partner.is_active %}Desativar{% else %}Ativar{% endif %}">
                                     <i class="fa-solid {% if partner.is_active %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
                                 </button>
                             </form>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill" data-bs-toggle="modal" data-bs-target="#deletePartnerModal{{ partner.id }}" title="Excluir">
-                                <i class="fa-solid fa-trash"></i>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#deletePartnerModal{{ partner.id }}" title="Excluir">
+                                Excluir
                             </button>
                         </td>
                     </tr>
