@@ -179,14 +179,17 @@ class DashboardPendingItemsTests(TestCase):
 
     def test_pending_form_show_label_with_date(self):
         import datetime
+        from django.utils import timezone
         from .forms import BandDashboardPendingItemForm
         from .models import Show
-        self.show_a.date = datetime.date(2026, 7, 22)
+        target_date = timezone.localdate() + datetime.timedelta(days=1)
+        self.show_a.date = target_date
         self.show_a.title = 'EVENTO BAND'
         self.show_a.save()
         form = BandDashboardPendingItemForm(shows_qs=Show.objects.filter(band=self.band_a))
         rendered_select = str(form['show'])
-        self.assertIn('22/07/2026 - EVENTO BAND', rendered_select)
+        date_str = target_date.strftime('%d/%m/%Y')
+        self.assertIn(f'{date_str} - EVENTO BAND', rendered_select)
 
     def test_pending_form_show_without_date_label(self):
         from .forms import BandDashboardPendingItemForm
@@ -301,12 +304,15 @@ class DashboardPendingItemsTests(TestCase):
     def test_dashboard_modal_renders_form_labels(self):
         self.client.login(username='prod_a', password='pwd')
         import datetime
-        self.show_a.date = datetime.date(2026, 7, 22)
+        from django.utils import timezone
+        target_date = timezone.localdate() + datetime.timedelta(days=1)
+        self.show_a.date = target_date
         self.show_a.title = 'EVENTO BAND'
         self.show_a.save()
         response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
         content = response.content.decode('utf-8')
-        self.assertIn('22/07/2026 - EVENTO BAND', content)
+        date_str = target_date.strftime('%d/%m/%Y')
+        self.assertIn(f'{date_str} - EVENTO BAND', content)
         self.assertIn('<option value="" selected>Selecione um show</option>', content)
 
     # 5. EDIT TESTS
