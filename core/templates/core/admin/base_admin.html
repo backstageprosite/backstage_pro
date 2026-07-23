@@ -55,6 +55,12 @@
             border-color: var(--primary-hover);
         }
 
+        /* Ajuste de textos brancos/claros no modo claro para evitar que sumam */
+        html[data-bs-theme="light"] .text-light,
+        html[data-bs-theme="light"] .text-white {
+            color: #212529 !important;
+        }
+
         .text-primary {
             color: var(--primary-color) !important;
         }
@@ -156,31 +162,31 @@
 
                     {% if user.is_superuser %}
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:dashboard' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'dashboard' %}active fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% url 'admin_painel:dashboard' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'dashboard' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-gauge fa-fw me-2 {% if request.resolver_match.url_name != 'dashboard' %}opacity-75{% endif %}"></i> Dashboard
                         </a>
                     </li>
                     
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:bandas' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'bandas' %}active fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% url 'admin_painel:bandas' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'bandas' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-guitar fa-fw me-2 {% if request.resolver_match.url_name != 'bandas' %}opacity-75{% endif %}"></i> Bandas
                         </a>
                     </li>
 
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:shows' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'shows' %}active fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% url 'admin_painel:shows' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'shows' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-microphone-lines fa-fw me-2 {% if request.resolver_match.url_name != 'shows' %}opacity-75{% endif %}"></i> Shows
                         </a>
                     </li>
 
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:usuarios' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'usuarios' %}active fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% url 'admin_painel:usuarios' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'usuarios' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-users fa-fw me-2 {% if request.resolver_match.url_name != 'usuarios' %}opacity-75{% endif %}"></i> Usuários
                         </a>
                     </li>
 
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:avisos' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'avisos' %}active fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% url 'admin_painel:avisos' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'avisos' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-bullhorn fa-fw me-2 {% if request.resolver_match.url_name != 'avisos' %}opacity-75{% endif %}"></i> Avisos
                         </a>
                     </li>
@@ -188,19 +194,19 @@
                     <hr class="mt-4 mb-3 text-muted">
                     
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:assinaturas' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'assinaturas' %}active fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% url 'admin_painel:assinaturas' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'assinaturas' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-star fa-fw me-2 {% if request.resolver_match.url_name != 'assinaturas' %}opacity-75{% endif %}"></i> Assinaturas
                         </a>
                     </li>
 
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:cobrancas' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'cobrancas' %}active fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% url 'admin_painel:cobrancas' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'cobrancas' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-file-invoice-dollar fa-fw me-2 {% if request.resolver_match.url_name != 'cobrancas' %}opacity-75{% endif %}"></i> Cobranças
                         </a>
                     </li>
                     
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:relatorios' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios' %}active fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% url 'admin_painel:relatorios' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios' %}opacity-75{% endif %}"></i> Relatórios
                         </a>
                     </li>
@@ -214,7 +220,7 @@
                 <hr class="mt-4 mb-3 text-muted">
                 <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:configuracoes' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'configuracoes' %}active fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% url 'admin_painel:configuracoes' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'configuracoes' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-gear fa-fw me-2 {% if request.resolver_match.url_name != 'configuracoes' %}opacity-75{% endif %}"></i> Configurações
                         </a>
                     </li>
