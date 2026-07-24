@@ -330,7 +330,7 @@ class PWAManifestTestCase(TestCase):
         
         response = self.client.get(f'/{self.band_a.slug}/calendario/')
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'id="pwa-install-btn"')
+        self.assertContains(response, f'href="/{self.band_a.slug}/instalar-aplicativo/"')
         self.assertContains(response, 'Instalar aplicativo')
         self.assertContains(response, 'pwa-install.js')
         self.assertContains(response, 'iosInstallModal')

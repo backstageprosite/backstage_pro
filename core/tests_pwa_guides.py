@@ -50,12 +50,14 @@ class PWAGuidesTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Como instalar o aplicativo')
         self.assertContains(response, 'installGuideModal')
+        self.assertContains(response, f'<link rel="manifest" href="/{self.band.slug}/manifest.webmanifest">')
         
     def test_integrante_accesses_install_page(self):
         self.client.login(username='integrante', password='123')
         response = self.client.get(reverse('instalar_aplicativo', args=[self.band.slug]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Como instalar o aplicativo')
+        self.assertContains(response, f'<link rel="manifest" href="/{self.band.slug}/manifest.webmanifest">')
         
     def test_unauthorized_user_is_blocked(self):
         other_user = User.objects.create_user(username='other', email='other@test.com', password='123')
