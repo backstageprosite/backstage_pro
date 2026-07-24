@@ -414,10 +414,23 @@ class AdminConfiguracoesView(AdminRequiredMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         settings = SystemSettings.get_settings()
         
+        has_changes = False
+
         if 'logo' in request.FILES:
             settings.logo = request.FILES['logo']
+            has_changes = True
+            
+        if 'ios_installation_guide_image' in request.FILES:
+            settings.ios_installation_guide_image = request.FILES['ios_installation_guide_image']
+            has_changes = True
+            
+        if 'android_installation_guide_image' in request.FILES:
+            settings.android_installation_guide_image = request.FILES['android_installation_guide_image']
+            has_changes = True
+
+        if has_changes:
             settings.save()
-            messages.success(request, "Identidade visual atualizada com sucesso.")
+            messages.success(request, "Configurações globais atualizadas com sucesso.")
             
         return redirect('admin_painel:configuracoes')
 

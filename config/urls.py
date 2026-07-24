@@ -32,4 +32,5 @@ import os
 urlpatterns += [
     re_path(r'^media/partners/logos/(?P<path>.*)$', serve, {'document_root': os.path.join(settings.MEDIA_ROOT, 'partners', 'logos')}),
     re_path(r'^media/system_logos/(?P<path>.*)$', serve, {'document_root': os.path.join(settings.MEDIA_ROOT, 'system_logos')}),
+    re_path(r'^media/app_install_guides/(?P<path>.*)$', serve, {'document_root': os.path.join(settings.MEDIA_ROOT, 'app_install_guides')}),
 ]

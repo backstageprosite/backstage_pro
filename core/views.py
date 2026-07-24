@@ -1368,3 +1368,9 @@ from .models import Partner
 def partners_list_view(request, band_slug):
     partners = Partner.objects.filter(is_active=True)
     return render(request, 'core/partners.html', {'partners': partners, 'band': request.band})
+
+
+@login_required
+@band_required
+def instalar_aplicativo_view(request, band_slug):
+    return render(request, 'core/instalar_aplicativo.html')

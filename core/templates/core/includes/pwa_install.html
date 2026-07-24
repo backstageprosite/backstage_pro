@@ -1,14 +1,16 @@
 {% load static %}
 
-<!-- PWA Install Button (oculto por padrão) -->
+<!-- PWA Install Button -->
 <li class="nav-item">
-    <a href="#" id="pwa-install-btn" class="nav-link text-dark py-3 px-3 fw-medium" style="display: none; border-radius: 8px; background-color: rgba(15, 127, 177, 0.1);">
-        {% if request.resolver_match.namespace == 'admin_painel' %}
+    {% if request.resolver_match.namespace == 'admin_painel' %}
+        <a href="#" id="pwa-install-btn" class="nav-link text-dark py-3 px-3 fw-medium" style="display: none; border-radius: 8px; background-color: rgba(15, 127, 177, 0.1);">
             <i class="fas fa-download fa-fw me-2 text-primary"></i> Instalar Backstage Pro
-        {% else %}
+        </a>
+    {% elif band %}
+        <a href="{% url 'instalar_aplicativo' band.slug %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'instalar_aplicativo' %}active-link{% endif %}" style="border-radius: 8px; background-color: rgba(15, 127, 177, 0.1);">
             <i class="fas fa-download fa-fw me-2 text-primary"></i> Instalar aplicativo
-        {% endif %}
-    </a>
+        </a>
+    {% endif %}
 </li>
 
 <!-- Modal Educativo para iOS -->

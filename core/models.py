@@ -2,6 +2,13 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 import hashlib
+from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
+
+def validate_image_size(value):
+    filesize = value.size
+    if filesize > 5242880:  # 5 MB
+        raise ValidationError("O tamanho máximo permitido para a imagem é 5MB.")
 
 class Band(models.Model):
     name = models.CharField(max_length=100, verbose_name="Nome da Banda")
@@ -931,6 +938,28 @@ class SystemSettings(models.Model):
     Configurações globais do sistema Backstage Pro (Etapa 2), incluindo identidade visual.
     """
     logo = models.ImageField(upload_to='system_logos/', null=True, blank=True)
+    
+    ios_installation_guide_image = models.ImageField(
+        upload_to="app_install_guides/ios/",
+        null=True,
+        blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['png', 'jpg', 'jpeg', 'webp']),
+            validate_image_size
+        ],
+        verbose_name="Guia de Instalação iOS"
+    )
+    
+    android_installation_guide_image = models.ImageField(
+        upload_to="app_install_guides/android/",
+        null=True,
+        blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['png', 'jpg', 'jpeg', 'webp']),
+            validate_image_size
+        ],
+        verbose_name="Guia de Instalação Android"
+    )
 
     class Meta:
         verbose_name = "Configuração do Sistema"

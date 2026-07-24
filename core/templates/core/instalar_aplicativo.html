@@ -1,0 +1,141 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <!-- Cabeçalho -->
+            <div class="d-flex align-items-center mb-4">
+                <i class="fa-solid fa-download text-primary fs-3 me-3"></i>
+                <div>
+                    <h2 class="fw-bold mb-1">Instalar aplicativo</h2>
+                    <p class="text-muted mb-0">Adicione o Backstage Pro à tela inicial do seu celular para acessar o sistema com mais rapidez.</p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-mobile-screen-button text-primary" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="fw-bold">Aplicativo Backstage Pro</h5>
+                    <p class="text-muted mb-4">Tenha acesso rápido e fácil a todas as informações da sua banda direto da tela inicial.</p>
+                    
+                    <div class="d-flex flex-column align-items-center gap-3">
+                        <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#installGuideModal">
+                            <i class="fa-solid fa-circle-info me-2"></i> Ver instruções de instalação
+                        </button>
+                        
+                        <!-- Botão nativo PWA, oculto por padrão (pwa-install.js gerencia) -->
+                        <button id="pwa-install-btn" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold" style="display: none;">
+                            <i class="fa-solid fa-download me-2"></i> Instalar nativamente agora
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Guia de Instalação -->
+<div class="modal fade" id="installGuideModal" tabindex="-1" aria-labelledby="installGuideModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-sm-down">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="installGuideModalLabel">Como instalar o aplicativo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar modal de instruções"></button>
+            </div>
+            <div class="modal-body pt-3 px-0 px-sm-3">
+                <!-- Abas -->
+                <ul class="nav nav-tabs px-3 px-sm-0 mb-3" id="installTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold active" id="ios-tab" data-bs-toggle="tab" data-bs-target="#ios-pane" type="button" role="tab" aria-controls="ios-pane" aria-selected="true">
+                            <i class="fa-brands fa-apple me-2"></i> iPhone / iOS
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold" id="android-tab" data-bs-toggle="tab" data-bs-target="#android-pane" type="button" role="tab" aria-controls="android-pane" aria-selected="false">
+                            <i class="fa-brands fa-android text-success me-2"></i> Android
+                        </button>
+                    </li>
+                </ul>
+                
+                <!-- Conteúdo das Abas -->
+                <div class="tab-content" id="installTabsContent" style="max-height: calc(100vh - 160px); overflow-y: auto; overflow-x: hidden;">
+                    <!-- Aba iOS -->
+                    <div class="tab-pane fade show active text-center" id="ios-pane" role="tabpanel" aria-labelledby="ios-tab" tabindex="0">
+                        {% if system_settings and system_settings.ios_installation_guide_image %}
+                            <img src="{{ system_settings.ios_installation_guide_image.url }}" alt="Instruções de instalação para iPhone e iOS" class="install-guide-image">
+                        {% else %}
+                            <div class="p-5 text-muted">
+                                <i class="fa-solid fa-image-slash fs-1 mb-3"></i>
+                                <h6>Instruções ainda não disponíveis.</h6>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Aba Android -->
+                    <div class="tab-pane fade text-center" id="android-pane" role="tabpanel" aria-labelledby="android-tab" tabindex="0">
+                        {% if system_settings and system_settings.android_installation_guide_image %}
+                            <img src="{{ system_settings.android_installation_guide_image.url }}" alt="Instruções de instalação para Android" class="install-guide-image">
+                        {% else %}
+                            <div class="p-5 text-muted">
+                                <i class="fa-solid fa-image-slash fs-1 mb-3"></i>
+                                <h6>Instruções ainda não disponíveis.</h6>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.install-guide-image {
+    display: block;
+    width: 100%;
+    max-width: 1080px;
+    height: auto;
+    margin: 0 auto;
+    object-fit: contain;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    function detectOS() {
+        var userAgent = window.navigator.userAgent,
+            platform = window.navigator.platform,
+            iosPlatforms = ['iPhone', 'iPad', 'iPod'];
+            
+        if (iosPlatforms.indexOf(platform) !== -1 || (userAgent.includes("Mac") && "ontouchend" in document)) {
+            return 'iOS';
+        } else if (/Android/.test(userAgent)) {
+            return 'Android';
+        }
+        return 'Other';
+    }
+
+    var os = detectOS();
+    
+    if (os === 'Android') {
+        var androidTab = new bootstrap.Tab(document.querySelector('#android-tab'));
+        androidTab.show();
+    } else {
+        var iosTab = new bootstrap.Tab(document.querySelector('#ios-tab'));
+        iosTab.show();
+    }
+
+    var installModal = new bootstrap.Modal(document.getElementById('installGuideModal'));
+    installModal.show();
+    
+    var modalEl = document.getElementById('installGuideModal');
+    modalEl.addEventListener('hidden.bs.modal', function (event) {
+        var target = document.querySelector('[data-bs-target="#installGuideModal"]');
+        if (target) target.focus();
+    });
+});
+</script>
+{% endblock %}

@@ -36,7 +36,54 @@
                         <div class="form-text">Recomendamos imagens com fundo transparente (PNG) e altura máxima de 90px para a barra lateral.</div>
                     </div>
                     
-                    <div class="d-flex justify-content-end">
+                    <hr class="my-5">
+                    
+                    <div class="mb-4">
+                        <h5 class="fw-bold mb-2">Instruções de instalação do aplicativo</h5>
+                        <p class="text-muted small mb-4">Envie as imagens exibidas para produtores e integrantes no guia de instalação do Backstage Pro.</p>
+                        
+                        <!-- iOS -->
+                        <div class="mb-4">
+                            <label for="ios_installation_guide_image" class="form-label fw-bold text-muted">iPhone / iOS</label>
+                            <p class="text-muted small mb-2">Envie uma imagem vertical contendo todas as instruções para instalar o aplicativo no iPhone ou iPad.</p>
+                            
+                            {% if system_settings and system_settings.ios_installation_guide_image %}
+                            <div class="d-flex align-items-center p-3 mb-3 bg-light rounded border">
+                                <img src="{{ system_settings.ios_installation_guide_image.url }}" alt="Guia iOS" class="me-3" style="max-height: 120px; border-radius: 6px; object-fit: contain;">
+                                <div>
+                                    <h6 class="fw-bold mb-1"><i class="fa-solid fa-check-circle text-success me-1"></i> Imagem cadastrada</h6>
+                                    <small class="text-muted text-break">{{ system_settings.ios_installation_guide_image.name|slice:"24:" }}</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <input type="file" class="form-control" id="ios_installation_guide_image" name="ios_installation_guide_image" accept="image/png, image/jpeg, image/webp">
+                        </div>
+
+                        <!-- Android -->
+                        <div class="mb-4">
+                            <label for="android_installation_guide_image" class="form-label fw-bold text-muted">Android</label>
+                            <p class="text-muted small mb-2">Envie uma imagem vertical contendo todas as instruções para instalar o aplicativo em dispositivos Android.</p>
+                            
+                            {% if system_settings and system_settings.android_installation_guide_image %}
+                            <div class="d-flex align-items-center p-3 mb-3 bg-light rounded border">
+                                <img src="{{ system_settings.android_installation_guide_image.url }}" alt="Guia Android" class="me-3" style="max-height: 120px; border-radius: 6px; object-fit: contain;">
+                                <div>
+                                    <h6 class="fw-bold mb-1"><i class="fa-solid fa-check-circle text-success me-1"></i> Imagem cadastrada</h6>
+                                    <small class="text-muted text-break">{{ system_settings.android_installation_guide_image.name|slice:"28:" }}</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <input type="file" class="form-control" id="android_installation_guide_image" name="android_installation_guide_image" accept="image/png, image/jpeg, image/webp">
+                        </div>
+                        
+                        <div class="form-text mt-3">
+                            <i class="fa-solid fa-circle-info me-1"></i> Formato recomendado: imagem vertical de 1080 × 1920 px, em PNG, JPG ou WebP, com até 5 MB.
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4">
                         <button type="submit" class="btn btn-primary px-4 fw-bold rounded-pill">
                             <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Alterações
                         </button>
