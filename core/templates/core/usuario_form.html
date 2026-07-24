@@ -5,7 +5,7 @@
     <h2 class="fw-bold m-0 text-center text-md-start text-primary">
         <i class="fa-solid {% if is_edit %}fa-user-pen{% else %}fa-user-plus{% endif %} me-2"></i> 
         {% if is_edit %}Editar Usuário{% else %}Novo Usuário{% endif %}
-    </h2>
+    </h4>
     <a href="{% url 'usuarios_list' band.slug %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm w-100 w-md-auto">
         <i class="fa-solid fa-arrow-left me-1"></i> Voltar
     </a>

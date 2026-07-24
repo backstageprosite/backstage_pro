@@ -5,7 +5,7 @@
     <h2 class="fw-bold m-0 text-center text-md-start">
         <i class="fa-solid {% if is_edit %}fa-pen-to-square{% else %}fa-plus-circle{% endif %} text-primary me-2"></i> 
         {% if is_edit %}Editar Show{% else %}Adicionar Show{% endif %}
-    </h2>
+    </h4>
     <div class="d-flex flex-wrap justify-content-center gap-2">
         {% if is_edit %}
         <a href="{% url 'show_pdf' band.slug form.instance.id %}" target="_blank" class="btn btn-dark text-white border-dark rounded-pill px-4 fw-bold shadow-sm" style="color: white !important;">
