@@ -7,7 +7,7 @@
             <i class="fa-solid fa-arrow-left me-1"></i> Voltar
         </a>
         <div>
-            <h3 class="fw-bold m-0 text-dark">Atendimento #{{ ticket.id }} - {{ ticket.band.name }}</h3>
+            <h2 class="fw-bold m-0 text-dark">Atendimento #{{ ticket.id }} - {{ ticket.band.name }}</h2>
             <span class="badge {% if ticket.status == 'RESOLVED' or ticket.status == 'ARCHIVED' %}bg-secondary{% elif ticket.status == 'WAITING_ADMIN' or ticket.status == 'NEW' %}bg-warning text-dark{% else %}bg-info{% endif %} mt-1">
                 {{ ticket.get_status_display }}
             </span>
