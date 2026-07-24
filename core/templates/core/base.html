@@ -26,6 +26,13 @@
             font-family: 'Inter', sans-serif;
             font-size: 16px !important;
         }
+
+        /* Fix Bootstrap dropdowns inside table-responsive getting cut off on desktop */
+        @media (min-width: 992px) {
+            .table-responsive {
+                overflow: visible !important;
+            }
+        }
         
         /* Oculta opções de dark mode e usa o default do Bootstrap claro */
         html[data-bs-theme="dark"] .navbar {
