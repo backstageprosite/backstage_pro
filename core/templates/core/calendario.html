@@ -7,7 +7,7 @@
     {% if request.user.is_produtor or request.user.is_superuser %}
     <div class="d-flex flex-wrap justify-content-center justify-content-lg-end gap-2 action-buttons-container">
         <!-- Novo Show -->
-        <a href="{% url 'shows_add' band.slug %}" class="btn btn-primary rounded-pill px-4 py-2 fw-bold d-flex align-items-center shadow-sm action-btn-mobile">
+        <a href="{% url 'shows_add' band.slug %}" class="btn rounded-pill px-4 py-2 fw-bold d-flex align-items-center shadow-sm action-btn-mobile text-dark" style="background-color: #6BD443;">
             <i class="fa-solid fa-plus me-2"></i> <span>Novo Show</span>
         </a>
         

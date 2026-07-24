@@ -113,7 +113,7 @@
             <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center" style="border-top-left-radius: 12px; border-top-right-radius: 12px; flex-shrink: 0;">
                 <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-clipboard-list text-muted me-2"></i> Pendências</h5>
                 {% if request.user.role == 'PRODUTOR' %}
-                <button type="button" class="btn btn-sm btn-success fw-medium" data-bs-toggle="modal" data-bs-target="#addPendingModal" style="border-radius: 6px;">
+                <button type="button" class="btn btn-sm fw-bold text-dark rounded-pill" data-bs-toggle="modal" data-bs-target="#addPendingModal" style="background-color: #6BD443;">
                     <i class="fa-solid fa-plus me-1"></i> Adicionar
                 </button>
                 {% endif %}

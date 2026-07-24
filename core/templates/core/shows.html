@@ -4,7 +4,7 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <h4 class="fw-bold m-0"><i class="fa-solid fa-microphone-lines text-primary me-2"></i> Gerenciador de Shows</h4>
     <div class="d-flex gap-2">
-        <a href="{% url 'shows_add' band.slug %}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center">
+        <a href="{% url 'shows_add' band.slug %}" class="btn rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center text-dark" style="background-color: #6BD443;">
             <i class="fa-solid fa-plus me-2"></i> Novo Show
         </a>
         <button type="button" class="btn btn-dark rounded-pill shadow-sm px-4 fw-bold d-flex align-items-center transition-hover" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
