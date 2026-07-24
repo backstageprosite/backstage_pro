@@ -37,7 +37,7 @@
                     <label class="form-label fw-bold">Arquivo (PDF, Imagem)</label>
                     {% if document.file %}
                         <div class="mb-2">
-                            <a href="{% url 'download_contract' band.slug document.pk %}" target="_blank" class="btn btn-sm btn-outline-info">
+                            <a href="{% url 'download_contract' band.slug document.pk %}"  class="btn btn-sm btn-outline-info">
                                 <i class="bi bi-file-earmark-text"></i> Arquivo Atual
                             </a>
                         </div>

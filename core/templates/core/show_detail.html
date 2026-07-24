@@ -382,7 +382,7 @@
                                         <strong>{{ receipt.description }}</strong><br>
                                         <small class="text-muted">R$ {{ receipt.value }}</small>
                                     </div>
-                                    <a href="{% url 'download_receipt' band.slug receipt.pk %}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                    <a href="{% url 'download_receipt' band.slug receipt.pk %}"  class="btn btn-sm btn-outline-danger">
                                         <i class="fa-solid fa-download me-1"></i> Ver Anexo
                                     </a>
                                 </li>
@@ -409,7 +409,7 @@
                                         <strong>{{ doc.description }}</strong><br>
                                         <small class="text-muted">Anexado via Painel de Administrador</small>
                                     </div>
-                                    <a href="{% url 'download_contract' band.slug doc.pk %}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                    <a href="{% url 'download_contract' band.slug doc.pk %}"  class="btn btn-sm btn-outline-danger">
                                         <i class="fa-solid fa-download me-1"></i> Ver Documento
                                     </a>
                                 </li>

@@ -135,7 +135,7 @@
                                 <td class="fw-bold text-success">R$ {{ payment.value|floatformat:"2g" }}</td>
                                 <td class="text-end text-nowrap">
                                     {% if payment.file %}
-                                    <a href="{% url 'download_payment' band.slug payment.pk %}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill">
+                                    <a href="{% url 'download_payment' band.slug payment.pk %}"  class="btn btn-sm btn-outline-success rounded-pill">
                                         <i class="bi bi-file-earmark-text"></i> Ver Anexo
                                     </a>
                                     {% endif %}
@@ -194,7 +194,7 @@
                                 <td class="fw-bold text-danger">R$ {{ receipt.value|floatformat:"2g" }}</td>
                                 <td class="text-end text-nowrap">
                                     {% if receipt.file %}
-                                    <a href="{% url 'download_receipt' band.slug receipt.pk %}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill">
+                                    <a href="{% url 'download_receipt' band.slug receipt.pk %}"  class="btn btn-sm btn-outline-success rounded-pill">
                                         <i class="bi bi-file-earmark-text"></i> Ver Anexo
                                     </a>
                                     {% endif %}

@@ -70,7 +70,7 @@
                     {% if msg.attachments.all %}
                         <div class="mt-2 d-flex flex-wrap gap-2 {% if msg.sender_type == 'ADMIN' %}justify-content-end{% else %}justify-content-start{% endif %}" style="max-width: 80%;">
                             {% for att in msg.attachments.all %}
-                                <a href="{% url 'download_support_attachment' att.id %}" target="_blank" class="btn btn-sm btn-light border rounded-pill text-truncate shadow-sm" style="max-width: 200px;" title="{{ att.original_name }}">
+                                <a href="{% url 'download_support_attachment' att.id %}"  class="btn btn-sm btn-light border rounded-pill text-truncate shadow-sm" style="max-width: 200px;" title="{{ att.original_name }}">
                                     <i class="fa-solid fa-paperclip me-1"></i> {{ att.original_name }}
                                 </a>
                             {% endfor %}
