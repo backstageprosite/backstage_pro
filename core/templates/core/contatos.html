@@ -8,6 +8,35 @@
     </button>
 </div>
 
+<!-- Barra de Filtros -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted">Nome</label>
+                <input type="text" name="nome" class="form-control form-control-sm" placeholder="Buscar por nome..." value="{{ search_name|default:'' }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted">Tipo</label>
+                <select name="tipo" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    {% for db_val, display_val in contact_types %}
+                    <option value="{{ db_val }}" {% if search_tipo == db_val %}selected{% endif %}>{{ display_val }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted">Local</label>
+                <input type="text" name="local" class="form-control form-control-sm" placeholder="Buscar por local..." value="{{ search_local|default:'' }}">
+            </div>
+            <div class="col-12 text-end mt-3">
+                <a href="{% url 'contatos_list' band.slug %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
+                <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card shadow-sm border-0" style="border-radius: 12px;">
     <div class="card-body p-0">
         <div class="table-responsive">

@@ -924,9 +924,30 @@ def contatos_list_view(request, band_slug):
     if not request.user.is_produtor():
         return HttpResponseForbidden("Apenas produtores.")
     band = get_object_or_404(Band, slug=band_slug)
+    
+    # Base QuerySet
     contatos = Contact.objects.filter(band=band).order_by('name')
 
-    context = {'band': band, 'contatos': contatos}
+    # Get Filter Params
+    search_name = request.GET.get('nome', '').strip()
+    search_tipo = request.GET.get('tipo', '').strip()
+    search_local = request.GET.get('local', '').strip()
+
+    if search_name:
+        contatos = contatos.filter(name__icontains=search_name)
+    if search_tipo:
+        contatos = contatos.filter(contact_type=search_tipo)
+    if search_local:
+        contatos = contatos.filter(location__icontains=search_local)
+
+    context = {
+        'band': band,
+        'contatos': contatos,
+        'search_name': search_name,
+        'search_tipo': search_tipo,
+        'search_local': search_local,
+        'contact_types': Contact.CONTACT_TYPE_CHOICES,
+    }
     return render(request, 'core/contatos.html', context)
 
 @login_required
