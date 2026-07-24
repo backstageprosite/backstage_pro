@@ -26,10 +26,15 @@
             font-size: 16px !important;
         }
 
-        /* Fix Bootstrap dropdowns inside table-responsive getting cut off on desktop */
-        @media (min-width: 992px) {
+        /* Fix Bootstrap dropdowns inside table-responsive getting cut off */
+        @media (min-width: 768px) {
             .table-responsive {
                 overflow: visible !important;
+            }
+        }
+        @media (max-width: 767.98px) {
+            .table-responsive {
+                padding-bottom: 120px; /* Garante espaço para o dropdown no mobile sem cortar */
             }
         }
         
