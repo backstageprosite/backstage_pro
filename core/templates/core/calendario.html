@@ -24,6 +24,12 @@
     .transition-hover { transition: all 0.2s ease; }
     .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,.15)!important; }
     
+    @media (min-width: 769px) {
+        .agenda-title {
+            font-size: 1.5rem !important; /* Reduces default h2 (2rem) down to h4 size */
+        }
+    }
+    
     @media (max-width: 768px) {
         .agenda-title {
             white-space: nowrap;
