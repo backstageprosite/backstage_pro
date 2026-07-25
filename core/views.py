@@ -777,7 +777,8 @@ def show_edit_view(request, band_slug, pk):
                 has_relevant_event = (
                     (old_date != new_date) or
                     (old_show_time != new_show_time) or
-                    (old_status != 'CANCELADO' and new_status == 'CANCELADO')
+                    (old_status != 'CANCELADO' and new_status == 'CANCELADO') or
+                    (old_status != 'CONFIRMADO' and new_status == 'CONFIRMADO')
                 )
 
                 if has_relevant_event:
