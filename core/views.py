@@ -117,7 +117,7 @@ def band_logout(request, band_slug):
 @band_required
 def dashboard_view(request, band_slug):
     band = get_object_or_404(Band, slug=band_slug)
-    shows_proximos = Show.objects.filter(band=band, date__gte=datetime.date.today()).order_by('date', 'show_time')[:4]
+    shows_proximos = Show.objects.filter(band=band, date__gte=datetime.date.today()).order_by('date', 'show_time')[:6]
     total_shows = Show.objects.filter(band=band).count()
     total_users = 0
     total_contacts = 0
