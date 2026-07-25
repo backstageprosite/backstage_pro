@@ -48,7 +48,7 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='INTEGRANTE', verbose_name='Perfil')
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='users', null=True, blank=True, verbose_name="Banda")
-    email = models.EmailField(unique=True, blank=False, null=False, verbose_name='E-mail')
+    email = models.EmailField(unique=False, blank=True, null=True, verbose_name='E-mail')
 
     def is_produtor(self):
         return self.role == 'PRODUTOR' or self.is_superuser
