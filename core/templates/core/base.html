@@ -214,13 +214,13 @@
                         </a>
                     </li>
                     
+                    {% if request.user.is_produtor or request.user.is_superuser %}
                     <li class="nav-item">
                         <a href="{% if band %}{% url 'shows_list' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'shows_list' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-microphone-lines fa-fw me-2 {% if request.resolver_match.url_name != 'shows_list' %}opacity-75{% endif %}"></i> Shows
                         </a>
                     </li>
                     
-                    {% if request.user.is_produtor or request.user.is_superuser %}
                     <li class="nav-item">
                         <a href="{% if band %}{% url 'pendencias' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'pendencias' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-list-check fa-fw me-2 {% if request.resolver_match.url_name != 'pendencias' %}opacity-75{% endif %}"></i> Pendências
