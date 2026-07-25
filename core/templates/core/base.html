@@ -178,19 +178,19 @@
 <body>
 
     {% if user.is_authenticated %}
-    <div class="d-flex flex-column flex-lg-row min-vh-100">
+    <div class="d-flex flex-column flex-xl-row min-vh-100">
         
         <!-- Menu Lateral (Sidebar Desktop / Offcanvas Mobile) -->
-        <div class="offcanvas-lg offcanvas-start bg-white shadow-sm flex-shrink-0" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel" style="width: 260px !important; min-width: 260px !important; max-width: 260px !important; flex: 0 0 260px !important; border-right: 1px solid #eaeaea;">
-            <div class="offcanvas-header px-4 py-3 pb-0 d-lg-none justify-content-end">
+        <div class="offcanvas-xl offcanvas-start bg-white shadow-sm flex-shrink-0" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel" style="width: 260px !important; min-width: 260px !important; max-width: 260px !important; flex: 0 0 260px !important; border-right: 1px solid #eaeaea;">
+            <div class="offcanvas-header px-4 py-3 pb-0 d-xl-none justify-content-end">
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
             </div>
             
-            <div class="offcanvas-body d-flex flex-column px-3 py-4 overflow-y-auto pt-lg-4">
+            <div class="offcanvas-body d-flex flex-column px-3 py-4 overflow-y-auto pt-xl-4">
                 
                 <!-- Logo da Banda Acima do Menu -->
-                <div class="mb-4 px-2 text-center text-lg-start">
-                    <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none">
+                <div class="mb-4 px-2 text-center text-xl-start">
+                    <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-xl-start text-decoration-none">
                         {% if band and band.logo %}
                             <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid w-100" style="border-radius: 8px; object-fit: contain;">
                         {% else %}
@@ -272,11 +272,11 @@
             <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm mb-4 py-2 sticky-top">
                 <div class="container-fluid px-4">
                     <!-- Botão Hamburger para abrir Sidebar no Mobile -->
-                    <button class="navbar-toggler d-lg-none border-0 px-1 me-3 text-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
+                    <button class="navbar-toggler d-xl-none border-0 px-1 me-3 text-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
                         <i class="fa-solid fa-bars fs-3"></i>
                     </button>
                     
-                    <div class="d-none d-lg-block text-muted fw-medium fs-6">
+                    <div class="d-none d-xl-block text-muted fw-medium fs-6">
                         {% if band %}Painel de Controle{% endif %}
                     </div>
 
@@ -304,7 +304,7 @@
             </nav>
 
             <!-- Miolo da Página (Calendário) -->
-            <main class="container-fluid px-4 px-lg-5 pb-5">
+            <main class="container-fluid px-4 px-xl-5 pb-5">
 {% else %}
     <!-- Layout para tela de Login / Não autenticados -->
     <div class="container pb-5 mt-5">
@@ -323,7 +323,7 @@
 
     <!-- Django Messages Toasts -->
     {% if messages %}
-    <div class="toast-container position-fixed top-0 end-0 p-3 mt-5 mt-lg-0" style="z-index: 1100;">
+    <div class="toast-container position-fixed top-0 end-0 p-3 mt-5 mt-xl-0" style="z-index: 1100;">
         {% for message in messages %}
         <div class="toast align-items-center text-bg-{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}primary{% endif %} border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
             <div class="d-flex">
@@ -355,7 +355,7 @@
                 const navLinks = sidebarMenu.querySelectorAll('.nav-link');
                 navLinks.forEach(function(link) {
                     link.addEventListener('click', function() {
-                        if (window.innerWidth < 992) {
+                        if (window.innerWidth < 1200) {
                             const bsOffcanvas = bootstrap.Offcanvas.getInstance(sidebarMenu);
                             if (bsOffcanvas) {
                                 bsOffcanvas.hide();
