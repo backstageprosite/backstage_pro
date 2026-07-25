@@ -65,23 +65,24 @@ def schedule_show_notifications(old_show, new_show, actor, is_creation=False):
     events = []
     
     if is_creation:
-        date_str = new_show.date.strftime('%d/%m/%Y') if new_show.date else ""
-        time_str = new_show.show_time.strftime('%H:%M') if new_show.show_time else ""
-        
-        if new_show.date and new_show.show_time:
-            msg = f'O show "{show_name}" foi cadastrado para {date_str} às {time_str}.'
-        elif new_show.date:
-            msg = f'O show "{show_name}" foi cadastrado para {date_str}.'
-        else:
-            msg = f'O show "{show_name}" foi cadastrado.'
+        if new_show.status != 'PRE_RESERVADO':
+            date_str = new_show.date.strftime('%d/%m/%Y') if new_show.date else ""
+            time_str = new_show.show_time.strftime('%H:%M') if new_show.show_time else ""
             
-        events.append(EventPayload(
-            event_type='NEW_SHOW',
-            title='Novo show cadastrado',
-            message=msg,
-            target_url=target_url,
-            event_key=f"show:{new_show.id}:new"
-        ))
+            if new_show.date and new_show.show_time:
+                msg = f'O show "{show_name}" foi cadastrado para {date_str} às {time_str}.'
+            elif new_show.date:
+                msg = f'O show "{show_name}" foi cadastrado para {date_str}.'
+            else:
+                msg = f'O show "{show_name}" foi cadastrado.'
+                
+            events.append(EventPayload(
+                event_type='NEW_SHOW',
+                title='Novo show cadastrado',
+                message=msg,
+                target_url=target_url,
+                event_key=f"show:{new_show.id}:new"
+            ))
     else:
         # 1. Cancelamento
         if old_show and old_show.status != 'CANCELADO' and new_show.status == 'CANCELADO':
@@ -94,6 +95,30 @@ def schedule_show_notifications(old_show, new_show, actor, is_creation=False):
                 target_url=target_url,
                 event_key=f"show:{new_show.id}:rev:{rev}:SHOW_CANCELLED"
             ))
+            
+        # 1.5 Mudança para Confirmado (de Cancelado ou Reserva)
+        if old_show and old_show.status != 'CONFIRMADO' and new_show.status == 'CONFIRMADO':
+            date_str = new_show.date.strftime('%d/%m/%Y') if new_show.date else "data não informada"
+            if old_show.status == 'CANCELADO':
+                msg = f'O show "{show_name}" de {date_str} foi reconfirmado.'
+                title = 'Show reconfirmado'
+                events.append(EventPayload(
+                    event_type='SHOW_CONFIRMED',
+                    title=title,
+                    message=msg,
+                    target_url=target_url,
+                    event_key=f"show:{new_show.id}:rev:{rev}:SHOW_CONFIRMED"
+                ))
+            elif old_show.status == 'PRE_RESERVADO':
+                msg = f'A reserva do show "{show_name}" de {date_str} foi confirmada.'
+                title = 'Reserva confirmada'
+                events.append(EventPayload(
+                    event_type='SHOW_CONFIRMED',
+                    title=title,
+                    message=msg,
+                    target_url=target_url,
+                    event_key=f"show:{new_show.id}:rev:{rev}:SHOW_CONFIRMED"
+                ))
             
         # 2. Mudança de Data
         if old_show and old_show.date != new_show.date:
