@@ -651,12 +651,11 @@ def arquivos_view(request, band_slug):
 @login_required
 @band_required
 def configuracoes_view(request, band_slug):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores têm acesso às configurações.")
-
     band = get_object_or_404(Band, slug=band_slug)
 
     if request.method == 'POST':
+        if not request.user.is_produtor():
+            return HttpResponseForbidden("Apenas produtores podem alterar a identidade visual da banda.")
         if 'logo' in request.FILES:
             band.logo = request.FILES['logo']
             band.save()

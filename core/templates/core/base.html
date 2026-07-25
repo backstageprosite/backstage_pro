@@ -255,7 +255,6 @@
                     {% include 'core/includes/pwa_install.html' %}
                 </ul>
                 
-                {% if request.user.is_produtor or request.user.is_superuser %}
                 <hr class="mt-4 mb-3 text-muted">
                 <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
@@ -264,7 +263,6 @@
                         </a>
                     </li>
                 </ul>
-                {% endif %}
             </div>
         </div>
 

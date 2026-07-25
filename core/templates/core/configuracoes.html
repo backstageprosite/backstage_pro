@@ -9,6 +9,7 @@
     <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm border-0" style="border-radius: 12px;">
             <div class="card-body p-4">
+                {% if request.user.role == 'PRODUTOR' or request.user.is_superuser %}
                 <h5 class="fw-bold mb-4">Identidade Visual</h5>
                 
                 <form method="post" enctype="multipart/form-data">
@@ -43,6 +44,7 @@
                         </button>
                     </div>
                 </form>
+                {% endif %}
 
                 <h5 class="fw-bold mb-4 mt-5">Notificações</h5>
                 
