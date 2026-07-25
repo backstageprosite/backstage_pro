@@ -780,7 +780,7 @@ class BandDashboardPendingItem(models.Model):
         diff = (self.show.date - hoje).days
 
         if diff > 7:
-            return {'label': 'No Prazo', 'class': 'bg-info text-dark'}
+            return {'label': 'No Prazo', 'class': 'bg-success'}
         elif 1 <= diff <= 7:
             return {'label': 'Próximo', 'class': 'bg-warning text-dark'}
         elif diff == 0:
