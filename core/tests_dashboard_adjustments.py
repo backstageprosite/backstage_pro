@@ -123,7 +123,7 @@ class DashboardAdjustmentsTests(TestCase):
         response = self.client.get(reverse('shows_list', kwargs={'band_slug': self.band.slug}))
         self.assertEqual(response.status_code, 200)
         
-        response = self.client.get(reverse('logout', kwargs={'band_slug': self.band.slug}))
+        response = self.client.post(reverse('logout', kwargs={'band_slug': self.band.slug}))
         self.assertRedirects(response, reverse('login', kwargs={'band_slug': self.band.slug}))
         
         self.client.force_login(self.admin)

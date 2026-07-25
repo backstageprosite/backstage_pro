@@ -726,6 +726,37 @@ class WebPushOperationalAlertCycleLease(models.Model):
     class Meta:
         db_table = 'web_push_operational_alert_cycle_lease'
 
+class BandDashboardPendingItemQuerySet(models.QuerySet):
+    def with_ordering(self):
+        from django.db.models import Case, When, Value, IntegerField, F
+        from django.utils import timezone
+        
+        today = timezone.localdate()
+        
+        return self.annotate(
+            date_group=Case(
+                When(show__date__isnull=True, then=Value(3)),
+                When(show__date__gte=today, then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            ),
+            future_date=Case(
+                When(show__date__gte=today, then=F('show__date')),
+                default=None,
+            ),
+            past_date=Case(
+                When(show__date__lt=today, then=F('show__date')),
+                default=None,
+            )
+        ).order_by(
+            'date_group',
+            F('future_date').asc(nulls_last=True),
+            F('past_date').desc(nulls_last=True),
+            'show__show_time',
+            'show__title',
+            'pk'
+        )
+
 class BandDashboardPendingItem(models.Model):
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='dashboard_pending_items')
     show = models.ForeignKey(Show, on_delete=models.CASCADE, related_name='dashboard_pending_items')
@@ -733,6 +764,8 @@ class BandDashboardPendingItem(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='dashboard_pending_items_created')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = BandDashboardPendingItemQuerySet.as_manager()
 
     class Meta:
         ordering = ['-created_at', '-pk']

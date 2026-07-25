@@ -84,7 +84,7 @@ class WebPushDashboardTests(TestCase):
 
     def test_menu_item_visible_only_to_authorized(self):
         self.client.login(username="admin", password="pwd")
-        res = self.client.get(reverse('admin_painel:dashboard'))
+        res = self.client.get(reverse('admin_painel:relatorios'))
         self.assertContains(res, "Web Push")
         self.assertContains(res, self.url)
 
@@ -380,7 +380,7 @@ class WebPushDashboardTests(TestCase):
     def test_responsiveness_and_template(self):
         self.client.login(username="admin", password="pwd")
         res = self.client.get(self.url)
-        self.assertContains(res, "Dashboard Operacional")
+        self.assertContains(res, "Operacional Web Push")
         self.assertContains(res, "table-responsive")
         # should not contain form method="post"
         self.assertNotContains(res, 'method="post"')

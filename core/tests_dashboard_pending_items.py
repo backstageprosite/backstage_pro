@@ -65,15 +65,15 @@ class DashboardPendingItemsTests(TestCase):
         self.assertContains(response, "Task A")
         self.assertNotContains(response, "Task B")
 
-    def test_integrante_sees_items_but_no_add_button(self):
+    def test_integrante_does_not_see_pending_items(self):
         BandDashboardPendingItem.objects.create(band=self.band_a, show=self.show_a, description="Task A", created_by=self.produtor_a)
 
         self.client.login(username="int_a", password="pwd")
         response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Task A")
-        self.assertNotContains(response, 'data-bs-target="#addPendingModal"')
-        self.assertNotContains(response, 'Excluir')
+        self.assertNotContains(response, "Task A")
+        self.assertNotContains(response, "Pendências")
+        self.assertIsNone(response.context.get('dashboard_pending_items'))
 
     def test_produtor_sees_add_and_delete_buttons(self):
         BandDashboardPendingItem.objects.create(band=self.band_a, show=self.show_a, description="Task A", created_by=self.produtor_a)

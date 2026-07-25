@@ -117,64 +117,42 @@ def band_logout(request, band_slug):
 @band_required
 def dashboard_view(request, band_slug):
     band = get_object_or_404(Band, slug=band_slug)
-    shows_proximos = Show.objects.filter(band=band, date__gte=datetime.date.today()).order_by('date', 'show_time')[:5]
+    shows_proximos = Show.objects.filter(band=band, date__gte=datetime.date.today()).order_by('date', 'show_time')[:4]
     total_shows = Show.objects.filter(band=band).count()
-    total_users = User.objects.filter(band=band).count()
-    total_contacts = Contact.objects.filter(band=band).count()
+    total_users = 0
+    total_contacts = 0
 
     from django.db.models import Case, When, Value, IntegerField, F
     from django.utils import timezone
 
     today = timezone.localdate()
 
-    dashboard_pending_items = (
-        BandDashboardPendingItem.objects
-        .filter(band=band)
-        .select_related("show", "created_by")
-        .annotate(
-            date_group=Case(
-                When(show__date__isnull=True, then=Value(3)),
-                When(show__date__gte=today, then=Value(1)),
-                default=Value(2),
-                output_field=IntegerField(),
-            ),
-            future_date=Case(
-                When(show__date__gte=today, then=F('show__date')),
-                default=None,
-            ),
-            past_date=Case(
-                When(show__date__lt=today, then=F('show__date')),
-                default=None,
-            )
-        )
-        .order_by(
-            'date_group',
-            F('future_date').asc(nulls_last=True),
-            F('past_date').desc(nulls_last=True),
-            'show__show_time',
-            'show__title',
-            'pk'
-        )
-    )
-
-    # Shows for the select in the Add modal (only for producer)
-    # Shows for the select in the Add modal (only for producer)
+    dashboard_pending_items = None
     pending_item_form = None
     administrative_notices = None
     user_is_band_producer = request.user.band == band and getattr(request.user, 'role', '') == 'PRODUTOR'
 
     if user_is_band_producer:
-        from django.utils import timezone
+        total_users = User.objects.filter(band=band).count()
+        total_contacts = Contact.objects.filter(band=band).count()
+        
+        dashboard_pending_items = (
+            BandDashboardPendingItem.objects
+            .filter(band=band)
+            .select_related("show", "created_by")
+            .with_ordering()[:4]
+        )
+        
         from django.db.models import Q, F
         shows = Show.objects.filter(
-            Q(band=band) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
+            Q(band=band) & (Q(date__gte=today) | Q(date__isnull=True))
         ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
         from .forms import BandDashboardPendingItemForm
         pending_item_form = BandDashboardPendingItemForm(shows_qs=shows)
         
         for item in dashboard_pending_items:
             item_shows = Show.objects.filter(
-                Q(band=band) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True) | Q(pk=item.show_id))
+                Q(band=band) & (Q(date__gte=today) | Q(date__isnull=True) | Q(pk=item.show_id))
             ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
             item.edit_form = BandDashboardPendingItemForm(instance=item, shows_qs=item_shows, prefix=f"edit_{item.id}")
 
@@ -194,6 +172,52 @@ def dashboard_view(request, band_slug):
         'user_is_band_producer': user_is_band_producer,
     }
     return render(request, 'core/dashboard.html', context)
+
+@login_required
+@band_required
+def pending_list_view(request, band_slug):
+    band = request.band
+    
+    user_is_band_producer = request.user.band == band and getattr(request.user, 'role', '') == 'PRODUTOR'
+    if not user_is_band_producer:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("Apenas produtores podem visualizar ou gerenciar as pendências.")
+    
+    from django.utils import timezone
+    today = timezone.localdate()
+    
+    dashboard_pending_items = (
+        BandDashboardPendingItem.objects
+        .filter(band=band)
+        .select_related("show", "created_by")
+        .with_ordering()
+    )
+
+    pending_item_form = None
+    user_is_band_producer = request.user.band == band and getattr(request.user, 'role', '') == 'PRODUTOR'
+
+    if user_is_band_producer:
+        from django.db.models import Q, F
+        shows = Show.objects.filter(
+            Q(band=band) & (Q(date__gte=today) | Q(date__isnull=True))
+        ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
+        from .forms import BandDashboardPendingItemForm
+        pending_item_form = BandDashboardPendingItemForm(shows_qs=shows)
+        
+        for item in dashboard_pending_items:
+            item_shows = Show.objects.filter(
+                Q(band=band) & (Q(date__gte=today) | Q(date__isnull=True) | Q(pk=item.show_id))
+            ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
+            item.edit_form = BandDashboardPendingItemForm(instance=item, shows_qs=item_shows, prefix=f"edit_{item.id}")
+
+    context = {
+        'band': band,
+        'pending_items': dashboard_pending_items,
+        'pending_item_form': pending_item_form,
+        'user_is_band_producer': user_is_band_producer,
+    }
+    return render(request, 'core/pending_list.html', context)
+
 
 @band_required
 def calendario(request, band_slug):
@@ -1314,6 +1338,13 @@ def add_dashboard_pending_item(request, band_slug):
         for field in form.errors:
             messages.error(request, form.errors[field][0])
             break
+            
+    next_url = request.POST.get('next')
+    if next_url:
+        from django.utils.http import url_has_allowed_host_and_scheme
+        if url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}):
+            return redirect(next_url)
+            
     return redirect('dashboard', band_slug=band.slug)
 
 @login_required
@@ -1328,6 +1359,13 @@ def delete_dashboard_pending_item(request, band_slug, pending_id):
     pending_item.delete()
 
     messages.success(request, "Pendência excluída com sucesso.")
+    
+    next_url = request.POST.get('next')
+    if next_url:
+        from django.utils.http import url_has_allowed_host_and_scheme
+        if url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}):
+            return redirect(next_url)
+            
     return redirect('dashboard', band_slug=band.slug)
 
 @login_required
@@ -1358,6 +1396,12 @@ def edit_dashboard_pending_item(request, band_slug, pending_id):
         for field in form.errors:
             messages.error(request, form.errors[field][0])
             break
+            
+    next_url = request.POST.get('next')
+    if next_url:
+        from django.utils.http import url_has_allowed_host_and_scheme
+        if url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}):
+            return redirect(next_url)
             
     return redirect('dashboard', band_slug=band.slug)
 

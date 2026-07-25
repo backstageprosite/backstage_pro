@@ -14,6 +14,7 @@ urlpatterns = [
     path('instalar-aplicativo/', views.instalar_aplicativo_view, name='instalar_aplicativo'),
     path('calendario/', views.calendario, name='calendario'),
     path('painel/', views.dashboard_view, name='dashboard'),
+    path('pendencias/', views.pending_list_view, name='pendencias'),
     path('dashboard/pendencias/adicionar/', views.add_dashboard_pending_item, name='add_dashboard_pending_item'),
     path('dashboard/pendencias/<int:pending_id>/editar/', views.edit_dashboard_pending_item, name='edit_dashboard_pending_item'),
     path('dashboard/pendencias/<int:pending_id>/excluir/', views.delete_dashboard_pending_item, name='delete_dashboard_pending_item'),
