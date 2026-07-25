@@ -397,6 +397,7 @@ class Notification(models.Model):
         ('SHOW_CANCELLED', 'Show cancelado'),
         ('SHOW_DATE_CHANGED', 'Data do show alterada'),
         ('SHOW_START_TIME_CHANGED', 'Horário inicial do show alterado'),
+        ('SHOW_CONFIRMED', 'Show confirmado'),
     )
 
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='notifications', verbose_name='Banda')

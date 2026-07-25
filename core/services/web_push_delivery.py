@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 MAX_WEB_PUSH_PAYLOAD_BYTES = 3800
 
 def build_web_push_payload(notification: Notification) -> dict:
-    valid_events = ['NEW_SHOW', 'SHOW_CANCELLED', 'SHOW_DATE_CHANGED', 'SHOW_START_TIME_CHANGED']
+    valid_events = ['NEW_SHOW', 'SHOW_CANCELLED', 'SHOW_DATE_CHANGED', 'SHOW_START_TIME_CHANGED', 'SHOW_CONFIRMED']
     if notification.event_type not in valid_events:
         return None
     
