@@ -82,7 +82,7 @@ class UserForm(forms.ModelForm):
             'username': 'Login',
             'email': 'E-mail',
             'role': 'Perfil de Acesso',
-            'is_active': 'Usuário Ativo?',
+            'is_active': 'Usuário Ativo',
         }
 
     def clean(self):
@@ -120,7 +120,7 @@ class UserEditForm(forms.ModelForm):
             'username': 'Nome de Usuário (Login)',
             'email': 'E-mail',
             'role': 'Perfil de Acesso',
-            'is_active': 'Usuário Ativo?',
+            'is_active': 'Usuário Ativo',
         }
 
 class ContactForm(forms.ModelForm):
