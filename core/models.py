@@ -759,9 +759,9 @@ class BandDashboardPendingItemQuerySet(models.QuerySet):
 
 class BandDashboardPendingItem(models.Model):
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='dashboard_pending_items')
-    show = models.ForeignKey(Show, on_delete=models.CASCADE, related_name='dashboard_pending_items')
+    show = models.ForeignKey(Show, on_delete=models.CASCADE, related_name='dashboard_pending_items', null=True, blank=True)
     description = models.CharField(max_length=500)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='dashboard_pending_items_created')
+    created_by = models.ForeignKey('User', on_delete=models.PROTECT, related_name='dashboard_pending_items_created')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -770,8 +770,26 @@ class BandDashboardPendingItem(models.Model):
     class Meta:
         ordering = ['-created_at', '-pk']
 
+    @property
+    def status_info(self):
+        if not self.show or not self.show.date:
+            return {'label': 'Geral', 'class': 'bg-secondary'}
+        
+        from django.utils import timezone
+        hoje = timezone.localdate()
+        diff = (self.show.date - hoje).days
+
+        if diff > 7:
+            return {'label': 'No Prazo', 'class': 'bg-info text-dark'}
+        elif 1 <= diff <= 7:
+            return {'label': 'Próximo', 'class': 'bg-warning text-dark'}
+        elif diff == 0:
+            return {'label': 'Hoje', 'class': 'bg-primary'}
+        else:
+            return {'label': 'Vencido', 'class': 'bg-danger'}
+
     def __str__(self):
-        return f'{self.show.title or self.show.city} - {self.description[:50]}'
+        return f'{self.show.title if self.show else "Geral"} - {self.description[:50]}'
 
 class AdministrativeBandNotice(models.Model):
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='administrative_notices', null=True, blank=True, verbose_name='Banda Destino', help_text='Deixe em branco para enviar a todas as bandas (Todos).')

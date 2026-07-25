@@ -145,8 +145,9 @@
                         <table class="table table-hover align-middle mb-0" style="min-width: 300px;">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 50%;">Pendência</th>
-                                    <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 35%;">Show</th>
+                                    <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 40%;">Pendência</th>
+                                    <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 25%;">Show</th>
+                                    <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 20%;">Status</th>
                                     {% if request.user.role == 'PRODUTOR' %}
                                     <th class="py-3 px-4 text-muted fw-semibold small text-uppercase text-end" style="width: 15%;">Ações</th>
                                     {% endif %}
@@ -157,11 +158,16 @@
                                 <tr>
                                     <td class="py-3 px-4 text-dark" style="white-space: pre-wrap; word-break: break-word;">{{ item.description }}</td>
                                     <td class="py-3 px-4 text-muted small">
-                                        {% if band %}
+                                        {% if item.show %}
                                         <a href="{% url 'shows_edit' band.slug item.show.id %}" class="text-decoration-none text-primary fw-medium">
                                             {{ item.show.get_display_label }}
                                         </a>
+                                        {% else %}
+                                        <span class="text-secondary fw-medium">Geral</span>
                                         {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="badge rounded-pill {{ item.status_info.class }} fw-medium px-2 py-1" style="font-size: 0.75rem;">{{ item.status_info.label }}</span>
                                     </td>
                                     {% if request.user.role == 'PRODUTOR' %}
                                     <td class="py-3 px-4">

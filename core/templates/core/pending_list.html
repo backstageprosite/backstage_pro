@@ -26,8 +26,9 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light text-muted small text-uppercase">
                         <tr>
-                            <th class="ps-4 fw-bold border-bottom-0 py-3" style="width: 50%;">Pendência</th>
+                            <th class="ps-4 fw-bold border-bottom-0 py-3" style="width: 40%;">Pendência</th>
                             <th class="fw-bold border-bottom-0 py-3">Show</th>
+                            <th class="fw-bold border-bottom-0 py-3">Status</th>
                             {% if request.user.role == 'PRODUTOR' %}
                             <th class="pe-4 text-end fw-bold border-bottom-0 py-3">Ações</th>
                             {% endif %}
@@ -43,8 +44,11 @@
                                     {{ item.show.get_display_label }}
                                 </a>
                                 {% else %}
-                                <span class="text-secondary fw-medium">Sem show vinculado</span>
+                                <span class="text-secondary fw-medium">Geral</span>
                                 {% endif %}
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="badge rounded-pill {{ item.status_info.class }} fw-medium px-3 py-2">{{ item.status_info.label }}</span>
                             </td>
                             {% if request.user.role == 'PRODUTOR' %}
                             <td class="py-3 px-4">

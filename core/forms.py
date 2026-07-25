@@ -254,7 +254,7 @@ class ShowChoiceField(forms.ModelChoiceField):
         return obj.get_display_label()
 
 class BandDashboardPendingItemForm(forms.ModelForm):
-    show = ShowChoiceField(queryset=None, empty_label='Selecione um show', widget=forms.Select(attrs={'class': 'form-select', 'style': 'border-radius: 8px;'}))
+    show = ShowChoiceField(queryset=None, required=False, empty_label='Geral', widget=forms.Select(attrs={'class': 'form-select', 'style': 'border-radius: 8px;'}))
     class Meta:
         model = BandDashboardPendingItem
         fields = ['description', 'show']
