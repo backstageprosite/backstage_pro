@@ -25,7 +25,7 @@ def render_notifications_bell(context):
     if hasattr(request, 'resolver_match') and request.resolver_match:
         url_name = request.resolver_match.url_name
         # Ignorar rotas que não pertencem à área logada da banda
-        ignored_routes = ['login', 'dashboard', 'public_band_logo', 'manifest', 'band_sw', 'band_icon']
+        ignored_routes = ['login', 'public_band_logo', 'manifest', 'band_sw', 'band_icon']
         if url_name in ignored_routes:
             return {'show_bell': False}
     else:
