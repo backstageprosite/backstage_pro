@@ -28,17 +28,8 @@
         }
 
         /* Fix Bootstrap dropdowns inside table-responsive getting cut off */
-        @media (min-width: 992px) {
-            .table-responsive {
-                overflow: visible !important;
-                overflow-x: visible !important;
-                overflow-y: visible !important;
-            }
-        }
-        @media (max-width: 991.98px) {
-            .table-responsive {
-                padding-bottom: 120px; /* Garante espaço para o dropdown no mobile e tablet sem cortar */
-            }
+        .table-responsive {
+            padding-bottom: 120px; /* Garante espaço para o dropdown sem cortar a rolagem */
         }
         
         /* Oculta opções de dark mode e usa o default do Bootstrap claro */
