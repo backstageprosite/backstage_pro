@@ -291,6 +291,16 @@
 </div>
 {% endif %}
 
+<div class="row">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+            <div class="card-body p-4">
+                {% include 'core/includes/web_push_card.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+
 {% if request.user.role == 'PRODUTOR' %}
 <!-- Add Pending Modal -->
 <div class="modal fade" id="addPendingModal" tabindex="-1" aria-labelledby="addPendingModalLabel" aria-hidden="true">
@@ -322,4 +332,9 @@
 </div>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_js %}
+    {% load static %}
+    <script src="{% static 'core/js/web_push_settings.js' %}" defer></script>
 {% endblock %}
