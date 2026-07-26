@@ -303,7 +303,7 @@ self.addEventListener("push", (event) => {{
             if (
                 payload.version === 1 &&
                 Number.isInteger(payload.notification_id) && payload.notification_id > 0 &&
-                ["NEW_SHOW", "SHOW_CANCELLED", "SHOW_DATE_CHANGED", "SHOW_START_TIME_CHANGED"].includes(payload.event_type) &&
+                ["NEW_SHOW", "SHOW_CANCELLED", "SHOW_DATE_CHANGED", "SHOW_START_TIME_CHANGED", "SHOW_CONFIRMED"].includes(payload.event_type) &&
                 payload.band_slug === BAND_SLUG &&
                 typeof payload.title === 'string' && payload.title.trim().length > 0 && payload.title.length <= 120 &&
                 !/[\\x00-\\x1F\\x7F<>]/.test(payload.title) &&
