@@ -167,12 +167,12 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     async function init() {
-        if (!checkSupport()) {
-            return setState(STATE.UNSUPPORTED);
-        }
-
         if (isIOS && !isStandalone) {
             return setState(STATE.IOS_NOT_INSTALLED);
+        }
+
+        if (!checkSupport()) {
+            return setState(STATE.UNSUPPORTED);
         }
 
         if (Notification.permission === 'denied') {
