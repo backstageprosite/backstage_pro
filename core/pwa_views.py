@@ -237,7 +237,7 @@ def band_service_worker(request, band_slug):
     sw_content = f"""
 "use strict";
 
-const SW_VERSION = {json.dumps(band.slug + "-v2")};
+const SW_VERSION = {json.dumps(band.slug + "-v3")};
 const BAND_SLUG = {json.dumps(band.slug)};
 const BAND_SCOPE = {json.dumps("/" + band.slug + "/")};
 const BAND_NAME = {json.dumps(band.name.strip())};
@@ -245,11 +245,11 @@ const NOTIFICATIONS_URL = {json.dumps(notifications_url)};
 const ICON_URL = {json.dumps(icon_url)};
 
 self.addEventListener("install", (event) => {{
-    // Pass-through install
+    self.skipWaiting();
 }});
 
 self.addEventListener("activate", (event) => {{
-    // Pass-through activate
+    event.waitUntil(self.clients.claim());
 }});
 
 function normalizeInternalTarget(rawTarget) {{
