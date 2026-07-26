@@ -40,6 +40,8 @@
                                 <i class="fa-solid fa-calendar-day fs-5 text-warning"></i>
                             {% elif notification.event_type == 'SHOW_START_TIME_CHANGED' %}
                                 <i class="fa-regular fa-clock fs-5 text-info"></i>
+                            {% elif notification.event_type == 'SHOW_CONFIRMED' %}
+                                <i class="fa-solid fa-calendar-check fs-5 text-success"></i>
                             {% else %}
                                 <i class="fa-solid fa-bell fs-5 text-secondary"></i>
                             {% endif %}

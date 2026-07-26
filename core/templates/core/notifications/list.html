@@ -49,6 +49,8 @@
                                 <i class="fa-solid fa-calendar-day fs-4 text-warning"></i>
                             {% elif notification.event_type == 'SHOW_START_TIME_CHANGED' %}
                                 <i class="fa-regular fa-clock fs-4 text-info"></i>
+                            {% elif notification.event_type == 'SHOW_CONFIRMED' %}
+                                <i class="fa-solid fa-calendar-check fs-4 text-success"></i>
                             {% else %}
                                 <i class="fa-solid fa-bell fs-4 text-secondary"></i>
                             {% endif %}
@@ -67,6 +69,8 @@
                                             <i class="fa-solid fa-calendar-day text-warning"></i>
                                         {% elif notification.event_type == 'SHOW_START_TIME_CHANGED' %}
                                             <i class="fa-regular fa-clock text-info"></i>
+                                        {% elif notification.event_type == 'SHOW_CONFIRMED' %}
+                                            <i class="fa-solid fa-calendar-check text-success"></i>
                                         {% else %}
                                             <i class="fa-solid fa-bell text-secondary"></i>
                                         {% endif %}

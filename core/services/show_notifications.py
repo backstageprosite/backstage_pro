@@ -98,20 +98,9 @@ def schedule_show_notifications(old_show, new_show, actor, is_creation=False):
             
         # 1.5 Mudança para Confirmado (de Cancelado ou Reserva)
         if old_show and old_show.status != 'CONFIRMADO' and new_show.status == 'CONFIRMADO':
-            date_str = new_show.date.strftime('%d/%m/%Y') if new_show.date else "data não informada"
-            if old_show.status == 'CANCELADO':
-                msg = f'O show "{show_name}" de {date_str} foi reconfirmado.'
+            if old_show.status in ['CANCELADO', 'PRE_RESERVADO']:
+                msg = f'O show "{show_name}" foi alterado para Confirmado.'
                 title = 'Show reconfirmado'
-                events.append(EventPayload(
-                    event_type='SHOW_CONFIRMED',
-                    title=title,
-                    message=msg,
-                    target_url=target_url,
-                    event_key=f"show:{new_show.id}:rev:{rev}:SHOW_CONFIRMED"
-                ))
-            elif old_show.status == 'PRE_RESERVADO':
-                msg = f'A reserva do show "{show_name}" de {date_str} foi confirmada.'
-                title = 'Reserva confirmada'
                 events.append(EventPayload(
                     event_type='SHOW_CONFIRMED',
                     title=title,
