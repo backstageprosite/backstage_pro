@@ -14,6 +14,7 @@ WEB_PUSH_ALLOWED_EVENTS = frozenset([
     'SHOW_CANCELLED',
     'SHOW_DATE_CHANGED',
     'SHOW_START_TIME_CHANGED',
+    'SHOW_CONFIRMED',
 ])
 
 def _dispatch_web_push_deliveries_safe(delivery_ids):
