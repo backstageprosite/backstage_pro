@@ -42,6 +42,10 @@
             border-bottom-width: 1px !important; /* Para garantir visibilidade */
             background-color: inherit !important; /* Fix for Bootstrap 5 TD overriding TR background */
         }
+        
+        .cpf-cell {
+            white-space: nowrap;
+        }
 
         .header-section {
             border-bottom: 2px solid #000;
@@ -111,8 +115,8 @@
                 {% if 'category' in columns %}<th>Categoria</th>{% endif %}
                 {% if 'cpf' in columns %}<th>CPF</th>{% endif %}
                 {% if 'vehicle' in columns %}<th>Veículo</th>{% endif %}
-                {% if 'birth_date' in columns %}<th>Data de Nascimento</th>{% endif %}
-                {% if 'miles_number' in columns %}<th>Número Milhas</th>{% endif %}
+                {% if 'birth_date' in columns %}<th>Nascimento</th>{% endif %}
+                {% if 'miles_number' in columns %}<th>Milhas</th>{% endif %}
             </tr>
         </thead>
         <tbody>
