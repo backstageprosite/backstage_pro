@@ -141,7 +141,7 @@
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
                                             {% if payment.file %}
                                             <li>
-                                                <a href="{% url 'download_payment' band.slug payment.pk %}" class="dropdown-item py-2 fw-medium">
+                                                <a href="{% url 'download_payment' band.slug payment.pk %}" target="_blank" class="dropdown-item py-2 fw-medium">
                                                     <i class="fa-solid fa-download me-2 text-success"></i> Download
                                                 </a>
                                             </li>
@@ -215,7 +215,7 @@
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
                                             {% if receipt.file %}
                                             <li>
-                                                <a href="{% url 'download_receipt' band.slug receipt.pk %}" class="dropdown-item py-2 fw-medium">
+                                                <a href="{% url 'download_receipt' band.slug receipt.pk %}" target="_blank" class="dropdown-item py-2 fw-medium">
                                                     <i class="fa-solid fa-download me-2 text-success"></i> Download
                                                 </a>
                                             </li>
