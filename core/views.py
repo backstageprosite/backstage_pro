@@ -1519,7 +1519,8 @@ def integrantes_list_view(request, band_slug):
                 integrante = form.save(commit=False)
                 integrante.band = band
                 # Set order to the end
-                last_order = Integrante.objects.filter(band=band).aggregate(models.Max('order'))['order__max'] or 0
+                from django.db.models import Max
+                last_order = Integrante.objects.filter(band=band).aggregate(Max('order'))['order__max'] or 0
                 integrante.order = last_order + 1
                 integrante.save()
                 messages.success(request, "Integrante adicionado com sucesso.")

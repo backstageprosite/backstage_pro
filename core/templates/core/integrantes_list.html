@@ -10,7 +10,7 @@
         <h4 class="fw-bold m-0 ms-2"><i class="fa-solid fa-users-gear text-primary me-2"></i> Integrantes</h4>
     </div>
     
-    {% if getattr(request.user, 'role', '') == 'PRODUTOR' %}
+    {% if request.user.role == 'PRODUTOR' %}
     <div class="d-flex gap-2">
         <button type="button" class="btn btn-dark fw-bold rounded-pill px-3 shadow-sm" onclick="gerarPDF()">
             <i class="fa-solid fa-file-pdf me-1"></i> Gerar PDF
@@ -40,7 +40,7 @@
                         <th class="fw-bold border-bottom-0 py-3">Função</th>
                         <th class="fw-bold border-bottom-0 py-3">Categoria</th>
                         <th class="fw-bold border-bottom-0 py-3">Pix</th>
-                        {% if getattr(request.user, 'role', '') == 'PRODUTOR' %}
+                        {% if request.user.role == 'PRODUTOR' %}
                         <th class="pe-4 text-end fw-bold border-bottom-0 py-3">Ações</th>
                         {% endif %}
                     </tr>
@@ -59,7 +59,7 @@
                         <td class="py-3 px-4 text-muted small">{{ item.get_category_display }}</td>
                         <td class="py-3 px-4 text-muted small">{{ item.pix_key|default:"-" }}</td>
                         
-                        {% if getattr(request.user, 'role', '') == 'PRODUTOR' %}
+                        {% if request.user.role == 'PRODUTOR' %}
                         <td class="py-3 px-4">
                             <div class="dropdown d-flex justify-content-end">
                                 <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
@@ -83,7 +83,7 @@
                         {% endif %}
                     </tr>
 
-                    {% if getattr(request.user, 'role', '') == 'PRODUTOR' %}
+                    {% if request.user.role == 'PRODUTOR' %}
                     <!-- Modal Editar Integrante -->
                     <div class="modal fade" id="editIntegranteModal{{ item.id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
@@ -177,7 +177,7 @@
     </div>
 </div>
 
-{% if getattr(request.user, 'role', '') == 'PRODUTOR' %}
+{% if request.user.role == 'PRODUTOR' %}
 <!-- Modal Adicionar Integrante -->
 <div class="modal fade" id="addIntegranteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -260,7 +260,7 @@
     }
 
     // Drag and Drop (SortableJS)
-    {% if getattr(request.user, 'role', '') == 'PRODUTOR' and integrantes %}
+    {% if request.user.role == 'PRODUTOR' and integrantes %}
     document.addEventListener('DOMContentLoaded', function () {
         const el = document.getElementById('sortableList');
         if (el) {
