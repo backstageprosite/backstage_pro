@@ -768,7 +768,7 @@
             datesSet: function(info) {
                 var titleEl = document.querySelector('.fc-toolbar-title');
                 if (titleEl) {
-                    var titleText = titleEl.textContent;
+                    var titleText = info.view.title; // Usa o título oficial da view em vez de ler o DOM acumulado
                     // Fix ' De ' to ' de ' se o pt-br ou CSS antigo houver alterado
                     titleText = titleText.replace(/ De /g, ' de ');
                     // Garantir a primeira letra maiuscula: "agosto de 2026" -> "Agosto de 2026"
