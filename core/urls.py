@@ -49,6 +49,12 @@ urlpatterns = [
     path('relatorios/rider/<int:pk>/preview/', file_views.preview_rider, name='preview_rider'),
     path('rider/publico/<uuid:uuid>/', file_views.public_rider_download, name='public_rider_download'),
     
+    # Integrantes
+    path('relatorios/integrantes/', views.integrantes_list_view, name='integrantes_list'),
+    path('relatorios/integrantes/pdf/', views.integrantes_pdf_view, name='integrantes_pdf'),
+    path('relatorios/integrantes/<int:pk>/excluir/', views.integrante_delete_view, name='integrante_delete'),
+    path('relatorios/integrantes/reorder/', views.integrantes_reorder_view, name='integrantes_reorder'),
+    
     # Fale Conosco - Produtor
     path('relatorios/fale-conosco/', views_support.support_list_view, name='support_list'),
     path('relatorios/fale-conosco/novo/', views_support.support_create_view, name='support_create'),

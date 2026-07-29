@@ -275,3 +275,17 @@ class RiderDocumentForm(forms.ModelForm):
             'file': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
+from .models import Integrante
+
+class IntegranteForm(forms.ModelForm):
+    class Meta:
+        model = Integrante
+        fields = ['name', 'role', 'cpf', 'vehicle', 'category', 'pix_key']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome completo', 'style': 'border-radius: 8px;'}),
+            'role': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Função (ex: Roadie, Baterista)', 'style': 'border-radius: 8px;'}),
+            'cpf': forms.TextInput(attrs={'class': 'form-control cpf-mask', 'placeholder': '000.000.000-00', 'style': 'border-radius: 8px;'}),
+            'vehicle': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Placa / Modelo (Opcional)', 'style': 'border-radius: 8px;'}),
+            'category': forms.Select(attrs={'class': 'form-select', 'style': 'border-radius: 8px;'}),
+            'pix_key': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Chave-Pix (Opcional)', 'style': 'border-radius: 8px;'}),
+        }

@@ -1494,3 +1494,109 @@ def rider_list_view(request, band_slug):
         'form': form,
     }
     return render(request, 'core/rider_list.html', context)
+
+# ==========================================
+# VIEWS DE INTEGRANTES
+# ==========================================
+import json
+from django.http import JsonResponse
+from .models import Integrante
+from .forms import IntegranteForm
+
+@login_required
+@band_required
+def integrantes_list_view(request, band_slug):
+    band = get_object_or_404(Band, slug=band_slug)
+    
+    if request.method == 'POST':
+        if getattr(request.user, 'role', '') != 'PRODUTOR':
+            return HttpResponseForbidden("Apenas produtores podem gerenciar integrantes.")
+            
+        action = request.POST.get('action')
+        if action == 'add':
+            form = IntegranteForm(request.POST)
+            if form.is_valid():
+                integrante = form.save(commit=False)
+                integrante.band = band
+                # Set order to the end
+                last_order = Integrante.objects.filter(band=band).aggregate(models.Max('order'))['order__max'] or 0
+                integrante.order = last_order + 1
+                integrante.save()
+                messages.success(request, "Integrante adicionado com sucesso.")
+            else:
+                for field in form.errors:
+                    messages.error(request, form.errors[field][0])
+                    break
+        elif action == 'edit':
+            integrante_id = request.POST.get('integrante_id')
+            integrante = get_object_or_404(Integrante, id=integrante_id, band=band)
+            form = IntegranteForm(request.POST, instance=integrante)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Integrante atualizado com sucesso.")
+            else:
+                for field in form.errors:
+                    messages.error(request, form.errors[field][0])
+                    break
+                    
+        return redirect('integrantes_list', band_slug=band.slug)
+
+    integrantes = Integrante.objects.filter(band=band)
+    add_form = IntegranteForm()
+    
+    context = {
+        'band': band,
+        'integrantes': integrantes,
+        'add_form': add_form,
+    }
+    return render(request, 'core/integrantes_list.html', context)
+
+@login_required
+@band_required
+@require_POST
+def integrante_delete_view(request, band_slug, pk):
+    band = get_object_or_404(Band, slug=band_slug)
+    if getattr(request.user, 'role', '') != 'PRODUTOR':
+        return HttpResponseForbidden("Apenas produtores podem gerenciar integrantes.")
+        
+    integrante = get_object_or_404(Integrante, id=pk, band=band)
+    integrante.delete()
+    messages.success(request, "Integrante excluído com sucesso.")
+    return redirect('integrantes_list', band_slug=band.slug)
+
+@login_required
+@band_required
+@require_POST
+def integrantes_reorder_view(request, band_slug):
+    band = get_object_or_404(Band, slug=band_slug)
+    if getattr(request.user, 'role', '') != 'PRODUTOR':
+        return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+        
+    try:
+        data = json.loads(request.body)
+        order_list = data.get('order', [])
+        
+        for idx, item_id in enumerate(order_list):
+            Integrante.objects.filter(id=item_id, band=band).update(order=idx)
+            
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@login_required
+@band_required
+def integrantes_pdf_view(request, band_slug):
+    band = get_object_or_404(Band, slug=band_slug)
+    
+    ids_param = request.GET.get('ids', '')
+    if ids_param:
+        ids_list = [int(id) for id in ids_param.split(',') if id.isdigit()]
+        integrantes = Integrante.objects.filter(band=band, id__in=ids_list)
+    else:
+        integrantes = Integrante.objects.none()
+        
+    context = {
+        'band': band,
+        'integrantes': integrantes,
+    }
+    return render(request, 'core/integrantes_pdf.html', context)

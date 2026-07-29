@@ -1069,3 +1069,28 @@ class LandingPageBandLogo(models.Model):
         if self.image:
             self.image.delete(save=False)
         super().delete(*args, **kwargs)
+
+class Integrante(models.Model):
+    CATEGORY_CHOICES = [
+        ('PRODUCAO', 'Produção'),
+        ('MUSICO', 'Músico'),
+        ('EQUIPE_TECNICA', 'Equipe Técnica'),
+        ('SERVICOS', 'Serviços'),
+    ]
+    
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='integrantes')
+    name = models.CharField(max_length=255, verbose_name="Nome")
+    role = models.CharField(max_length=150, verbose_name="Função")
+    cpf = models.CharField(max_length=20, blank=True, null=True, verbose_name="CPF")
+    vehicle = models.CharField(max_length=150, blank=True, null=True, verbose_name="Veículo")
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, verbose_name="Categoria")
+    pix_key = models.CharField(max_length=255, blank=True, null=True, verbose_name="Chave-Pix")
+    order = models.PositiveIntegerField(default=0, verbose_name="Ordem")
+    
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = "Integrante"
+        verbose_name_plural = "Integrantes"
+        
+    def __str__(self):
+        return f"{self.name} - {self.role} ({self.get_category_display()})"
