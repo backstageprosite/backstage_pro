@@ -137,14 +137,26 @@ def private_download_required(view_func):
 def download_contract(request, band_slug, pk):
     """Download protegido de ContractDocument"""
     doc = get_object_or_404(ContractDocument, pk=pk, show__band=request.band)
-    return serve_private_file(doc.file)
+    return serve_private_file(doc.file, as_attachment=True)
+
+@private_download_required
+def preview_contract(request, band_slug, pk):
+    """Preview protegido de ContractDocument (as_attachment=False)"""
+    doc = get_object_or_404(ContractDocument, pk=pk, show__band=request.band)
+    return serve_private_file(doc.file, as_attachment=False)
 
 
 @private_download_required
 def download_receipt(request, band_slug, pk):
     """Download protegido de FinancialReceipt"""
     doc = get_object_or_404(FinancialReceipt, pk=pk, show__band=request.band)
-    return serve_private_file(doc.file)
+    return serve_private_file(doc.file, as_attachment=True)
+
+@private_download_required
+def preview_receipt(request, band_slug, pk):
+    """Preview protegido de FinancialReceipt (as_attachment=False)"""
+    doc = get_object_or_404(FinancialReceipt, pk=pk, show__band=request.band)
+    return serve_private_file(doc.file, as_attachment=False)
 
 
 @private_download_required

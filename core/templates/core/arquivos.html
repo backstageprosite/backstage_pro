@@ -53,7 +53,7 @@
                                         </div>
                                     </div>
                                     <div class="d-flex gap-2">
-                                        <a href="{% url 'download_contract' band.slug doc.pk %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm px-3" title="Download">
+                                        <a href="{% url 'download_contract' band.slug doc.pk %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm px-3 js-pwa-file-action" data-download-url="{% url 'download_contract' band.slug doc.pk %}" data-preview-url="{% url 'preview_contract' band.slug doc.pk %}" data-filename="{{ doc.file.name|default:'documento' }}" title="Download">
                                             <i class="fa-solid fa-download"></i>
                                         </a>
                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}" title="Editar">
@@ -79,7 +79,7 @@
                                         </div>
                                     </div>
                                     <div class="d-flex gap-2">
-                                        <a href="{% url 'download_receipt' band.slug receipt.pk %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm px-3" title="Download">
+                                        <a href="{% url 'download_receipt' band.slug receipt.pk %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm px-3 js-pwa-file-action" data-download-url="{% url 'download_receipt' band.slug receipt.pk %}" data-preview-url="{% url 'preview_receipt' band.slug receipt.pk %}" data-filename="{{ receipt.file.name|default:'comprovante' }}" title="Download">
                                             <i class="fa-solid fa-download"></i>
                                         </a>
                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#editReceiptModal{{ receipt.id }}" title="Editar">
@@ -243,25 +243,282 @@
     </div>
     {% endfor %}
 {% endfor %}
+
+<!-- PWA Action Modal -->
+<div class="modal fade" id="pwaFileActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Arquivo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center pt-3 pb-4">
+                <div class="mb-3">
+                    <i id="pwaFileIcon" class="fa-solid fa-file text-primary" style="font-size: 3rem;"></i>
+                </div>
+                <h6 id="pwaFileName" class="fw-bold mb-4 text-break" style="max-height: 3rem; overflow: hidden; text-overflow: ellipsis;">documento</h6>
+                
+                <div id="pwaFileActions">
+                    <button type="button" id="btnPwaPreview" class="btn btn-primary w-100 rounded-pill fw-bold mb-2 py-2">
+                        <i class="fa-solid fa-eye me-2"></i> Visualizar
+                    </button>
+                    <button type="button" id="btnPwaShare" class="btn btn-outline-success w-100 rounded-pill fw-bold py-2 mb-2">
+                        <i class="fa-solid fa-share-nodes me-2"></i> Salvar / Compartilhar
+                    </button>
+                    <button type="button" class="btn btn-light w-100 rounded-pill fw-bold py-2 border" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                </div>
+
+                <div id="pwaFileLoading" class="d-none py-3">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <p class="mb-0 fw-bold text-muted" id="pwaFileLoadingText">Preparando arquivo...</p>
+                </div>
+                
+                <div id="pwaFileError" class="d-none py-2 text-danger fw-medium small">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PWA Preview Modal (Fullscreen) -->
+<div class="modal fade" id="pwaFilePreviewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-0 bg-dark text-white px-3 py-3" style="position: sticky; top: 0; z-index: 1050; box-shadow: 0 2px 10px rgba(0,0,0,0.5);">
+                <button type="button" class="btn btn-dark text-white border-0 fs-5 p-2 me-2" data-bs-dismiss="modal" aria-label="Close" style="width: 44px; height: 44px;">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <h6 class="modal-title fw-bold text-truncate flex-grow-1 text-center" id="pwaPreviewTitle">Visualização</h6>
+                <div style="width: 44px;"></div> <!-- Spacer for centering -->
+            </div>
+            <div class="modal-body p-0 d-flex justify-content-center align-items-center bg-dark" id="pwaPreviewContainer" style="overflow: hidden; position: relative;">
+                <!-- Content injected here (img or iframe) -->
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const searchInput = document.getElementById("searchInput");
-    searchInput.addEventListener("keyup", function() {
-        const query = this.value.toLowerCase();
-        const items = document.querySelectorAll(".file-item-container");
+    if(searchInput) {
+        searchInput.addEventListener("keyup", function() {
+            const query = this.value.toLowerCase();
+            const items = document.querySelectorAll(".file-item-container");
+            
+            items.forEach(function(item) {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    item.style.display = "";
+                } else {
+                    item.style.display = "none";
+                }
+            });
+        });
+    }
+
+    // PWA iOS File Fix
+    const isIOSDevice =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (
+            navigator.platform === 'MacIntel' &&
+            navigator.maxTouchPoints > 1
+        );
+
+    const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+    
+    if (isIOSDevice && isStandalone) {
+        const actionModal = new bootstrap.Modal(document.getElementById('pwaFileActionModal'));
+        const previewModal = new bootstrap.Modal(document.getElementById('pwaFilePreviewModal'));
         
-        items.forEach(function(item) {
-            const text = item.textContent.toLowerCase();
-            if (text.includes(query)) {
-                item.style.display = "";
-            } else {
-                item.style.display = "none";
+        const btnPreview = document.getElementById('btnPwaPreview');
+        const btnShare = document.getElementById('btnPwaShare');
+        const actionsDiv = document.getElementById('pwaFileActions');
+        const loadingDiv = document.getElementById('pwaFileLoading');
+        const errorDiv = document.getElementById('pwaFileError');
+        const previewContainer = document.getElementById('pwaPreviewContainer');
+        const previewTitle = document.getElementById('pwaPreviewTitle');
+        const iconEl = document.getElementById('pwaFileIcon');
+        
+        let currentFile = null;
+        let currentObjectUrl = null;
+
+        // Limpeza do object URL ao fechar o modal de preview
+        document.getElementById('pwaFilePreviewModal').addEventListener('hidden.bs.modal', function () {
+            previewContainer.innerHTML = '';
+            if (currentObjectUrl) {
+                URL.revokeObjectURL(currentObjectUrl);
+                currentObjectUrl = null;
             }
         });
-    });
+
+        // Intercepta botões de download
+        document.querySelectorAll('.js-pwa-file-action').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const originalUrl = this.getAttribute('data-download-url');
+                const previewUrl = this.getAttribute('data-preview-url');
+                let filename = this.getAttribute('data-filename');
+                if(filename.includes('/')) {
+                    filename = filename.split('/').pop();
+                }
+
+                currentFile = { downloadUrl: originalUrl, previewUrl: previewUrl, filename: filename };
+                
+                document.getElementById('pwaFileName').textContent = filename;
+                
+                // Set icon and handle PDF specifically for iOS
+                iconEl.className = 'fa-solid text-primary';
+                const lowerName = filename.toLowerCase();
+                
+                // Limpar warnings anteriores caso existam
+                let warningEl = document.getElementById('pwaPdfWarning');
+                if (!warningEl) {
+                    warningEl = document.createElement('p');
+                    warningEl.id = 'pwaPdfWarning';
+                    warningEl.className = 'text-muted small mb-3';
+                    warningEl.textContent = 'Para abrir este PDF no iPhone, utilize Salvar ou compartilhar.';
+                    btnPreview.parentNode.insertBefore(warningEl, btnPreview);
+                }
+                warningEl.classList.add('d-none');
+                btnPreview.classList.remove('d-none');
+
+                if (lowerName.endsWith('.pdf')) {
+                    iconEl.classList.add('fa-file-pdf', 'text-danger');
+                    btnPreview.classList.add('d-none');
+                    warningEl.classList.remove('d-none');
+                } else if (lowerName.match(/\.(jpg|jpeg|png|webp|gif)$/)) {
+                    iconEl.classList.add('fa-file-image', 'text-success');
+                } else {
+                    iconEl.classList.add('fa-file');
+                    btnPreview.classList.add('d-none');
+                }
+
+                // Reset modal state
+                actionsDiv.classList.remove('d-none');
+                loadingDiv.classList.add('d-none');
+                errorDiv.classList.add('d-none');
+                
+                actionModal.show();
+            });
+        });
+
+        // Ação: Visualizar
+        btnPreview.addEventListener('click', async function() {
+            if (!currentFile) return;
+            
+            actionsDiv.classList.add('d-none');
+            loadingDiv.classList.remove('d-none');
+            errorDiv.classList.add('d-none');
+            document.getElementById('pwaFileLoadingText').textContent = "Carregando visualização...";
+
+            try {
+                const response = await fetch(currentFile.previewUrl, {
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error("Não foi possível carregar o arquivo.");
+                
+                const blob = await response.blob();
+                currentObjectUrl = URL.createObjectURL(blob);
+                
+                previewTitle.textContent = currentFile.filename;
+                previewContainer.innerHTML = '';
+                
+                const lowerName = currentFile.filename.toLowerCase();
+                if (lowerName.match(/\.(jpg|jpeg|png|webp|gif)$/)) {
+                    const img = document.createElement('img');
+                    img.src = currentObjectUrl;
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '100%';
+                    img.style.objectFit = 'contain';
+                    previewContainer.appendChild(img);
+                } else {
+                    throw new Error("Formato não suportado para visualização interna.");
+                }
+
+                actionModal.hide();
+                previewModal.show();
+
+            } catch (err) {
+                console.error(err);
+                errorDiv.textContent = err.message || "Erro ao carregar arquivo.";
+                errorDiv.classList.remove('d-none');
+            } finally {
+                actionsDiv.classList.remove('d-none');
+                loadingDiv.classList.add('d-none');
+            }
+        });
+
+        // Ação: Salvar / Compartilhar
+        btnShare.addEventListener('click', async function() {
+            if (!currentFile) return;
+
+            actionsDiv.classList.add('d-none');
+            loadingDiv.classList.remove('d-none');
+            errorDiv.classList.add('d-none');
+            document.getElementById('pwaFileLoadingText').textContent = "Preparando arquivo...";
+
+            try {
+                const response = await fetch(currentFile.downloadUrl, {
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error("Falha na autenticação ou arquivo indisponível.");
+                
+                const blob = await response.blob();
+                let type = blob.type;
+                if (!type) {
+                    const ext = currentFile.filename.split('.').pop().toLowerCase();
+                    if (ext === 'pdf') type = 'application/pdf';
+                    else if (ext === 'jpg' || ext === 'jpeg') type = 'image/jpeg';
+                    else if (ext === 'png') type = 'image/png';
+                    else type = 'application/octet-stream';
+                }
+
+                const file = new File([blob], currentFile.filename, { type: type });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: currentFile.filename
+                        });
+                        actionModal.hide();
+                    } catch (shareErr) {
+                        if (shareErr.name === 'AbortError') {
+                            // Usuário cancelou, apenas restaurar botões
+                        } else {
+                            throw shareErr;
+                        }
+                    }
+                } else {
+                    throw new Error("O compartilhamento não é suportado neste dispositivo.");
+                }
+            } catch (err) {
+                console.error(err);
+                if (err.name !== 'AbortError') {
+                    errorDiv.textContent = err.message || "Não foi possível preparar este arquivo. Tente novamente.";
+                    errorDiv.classList.remove('d-none');
+                }
+            } finally {
+                actionsDiv.classList.remove('d-none');
+                loadingDiv.classList.add('d-none');
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

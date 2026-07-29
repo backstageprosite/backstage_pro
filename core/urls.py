@@ -75,7 +75,9 @@ urlpatterns = [
     path('assets/logo/', file_views.public_band_logo, name='public_band_logo'),
     path('admin/assets/logo/', file_views.admin_band_logo, name='admin_band_logo'),
     path('documentos/contratos/<int:pk>/download/', file_views.download_contract, name='download_contract'),
+    path('documentos/contratos/<int:pk>/preview/', file_views.preview_contract, name='preview_contract'),
     path('financeiro/recebimentos/<int:pk>/download/', file_views.download_receipt, name='download_receipt'),
+    path('financeiro/recebimentos/<int:pk>/preview/', file_views.preview_receipt, name='preview_receipt'),
     path('financeiro/pagamentos/<int:pk>/download/', file_views.download_payment, name='download_payment'),
     path('faturas/<int:pk>/download/', file_views.download_billing, name='download_billing'),
     
