@@ -4,14 +4,13 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <div>
         <h4 class="fw-bold m-0"><i class="fa-solid fa-guitar text-primary me-2"></i> Rider Técnico</h4>
-        <p class="text-muted mb-0">Gerencie os documentos de rider, palco, luz e som da banda.</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
         <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
             <i class="fa-solid fa-arrow-left me-1"></i> Voltar
         </a>
         {% if request.user.is_produtor %}
-        <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAdicionarRider">
+        <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalAdicionarRider" style="background-color: #6BD443;">
             <i class="bi bi-plus-circle me-1"></i> Adicionar
         </button>
         {% endif %}
@@ -48,11 +47,7 @@
                                             <i class="fa-solid fa-eye me-2"></i> Visualizar
                                         </a>
                                     </li>
-                                    <li>
-                                        <button type="button" class="dropdown-item py-2 fw-medium text-success" onclick="copyShareLink('{{ request.scheme }}://{{ request.get_host }}{% url 'public_rider_download' band.slug rider.uuid %}')">
-                                            <i class="fa-solid fa-share-nodes me-2"></i> Compartilhar Externamente
-                                        </button>
-                                    </li>
+
                                     {% if request.user.is_produtor %}
                                     <li>
                                         <button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditarRider-{{ rider.id }}">
@@ -69,63 +64,6 @@
                             </div>
                         </td>
                     </tr>
-                    
-                    {% if request.user.is_produtor %}
-                    <!-- Modal Editar Rider -->
-                    <div class="modal fade" id="modalEditarRider-{{ rider.id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header bg-warning text-dark">
-                                    <h5 class="modal-title"><i class="fa-solid fa-pen-to-square me-2"></i> Editar Rider</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body text-start">
-                                    <form method="post" enctype="multipart/form-data">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="rider_id" value="{{ rider.id }}">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Nome do Arquivo/Rider</label>
-                                            <input type="text" name="name" class="form-control" value="{{ rider.name }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Substituir Arquivo (Opcional)</label>
-                                            <input type="file" name="file" class="form-control" accept=".pdf">
-                                            <div class="form-text">Deixe em branco para manter o arquivo atual.</div>
-                                        </div>
-                                        <div class="text-end">
-                                            <button type="submit" name="edit_rider" class="btn btn-warning rounded-pill px-4 fw-bold">Salvar Alterações</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Modal Excluir Rider -->
-                    <div class="modal fade" id="modalExcluirRider-{{ rider.id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header bg-danger text-white">
-                                    <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation me-2"></i> Excluir Rider</h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body text-start">
-                                    <p>Tem certeza que deseja excluir o documento <strong>{{ rider.name }}</strong>?</p>
-                                    <p class="text-danger mb-0"><small>Esta ação não pode ser desfeita.</small></p>
-                                </div>
-                                <div class="modal-footer border-0">
-                                    <form method="post">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="rider_id" value="{{ rider.id }}">
-                                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" name="delete_rider" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">Sim, Excluir</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
                     {% endfor %}
                 </tbody>
             </table>
@@ -137,7 +75,7 @@
             </div>
             <h5 class="text-muted mb-3">Nenhum Rider cadastrado ainda.</h5>
             {% if request.user.is_produtor %}
-            <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAdicionarRider">
+            <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalAdicionarRider" style="background-color: #6BD443;">
                 <i class="bi bi-plus-circle me-1"></i> Adicionar Primeiro Rider
             </button>
             {% endif %}
@@ -168,7 +106,7 @@
                         <div class="form-text">Apenas arquivos PDF são recomendados.</div>
                     </div>
                     <div class="text-end">
-                        <button type="submit" name="add_rider" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                        <button type="submit" name="add_rider" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443;">
                             <i class="fa-solid fa-upload me-1"></i> Enviar
                         </button>
                     </div>
@@ -194,4 +132,63 @@ function copyShareLink(url) {
     }
 }
 </script>
+
+{% if request.user.is_produtor %}
+{% for rider in riders %}
+<!-- Modal Editar Rider -->
+<div class="modal fade" id="modalEditarRider-{{ rider.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fa-solid fa-pen-to-square me-2"></i> Editar Rider</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-start">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="rider_id" value="{{ rider.id }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nome do Arquivo/Rider</label>
+                        <input type="text" name="name" class="form-control" value="{{ rider.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Substituir Arquivo (Opcional)</label>
+                        <input type="file" name="file" class="form-control" accept=".pdf">
+                        <div class="form-text">Deixe em branco para manter o arquivo atual.</div>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" name="edit_rider" class="btn btn-warning rounded-pill px-4 fw-bold">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Excluir Rider -->
+<div class="modal fade" id="modalExcluirRider-{{ rider.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation me-2"></i> Excluir Rider</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-start">
+                <p>Tem certeza que deseja excluir o documento <strong>{{ rider.name }}</strong>?</p>
+                <p class="text-danger mb-0"><small>Esta ação não pode ser desfeita.</small></p>
+            </div>
+            <div class="modal-footer border-0">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="rider_id" value="{{ rider.id }}">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" name="delete_rider" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">Sim, Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
 {% endblock %}
