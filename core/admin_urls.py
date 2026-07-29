@@ -52,6 +52,10 @@ urlpatterns = [
     path('relatorios/fale-conosco/<int:pk>/', admin_views_support.AdminSupportDetailView.as_view(), name='support_detail'),
     path('relatorios/fale-conosco/<int:pk>/excluir/', admin_views_support.admin_support_delete, name='support_delete'),
 
+    # Gestão do Site
+    path('relatorios/site/', admin_views.SiteLogosView.as_view(), name='site_logos'),
+    path('relatorios/site/<int:pk>/excluir/', admin_views.SiteLogoDeleteView.as_view(), name='site_logos_delete'),
+
     path('web-push/', admin_views.AdminWebPushDashboardView.as_view(), name='admin_web_push_dashboard'),
     
     path('configuracoes/', admin_views.AdminConfiguracoesView.as_view(), name='configuracoes'),

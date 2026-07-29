@@ -1022,3 +1022,24 @@ class SystemSettings(models.Model):
         obj, created = cls.objects.get_or_create(pk=1)
         return obj
 
+
+class LandingPageBandLogo(models.Model):
+    name = models.CharField(max_length=255, verbose_name="Nome da banda ou artista")
+    image = models.ImageField(upload_to='landing/band_logos/', verbose_name="Logomarca")
+    display_order = models.PositiveIntegerField(default=0, verbose_name="Ordem de exibição")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['display_order', '-created_at']
+        verbose_name = "Logo da Landing Page"
+        verbose_name_plural = "Logos da Landing Page"
+
+    def __str__(self):
+        return self.name
+
+    def delete(self, *args, **kwargs):
+        # Excluir também o arquivo físico do storage
+        if self.image:
+            self.image.delete(save=False)
+        super().delete(*args, **kwargs)

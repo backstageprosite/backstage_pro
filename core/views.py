@@ -20,7 +20,29 @@ def landing_page_view(request):
     """
     Landing page principal de vendas do Backstage Pro.
     """
-    return render(request, 'core/landing.html')
+    from .models import LandingPageBandLogo
+    landing_band_logos = LandingPageBandLogo.objects.all()
+    return render(request, 'core/landing.html', {'landing_band_logos': landing_band_logos})
+
+def landing_page_logo_image_view(request, pk):
+    from .models import LandingPageBandLogo
+    import mimetypes
+    from django.http import FileResponse, Http404
+    
+    logo = get_object_or_404(LandingPageBandLogo, pk=pk)
+    if not logo.image:
+        raise Http404("Logo sem imagem")
+    
+    try:
+        content_type, _ = mimetypes.guess_type(logo.image.name)
+        if not content_type:
+            content_type = 'application/octet-stream'
+        
+        response = FileResponse(logo.image.open('rb'), content_type=content_type)
+        response['Cache-Control'] = 'public, max-age=86400'
+        return response
+    except Exception:
+        raise Http404("Erro ao acessar imagem")
 
 def termos_de_uso_view(request):
     """

@@ -120,3 +120,48 @@ class AdminPartnerForm(forms.ModelForm):
             image.seek(0)
             
         return image
+
+from core.models import LandingPageBandLogo
+
+class LandingPageBandLogoForm(forms.ModelForm):
+    image = forms.ImageField(
+        label='Logomarca',
+        required=True,
+        validators=[FileExtensionValidator(allowed_extensions=['png', 'jpg', 'jpeg', 'webp'])]
+    )
+    
+    class Meta:
+        model = LandingPageBandLogo
+        fields = ['name', 'image', 'display_order']
+        
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if name:
+            name = name.strip()
+            if not name:
+                raise forms.ValidationError('O nome não pode ficar vazio.')
+        return name
+
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+        if image:
+            if hasattr(image, 'size') and image.size > 5 * 1024 * 1024:
+                raise forms.ValidationError('A imagem não pode ultrapassar 5MB.')
+            
+            try:
+                img = Image.open(image)
+                if img.width != 1548 or img.height != 529:
+                    raise forms.ValidationError('A imagem deve possuir exatamente 1548 × 529 pixels.')
+                
+                img.verify() 
+                
+                if img.format.lower() not in ['png', 'jpeg', 'webp', 'jpg']:
+                    raise forms.ValidationError('Formato de imagem inválido. Use PNG, JPG ou WebP.')
+            except forms.ValidationError as e:
+                raise e
+            except Exception:
+                raise forms.ValidationError('O arquivo enviado não é uma imagem válida.')
+                
+            image.seek(0)
+            
+        return image

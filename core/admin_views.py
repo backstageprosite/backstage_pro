@@ -956,3 +956,41 @@ def admin_partner_delete(request, pk):
         partner.delete()
         messages.success(request, 'Parceiro excluído com sucesso.')
     return redirect('admin_painel:parceiros')
+from django.views.generic import DeleteView
+from core.models import LandingPageBandLogo
+from core.admin_forms import LandingPageBandLogoForm
+
+class SiteLogosView(AdminRequiredMixin, ListView):
+    model = LandingPageBandLogo
+    template_name = 'core/admin/site_logos.html'
+    context_object_name = 'logos'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'form' not in context:
+            context['form'] = LandingPageBandLogoForm()
+        return context
+        
+    def post(self, request, *args, **kwargs):
+        form = LandingPageBandLogoForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Logo cadastrada com sucesso!')
+            return redirect('admin_painel:site_logos')
+        
+        self.object_list = self.get_queryset()
+        context = self.get_context_data()
+        context['form'] = form
+        context['open_modal'] = True
+        return self.render_to_response(context)
+
+class SiteLogoDeleteView(AdminRequiredMixin, DeleteView):
+    model = LandingPageBandLogo
+    success_url = reverse_lazy('admin_painel:site_logos')
+    
+    def get(self, request, *args, **kwargs):
+        return redirect('admin_painel:site_logos')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Logo excluída com sucesso!')
+        return super().delete(request, *args, **kwargs)

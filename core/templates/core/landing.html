@@ -720,40 +720,24 @@
 
 
     <!-- Clientes / Portfólio -->
+    {% if landing_band_logos %}
     <section id="clientes" class="bg-light-sec border-top border-bottom border-color">
         <div class="container text-center">
             <h2 class="mb-3">Bandas e artistas que já utilizam o Backstage Pro</h2>
             <p class="text-muted mx-auto mb-5" style="max-width: 700px; font-size: 1.1rem;">Operações musicais que já estão profissionalizando sua rotina com a plataforma.</p>
             
             <div class="row g-4 justify-content-center">
+                {% for logo in landing_band_logos %}
                 <div class="col-6 col-md-4 col-lg-3">
                     <div class="client-logo-card">
-                        <img src="{% static 'core/images/clientes/danniel-vieira.jpg' %}" alt="Danniel Vieira">
+                        <img src="{% url 'landing_logo_image' logo.pk %}" alt="{{ logo.name }}" style="object-fit: contain; max-width: 100%; height: auto;">
                     </div>
                 </div>
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="client-logo-card">
-                        <img src="{% static 'core/images/clientes/leo-marques.jpg' %}" alt="Leo Marques">
-                    </div>
-                </div>
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="client-logo-card">
-                        <img src="{% static 'core/images/clientes/paredao-love.jpg' %}" alt="Paredão Love">
-                    </div>
-                </div>
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="client-logo-card">
-                        <img src="{% static 'core/images/clientes/ph-pedro-hit.jpg' %}" alt="PH Pedro Hit">
-                    </div>
-                </div>
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="client-logo-card">
-                        <img src="{% static 'core/images/clientes/vitor-meireles.jpg' %}" alt="Vitor Meireles">
-                    </div>
-                </div>
+                {% endfor %}
             </div>
         </div>
     </section>
+    {% endif %}
 
     <!-- Segurança -->
     <section>

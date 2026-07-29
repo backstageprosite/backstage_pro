@@ -1,0 +1,153 @@
+{% extends 'core/admin/base_admin.html' %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold m-0"><i class="fa-solid fa-globe text-primary me-2"></i> Site</h4>
+        <p class="text-muted small mb-0 mt-1">Gerencie as logomarcas exibidas na landing page do Backstage Pro.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="border-radius: 8px;">
+            <i class="fa-solid fa-arrow-left"></i> Voltar
+        </a>
+        <button type="button" class="btn btn-success d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addLogoModal" style="border-radius: 8px;">
+            <i class="fa-solid fa-plus"></i> Adicionar
+        </button>
+    </div>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="border-radius: 8px;">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4 border-0 py-3" style="width: 200px;">Prévia</th>
+                        <th class="border-0 py-3">Banda ou artista</th>
+                        <th class="border-0 py-3">Arquivo</th>
+                        <th class="border-0 py-3 text-center">Ordem</th>
+                        <th class="border-0 py-3 text-center">Data de cadastro</th>
+                        <th class="pe-4 border-0 py-3 text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for logo in logos %}
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <div style="width: 150px; height: 50px; background-color: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                    <img src="{% url 'landing_logo_image' logo.pk %}" alt="{{ logo.name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                </div>
+                            </td>
+                            <td class="py-3 fw-semibold text-dark">{{ logo.name }}</td>
+                            <td class="py-3 text-muted small text-break">{{ logo.image.name|slice:"19:" }}</td>
+                            <td class="py-3 text-center text-muted small">{{ logo.display_order }}</td>
+                            <td class="py-3 text-center text-muted small">{{ logo.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="pe-4 py-3 text-end">
+                                <button type="button" class="btn btn-outline-danger btn-sm px-3" data-bs-toggle="modal" data-bs-target="#deleteLogoModal{{ logo.pk }}" style="border-radius: 6px;">
+                                    Excluir
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Modal de Exclusão -->
+                        <div class="modal fade" id="deleteLogoModal{{ logo.pk }}" tabindex="-1" aria-labelledby="deleteLogoModalLabel{{ logo.pk }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content" style="border-radius: 12px; border: none;">
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold text-dark" id="deleteLogoModalLabel{{ logo.pk }}">Excluir Logomarca</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body pt-3 pb-2 text-start">
+                                        <p class="mb-0 text-muted">Tem certeza de que deseja excluir a logo de <strong>{{ logo.name }}</strong> da landing page?</p>
+                                        <div class="alert alert-warning mt-3 mb-0 py-2 small" style="border-radius: 8px;">
+                                            <i class="fa-solid fa-triangle-exclamation me-1"></i> A logo deixará de aparecer na landing page imediatamente. Esta ação afeta somente a exibição pública no site e não exclui a banda do Backstage Pro.
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top-0 pt-2">
+                                        <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                                        <form method="post" action="{% url 'admin_painel:site_logos_delete' logo.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">Excluir</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <div class="mb-3" style="font-size: 2.5rem; opacity: 0.3;">
+                                    <i class="fa-solid fa-image"></i>
+                                </div>
+                                <p class="mb-0">Nenhuma logomarca cadastrada ainda.</p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar Logo -->
+<div class="modal fade {% if open_modal %}show{% endif %}" id="addLogoModal" tabindex="-1" aria-labelledby="addLogoModalLabel" aria-hidden="true" {% if open_modal %}style="display: block;"{% endif %}>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="addLogoModalLabel">Nova Logomarca</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" {% if open_modal %}onclick="window.location.href='{% url 'admin_painel:site_logos' %}'"{% endif %}></button>
+            </div>
+            <form method="post" enctype="multipart/form-data" action="{% url 'admin_painel:site_logos' %}">
+                {% csrf_token %}
+                <div class="modal-body pt-3 pb-2 text-start">
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold text-dark small">Nome da banda ou artista</label>
+                        <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}" class="form-control {% if form.name.errors %}is-invalid{% endif %}" value="{{ form.name.value|default_if_none:'' }}">
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.image.id_for_label }}" class="form-label fw-semibold text-dark small">Logomarca</label>
+                        <input type="file" name="{{ form.image.name }}" id="{{ form.image.id_for_label }}" class="form-control {% if form.image.errors %}is-invalid{% endif %}" accept=".png,.jpg,.jpeg,.webp">
+                        {% if form.image.errors %}
+                            <div class="invalid-feedback">{{ form.image.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text mt-2 small">
+                            <strong>Dimensão obrigatória:</strong> 1548 × 529 px.<br>
+                            <strong>Formatos permitidos:</strong> PNG, JPG, JPEG ou WebP.<br>
+                            <strong>Tamanho máximo:</strong> 5 MB.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.display_order.id_for_label }}" class="form-label fw-semibold text-dark small">Ordem de exibição</label>
+                        <input type="number" name="{{ form.display_order.name }}" id="{{ form.display_order.id_for_label }}" class="form-control {% if form.display_order.errors %}is-invalid{% endif %}" value="{{ form.display_order.value|default_if_none:0 }}">
+                        {% if form.display_order.errors %}
+                            <div class="invalid-feedback">{{ form.display_order.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-2">
+                    <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;" {% if open_modal %}onclick="window.location.href='{% url 'admin_painel:site_logos' %}'"{% endif %}>Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;">Salvar logo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% if open_modal %}
+<div class="modal-backdrop fade show"></div>
+{% endif %}
+{% endblock %}
