@@ -332,6 +332,11 @@ def show_finance_detail_view(request, band_slug, pk):
 
                 fee_val = Decimal(fee_str)
                 show.fee = fee_val
+                
+                payment_status = request.POST.get('payment_status')
+                if payment_status in ['PENDENTE', 'PARCIAL', 'PAGO']:
+                    show.payment_status = payment_status
+                    
                 show.save()
                 messages.success(request, 'Cachê atualizado com sucesso!')
             except Exception as e:

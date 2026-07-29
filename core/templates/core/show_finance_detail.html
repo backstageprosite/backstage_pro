@@ -80,6 +80,14 @@
                         <label class="form-label fw-bold">Valor do Cachê (R$)</label>
                         <input type="text" name="fee" class="form-control money-mask" value="{{ show.fee|default:'0'|floatformat:'2g' }}" required>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Status do Pagamento</label>
+                        <select name="payment_status" class="form-select">
+                            <option value="PENDENTE" {% if show.payment_status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                            <option value="PARCIAL" {% if show.payment_status == 'PARCIAL' %}selected{% endif %}>Pago Parcialmente</option>
+                            <option value="PAGO" {% if show.payment_status == 'PAGO' %}selected{% endif %}>Pago Totalmente</option>
+                        </select>
+                    </div>
                     <div class="text-end">
                         <button type="submit" name="update_fee" class="btn btn-primary rounded-pill px-4 fw-bold">
                             Salvar
