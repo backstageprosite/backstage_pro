@@ -33,7 +33,6 @@
                     <tr>
                         <th class="ps-4 border-0 py-3" style="width: 200px;">Prévia</th>
                         <th class="border-0 py-3">Banda ou artista</th>
-                        <th class="border-0 py-3">Arquivo</th>
                         <th class="border-0 py-3 text-center">Ordem</th>
                         <th class="border-0 py-3 text-center">Data de cadastro</th>
                         <th class="border-0 py-3 text-center">Status</th>
@@ -49,7 +48,6 @@
                                 </div>
                             </td>
                             <td class="py-3 fw-semibold text-dark">{{ logo.name }}</td>
-                            <td class="py-3 text-muted small text-break">{{ logo.image.name|slice:"19:" }}</td>
                             <td class="py-3 text-center text-muted small">{{ logo.display_order }}</td>
                             <td class="py-3 text-center text-muted small">{{ logo.created_at|date:"d/m/Y H:i" }}</td>
                             <td class="py-3 text-center">
@@ -160,7 +158,7 @@
                         </div>
                     {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <div class="mb-3" style="font-size: 2.5rem; opacity: 0.3;">
                                     <i class="fa-solid fa-image"></i>
                                 </div>
