@@ -140,19 +140,19 @@
 <body>
 
     {% if user.is_authenticated and user.is_superuser or user.is_authenticated and user.is_staff or user.is_authenticated and perms.core.view_webpushdelivery %}
-    <div class="d-flex flex-column flex-lg-row min-vh-100">
+    <div class="d-flex flex-column flex-xl-row min-vh-100">
         
         <!-- Menu Lateral (Sidebar Desktop / Offcanvas Mobile) -->
-        <div class="offcanvas-lg offcanvas-start bg-white shadow-sm flex-shrink-0" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel" style="width: 260px !important; min-width: 260px !important; max-width: 260px !important; flex: 0 0 260px !important; border-right: 1px solid #eaeaea;">
-            <div class="offcanvas-header px-4 py-3 pb-0 d-lg-none justify-content-end">
+        <div class="offcanvas-xl offcanvas-start bg-white shadow-sm flex-shrink-0" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel" style="width: 260px !important; min-width: 260px !important; max-width: 260px !important; flex: 0 0 260px !important; border-right: 1px solid #eaeaea;">
+            <div class="offcanvas-header px-4 py-3 pb-0 d-xl-none justify-content-end">
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
             </div>
             
-            <div class="offcanvas-body d-flex flex-column px-3 py-4 overflow-y-auto pt-lg-4">
+            <div class="offcanvas-body d-flex flex-column px-3 py-4 overflow-y-auto pt-xl-4">
                 
                 <!-- Logo Admin -->
-                <div class="mb-4 px-2 text-center text-lg-start">
-                    <a href="{% url 'admin_painel:dashboard' %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none">
+                <div class="mb-4 px-2 text-center text-xl-start">
+                    <a href="{% url 'admin_painel:dashboard' %}" class="d-flex align-items-center justify-content-center justify-content-xl-start text-decoration-none">
                         {% if system_settings and system_settings.logo %}
                             <img src="{{ system_settings.logo.url }}" alt="Backstage Pro" class="img-fluid w-100" style="border-radius: 8px; object-fit: contain;">
                         {% else %}
@@ -234,14 +234,14 @@
         <!-- Área de Conteúdo Principal -->
         <div class="flex-grow-1 d-flex flex-column" style="background-color: #f8f9fa; flex: 1; min-width: 0; overflow-x: hidden; max-width: 100%;">
             <!-- Cabeçalho Superior -->
-            <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm mb-4 py-2 sticky-top">
+            <nav class="navbar navbar-expand-xl bg-white border-bottom shadow-sm mb-4 py-2 sticky-top">
                 <div class="container-fluid px-4">
                     <!-- Botão Hamburger para abrir Sidebar no Mobile -->
-                    <button class="navbar-toggler d-lg-none border-0 px-1 me-3 text-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
+                    <button class="navbar-toggler d-xl-none border-0 px-1 me-3 text-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
                         <i class="fa-solid fa-bars fs-3"></i>
                     </button>
                     
-                    <div class="d-none d-lg-block text-muted fw-medium fs-6">
+                    <div class="d-none d-xl-block text-muted fw-medium fs-6">
                         Painel Administrativo Geral
                     </div>
 
