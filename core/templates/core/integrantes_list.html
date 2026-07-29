@@ -39,7 +39,6 @@
                         <th class="fw-bold border-bottom-0 py-3">Nome</th>
                         <th class="fw-bold border-bottom-0 py-3">Função</th>
                         <th class="fw-bold border-bottom-0 py-3">Categoria</th>
-                        <th class="fw-bold border-bottom-0 py-3">Pix</th>
                         {% if request.user.role == 'PRODUTOR' %}
                         <th class="pe-4 text-end fw-bold border-bottom-0 py-3">Ações</th>
                         {% endif %}
@@ -57,7 +56,6 @@
                         </td>
                         <td class="py-3 px-4 text-muted small">{{ item.role }}</td>
                         <td class="py-3 px-4 text-muted small">{{ item.get_category_display }}</td>
-                        <td class="py-3 px-4 text-muted small">{{ item.pix_key|default:"-" }}</td>
                         
                         {% if request.user.role == 'PRODUTOR' %}
                         <td class="py-3 px-4">
