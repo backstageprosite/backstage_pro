@@ -79,8 +79,14 @@ urlpatterns = [
     path('financeiro/recebimentos/<int:pk>/download/', file_views.download_receipt, name='download_receipt'),
     path('financeiro/recebimentos/<int:pk>/preview/', file_views.preview_receipt, name='preview_receipt'),
     path('financeiro/pagamentos/<int:pk>/download/', file_views.download_payment, name='download_payment'),
+    path('financeiro/pagamentos/<int:pk>/preview/', file_views.preview_payment, name='preview_payment'),
     path('faturas/<int:pk>/download/', file_views.download_billing, name='download_billing'),
+    path('faturas/<int:pk>/preview/', file_views.preview_billing, name='preview_billing'),
     
     # Anexos do Fale Conosco
     path('fale-conosco/anexos/<int:pk>/download/', file_views.download_support_attachment, name='download_support_attachment'),
+    path('fale-conosco/anexos/<int:pk>/preview/', file_views.preview_support_attachment, name='preview_support_attachment'),
+    
+    # Visualizador HTML Dedicado PWA
+    path('arquivos/visualizar/<str:file_type>/<int:pk>/', file_views.internal_file_viewer, name='file_viewer'),
 ]

@@ -53,7 +53,7 @@
                                         </div>
                                     </div>
                                     <div class="d-flex gap-2">
-                                        <a href="{% url 'download_contract' band.slug doc.pk %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm px-3 js-pwa-file-action" data-download-url="{% url 'download_contract' band.slug doc.pk %}" data-preview-url="{% url 'preview_contract' band.slug doc.pk %}" data-filename="{{ doc.file.name|default:'documento' }}" title="Download">
+                                        <a href="{% url 'file_viewer' band.slug 'contract' doc.pk %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm px-3 js-pwa-file-action" data-download-url="{% url 'download_contract' band.slug doc.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-filename="{{ doc.file.name|default:'documento' }}" title="Download">
                                             <i class="fa-solid fa-download"></i>
                                         </a>
                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}" title="Editar">
@@ -79,7 +79,7 @@
                                         </div>
                                     </div>
                                     <div class="d-flex gap-2">
-                                        <a href="{% url 'download_receipt' band.slug receipt.pk %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm px-3 js-pwa-file-action" data-download-url="{% url 'download_receipt' band.slug receipt.pk %}" data-preview-url="{% url 'preview_receipt' band.slug receipt.pk %}" data-filename="{{ receipt.file.name|default:'comprovante' }}" title="Download">
+                                        <a href="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm px-3 js-pwa-file-action" data-download-url="{% url 'download_receipt' band.slug receipt.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-filename="{{ receipt.file.name|default:'comprovante' }}" title="Download">
                                             <i class="fa-solid fa-download"></i>
                                         </a>
                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#editReceiptModal{{ receipt.id }}" title="Editar">
@@ -284,55 +284,6 @@
     </div>
 </div>
 
-<!-- PWA Preview Modal (Fullscreen) -->
-<div class="modal fade" id="pwaFilePreviewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" style="z-index: 1060;">
-    <div class="modal-dialog modal-fullscreen m-0 h-100">
-        <div class="modal-content bg-dark border-0 rounded-0 h-100 d-flex flex-column">
-            <!-- Toolbar Superior Fixa -->
-            <div class="viewer-toolbar bg-dark text-white d-flex align-items-center justify-content-between px-3 flex-shrink-0" style="padding-top: env(safe-area-inset-top, 0px); min-height: calc(56px + env(safe-area-inset-top, 0px)); box-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 1085;">
-                <button type="button" class="btn btn-dark text-white border-0 fs-5 p-2" id="btnClosePreviewTop" aria-label="Fechar visualização" style="width: 44px; height: 44px;">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-                <h6 class="modal-title fw-bold text-truncate flex-grow-1 text-center mx-2 mb-0" id="pwaPreviewTitle">Visualização</h6>
-                <div style="width: 44px;"></div> <!-- Spacer -->
-            </div>
-
-            <!-- Área Central do Visualizador -->
-            <div class="modal-body p-0 d-flex flex-column bg-dark flex-grow-1 position-relative" id="pwaPreviewContainer" style="overflow: auto;">
-                <div id="pwaPreviewInner" class="d-flex justify-content-center align-items-center w-100" style="min-height: 100%; margin: auto;">
-                    <!-- Content injected here (img or canvas) -->
-                </div>
-                
-                <!-- Loading State Interno -->
-                <div id="pwaPreviewLoading" class="position-absolute top-50 start-50 translate-middle text-center text-white d-none" style="z-index: 1070;">
-                    <div class="spinner-border text-light mb-3" role="status">
-                        <span class="visually-hidden">Carregando...</span>
-                    </div>
-                    <p class="mb-0 fw-bold small" id="pwaPreviewLoadingText">Carregando visualização...</p>
-                </div>
-                
-                <!-- Error State Interno -->
-                <div id="pwaPreviewError" class="position-absolute top-50 start-50 translate-middle text-center text-white d-none w-100 px-4" style="z-index: 1070;">
-                    <i class="fa-solid fa-triangle-exclamation text-warning mb-3" style="font-size: 3rem;"></i>
-                    <p class="mb-3 fw-bold" id="pwaPreviewErrorMsg">Não foi possível visualizar este arquivo.</p>
-                    <button type="button" class="btn btn-outline-light rounded-pill px-4 mt-3" id="btnClosePreviewError">Voltar</button>
-                </div>
-            </div>
-
-            <!-- Toolbar Inferior Fixa -->
-            <div class="viewer-toolbar-bottom bg-dark text-white d-flex align-items-center justify-content-center px-3 flex-shrink-0" style="padding-bottom: env(safe-area-inset-bottom, 0px); min-height: calc(60px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -2px 10px rgba(0,0,0,0.5); z-index: 1085;">
-                
-                <!-- Controles do Visualizador Removidos para PDF nativo -->
-
-                <div id="imgControls" class="d-none d-flex align-items-center gap-3 w-100 justify-content-center">
-                    <button type="button" class="btn btn-dark text-white border-0 rounded-pill px-4 fw-bold" id="btnClosePreviewBottom">Fechar</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-</div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -369,56 +320,15 @@ document.addEventListener("DOMContentLoaded", function() {
     
     if (isIOSDevice && isStandalone) {
         const actionModal = new bootstrap.Modal(document.getElementById('pwaFileActionModal'));
-        const previewModal = new bootstrap.Modal(document.getElementById('pwaFilePreviewModal'));
         
         const btnPreview = document.getElementById('btnPwaPreview');
         const btnShare = document.getElementById('btnPwaShare');
         const actionsDiv = document.getElementById('pwaFileActions');
         const loadingDiv = document.getElementById('pwaFileLoading');
         const errorDiv = document.getElementById('pwaFileError');
-        const previewContainer = document.getElementById('pwaPreviewContainer');
-        const previewTitle = document.getElementById('pwaPreviewTitle');
         const iconEl = document.getElementById('pwaFileIcon');
         
         let currentFile = null;
-        let currentObjectUrl = null;
-        let fetchAbortController = null;
-        
-        const previewInner = document.getElementById('pwaPreviewInner');
-        const previewLoading = document.getElementById('pwaPreviewLoading');
-        const previewError = document.getElementById('pwaPreviewError');
-        const previewErrorMsg = document.getElementById('pwaPreviewErrorMsg');
-        
-        const imgControls = document.getElementById('imgControls');
-
-        function cleanupViewer() {
-            if (fetchAbortController) {
-                fetchAbortController.abort();
-                fetchAbortController = null;
-            }
-            if (currentObjectUrl) {
-                URL.revokeObjectURL(currentObjectUrl);
-                currentObjectUrl = null;
-            }
-            previewInner.innerHTML = '';
-        }
-
-        function closePreview() {
-            cleanupViewer();
-            previewModal.hide();
-            actionModal.show();
-        }
-
-        document.getElementById('btnClosePreviewTop').addEventListener('click', closePreview);
-        document.getElementById('btnClosePreviewBottom').addEventListener('click', closePreview);
-        document.getElementById('btnClosePreviewError').addEventListener('click', closePreview);
-        
-        document.getElementById('pwaFilePreviewModal').addEventListener('hidden.bs.modal', function () {
-            cleanupViewer();
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-        });
 
         // Intercepta botões de download
         document.querySelectorAll('.js-pwa-file-action').forEach(btn => {
@@ -426,13 +336,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 e.preventDefault();
                 
                 const originalUrl = this.getAttribute('data-download-url');
-                const previewUrl = this.getAttribute('data-preview-url');
+                const viewerUrl = this.getAttribute('data-viewer-url');
                 let filename = this.getAttribute('data-filename');
                 if(filename.includes('/')) {
                     filename = filename.split('/').pop();
                 }
 
-                currentFile = { downloadUrl: originalUrl, previewUrl: previewUrl, filename: filename };
+                currentFile = { downloadUrl: originalUrl, viewerUrl: viewerUrl, filename: filename };
                 
                 document.getElementById('pwaFileName').textContent = filename;
                 
@@ -464,62 +374,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // Ação: Visualizar
         btnPreview.addEventListener('click', async function() {
-            if (!currentFile) return;
+            if (!currentFile || !currentFile.viewerUrl) return;
             
+            // Fecha o modal de ação antes de navegar para não deixar lixo no histórico
             actionModal.hide();
             
-            previewTitle.textContent = currentFile.filename;
-            previewInner.innerHTML = '';
-            previewLoading.classList.remove('d-none');
-            previewError.classList.add('d-none');
-            imgControls.classList.add('d-none');
-            document.getElementById('pwaPreviewLoadingText').textContent = "Carregando visualização...";
-            
-            previewModal.show();
-
-            fetchAbortController = new AbortController();
-            
-            try {
-                const response = await fetch(currentFile.previewUrl, {
-                    credentials: 'same-origin',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    signal: fetchAbortController.signal
-                });
-
-                if (response.status === 403) throw new Error("Você não possui permissão para visualizar este arquivo.");
-                if (!response.ok) throw new Error("Não foi possível carregar o arquivo. Verifique sua conexão.");
-                
-                const lowerName = currentFile.filename.toLowerCase();
-                
-                if (lowerName.endsWith('.pdf')) {
-                    // Abrir PDFs nativamente no Safari View Controller
-                    actionModal.hide();
-                    window.open(currentFile.previewUrl, '_blank');
-                    return;
-                } else if (lowerName.match(/\.(jpg|jpeg|png|webp|gif)$/)) {
-                    const blob = await response.blob();
-                    currentObjectUrl = URL.createObjectURL(blob);
-                    
-                    const img = document.createElement('img');
-                    img.src = currentObjectUrl;
-                    img.style.maxWidth = '100%';
-                    img.style.objectFit = 'contain';
-                    img.className = 'p-2';
-                    previewInner.appendChild(img);
-                    
-                    imgControls.classList.remove('d-none');
-                    previewLoading.classList.add('d-none');
-                } else {
-                    throw new Error("Formato não suportado para visualização interna.");
-                }
-
-            } catch (err) {
-                if (err.name === 'AbortError') return;
-                console.error(err);
-                previewErrorMsg.textContent = err.message || "Erro ao carregar arquivo.";
-                previewLoading.classList.add('d-none');
-                previewError.classList.remove('d-none');
-            }
+            // Navega para a página interna HTML do visualizador
+            window.location.href = currentFile.viewerUrl;
         });
 
         // Ação: Salvar / Compartilhar

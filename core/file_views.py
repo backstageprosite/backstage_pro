@@ -1,7 +1,7 @@
 import os
 import mimetypes
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.core.exceptions import PermissionDenied
 from django.utils.text import get_valid_filename
 from django.contrib.auth.decorators import login_required
@@ -163,21 +163,87 @@ def preview_receipt(request, band_slug, pk):
 def download_payment(request, band_slug, pk):
     """Download protegido de ShowPayment"""
     doc = get_object_or_404(ShowPayment, pk=pk, show__band=request.band)
-    return serve_private_file(doc.file)
+    return serve_private_file(doc.file, as_attachment=True)
 
+@private_download_required
+def preview_payment(request, band_slug, pk):
+    """Preview protegido de ShowPayment (as_attachment=False)"""
+    doc = get_object_or_404(ShowPayment, pk=pk, show__band=request.band)
+    return serve_private_file(doc.file, as_attachment=False)
 
 @private_download_required
 def download_billing(request, band_slug, pk):
     """Download protegido de BillingRecord"""
     doc = get_object_or_404(BillingRecord, pk=pk, band=request.band)
-    return serve_private_file(doc.proof_file)
+    return serve_private_file(doc.proof_file, as_attachment=True)
 
+@private_download_required
+def preview_billing(request, band_slug, pk):
+    """Preview protegido de BillingRecord (as_attachment=False)"""
+    doc = get_object_or_404(BillingRecord, pk=pk, band=request.band)
+    return serve_private_file(doc.proof_file, as_attachment=False)
 
 @private_download_required
 def download_support_attachment(request, band_slug, pk):
     """Download protegido de SupportTicketAttachment"""
     doc = get_object_or_404(SupportTicketAttachment, pk=pk, message__ticket__band=request.band)
-    return serve_private_file(doc.file)
+    return serve_private_file(doc.file, as_attachment=True)
+
+@private_download_required
+def preview_support_attachment(request, band_slug, pk):
+    """Preview protegido de SupportTicketAttachment (as_attachment=False)"""
+    doc = get_object_or_404(SupportTicketAttachment, pk=pk, message__ticket__band=request.band)
+    return serve_private_file(doc.file, as_attachment=False)
+
+@private_download_required
+def internal_file_viewer(request, band_slug, file_type, pk):
+    """
+    Página HTML interna do visualizador PWA controlada pelo Django.
+    """
+    from django.urls import reverse
+    band = request.band
+    
+    if file_type == 'contract':
+        doc = get_object_or_404(ContractDocument, pk=pk, show__band=band)
+        preview_url = reverse('preview_contract', args=[band.slug, pk])
+        download_url = reverse('download_contract', args=[band.slug, pk])
+        filename = doc.file.name
+    elif file_type == 'receipt':
+        doc = get_object_or_404(FinancialReceipt, pk=pk, show__band=band)
+        preview_url = reverse('preview_receipt', args=[band.slug, pk])
+        download_url = reverse('download_receipt', args=[band.slug, pk])
+        filename = doc.file.name
+    elif file_type == 'payment':
+        doc = get_object_or_404(ShowPayment, pk=pk, show__band=band)
+        preview_url = reverse('preview_payment', args=[band.slug, pk])
+        download_url = reverse('download_payment', args=[band.slug, pk])
+        filename = doc.file.name
+    elif file_type == 'billing':
+        doc = get_object_or_404(BillingRecord, pk=pk, band=band)
+        preview_url = reverse('preview_billing', args=[band.slug, pk])
+        download_url = reverse('download_billing', args=[band.slug, pk])
+        filename = doc.proof_file.name
+    elif file_type == 'support':
+        doc = get_object_or_404(SupportTicketAttachment, pk=pk, message__ticket__band=band)
+        preview_url = reverse('preview_support_attachment', args=[band.slug, pk])
+        download_url = reverse('download_support_attachment', args=[band.slug, pk])
+        filename = doc.file.name
+    else:
+        raise Http404("Tipo de arquivo inválido.")
+
+    if not filename:
+        raise Http404("Arquivo não existe no registro.")
+
+    safe_filename = filename.split('/')[-1]
+
+    context = {
+        'band': band,
+        'preview_url': preview_url,
+        'download_url': download_url,
+        'filename': safe_filename,
+    }
+    
+    return render(request, 'core/file_viewer.html', context)
 
 
 def public_band_logo(request, band_slug):
