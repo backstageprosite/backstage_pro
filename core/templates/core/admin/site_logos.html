@@ -66,9 +66,9 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px; font-size: 0.9rem;">
                                         <li>
-                                            <a href="#" class="dropdown-item py-2 fw-medium">
+                                            <button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editLogoModal{{ logo.pk }}">
                                                 <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar
-                                            </a>
+                                            </button>
                                         </li>
                                         <li>
                                             <form method="post" action="{% url 'admin_painel:site_logos_toggle_active' logo.pk %}" class="d-inline">
@@ -110,6 +110,51 @@
                                             <button type="submit" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">Excluir</button>
                                         </form>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal de Edição -->
+                        <div class="modal fade" id="editLogoModal{{ logo.pk }}" tabindex="-1" aria-labelledby="editLogoModalLabel{{ logo.pk }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content" style="border-radius: 12px; border: none;">
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold text-dark" id="editLogoModalLabel{{ logo.pk }}">Editar Logomarca</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form method="post" enctype="multipart/form-data" action="{% url 'admin_painel:site_logos_edit' logo.pk %}">
+                                        {% csrf_token %}
+                                        <div class="modal-body pt-3 pb-2 text-start">
+                                            <div class="mb-3">
+                                                <label for="id_name_{{ logo.pk }}" class="form-label fw-semibold text-dark small">Nome da banda ou artista</label>
+                                                <input type="text" name="name" id="id_name_{{ logo.pk }}" class="form-control" value="{{ logo.name }}">
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="id_image_{{ logo.pk }}" class="form-label fw-semibold text-dark small">Logomarca (opcional)</label>
+                                                <input type="file" name="image" id="id_image_{{ logo.pk }}" class="form-control" accept=".png,.jpg,.jpeg,.webp">
+                                                <div class="form-text mt-2 small">
+                                                    Deixe em branco para manter a imagem atual.<br>
+                                                    <strong>Dimensão obrigatória:</strong> 1548 × 529 px.<br>
+                                                    <strong>Tamanho máximo:</strong> 5 MB.
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="id_display_order_{{ logo.pk }}" class="form-label fw-semibold text-dark small">Ordem de exibição</label>
+                                                <input type="number" name="display_order" id="id_display_order_{{ logo.pk }}" class="form-control" value="{{ logo.display_order }}">
+                                            </div>
+
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active_{{ logo.pk }}" {% if logo.is_active %}checked{% endif %}>
+                                                <label class="form-check-label fw-semibold text-dark small" for="id_is_active_{{ logo.pk }}">Ativar visualização na landing page</label>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 pt-2">
+                                            <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary fw-medium shadow-sm" style="border-radius: 8px;">Salvar alterações</button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>

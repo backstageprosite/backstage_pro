@@ -984,6 +984,21 @@ class SiteLogosView(AdminRequiredMixin, ListView):
         context['open_modal'] = True
         return self.render_to_response(context)
 
+class SiteLogoEditView(AdminRequiredMixin, View):
+    def post(self, request, pk, *args, **kwargs):
+        logo = get_object_or_404(LandingPageBandLogo, pk=pk)
+        form = LandingPageBandLogoForm(request.POST, request.FILES, instance=logo)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Logo atualizada com sucesso!')
+        else:
+            # Em caso de erro de validação, os erros deveriam ser devolvidos,
+            # mas simplificamos devolvendo erro genérico e mandando tentar de novo.
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{form.fields[field].label}: {error}")
+        return redirect('admin_painel:site_logos')
+
 class SiteLogoDeleteView(AdminRequiredMixin, DeleteView):
     model = LandingPageBandLogo
     success_url = reverse_lazy('admin_painel:site_logos')

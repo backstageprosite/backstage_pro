@@ -126,14 +126,20 @@ from core.models import LandingPageBandLogo
 class LandingPageBandLogoForm(forms.ModelForm):
     image = forms.ImageField(
         label='Logomarca',
-        required=True,
+        required=False,
         validators=[FileExtensionValidator(allowed_extensions=['png', 'jpg', 'jpeg', 'webp'])]
     )
     
     class Meta:
         model = LandingPageBandLogo
-        fields = ['name', 'image', 'display_order']
+        fields = ['name', 'image', 'display_order', 'is_active']
         
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['image'].required = True
+            
+
     def clean_name(self):
         name = self.cleaned_data.get('name')
         if name:
