@@ -352,6 +352,20 @@
                 });
             }
 
+            // Correção para Dropdowns cortados dentro de table-responsive
+            document.addEventListener('show.bs.dropdown', function(e) {
+                const tableResp = e.target.closest('.table-responsive');
+                if (tableResp) {
+                    tableResp.style.overflow = 'visible';
+                }
+            });
+            document.addEventListener('hide.bs.dropdown', function(e) {
+                const tableResp = e.target.closest('.table-responsive');
+                if (tableResp) {
+                    tableResp.style.overflow = '';
+                }
+            });
+
             // Inicializar Toasts do Bootstrap
             const toastElList = document.querySelectorAll('.toast');
             const toastList = [...toastElList].map(toastEl => new bootstrap.Toast(toastEl));
