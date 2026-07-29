@@ -285,18 +285,56 @@
 </div>
 
 <!-- PWA Preview Modal (Fullscreen) -->
-<div class="modal fade" id="pwaFilePreviewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-fullscreen">
-        <div class="modal-content bg-dark">
-            <div class="modal-header border-0 bg-dark text-white px-3 py-3" style="position: sticky; top: 0; z-index: 1050; box-shadow: 0 2px 10px rgba(0,0,0,0.5);">
-                <button type="button" class="btn btn-dark text-white border-0 fs-5 p-2 me-2" data-bs-dismiss="modal" aria-label="Close" style="width: 44px; height: 44px;">
-                    <i class="fa-solid fa-chevron-left"></i>
+<div class="modal fade" id="pwaFilePreviewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" style="z-index: 1060;">
+    <div class="modal-dialog modal-fullscreen m-0">
+        <div class="modal-content bg-dark border-0 rounded-0">
+            <!-- Toolbar Superior Fixa -->
+            <div class="viewer-toolbar bg-dark text-white d-flex align-items-center justify-content-between px-3" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1085; padding-top: env(safe-area-inset-top, 0px); min-height: calc(56px + env(safe-area-inset-top, 0px)); box-shadow: 0 2px 10px rgba(0,0,0,0.5);">
+                <button type="button" class="btn btn-dark text-white border-0 fs-5 p-2" id="btnClosePreviewTop" aria-label="Fechar visualização" style="width: 44px; height: 44px;">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
-                <h6 class="modal-title fw-bold text-truncate flex-grow-1 text-center" id="pwaPreviewTitle">Visualização</h6>
-                <div style="width: 44px;"></div> <!-- Spacer for centering -->
+                <h6 class="modal-title fw-bold text-truncate flex-grow-1 text-center mx-2 mb-0" id="pwaPreviewTitle">Visualização</h6>
+                <div style="width: 44px;"></div> <!-- Spacer -->
             </div>
-            <div class="modal-body p-0 d-flex justify-content-center align-items-center bg-dark" id="pwaPreviewContainer" style="overflow: hidden; position: relative;">
-                <!-- Content injected here (img or iframe) -->
+
+            <!-- Área Central do Visualizador -->
+            <div class="modal-body p-0 d-flex flex-column bg-dark" id="pwaPreviewContainer" style="margin-top: calc(56px + env(safe-area-inset-top, 0px)); margin-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); overflow: auto; position: relative; height: 100%;">
+                <div id="pwaPreviewInner" class="d-flex justify-content-center align-items-center w-100" style="min-height: 100%;">
+                    <!-- Content injected here (img or canvas) -->
+                </div>
+                
+                <!-- Loading State Interno -->
+                <div id="pwaPreviewLoading" class="position-absolute top-50 start-50 translate-middle text-center text-white d-none" style="z-index: 1070;">
+                    <div class="spinner-border text-light mb-3" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <p class="mb-0 fw-bold small" id="pwaPreviewLoadingText">Carregando visualização...</p>
+                </div>
+                
+                <!-- Error State Interno -->
+                <div id="pwaPreviewError" class="position-absolute top-50 start-50 translate-middle text-center text-white d-none w-100 px-4" style="z-index: 1070;">
+                    <i class="fa-solid fa-triangle-exclamation text-warning mb-3" style="font-size: 3rem;"></i>
+                    <p class="mb-3 fw-bold" id="pwaPreviewErrorMsg">Não foi possível visualizar este arquivo.</p>
+                    <button type="button" class="btn btn-outline-light rounded-pill px-4" id="btnClosePreviewError">Voltar</button>
+                </div>
+            </div>
+
+            <!-- Toolbar Inferior Fixa -->
+            <div class="viewer-toolbar-bottom bg-dark text-white d-flex align-items-center justify-content-center px-3" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 1085; padding-bottom: env(safe-area-inset-bottom, 0px); min-height: calc(60px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -2px 10px rgba(0,0,0,0.5);">
+                
+                <div id="pdfControls" class="d-none d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-dark text-white border-0 p-2" id="pdfPrevPage" disabled><i class="fa-solid fa-chevron-left"></i></button>
+                    <span class="small fw-bold" style="min-width: 60px; text-align: center;"><span id="pdfPageNum">1</span> / <span id="pdfPageCount">1</span></span>
+                    <button type="button" class="btn btn-dark text-white border-0 p-2" id="pdfNextPage" disabled><i class="fa-solid fa-chevron-right"></i></button>
+                    <div class="vr bg-secondary mx-1" style="opacity: 0.5;"></div>
+                    <button type="button" class="btn btn-dark text-white border-0 p-2" id="pdfZoomOut"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                    <button type="button" class="btn btn-dark text-white border-0 p-2" id="pdfZoomIn"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                </div>
+
+                <div id="imgControls" class="d-none d-flex align-items-center gap-3">
+                    <button type="button" class="btn btn-dark text-white border-0 rounded-pill px-4 fw-bold" id="btnClosePreviewBottom">Fechar</button>
+                </div>
+
             </div>
         </div>
     </div>
@@ -305,7 +343,10 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script type="module">
+    import * as pdfjsLib from "{% static 'core/js/pdfjs/pdf.mjs' %}";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'core/js/pdfjs/pdf.worker.mjs' %}";
+
 document.addEventListener("DOMContentLoaded", function() {
     const searchInput = document.getElementById("searchInput");
     if(searchInput) {
@@ -351,14 +392,59 @@ document.addEventListener("DOMContentLoaded", function() {
         
         let currentFile = null;
         let currentObjectUrl = null;
+        
+        let fetchAbortController = null;
+        let pdfDoc = null;
+        let pdfPageNum = 1;
+        let pdfPageRendering = false;
+        let pdfPageNumPending = null;
+        let pdfScale = 1.0;
+        
+        const previewInner = document.getElementById('pwaPreviewInner');
+        const previewLoading = document.getElementById('pwaPreviewLoading');
+        const previewError = document.getElementById('pwaPreviewError');
+        const previewErrorMsg = document.getElementById('pwaPreviewErrorMsg');
+        
+        const pdfControls = document.getElementById('pdfControls');
+        const imgControls = document.getElementById('imgControls');
+        const pdfPageNumEl = document.getElementById('pdfPageNum');
+        const pdfPageCountEl = document.getElementById('pdfPageCount');
+        const pdfPrevBtn = document.getElementById('pdfPrevPage');
+        const pdfNextBtn = document.getElementById('pdfNextPage');
 
-        // Limpeza do object URL ao fechar o modal de preview
-        document.getElementById('pwaFilePreviewModal').addEventListener('hidden.bs.modal', function () {
-            previewContainer.innerHTML = '';
+        function cleanupViewer() {
+            if (fetchAbortController) {
+                fetchAbortController.abort();
+                fetchAbortController = null;
+            }
+            if (pdfDoc) {
+                pdfDoc.destroy();
+                pdfDoc = null;
+            }
             if (currentObjectUrl) {
                 URL.revokeObjectURL(currentObjectUrl);
                 currentObjectUrl = null;
             }
+            previewInner.innerHTML = '';
+            pdfPageNum = 1;
+            pdfScale = 1.0;
+        }
+
+        function closePreview() {
+            cleanupViewer();
+            previewModal.hide();
+            actionModal.show();
+        }
+
+        document.getElementById('btnClosePreviewTop').addEventListener('click', closePreview);
+        document.getElementById('btnClosePreviewBottom').addEventListener('click', closePreview);
+        document.getElementById('btnClosePreviewError').addEventListener('click', closePreview);
+        
+        document.getElementById('pwaFilePreviewModal').addEventListener('hidden.bs.modal', function () {
+            cleanupViewer();
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
         });
 
         // Intercepta botões de download
@@ -381,22 +467,10 @@ document.addEventListener("DOMContentLoaded", function() {
                 iconEl.className = 'fa-solid text-primary';
                 const lowerName = filename.toLowerCase();
                 
-                // Limpar warnings anteriores caso existam
-                let warningEl = document.getElementById('pwaPdfWarning');
-                if (!warningEl) {
-                    warningEl = document.createElement('p');
-                    warningEl.id = 'pwaPdfWarning';
-                    warningEl.className = 'text-muted small mb-3';
-                    warningEl.textContent = 'Para abrir este PDF no iPhone, utilize Salvar ou compartilhar.';
-                    btnPreview.parentNode.insertBefore(warningEl, btnPreview);
-                }
-                warningEl.classList.add('d-none');
                 btnPreview.classList.remove('d-none');
 
                 if (lowerName.endsWith('.pdf')) {
                     iconEl.classList.add('fa-file-pdf', 'text-danger');
-                    btnPreview.classList.add('d-none');
-                    warningEl.classList.remove('d-none');
                 } else if (lowerName.match(/\.(jpg|jpeg|png|webp|gif)$/)) {
                     iconEl.classList.add('fa-file-image', 'text-success');
                 } else {
@@ -413,51 +487,153 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         });
 
+        function renderPDFPage(num) {
+            pdfPageRendering = true;
+            pdfDoc.getPage(num).then(function(page) {
+                let viewport = page.getViewport({scale: pdfScale});
+                
+                // Redimensionar para caber na tela se for a primeira vez
+                if (pdfScale === 1.0) {
+                    const containerWidth = document.getElementById('pwaPreviewContainer').clientWidth - 40;
+                    if (containerWidth > 0 && viewport.width > containerWidth) {
+                        pdfScale = containerWidth / viewport.width;
+                        viewport = page.getViewport({scale: pdfScale});
+                    }
+                }
+                
+                previewInner.innerHTML = '<canvas id="pdfCanvas"></canvas>';
+                const canvas = document.getElementById('pdfCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                const renderTask = page.render(renderContext);
+                renderTask.promise.then(function() {
+                    pdfPageRendering = false;
+                    if (pdfPageNumPending !== null) {
+                        renderPDFPage(pdfPageNumPending);
+                        pdfPageNumPending = null;
+                    }
+                }).catch(function(err) {
+                    if (err.name === 'RenderingCancelledException') {
+                        // Ignorar cancelamentos normais
+                    } else {
+                        console.error('Erro renderizando PDF:', err);
+                    }
+                    pdfPageRendering = false;
+                });
+            });
+
+            pdfPageNumEl.textContent = num;
+            pdfPrevBtn.disabled = (num <= 1);
+            pdfNextBtn.disabled = (num >= pdfDoc.numPages);
+        }
+
+        function queueRenderPage(num) {
+            if (pdfPageRendering) {
+                pdfPageNumPending = num;
+            } else {
+                renderPDFPage(num);
+            }
+        }
+
+        pdfPrevBtn.addEventListener('click', () => {
+            if (pdfPageNum <= 1) return;
+            pdfPageNum--;
+            queueRenderPage(pdfPageNum);
+        });
+
+        pdfNextBtn.addEventListener('click', () => {
+            if (pdfPageNum >= pdfDoc.numPages) return;
+            pdfPageNum++;
+            queueRenderPage(pdfPageNum);
+        });
+        
+        document.getElementById('pdfZoomIn').addEventListener('click', () => {
+            pdfScale += 0.2;
+            queueRenderPage(pdfPageNum);
+        });
+        
+        document.getElementById('pdfZoomOut').addEventListener('click', () => {
+            if (pdfScale <= 0.4) return;
+            pdfScale -= 0.2;
+            queueRenderPage(pdfPageNum);
+        });
+
         // Ação: Visualizar
         btnPreview.addEventListener('click', async function() {
             if (!currentFile) return;
             
-            actionsDiv.classList.add('d-none');
-            loadingDiv.classList.remove('d-none');
-            errorDiv.classList.add('d-none');
-            document.getElementById('pwaFileLoadingText').textContent = "Carregando visualização...";
+            actionModal.hide();
+            
+            previewTitle.textContent = currentFile.filename;
+            previewInner.innerHTML = '';
+            previewLoading.classList.remove('d-none');
+            previewError.classList.add('d-none');
+            pdfControls.classList.add('d-none');
+            imgControls.classList.add('d-none');
+            document.getElementById('pwaPreviewLoadingText').textContent = "Carregando visualização...";
+            
+            previewModal.show();
 
+            fetchAbortController = new AbortController();
+            
             try {
                 const response = await fetch(currentFile.previewUrl, {
                     credentials: 'same-origin',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: fetchAbortController.signal
                 });
 
-                if (!response.ok) throw new Error("Não foi possível carregar o arquivo.");
-                
-                const blob = await response.blob();
-                currentObjectUrl = URL.createObjectURL(blob);
-                
-                previewTitle.textContent = currentFile.filename;
-                previewContainer.innerHTML = '';
+                if (response.status === 403) throw new Error("Você não possui permissão para visualizar este arquivo.");
+                if (!response.ok) throw new Error("Não foi possível carregar o arquivo. Verifique sua conexão.");
                 
                 const lowerName = currentFile.filename.toLowerCase();
-                if (lowerName.match(/\.(jpg|jpeg|png|webp|gif)$/)) {
+                
+                if (lowerName.endsWith('.pdf')) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    
+                    const loadingTask = pdfjsLib.getDocument({
+                        data: arrayBuffer,
+                        isEvalSupported: false
+                    });
+                    
+                    pdfDoc = await loadingTask.promise;
+                    pdfPageCountEl.textContent = pdfDoc.numPages;
+                    pdfControls.classList.remove('d-none');
+                    imgControls.classList.add('d-none');
+                    
+                    renderPDFPage(pdfPageNum);
+                    previewLoading.classList.add('d-none');
+                } else if (lowerName.match(/\.(jpg|jpeg|png|webp|gif)$/)) {
+                    const blob = await response.blob();
+                    currentObjectUrl = URL.createObjectURL(blob);
+                    
                     const img = document.createElement('img');
                     img.src = currentObjectUrl;
                     img.style.maxWidth = '100%';
-                    img.style.maxHeight = '100%';
                     img.style.objectFit = 'contain';
-                    previewContainer.appendChild(img);
+                    img.className = 'p-2';
+                    previewInner.appendChild(img);
+                    
+                    imgControls.classList.remove('d-none');
+                    pdfControls.classList.add('d-none');
+                    previewLoading.classList.add('d-none');
                 } else {
                     throw new Error("Formato não suportado para visualização interna.");
                 }
 
-                actionModal.hide();
-                previewModal.show();
-
             } catch (err) {
+                if (err.name === 'AbortError') return;
                 console.error(err);
-                errorDiv.textContent = err.message || "Erro ao carregar arquivo.";
-                errorDiv.classList.remove('d-none');
-            } finally {
-                actionsDiv.classList.remove('d-none');
-                loadingDiv.classList.add('d-none');
+                previewErrorMsg.textContent = err.message || "Erro ao carregar arquivo.";
+                previewLoading.classList.add('d-none');
+                previewError.classList.remove('d-none');
             }
         });
 
