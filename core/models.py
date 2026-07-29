@@ -750,23 +750,26 @@ class WebPushOperationalAlertCycleLease(models.Model):
 class BandDashboardPendingItemQuerySet(models.QuerySet):
     def with_ordering(self):
         from django.db.models import Case, When, Value, IntegerField, F
+        from django.db.models.functions import Coalesce
         from django.utils import timezone
         
         today = timezone.localdate()
         
         return self.annotate(
+            effective_date=Coalesce('due_date', 'show__date')
+        ).annotate(
             date_group=Case(
-                When(show__date__isnull=True, then=Value(3)),
-                When(show__date__gte=today, then=Value(1)),
+                When(effective_date__isnull=True, then=Value(3)),
+                When(effective_date__gte=today, then=Value(1)),
                 default=Value(2),
                 output_field=IntegerField(),
             ),
             future_date=Case(
-                When(show__date__gte=today, then=F('show__date')),
+                When(effective_date__gte=today, then=F('effective_date')),
                 default=None,
             ),
             past_date=Case(
-                When(show__date__lt=today, then=F('show__date')),
+                When(effective_date__lt=today, then=F('effective_date')),
                 default=None,
             )
         ).order_by(
@@ -782,6 +785,7 @@ class BandDashboardPendingItem(models.Model):
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='dashboard_pending_items')
     show = models.ForeignKey(Show, on_delete=models.CASCADE, related_name='dashboard_pending_items', null=True, blank=True)
     description = models.CharField(max_length=500)
+    due_date = models.DateField(null=True, blank=True)
     created_by = models.ForeignKey('User', on_delete=models.PROTECT, related_name='dashboard_pending_items_created')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -793,12 +797,13 @@ class BandDashboardPendingItem(models.Model):
 
     @property
     def status_info(self):
-        if not self.show or not self.show.date:
+        target_date = self.due_date or (self.show.date if self.show else None)
+        if not target_date:
             return {'label': 'Geral', 'class': 'bg-secondary'}
         
         from django.utils import timezone
         hoje = timezone.localdate()
-        diff = (self.show.date - hoje).days
+        diff = (target_date - hoje).days
 
         if diff > 7:
             return {'label': 'No Prazo', 'class': 'bg-success'}

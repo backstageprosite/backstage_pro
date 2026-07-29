@@ -255,9 +255,10 @@ class ShowChoiceField(forms.ModelChoiceField):
 
 class BandDashboardPendingItemForm(forms.ModelForm):
     show = ShowChoiceField(queryset=None, required=False, empty_label='Geral', widget=forms.Select(attrs={'class': 'form-select', 'style': 'border-radius: 8px;'}))
+    due_date = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'style': 'border-radius: 8px;'}))
     class Meta:
         model = BandDashboardPendingItem
-        fields = ['description', 'show']
+        fields = ['description', 'show', 'due_date']
     def __init__(self, *args, **kwargs):
         shows_qs = kwargs.pop('shows_qs', None)
         super().__init__(*args, **kwargs)

@@ -209,6 +209,10 @@
                                                                     <label for="{{ item.edit_form.show.id_for_label }}" class="form-label fw-semibold text-dark small">Show</label>
                                                                     {{ item.edit_form.show }}
                                                                 </div>
+                                                                <div class="mb-3">
+                                                                    <label for="{{ item.edit_form.due_date.id_for_label }}" class="form-label fw-semibold text-dark small">Data de Vencimento (Opcional)</label>
+                                                                    {{ item.edit_form.due_date }}
+                                                                </div>
                                                             {% endif %}
                                                         </div>
                                                         <div class="modal-footer border-top-0 pt-2">
@@ -310,6 +314,10 @@
                     <div class="mb-3">
                         <label for="{{ pending_item_form.show.id_for_label }}" class="form-label fw-semibold text-dark small">Show</label>
                         {{ pending_item_form.show }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ pending_item_form.due_date.id_for_label }}" class="form-label fw-semibold text-dark small">Data de Vencimento (Opcional)</label>
+                        {{ pending_item_form.due_date }}
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-2">
