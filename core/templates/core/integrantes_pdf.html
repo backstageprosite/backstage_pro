@@ -12,7 +12,7 @@
             color: #000000;
             font-family: sans-serif;
             padding: 20px;
-            font-size: 14px;
+            font-size: 11px; /* Letra menor */
         }
         
         @page {
@@ -26,23 +26,18 @@
             print-color-adjust: exact !important;
         }
 
-        /* Cores das Categorias */
-        .bg-producao { background-color: #d0e6f8 !important; }
-        .bg-musico { background-color: #ffe0cc !important; }
-        .bg-equipe_tecnica { background-color: #d4edda !important; }
-        .bg-servicos { background-color: #ffffff !important; }
-
         .table th {
             background-color: #f8f9fa !important;
             font-weight: bold;
             text-transform: uppercase;
-            font-size: 12px;
-            padding: 10px;
+            font-size: 10px;
+            padding: 4px 8px !important; /* Linhas mais curtas */
         }
         
         .table td {
-            padding: 10px;
+            padding: 4px 8px !important; /* Linhas mais curtas */
             vertical-align: middle;
+            border-bottom-width: 1px !important; /* Para garantir visibilidade */
         }
 
         .header-section {
@@ -62,7 +57,7 @@
 
         .header-title {
             font-weight: bold;
-            font-size: 24px;
+            font-size: 20px;
             margin: 0;
             text-align: right;
         }
@@ -71,7 +66,7 @@
             margin-top: 40px;
             border-top: 1px solid #ccc;
             padding-top: 10px;
-            font-size: 10px;
+            font-size: 9px;
             color: #666;
             text-align: center;
         }
@@ -81,12 +76,12 @@
         }
     </style>
 </head>
-<body onload="window.print()">
+<body>
 
     <div class="header-section">
         <div>
             {% if band.logo %}
-                <img src="{{ band.logo.url }}" alt="Logo" class="header-logo">
+                <img src="{% url 'public_band_logo' band.slug %}" alt="Logo" class="header-logo">
             {% else %}
                 <h2 style="margin: 0; font-weight: bold;">{{ band.name }}</h2>
             {% endif %}
@@ -94,7 +89,7 @@
         <h1 class="header-title">LISTA DE INTEGRANTES</h1>
     </div>
 
-    <table class="table table-bordered">
+    <table class="table table-bordered mb-0">
         <thead>
             <tr>
                 <th>Nome</th>
@@ -106,16 +101,11 @@
         </thead>
         <tbody>
             {% for item in integrantes %}
-                <tr class="
-                    {% if item.category == 'PRODUCAO' %}bg-producao
-                    {% elif item.category == 'MUSICO' %}bg-musico
-                    {% elif item.category == 'EQUIPE_TECNICA' %}bg-equipe_tecnica
-                    {% else %}bg-servicos{% endif %}
-                ">
+                <tr style="background-color: {% if item.category == 'PRODUCAO' %}#d0e6f8{% elif item.category == 'MUSICO' %}#ffe0cc{% elif item.category == 'EQUIPE_TECNICA' %}#d4edda{% else %}#ffffff{% endif %} !important;">
                     <td class="fw-bold">{{ item.name }}</td>
                     <td>{{ item.role }}</td>
                     <td>{{ item.get_category_display }}</td>
-                    <td>{{ item.cpf|default:"-" }}</td>
+                    <td class="cpf-cell">{{ item.cpf|default:"-" }}</td>
                     <td>{{ item.vehicle|default:"-" }}</td>
                 </tr>
             {% empty %}
@@ -131,5 +121,20 @@
         <div style="margin-top: 5px;">Desenvolvido por Backstage Pro - @backstagepro.site</div>
     </div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Apply CPF mask to existing values in the DOM before printing
+            document.querySelectorAll('.cpf-cell').forEach(function(td) {
+                let text = td.innerText.trim();
+                if (text && text !== '-') {
+                    let val = text.replace(/\D/g, ''); // Remove non-digits
+                    if (val.length === 11) {
+                        td.innerText = val.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+                    }
+                }
+            });
+            window.print();
+        });
+    </script>
 </body>
 </html>
