@@ -27,6 +27,7 @@
                     <thead class="bg-light text-muted small text-uppercase">
                         <tr>
                             <th class="ps-4 fw-bold border-bottom-0 py-3" style="width: 40%;">Pendência</th>
+                            <th class="fw-bold border-bottom-0 py-3">Data</th>
                             <th class="fw-bold border-bottom-0 py-3">Show</th>
                             <th class="fw-bold border-bottom-0 py-3">Status</th>
                             {% if request.user.role == 'PRODUTOR' %}
@@ -38,6 +39,13 @@
                         {% for item in pending_items %}
                         <tr>
                             <td class="py-3 px-4 text-dark" style="white-space: pre-wrap; word-break: break-word;">{{ item.description }}</td>
+                            <td class="py-3 px-4 text-muted small">
+                                {% if item.due_date %}
+                                    {{ item.due_date|date:"d/m/Y" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
                             <td class="py-3 px-4 text-muted small">
                                 {% if item.show %}
                                 <a href="{% url 'shows_edit' band.slug item.show.id %}" class="text-decoration-none text-primary fw-medium">

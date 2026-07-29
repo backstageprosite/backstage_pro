@@ -146,6 +146,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 40%;">Pendência</th>
+                                    <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 15%;">Data</th>
                                     <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 25%;">Show</th>
                                     <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 20%;">Status</th>
                                     {% if request.user.role == 'PRODUTOR' %}
@@ -157,6 +158,13 @@
                                 {% for item in dashboard_pending_items %}
                                 <tr>
                                     <td class="py-3 px-4 text-dark" style="white-space: pre-wrap; word-break: break-word;">{{ item.description }}</td>
+                                    <td class="py-3 px-4 text-muted small">
+                                        {% if item.due_date %}
+                                            {{ item.due_date|date:"d/m/Y" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
                                     <td class="py-3 px-4 text-muted small">
                                         {% if item.show %}
                                         <a href="{% url 'shows_edit' band.slug item.show.id %}" class="text-decoration-none text-primary fw-medium">
