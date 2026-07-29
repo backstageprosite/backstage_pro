@@ -66,9 +66,11 @@
 <div class="card calendar-card px-2 py-3 p-md-4 mb-4 shadow-sm border-0" style="border-radius: 12px;">
     <div class="card-body p-0 p-md-3">
         <style>
-            /* Capitaliza o nome do Mês (Ex: "julho" vira "Julho") */
+            /* Capitaliza a primeira letra do Mês sem quebrar as outras (Ex: "agosto de 2026" vira "Agosto de 2026") */
+            .fc-toolbar-title::first-letter {
+                text-transform: uppercase !important;
+            }
             .fc-toolbar-title {
-                text-transform: capitalize !important;
                 font-weight: 700;
                 color: #333;
             }
@@ -83,29 +85,59 @@
             
             /* Melhorias nos Eventos do Calendário */
             .fc-event {
-                border-radius: 6px !important;
+                border-radius: 4px !important;
                 transition: all 0.2s ease;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
                 border: none !important;
-                padding: 2px 4px;
             }
             .fc-event:hover {
                 transform: scale(1.02);
                 box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
                 z-index: 5 !important;
             }
-            .fc-event-title {
-                font-weight: 600;
+            
+            /* Ocultar a bolinha nativa do ListView do FullCalendar para usarmos a nossa */
+            .fc-list-event-graphic {
+                display: none !important;
             }
 
-            /* Responsividade Mobile para o Calendário */
-            @media (max-width: 767.98px) {
+            /* --- Modos Responsivos Toolbar --- */
+            /* Intermediário e Compacto */
+            @media (max-width: 991.98px) {
                 .fc-header-toolbar {
-                    flex-direction: column;
-                    gap: 12px;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                }
+                /* Primeira linha: Controles */
+                .fc-header-toolbar .fc-toolbar-chunk:nth-child(1) {
+                    width: 100%;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                /* Segunda linha: Título */
+                .fc-header-toolbar .fc-toolbar-chunk:nth-child(2) {
+                    width: 100%;
+                    display: flex;
+                    justify-content: center;
+                }
+                /* Terceira linha (oculta pois passamos tudo para a primeira) */
+                .fc-header-toolbar .fc-toolbar-chunk:nth-child(3) {
+                    display: none;
                 }
                 .fc-toolbar-title {
-                    font-size: 1.25rem !important;
+                    font-size: 1.2rem !important;
+                }
+            }
+
+            /* Apenas Compacto */
+            @media (max-width: 575.98px) {
+                .fc-header-toolbar .fc-toolbar-chunk:nth-child(1) .fc-button {
+                    padding: 4px 8px !important;
+                    font-size: 0.75rem !important;
+                }
+                .fc-header-toolbar .fc-toolbar-chunk:nth-child(1) {
+                    gap: 4px;
                 }
                 .fc-col-header-cell-cushion {
                     font-size: 0.7rem !important;
@@ -115,55 +147,34 @@
                     font-size: 0.8rem !important;
                     padding: 2px !important;
                 }
-                .fc-event {
-                    padding: 2px !important;
-                    margin: 1px 0 !important;
-                }
-                .fc-event-title {
-                    font-size: 0.65rem !important;
-                    white-space: normal !important;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    overflow: hidden;
-                    line-height: 1.1;
-                }
-                .fc-daygrid-day-events {
-                    margin-bottom: 0 !important;
-                }
-                .fc-daygrid-more-link {
-                    font-size: 0.75rem !important;
-                    font-weight: 700;
-                    padding: 2px 4px;
-                    display: block;
-                    text-align: center;
-                    background-color: #f1f3f5;
-                    border-radius: 4px;
-                    margin-top: 2px;
-                    color: #495057 !important;
-                    text-decoration: none !important;
-                }
+            }
+            
+            /* Links +N */
+            .fc-daygrid-more-link {
+                font-size: 0.75rem !important;
+                font-weight: 700;
+                padding: 2px 4px;
+                display: block;
+                text-align: center;
+                background-color: #f1f3f5;
+                border-radius: 4px;
+                margin-top: 2px;
+                color: #495057 !important;
+                text-decoration: none !important;
             }
 
             /* --- Melhorias da Visualização de Agenda (List View) --- */
-            /* Ocultar a coluna de tempo/all-day */
             .fc-list-event-time {
                 display: none !important;
             }
-            
-            /* Tabela geral sem bordas pesadas */
             .fc-list-table, .fc-list {
                 border: none !important;
             }
-
-            /* Cabeçalho do Dia (Data) */
             .fc-list-day th {
                 background: transparent !important;
                 border: none !important;
                 padding: 1.5rem 0 0.5rem 0 !important;
             }
-            
-            /* Container interno do cabeçalho do Dia */
             .fc-list-day-cushion {
                 background-color: #f4f6f9 !important;
                 padding: 12px 20px !important;
@@ -173,27 +184,21 @@
                 align-items: center !important;
                 border: 1px solid #e9ecef !important;
             }
-            
-            /* Textos do cabeçalho do Dia (2 de julho e Quinta-feira) */
             .fc-list-day-text, .fc-list-day-side-text {
                 color: #495057 !important;
                 font-weight: 600 !important;
                 text-decoration: none !important;
-                pointer-events: none !important; /* Remove link click behaviour */
+                pointer-events: none !important;
             }
-            
             .fc-list-day-text::after {
                 content: "-";
                 margin: 0 8px;
                 color: #6c757d;
                 font-weight: 600;
             }
-            
             .fc-list-day-side-text {
                 text-transform: capitalize !important;
             }
-            
-            /* Linha do Evento / Show */
             .fc-list-event td {
                 padding: 16px 12px !important;
                 background-color: #ffffff !important;
@@ -205,8 +210,6 @@
             .fc-list-event:hover td {
                 background-color: #f8f9fa !important;
             }
-            
-            /* Título do Evento / Show */
             .fc-list-event-title {
                 font-weight: 700 !important;
                 color: #2b3035 !important;
@@ -216,8 +219,6 @@
                 color: inherit !important;
                 text-decoration: none !important;
             }
-            
-            /* Ajustes Mobile para Agenda */
             @media (max-width: 767.98px) {
                 .fc-list-day-cushion {
                     padding: 10px 12px !important;
@@ -395,26 +396,42 @@
     document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
 
-        function getMobileConfig() {
+        function getCompactConfig() {
             return {
                 height: 'auto',
                 contentHeight: 'auto',
-                aspectRatio: 1, // overridden by height auto
+                aspectRatio: 1, 
                 fixedWeekCount: false,
                 dayMaxEvents: 2,
                 dayHeaderFormat: { weekday: 'short' },
                 headerToolbar: {
-                    left: 'prev,next today',
+                    start: 'prev,next today dayGridMonth,listMonth',
                     center: 'title',
-                    right: 'dayGridMonth,listMonth'
+                    end: ''
+                }
+            };
+        }
+
+        function getIntermediateConfig() {
+            return {
+                height: 'auto',
+                contentHeight: 'auto',
+                aspectRatio: 1,
+                fixedWeekCount: false,
+                dayMaxEvents: 3,
+                dayHeaderFormat: { weekday: 'short' },
+                headerToolbar: {
+                    start: 'prev,next today dayGridMonth,listMonth',
+                    center: 'title',
+                    end: ''
                 }
             };
         }
 
         function getDesktopConfig() {
             return {
-                height: '',
-                contentHeight: '',
+                height: 'auto', // Fallback to auto to ensure it doesn't break, though original was aspectRatio: 1.45
+                contentHeight: 'auto',
                 aspectRatio: 1.45,
                 fixedWeekCount: true,
                 dayMaxEvents: true,
@@ -427,9 +444,42 @@
             };
         }
 
-        const mobileQuery = window.matchMedia('(max-width: 767.98px)');
-        var isMobile = mobileQuery.matches;
-        var initialConfig = isMobile ? getMobileConfig() : getDesktopConfig();
+        let currentMode = null;
+        let calendar = null;
+
+        function applyModeToCalendar(width) {
+            let newMode = 'desktop';
+            if (width < 576) newMode = 'compact';
+            else if (width < 992) newMode = 'intermediate';
+
+            if (newMode !== currentMode) {
+                currentMode = newMode;
+                let config = newMode === 'compact' ? getCompactConfig() : (newMode === 'intermediate' ? getIntermediateConfig() : getDesktopConfig());
+                
+                if (calendar) {
+                    calendar.setOption('height', config.height);
+                    calendar.setOption('contentHeight', config.contentHeight);
+                    calendar.setOption('aspectRatio', config.aspectRatio);
+                    calendar.setOption('fixedWeekCount', config.fixedWeekCount);
+                    calendar.setOption('dayMaxEvents', config.dayMaxEvents);
+                    calendar.setOption('dayHeaderFormat', config.dayHeaderFormat);
+                    calendar.setOption('headerToolbar', config.headerToolbar);
+                    
+                    requestAnimationFrame(function() {
+                        calendar.updateSize();
+                        requestAnimationFrame(function() {
+                            calendar.updateSize();
+                        });
+                    });
+                } else {
+                    return config; // Return initial config if not initialized
+                }
+            }
+        }
+
+        // Determine initial config based on wrapper width, or fallback to window.innerWidth if wrapper has no width yet
+        var initialWidth = calendarEl.parentElement.offsetWidth || window.innerWidth;
+        var initialConfig = applyModeToCalendar(initialWidth) || getDesktopConfig();
         
         // Define function to open modal globally so that moreLinkClick can access it
         window.openEventDetails = function(eventObj) {
@@ -473,15 +523,14 @@
                 formDelete.action = eventObj.extendedProps.deleteUrl;
             }
             
-            // Exibe o modal principal
             var myModal = new bootstrap.Modal(document.getElementById('showModal'));
             myModal.show();
         };
 
-        var calendar = new FullCalendar.Calendar(calendarEl, {
+        calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
             locale: 'pt-br',
-            firstDay: 1, /* Começa na Segunda-feira (0 = Domingo) */
+            firstDay: 1, 
             
             dayHeaderFormat: initialConfig.dayHeaderFormat,
             aspectRatio: initialConfig.aspectRatio,
@@ -498,35 +547,15 @@
                 list: 'Lista'
             },
             
-            windowResize: function(arg) {
-                clearTimeout(window.resizeTimer);
-                window.resizeTimer = setTimeout(function() {
-                    var newIsMobile = mobileQuery.matches;
-                    if (newIsMobile !== isMobile) {
-                        isMobile = newIsMobile;
-                        var config = isMobile ? getMobileConfig() : getDesktopConfig();
-                        calendar.setOption('height', config.height);
-                        calendar.setOption('contentHeight', config.contentHeight);
-                        calendar.setOption('aspectRatio', config.aspectRatio);
-                        calendar.setOption('fixedWeekCount', config.fixedWeekCount);
-                        calendar.setOption('dayMaxEvents', config.dayMaxEvents);
-                        calendar.setOption('dayHeaderFormat', config.dayHeaderFormat);
-                        calendar.setOption('headerToolbar', config.headerToolbar);
-                        calendar.updateSize();
-                    }
-                }, 250);
-            },
-            
             moreLinkClick: function(arg) {
                 arg.jsEvent.preventDefault();
                 var dateStr = arg.date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-                // Capitaliza a primeira letra do dia da semana
                 dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
                 
                 document.getElementById('dayEventsModalTitle').textContent = 'Eventos de ' + dateStr;
                 
                 var modalBody = document.getElementById('dayEventsModalBody');
-                modalBody.innerHTML = ''; // Limpa anterior
+                modalBody.innerHTML = '';
                 
                 arg.allSegs.forEach(function(seg) {
                     var event = seg.event;
@@ -595,7 +624,6 @@
                         var dayModalEl = document.getElementById('dayEventsModal');
                         var dayModal = bootstrap.Modal.getInstance(dayModalEl);
                         
-                        // Espera o modal do dia fechar totalmente antes de abrir o de detalhes
                         dayModalEl.addEventListener('hidden.bs.modal', function onHidden() {
                             dayModalEl.removeEventListener('hidden.bs.modal', onHidden);
                             if (clickedEvent) {
@@ -610,13 +638,13 @@
                 
                 var myModal = new bootstrap.Modal(document.getElementById('dayEventsModal'));
                 myModal.show();
-                return 'prevent'; // impede o comportamento padrao popover/week view
+                return 'prevent';
             },
             
             events: [
                 {% for show in shows %}
                 {
-                    id: 'show_{{ show.id }}', // Add ID for getEventById
+                    id: 'show_{{ show.id }}', 
                     title: '{{ show.title|escapejs }}',
                     start: '{{ show.date|date:"Y-m-d" }}',
                     url: '{% url "show_detail" band.slug show.id %}',
@@ -624,7 +652,6 @@
                     borderColor: '{% if show.status == "CONFIRMADO" %}#198754{% elif show.status == "CANCELADO" %}#dc3545{% elif show.status == "PRE_RESERVADO" %}#ffc107{% else %}#0f7fb1{% endif %}',
                     textColor: '{% if show.status == "PRE_RESERVADO" %}#000000{% else %}#ffffff{% endif %}',
                     
-                    // Dados extras para o tooltip e modal
                     extendedProps: {
                         eventName: '{{ show.event_name|default:""|escapejs }}',
                         city: '{{ show.city|default:"Não informada"|escapejs }}',
@@ -645,6 +672,28 @@
             ],
             
             eventContent: function(arg) {
+                if (arg.view.type === 'dayGridMonth') {
+                    var wrapper = document.createElement('div');
+                    wrapper.className = 'month-event-wrapper';
+                    wrapper.style.overflow = 'hidden';
+                    wrapper.style.whiteSpace = 'nowrap';
+                    wrapper.style.textOverflow = 'ellipsis';
+                    wrapper.style.width = '100%';
+                    wrapper.style.padding = '1px 3px';
+                    wrapper.style.display = 'flex';
+                    wrapper.style.alignItems = 'center';
+                    
+                    var titleEl = document.createElement('span');
+                    titleEl.style.fontSize = '0.65rem';
+                    titleEl.style.fontWeight = '600';
+                    titleEl.style.overflow = 'hidden';
+                    titleEl.style.textOverflow = 'ellipsis';
+                    titleEl.textContent = arg.event.title;
+                    
+                    wrapper.appendChild(titleEl);
+                    return { domNodes: [wrapper] };
+                }
+
                 if (arg.view.type === 'listMonth' || arg.view.type === 'listWeek') {
                     var event = arg.event;
                     var time = event.extendedProps.show_time !== '-' ? event.extendedProps.show_time : '';
@@ -710,18 +759,42 @@
             eventDidMount: function(info) {
                 var today = new Date();
                 today.setHours(0,0,0,0);
-                // Se a data do show for antes de hoje (já aconteceu)
                 if (info.event.start < today) {
-                    info.el.style.opacity = '0.5'; // Deixa o evento mais transparente
-                    info.el.style.filter = 'grayscale(30%)'; // Tira um pouco da cor para não chamar atenção
+                    info.el.style.opacity = '0.5';
+                    info.el.style.filter = 'grayscale(30%)';
+                }
+            },
+            
+            datesSet: function(info) {
+                var titleEl = document.querySelector('.fc-toolbar-title');
+                if (titleEl) {
+                    var titleText = titleEl.textContent;
+                    // Fix ' De ' to ' de ' se o pt-br ou CSS antigo houver alterado
+                    titleText = titleText.replace(/ De /g, ' de ');
+                    // Garantir a primeira letra maiuscula: "agosto de 2026" -> "Agosto de 2026"
+                    titleText = titleText.charAt(0).toUpperCase() + titleText.slice(1);
+                    titleEl.textContent = titleText;
                 }
             },
             
             eventClick: function(info) {
-                info.jsEvent.preventDefault(); // Previne ir direto para a URL da página de detalhes
+                info.jsEvent.preventDefault();
                 window.openEventDetails(info.event);
             }
         });
+
+        // Initialize ResizeObserver to watch calendar wrapper width
+        var resizeTimer;
+        var ro = new ResizeObserver(entries => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                for (let entry of entries) {
+                    applyModeToCalendar(entry.contentRect.width);
+                }
+            }, 150);
+        });
+        ro.observe(calendarEl.parentElement);
+
         calendar.render();
     });
 </script>

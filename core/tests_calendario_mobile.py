@@ -27,10 +27,11 @@ class CalendarioMobileTests(TestCase):
         self.assertContains(response, 'id="dayEventsModalBody"')
         
         # Verify JS responsive logic presence
-        self.assertContains(response, 'function getMobileConfig()')
+        self.assertContains(response, 'function getCompactConfig()')
+        self.assertContains(response, 'function getIntermediateConfig()')
         self.assertContains(response, 'function getDesktopConfig()')
         self.assertContains(response, 'window.openEventDetails')
-        self.assertContains(response, "window.matchMedia('(max-width: 767.98px)')")
+        self.assertContains(response, "new ResizeObserver")
         self.assertContains(response, 'p-0 p-md-3')
         
         # Extra checks from the audit checklist
@@ -38,21 +39,23 @@ class CalendarioMobileTests(TestCase):
         self.assertContains(response, "contentHeight: 'auto'")
         self.assertContains(response, 'fixedWeekCount: false')
         self.assertContains(response, 'dayMaxEvents: 2')
+        self.assertContains(response, 'dayMaxEvents: 3')
         self.assertContains(response, "initialView: 'dayGridMonth'")
         
         # moreLinkClick config
         self.assertContains(response, 'moreLinkClick: function(arg)')
         
-        # eventContent listMonth handling
+        # eventContent dayGridMonth and listMonth handling
+        self.assertContains(response, "if (arg.view.type === 'dayGridMonth')")
         self.assertContains(response, "if (arg.view.type === 'listMonth' || arg.view.type === 'listWeek')")
         
         # Safe DOM manipulation instead of innerHTML
         self.assertContains(response, "document.createElement('div')")
-        self.assertContains(response, "textContent = titleText")
+        self.assertContains(response, "textContent = arg.event.title")
         
         # Debounce logic check
-        self.assertContains(response, 'clearTimeout(window.resizeTimer)')
-        self.assertContains(response, 'setTimeout(function()')
+        self.assertContains(response, 'clearTimeout(resizeTimer)')
+        self.assertContains(response, 'setTimeout(() => {')
         
         # Locale Portuguese
         self.assertContains(response, "locale: 'pt-br'")
