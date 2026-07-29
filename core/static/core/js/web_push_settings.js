@@ -98,12 +98,17 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    const isIOS =
-        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (
-            navigator.platform === "MacIntel" &&
-            navigator.maxTouchPoints > 1
-        );
+    const isIOS = [
+        'iPad Simulator',
+        'iPhone Simulator',
+        'iPod Simulator',
+        'iPad',
+        'iPhone',
+        'iPod'
+    ].includes(navigator.platform)
+    || /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     const isStandalone =
         window.matchMedia("(display-mode: standalone)").matches ||

@@ -56,7 +56,7 @@ class WebPushServiceWorkerTests(TestCase):
         expected_name = json.dumps(self.band1.name.strip())
         expected_notifications_url = json.dumps(reverse('notifications_list', kwargs={'band_slug': self.band1.slug}))
         
-        self.assertIn(f'const SW_VERSION = {json.dumps(self.band1.slug + "-v2")};', content)
+        self.assertIn(f'const SW_VERSION = {json.dumps(self.band1.slug + "-v3")};', content)
         self.assertIn(f'const BAND_SLUG = {expected_slug};', content)
         self.assertIn(f'const BAND_SCOPE = {expected_scope};', content)
         self.assertIn(f'const BAND_NAME = {expected_name};', content)
@@ -70,7 +70,7 @@ class WebPushServiceWorkerTests(TestCase):
         expected_slug = json.dumps(self.band2.slug)
         expected_scope = json.dumps(f"/{self.band2.slug}/")
         
-        self.assertIn(f'const SW_VERSION = {json.dumps(self.band2.slug + "-v2")};', content)
+        self.assertIn(f'const SW_VERSION = {json.dumps(self.band2.slug + "-v3")};', content)
         self.assertIn(f'const BAND_SLUG = {expected_slug};', content)
         self.assertIn(f'const BAND_SCOPE = {expected_scope};', content)
 
