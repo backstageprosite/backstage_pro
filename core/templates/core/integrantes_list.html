@@ -4,14 +4,14 @@
 {% block content %}
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <div class="d-flex align-items-center gap-2">
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-light rounded-pill px-3 shadow-sm border">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
-        <h4 class="fw-bold m-0 ms-2"><i class="fa-solid fa-users-gear text-primary me-2"></i> Integrantes</h4>
+        <h4 class="fw-bold m-0"><i class="fa-solid fa-users-gear text-primary me-2"></i> Integrantes</h4>
     </div>
     
     {% if request.user.role == 'PRODUTOR' %}
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-light rounded-pill px-3 shadow-sm border">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+        </a>
         <button type="button" class="btn btn-dark fw-bold rounded-pill px-3 shadow-sm" onclick="gerarPDF()">
             <i class="fa-solid fa-file-pdf me-1"></i> Gerar PDF
         </button>
@@ -20,9 +20,14 @@
         </button>
     </div>
     {% else %}
-    <button type="button" class="btn btn-dark fw-bold rounded-pill px-3 shadow-sm" onclick="gerarPDF()">
-        <i class="fa-solid fa-file-pdf me-1"></i> Gerar PDF
-    </button>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-light rounded-pill px-3 shadow-sm border">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+        </a>
+        <button type="button" class="btn btn-dark fw-bold rounded-pill px-3 shadow-sm" onclick="gerarPDF()">
+            <i class="fa-solid fa-file-pdf me-1"></i> Gerar PDF
+        </button>
+    </div>
     {% endif %}
 </div>
 
