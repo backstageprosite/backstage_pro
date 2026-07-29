@@ -286,10 +286,10 @@
 
 <!-- PWA Preview Modal (Fullscreen) -->
 <div class="modal fade" id="pwaFilePreviewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" style="z-index: 1060;">
-    <div class="modal-dialog modal-fullscreen m-0">
-        <div class="modal-content bg-dark border-0 rounded-0">
+    <div class="modal-dialog modal-fullscreen m-0 h-100">
+        <div class="modal-content bg-dark border-0 rounded-0 h-100 d-flex flex-column">
             <!-- Toolbar Superior Fixa -->
-            <div class="viewer-toolbar bg-dark text-white d-flex align-items-center justify-content-between px-3" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1085; padding-top: env(safe-area-inset-top, 0px); min-height: calc(56px + env(safe-area-inset-top, 0px)); box-shadow: 0 2px 10px rgba(0,0,0,0.5);">
+            <div class="viewer-toolbar bg-dark text-white d-flex align-items-center justify-content-between px-3 flex-shrink-0" style="padding-top: env(safe-area-inset-top, 0px); min-height: calc(56px + env(safe-area-inset-top, 0px)); box-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 1085;">
                 <button type="button" class="btn btn-dark text-white border-0 fs-5 p-2" id="btnClosePreviewTop" aria-label="Fechar visualização" style="width: 44px; height: 44px;">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -298,8 +298,8 @@
             </div>
 
             <!-- Área Central do Visualizador -->
-            <div class="modal-body p-0 d-flex flex-column bg-dark" id="pwaPreviewContainer" style="margin-top: calc(56px + env(safe-area-inset-top, 0px)); margin-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); overflow: auto; position: relative; height: 100%;">
-                <div id="pwaPreviewInner" class="d-flex justify-content-center align-items-center w-100" style="min-height: 100%;">
+            <div class="modal-body p-0 d-flex flex-column bg-dark flex-grow-1 position-relative" id="pwaPreviewContainer" style="overflow: auto;">
+                <div id="pwaPreviewInner" class="d-flex justify-content-center align-items-center w-100" style="min-height: 100%; margin: auto;">
                     <!-- Content injected here (img or canvas) -->
                 </div>
                 
@@ -315,14 +315,14 @@
                 <div id="pwaPreviewError" class="position-absolute top-50 start-50 translate-middle text-center text-white d-none w-100 px-4" style="z-index: 1070;">
                     <i class="fa-solid fa-triangle-exclamation text-warning mb-3" style="font-size: 3rem;"></i>
                     <p class="mb-3 fw-bold" id="pwaPreviewErrorMsg">Não foi possível visualizar este arquivo.</p>
-                    <button type="button" class="btn btn-outline-light rounded-pill px-4" id="btnClosePreviewError">Voltar</button>
+                    <button type="button" class="btn btn-outline-light rounded-pill px-4 mt-3" id="btnClosePreviewError">Voltar</button>
                 </div>
             </div>
 
             <!-- Toolbar Inferior Fixa -->
-            <div class="viewer-toolbar-bottom bg-dark text-white d-flex align-items-center justify-content-center px-3" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 1085; padding-bottom: env(safe-area-inset-bottom, 0px); min-height: calc(60px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -2px 10px rgba(0,0,0,0.5);">
+            <div class="viewer-toolbar-bottom bg-dark text-white d-flex align-items-center justify-content-center px-3 flex-shrink-0" style="padding-bottom: env(safe-area-inset-bottom, 0px); min-height: calc(60px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -2px 10px rgba(0,0,0,0.5); z-index: 1085;">
                 
-                <div id="pdfControls" class="d-none d-flex align-items-center gap-2">
+                <div id="pdfControls" class="d-none d-flex align-items-center gap-2 w-100 justify-content-center">
                     <button type="button" class="btn btn-dark text-white border-0 p-2" id="pdfPrevPage" disabled><i class="fa-solid fa-chevron-left"></i></button>
                     <span class="small fw-bold" style="min-width: 60px; text-align: center;"><span id="pdfPageNum">1</span> / <span id="pdfPageCount">1</span></span>
                     <button type="button" class="btn btn-dark text-white border-0 p-2" id="pdfNextPage" disabled><i class="fa-solid fa-chevron-right"></i></button>
@@ -331,7 +331,7 @@
                     <button type="button" class="btn btn-dark text-white border-0 p-2" id="pdfZoomIn"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
                 </div>
 
-                <div id="imgControls" class="d-none d-flex align-items-center gap-3">
+                <div id="imgControls" class="d-none d-flex align-items-center gap-3 w-100 justify-content-center">
                     <button type="button" class="btn btn-dark text-white border-0 rounded-pill px-4 fw-bold" id="btnClosePreviewBottom">Fechar</button>
                 </div>
 
