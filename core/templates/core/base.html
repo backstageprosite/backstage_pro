@@ -214,11 +214,7 @@
                         </a>
                     </li>
                     
-                    <li class="nav-item">
-                        <a href="{% if band %}{% url 'usuarios_list' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'usuarios_list' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
-                            <i class="fa-solid fa-users fa-fw me-2 {% if request.resolver_match.url_name != 'usuarios_list' %}opacity-75{% endif %}"></i> Usuários
-                        </a>
-                    </li>
+
 
 
                     <li class="nav-item">

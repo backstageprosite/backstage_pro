@@ -1,11 +1,18 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-users text-primary me-2"></i> Usuários</h4>
-    <button type="button" data-bs-toggle="modal" data-bs-target="#addUserModal" class="btn btn-sm rounded-pill shadow-sm px-3 py-2 fw-bold d-flex align-items-center text-dark" style="background-color: #6BD443;">
-        <span>+ Novo Usuário</span>
-    </button>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold m-0"><i class="fa-solid fa-users text-primary me-2"></i> Usuários</h4>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+        </a>
+        <button type="button" data-bs-toggle="modal" data-bs-target="#addUserModal" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443;">
+            <i class="fa-solid fa-plus me-1"></i> Novo Usuário
+        </button>
+    </div>
 </div>
 
 <div class="card shadow-sm border-0" style="border-radius: 12px;">
