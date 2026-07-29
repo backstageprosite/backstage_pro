@@ -43,6 +43,12 @@ urlpatterns = [
     path('relatorios/assinatura/', views.minha_assinatura_view, name='minha_assinatura'),
     path('relatorios/relatorio-financeiro/', views.relatorios_view, name='relatorio_financeiro'),
     
+    # Rider
+    path('relatorios/rider/', views.rider_list_view, name='rider_list'),
+    path('relatorios/rider/<int:pk>/download/', file_views.download_rider, name='download_rider'),
+    path('relatorios/rider/<int:pk>/preview/', file_views.preview_rider, name='preview_rider'),
+    path('rider/publico/<uuid:uuid>/', file_views.public_rider_download, name='public_rider_download'),
+    
     # Fale Conosco - Produtor
     path('relatorios/fale-conosco/', views_support.support_list_view, name='support_list'),
     path('relatorios/fale-conosco/novo/', views_support.support_create_view, name='support_create'),

@@ -12,8 +12,8 @@ from django.urls import reverse
 from functools import wraps
 from django.http import HttpResponseForbidden
 from django.db.models import Sum
-from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem, AdministrativeBandNotice
-from .forms import FinancialReceiptForm, UserForm, UserEditForm, ContactForm, ShowForm, ContractDocumentFormSet, FinancialReceiptFormSet, ShowPaymentForm, ShowTeamCostForm, ContractDocumentForm
+from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem, AdministrativeBandNotice, RiderDocument
+from .forms import FinancialReceiptForm, UserForm, UserEditForm, ContactForm, ShowForm, ContractDocumentFormSet, FinancialReceiptFormSet, ShowPaymentForm, ShowTeamCostForm, ContractDocumentForm, RiderDocumentForm
 from decimal import Decimal
 
 def landing_page_view(request):
@@ -1445,3 +1445,52 @@ def partners_list_view(request, band_slug):
 @band_required
 def instalar_aplicativo_view(request, band_slug):
     return render(request, 'core/instalar_aplicativo.html', {'band': request.band})
+
+@login_required
+@band_required
+def rider_list_view(request, band_slug):
+    band = request.band
+    
+    if request.method == 'POST':
+        if not request.user.is_produtor():
+            raise PermissionDenied("Apenas produtores podem gerenciar Riders.")
+            
+        if 'add_rider' in request.POST:
+            form = RiderDocumentForm(request.POST, request.FILES)
+            if form.is_valid():
+                rider = form.save(commit=False)
+                rider.band = band
+                rider.created_by = request.user
+                rider.save()
+                messages.success(request, 'Rider adicionado com sucesso!')
+            else:
+                messages.error(request, 'Erro ao adicionar Rider. Verifique os dados.')
+            return redirect('rider_list', band_slug=band.slug)
+            
+        elif 'edit_rider' in request.POST:
+            rider_id = request.POST.get('rider_id')
+            rider = get_object_or_404(RiderDocument, id=rider_id, band=band)
+            form = RiderDocumentForm(request.POST, request.FILES, instance=rider)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Rider atualizado com sucesso!')
+            else:
+                messages.error(request, 'Erro ao atualizar Rider.')
+            return redirect('rider_list', band_slug=band.slug)
+            
+        elif 'delete_rider' in request.POST:
+            rider_id = request.POST.get('rider_id')
+            rider = get_object_or_404(RiderDocument, id=rider_id, band=band)
+            rider.delete()
+            messages.success(request, 'Rider excluído com sucesso!')
+            return redirect('rider_list', band_slug=band.slug)
+
+    riders = RiderDocument.objects.filter(band=band)
+    form = RiderDocumentForm()
+    
+    context = {
+        'band': band,
+        'riders': riders,
+        'form': form,
+    }
+    return render(request, 'core/rider_list.html', context)

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 import hashlib
+import uuid
 from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
 
@@ -350,6 +351,25 @@ class BandSubscription(models.Model):
 
 def billing_proof_upload_path(instance, filename):
     return f'billing/{instance.band.id}/comprovantes/{filename}'
+
+def rider_upload_path(instance, filename):
+    return f'bands/{instance.band.slug}/riders/{filename}'
+
+class RiderDocument(models.Model):
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='riders', verbose_name='Banda')
+    name = models.CharField(max_length=200, verbose_name='Nome')
+    file = models.FileField(upload_to=rider_upload_path, verbose_name='Arquivo')
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name='ID de Compartilhamento Público')
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Criado por')
+
+    class Meta:
+        verbose_name = 'Rider'
+        verbose_name_plural = 'Riders'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.band.name}"
 
 class BillingRecord(models.Model):
     STATUS_CHOICES = (

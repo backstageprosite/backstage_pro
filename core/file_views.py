@@ -7,7 +7,7 @@ from django.utils.text import get_valid_filename
 from django.contrib.auth.decorators import login_required
 from functools import wraps
 
-from core.models import Band, ContractDocument, FinancialReceipt, ShowPayment, BillingRecord, SupportTicketAttachment
+from core.models import Band, ContractDocument, FinancialReceipt, ShowPayment, BillingRecord, SupportTicketAttachment, RiderDocument
 
 def is_admin_geral(user):
     """Identifica o Admin Geral nativo do Django."""
@@ -196,6 +196,18 @@ def preview_support_attachment(request, band_slug, pk):
     return serve_private_file(doc.file, as_attachment=False)
 
 @private_download_required
+def download_rider(request, band_slug, pk):
+    """Download protegido de RiderDocument"""
+    doc = get_object_or_404(RiderDocument, pk=pk, band=request.band)
+    return serve_private_file(doc.file, as_attachment=True)
+
+@private_download_required
+def preview_rider(request, band_slug, pk):
+    """Preview protegido de RiderDocument (as_attachment=False)"""
+    doc = get_object_or_404(RiderDocument, pk=pk, band=request.band)
+    return serve_private_file(doc.file, as_attachment=False)
+
+@private_download_required
 def internal_file_viewer(request, band_slug, file_type, pk):
     """
     Página HTML interna do visualizador PWA controlada pelo Django.
@@ -227,6 +239,11 @@ def internal_file_viewer(request, band_slug, file_type, pk):
         doc = get_object_or_404(SupportTicketAttachment, pk=pk, message__ticket__band=band)
         preview_url = reverse('preview_support_attachment', args=[band.slug, pk])
         download_url = reverse('download_support_attachment', args=[band.slug, pk])
+        filename = doc.file.name
+    elif file_type == 'rider':
+        doc = get_object_or_404(RiderDocument, pk=pk, band=band)
+        preview_url = reverse('preview_rider', args=[band.slug, pk])
+        download_url = reverse('download_rider', args=[band.slug, pk])
         filename = doc.file.name
     else:
         raise Http404("Tipo de arquivo inválido.")
@@ -303,3 +320,16 @@ def admin_band_logo(request, band_slug):
     response['Vary'] = 'Cookie'
         
     return response
+
+def public_rider_download(request, band_slug, uuid):
+    """
+    Download público seguro para Rider (sem login) através do UUID.
+    """
+    doc = get_object_or_404(RiderDocument, uuid=uuid)
+    
+    # Valida inatividade da banda
+    if not doc.band.is_active:
+        raise Http404("Documento não disponível.")
+
+    return serve_private_file(doc.file, as_attachment=True)
+

@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import FinancialReceipt, User, Contact, Show, ContractDocument, ShowPayment, ShowTeamCost
+from .models import FinancialReceipt, User, Contact, Show, ContractDocument, ShowPayment, ShowTeamCost, RiderDocument
 
 class FinancialReceiptForm(forms.ModelForm):
     class Meta:
@@ -264,3 +264,13 @@ class BandDashboardPendingItemForm(forms.ModelForm):
         self.fields['description'].widget.attrs.update({'class': 'form-control', 'rows': 3, 'placeholder': 'Digite a pendência...', 'maxlength': '500', 'style': 'border-radius: 8px; resize: none;'})
         if shows_qs is not None:
             self.fields['show'].queryset = shows_qs
+
+class RiderDocumentForm(forms.ModelForm):
+    class Meta:
+        model = RiderDocument
+        fields = ['name', 'file']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Rider de Luz, Mapa de Palco'}),
+            'file': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
