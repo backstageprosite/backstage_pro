@@ -5,7 +5,7 @@ from django.contrib.auth.views import LoginView
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
-from django.views.generic import TemplateView, ListView
+from django.views.generic import TemplateView, ListView, View
 from django.db.models import Count
 from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket, SystemSettings
 from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm, AdminPartnerForm
@@ -994,3 +994,13 @@ class SiteLogoDeleteView(AdminRequiredMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         messages.success(request, 'Logo excluída com sucesso!')
         return super().delete(request, *args, **kwargs)
+
+class SiteLogoToggleActiveView(AdminRequiredMixin, View):
+    def post(self, request, pk, *args, **kwargs):
+        logo = get_object_or_404(LandingPageBandLogo, pk=pk)
+        logo.is_active = not logo.is_active
+        logo.save()
+        status_text = 'ativada' if logo.is_active else 'desativada'
+        messages.success(request, f'Logo {status_text} com sucesso!')
+        return redirect('admin_painel:site_logos')
+

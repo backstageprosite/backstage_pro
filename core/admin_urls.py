@@ -55,6 +55,7 @@ urlpatterns = [
     # Gestão do Site
     path('relatorios/site/', admin_views.SiteLogosView.as_view(), name='site_logos'),
     path('relatorios/site/<int:pk>/excluir/', admin_views.SiteLogoDeleteView.as_view(), name='site_logos_delete'),
+    path('relatorios/site/<int:pk>/desativar/', admin_views.SiteLogoToggleActiveView.as_view(), name='site_logos_toggle_active'),
 
     path('web-push/', admin_views.AdminWebPushDashboardView.as_view(), name='admin_web_push_dashboard'),
     

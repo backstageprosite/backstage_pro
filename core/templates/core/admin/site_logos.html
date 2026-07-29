@@ -5,7 +5,6 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <div>
         <h4 class="fw-bold m-0"><i class="fa-solid fa-globe text-primary me-2"></i> Site</h4>
-        <p class="text-muted small mb-0 mt-1">Gerencie as logomarcas exibidas na landing page do Backstage Pro.</p>
     </div>
     <div class="d-flex gap-2">
         <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="border-radius: 8px;">
@@ -37,6 +36,7 @@
                         <th class="border-0 py-3">Arquivo</th>
                         <th class="border-0 py-3 text-center">Ordem</th>
                         <th class="border-0 py-3 text-center">Data de cadastro</th>
+                        <th class="border-0 py-3 text-center">Status</th>
                         <th class="pe-4 border-0 py-3 text-end">Ações</th>
                     </tr>
                 </thead>
@@ -52,10 +52,40 @@
                             <td class="py-3 text-muted small text-break">{{ logo.image.name|slice:"19:" }}</td>
                             <td class="py-3 text-center text-muted small">{{ logo.display_order }}</td>
                             <td class="py-3 text-center text-muted small">{{ logo.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="py-3 text-center">
+                                {% if logo.is_active %}
+                                    <span class="badge bg-success rounded-pill px-3 py-2 fw-medium">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary rounded-pill px-3 py-2 fw-medium">Desativado</span>
+                                {% endif %}
+                            </td>
                             <td class="pe-4 py-3 text-end">
-                                <button type="button" class="btn btn-outline-danger btn-sm px-3" data-bs-toggle="modal" data-bs-target="#deleteLogoModal{{ logo.pk }}" style="border-radius: 6px;">
-                                    Excluir
-                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-light btn-sm px-3 shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 6px;">
+                                        <i class="fa-solid fa-gear text-secondary"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px; font-size: 0.9rem;">
+                                        <li>
+                                            <a href="#" class="dropdown-item py-2 fw-medium">
+                                                <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <form method="post" action="{% url 'admin_painel:site_logos_toggle_active' logo.pk %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="dropdown-item py-2 fw-medium">
+                                                    <i class="fa-solid fa-gauge-high me-2 text-warning"></i> 
+                                                    {% if logo.is_active %}Desativar{% else %}Ativar{% endif %}
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteLogoModal{{ logo.pk }}">
+                                                <i class="fa-solid fa-trash me-2 text-danger"></i> Excluir
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
                             </td>
                         </tr>
 

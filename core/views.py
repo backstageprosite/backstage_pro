@@ -21,7 +21,7 @@ def landing_page_view(request):
     Landing page principal de vendas do Backstage Pro.
     """
     from .models import LandingPageBandLogo
-    landing_band_logos = LandingPageBandLogo.objects.all()
+    landing_band_logos = LandingPageBandLogo.objects.filter(is_active=True)
     return render(request, 'core/landing.html', {'landing_band_logos': landing_band_logos})
 
 def landing_page_logo_image_view(request, pk):
