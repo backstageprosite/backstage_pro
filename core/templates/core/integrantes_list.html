@@ -308,6 +308,41 @@
         }
         return cookieValue;
     }
+    
+    // Máscara de CPF
+    document.addEventListener('input', function (e) {
+        if (e.target.classList.contains('cpf-mask')) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não for dígito
+            if (value.length > 11) value = value.substring(0, 11);
+            
+            if (value.length > 9) {
+                value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, "$1.$2.$3-$4");
+            } else if (value.length > 6) {
+                value = value.replace(/(\d{3})(\d{3})(\d{1,3})/, "$1.$2.$3");
+            } else if (value.length > 3) {
+                value = value.replace(/(\d{3})(\d{1,3})/, "$1.$2");
+            }
+            e.target.value = value;
+        }
+    });
+    
+    // Aplicar máscara aos CPFs já preenchidos (ao abrir modais de edição)
+    document.addEventListener('DOMContentLoaded', function() {
+        const cpfInputs = document.querySelectorAll('.cpf-mask');
+        cpfInputs.forEach(input => {
+            if (input.value) {
+                let value = input.value.replace(/\D/g, '');
+                if (value.length > 9) {
+                    value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, "$1.$2.$3-$4");
+                } else if (value.length > 6) {
+                    value = value.replace(/(\d{3})(\d{3})(\d{1,3})/, "$1.$2.$3");
+                } else if (value.length > 3) {
+                    value = value.replace(/(\d{3})(\d{1,3})/, "$1.$2");
+                }
+                input.value = value;
+            }
+        });
+    });
     {% endif %}
 </script>
 {% endblock %}
