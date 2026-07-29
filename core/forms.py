@@ -280,7 +280,7 @@ from .models import Integrante
 class IntegranteForm(forms.ModelForm):
     class Meta:
         model = Integrante
-        fields = ['name', 'role', 'cpf', 'vehicle', 'category', 'pix_key']
+        fields = ['name', 'role', 'cpf', 'vehicle', 'category', 'pix_key', 'birth_date', 'miles_number']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome completo', 'style': 'border-radius: 8px;'}),
             'role': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Função (ex: Roadie, Baterista)', 'style': 'border-radius: 8px;'}),
@@ -288,4 +288,6 @@ class IntegranteForm(forms.ModelForm):
             'vehicle': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Placa / Modelo (Opcional)', 'style': 'border-radius: 8px;'}),
             'category': forms.Select(attrs={'class': 'form-select', 'style': 'border-radius: 8px;'}),
             'pix_key': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Chave-Pix (Opcional)', 'style': 'border-radius: 8px;'}),
+            'birth_date': forms.TextInput(attrs={'class': 'form-control date-mask', 'placeholder': 'DD/MM/AAAA', 'style': 'border-radius: 8px;'}),
+            'miles_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número Milhas (Opcional)', 'style': 'border-radius: 8px;'}),
         }

@@ -1596,8 +1596,12 @@ def integrantes_pdf_view(request, band_slug):
     else:
         integrantes = Integrante.objects.none()
         
+    columns_param = request.GET.get('columns', 'role,category,cpf,vehicle,birth_date,miles_number')
+    columns = columns_param.split(',') if columns_param else []
+        
     context = {
         'band': band,
         'integrantes': integrantes,
+        'columns': columns,
     }
     return render(request, 'core/integrantes_pdf.html', context)

@@ -1085,6 +1085,8 @@ class Integrante(models.Model):
     vehicle = models.CharField(max_length=150, blank=True, null=True, verbose_name="Veículo")
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, verbose_name="Categoria")
     pix_key = models.CharField(max_length=255, blank=True, null=True, verbose_name="Chave-Pix")
+    birth_date = models.CharField(max_length=15, blank=True, null=True, verbose_name="Data de Nascimento")
+    miles_number = models.CharField(max_length=100, blank=True, null=True, verbose_name="Número Milhas")
     order = models.PositiveIntegerField(default=0, verbose_name="Ordem")
     
     class Meta:

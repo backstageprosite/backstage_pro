@@ -107,24 +107,28 @@
         <thead>
             <tr>
                 <th>Nome</th>
-                <th>Função</th>
-                <th>Categoria</th>
-                <th>CPF</th>
-                <th>Veículo</th>
+                {% if 'role' in columns %}<th>Função</th>{% endif %}
+                {% if 'category' in columns %}<th>Categoria</th>{% endif %}
+                {% if 'cpf' in columns %}<th>CPF</th>{% endif %}
+                {% if 'vehicle' in columns %}<th>Veículo</th>{% endif %}
+                {% if 'birth_date' in columns %}<th>Data de Nascimento</th>{% endif %}
+                {% if 'miles_number' in columns %}<th>Número Milhas</th>{% endif %}
             </tr>
         </thead>
         <tbody>
             {% for item in integrantes %}
                 <tr style="background-color: {% if item.category == 'PRODUCAO' %}#d0e6f8{% elif item.category == 'MUSICO' %}#ffe0cc{% elif item.category == 'EQUIPE_TECNICA' %}#d4edda{% else %}#ffffff{% endif %} !important; --bs-table-bg: {% if item.category == 'PRODUCAO' %}#d0e6f8{% elif item.category == 'MUSICO' %}#ffe0cc{% elif item.category == 'EQUIPE_TECNICA' %}#d4edda{% else %}#ffffff{% endif %};">
                     <td class="fw-bold">{{ item.name }}</td>
-                    <td>{{ item.role }}</td>
-                    <td>{{ item.get_category_display }}</td>
-                    <td class="cpf-cell">{{ item.cpf|default:"-" }}</td>
-                    <td>{{ item.vehicle|default:"-" }}</td>
+                    {% if 'role' in columns %}<td>{{ item.role }}</td>{% endif %}
+                    {% if 'category' in columns %}<td>{{ item.get_category_display }}</td>{% endif %}
+                    {% if 'cpf' in columns %}<td class="cpf-cell">{{ item.cpf|default:"-" }}</td>{% endif %}
+                    {% if 'vehicle' in columns %}<td>{{ item.vehicle|default:"-" }}</td>{% endif %}
+                    {% if 'birth_date' in columns %}<td>{{ item.birth_date|default:"-" }}</td>{% endif %}
+                    {% if 'miles_number' in columns %}<td>{{ item.miles_number|default:"-" }}</td>{% endif %}
                 </tr>
             {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center py-4 text-muted">Nenhum integrante selecionado.</td>
+                    <td colspan="7" class="text-center py-4 text-muted">Nenhum integrante selecionado.</td>
                 </tr>
             {% endfor %}
         </tbody>
