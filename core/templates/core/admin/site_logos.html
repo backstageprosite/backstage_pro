@@ -33,22 +33,23 @@
                     <tr>
                         <th class="ps-4 border-0 py-3" style="width: 200px;">Prévia</th>
                         <th class="border-0 py-3">Banda ou artista</th>
-                        <th class="border-0 py-3 text-center">Ordem</th>
                         <th class="border-0 py-3 text-center">Data de cadastro</th>
                         <th class="border-0 py-3 text-center">Status</th>
                         <th class="pe-4 border-0 py-3 text-end">Ações</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="sortable-logos">
                     {% for logo in logos %}
-                        <tr>
+                        <tr class="align-middle border-bottom" data-id="{{ logo.pk }}">
                             <td class="ps-4 py-3">
                                 <div style="width: 150px; height: 50px; background-color: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                                     <img src="{% url 'landing_logo_image' logo.pk %}" alt="{{ logo.name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                 </div>
                             </td>
-                            <td class="py-3 fw-semibold text-dark">{{ logo.name }}</td>
-                            <td class="py-3 text-center text-muted small">{{ logo.display_order }}</td>
+                            <td class="py-3 fw-semibold text-dark">
+                                <i class="fa-solid fa-grip-vertical text-muted me-3" style="cursor: grab;"></i>
+                                {{ logo.name }}
+                            </td>
                             <td class="py-3 text-center text-muted small">{{ logo.created_at|date:"d/m/Y H:i" }}</td>
                             <td class="py-3 text-center">
                                 {% if logo.is_active %}
@@ -138,10 +139,7 @@
                                                 </div>
                                             </div>
                                             
-                                            <div class="mb-3">
-                                                <label for="id_display_order_{{ logo.pk }}" class="form-label fw-semibold text-dark small">Ordem de exibição</label>
-                                                <input type="number" name="display_order" id="id_display_order_{{ logo.pk }}" class="form-control" value="{{ logo.display_order }}">
-                                            </div>
+                                            
 
                                             <div class="form-check form-switch mb-3">
                                                 <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active_{{ logo.pk }}" {% if logo.is_active %}checked{% endif %}>
@@ -203,14 +201,6 @@
                             <strong>Tamanho máximo:</strong> 5 MB.
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.display_order.id_for_label }}" class="form-label fw-semibold text-dark small">Ordem de exibição</label>
-                        <input type="number" name="{{ form.display_order.name }}" id="{{ form.display_order.id_for_label }}" class="form-control {% if form.display_order.errors %}is-invalid{% endif %}" value="{{ form.display_order.value|default_if_none:0 }}">
-                        {% if form.display_order.errors %}
-                            <div class="invalid-feedback">{{ form.display_order.errors.0 }}</div>
-                        {% endif %}
-                    </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-2">
                     <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;" {% if open_modal %}onclick="window.location.href='{% url 'admin_painel:site_logos' %}'"{% endif %}>Cancelar</button>
@@ -223,4 +213,31 @@
 {% if open_modal %}
 <div class="modal-backdrop fade show"></div>
 {% endif %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var el = document.getElementById('sortable-logos');
+        if (el) {
+            Sortable.create(el, {
+                handle: '.fa-grip-vertical',
+                animation: 150,
+                onEnd: function (evt) {
+                    var order = [];
+                    el.querySelectorAll('tr[data-id]').forEach(function(row) {
+                        order.push(row.getAttribute('data-id'));
+                    });
+                    
+                    fetch("{% url 'admin_painel:site_logos_reorder' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({order: order})
+                    });
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

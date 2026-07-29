@@ -1,4 +1,5 @@
 from django import forms
+from django.db import models
 from core.models import Band, User, BandSubscription, BillingRecord
 
 class AdminBandForm(forms.ModelForm):
@@ -132,12 +133,21 @@ class LandingPageBandLogoForm(forms.ModelForm):
     
     class Meta:
         model = LandingPageBandLogo
-        fields = ['name', 'image', 'display_order', 'is_active']
+        fields = ['name', 'image', 'is_active']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.instance.pk:
             self.fields['image'].required = True
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if not instance.pk and instance.display_order == 0:
+            last_order = LandingPageBandLogo.objects.aggregate(models.Max('display_order'))['display_order__max']
+            instance.display_order = (last_order or 0) + 1
+        if commit:
+            instance.save()
+        return instance
             
 
     def clean_name(self):

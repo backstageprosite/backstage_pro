@@ -984,6 +984,22 @@ class SiteLogosView(AdminRequiredMixin, ListView):
         context['open_modal'] = True
         return self.render_to_response(context)
 
+import json
+from django.http import JsonResponse
+
+class SiteLogoReorderView(AdminRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            order = data.get('order', [])
+            
+            for index, logo_id in enumerate(order):
+                LandingPageBandLogo.objects.filter(pk=logo_id).update(display_order=index)
+                
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
 class SiteLogoEditView(AdminRequiredMixin, View):
     def post(self, request, pk, *args, **kwargs):
         logo = get_object_or_404(LandingPageBandLogo, pk=pk)
