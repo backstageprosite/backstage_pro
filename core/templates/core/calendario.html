@@ -63,8 +63,8 @@
     }
 </style>
 
-<div class="card p-4 mb-4 shadow-sm border-0" style="border-radius: 12px;">
-    <div class="card-body">
+<div class="card calendar-card px-2 py-3 p-md-4 mb-4 shadow-sm border-0" style="border-radius: 12px;">
+    <div class="card-body p-0 p-md-3">
         <style>
             /* Capitaliza o nome do Mês (Ex: "julho" vira "Julho") */
             .fc-toolbar-title {
@@ -99,13 +99,13 @@
             }
 
             /* Responsividade Mobile para o Calendário */
-            @media (max-width: 768px) {
+            @media (max-width: 767.98px) {
                 .fc-header-toolbar {
                     flex-direction: column;
                     gap: 12px;
                 }
                 .fc-toolbar-title {
-                    font-size: 1.4rem !important;
+                    font-size: 1.25rem !important;
                 }
                 .fc-col-header-cell-cushion {
                     font-size: 0.7rem !important;
@@ -116,13 +116,32 @@
                     padding: 2px !important;
                 }
                 .fc-event {
-                    padding: 1px 2px;
+                    padding: 2px !important;
+                    margin: 1px 0 !important;
                 }
                 .fc-event-title {
                     font-size: 0.65rem !important;
-                    white-space: nowrap;
+                    white-space: normal !important;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
                     overflow: hidden;
-                    text-overflow: ellipsis;
+                    line-height: 1.1;
+                }
+                .fc-daygrid-day-events {
+                    margin-bottom: 0 !important;
+                }
+                .fc-daygrid-more-link {
+                    font-size: 0.75rem !important;
+                    font-weight: 700;
+                    padding: 2px 4px;
+                    display: block;
+                    text-align: center;
+                    background-color: #f1f3f5;
+                    border-radius: 4px;
+                    margin-top: 2px;
+                    color: #495057 !important;
+                    text-decoration: none !important;
                 }
             }
 
@@ -199,16 +218,12 @@
             }
             
             /* Ajustes Mobile para Agenda */
-            @media (max-width: 768px) {
+            @media (max-width: 767.98px) {
                 .fc-list-day-cushion {
-                    padding: 10px 15px !important;
-                }
-                .fc-list-event-title {
-                    white-space: normal !important;
-                    font-size: 0.95rem !important;
+                    padding: 10px 12px !important;
                 }
                 .fc-list-event td {
-                    padding: 14px 10px !important;
+                    padding: 12px 8px !important;
                 }
             }
         </style>
@@ -293,7 +308,23 @@
         </div>
     </div>
 </div>
+</div>
 {% endif %}
+
+<!-- Modal Eventos do Dia (+N) -->
+<div class="modal fade" id="dayEventsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold" id="dayEventsModalTitle">Eventos do dia</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body pt-2" id="dayEventsModalBody">
+        <!-- Eventos injetados aqui via JS -->
+      </div>
+    </div>
+  </div>
+</div>
 </div>
 
 <!-- Modal Exportar PDF -->
@@ -363,32 +394,229 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
+
+        function getMobileConfig() {
+            return {
+                height: 'auto',
+                contentHeight: 'auto',
+                aspectRatio: 1, // overridden by height auto
+                fixedWeekCount: false,
+                dayMaxEvents: 2,
+                dayHeaderFormat: { weekday: 'short' },
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,listMonth'
+                }
+            };
+        }
+
+        function getDesktopConfig() {
+            return {
+                height: '',
+                contentHeight: '',
+                aspectRatio: 1.45,
+                fixedWeekCount: true,
+                dayMaxEvents: true,
+                dayHeaderFormat: { weekday: 'long' },
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,listMonth'
+                }
+            };
+        }
+
+        const mobileQuery = window.matchMedia('(max-width: 767.98px)');
+        var isMobile = mobileQuery.matches;
+        var initialConfig = isMobile ? getMobileConfig() : getDesktopConfig();
+        
+        // Define function to open modal globally so that moreLinkClick can access it
+        window.openEventDetails = function(eventObj) {
+            document.getElementById('modalShowTitle').textContent = eventObj.title;
+            document.getElementById('modalShowStatus').innerHTML = '<span class="badge bg-' + eventObj.extendedProps.statusColor + ' px-3 py-2">' + eventObj.extendedProps.statusDisplay + '</span>';
+            document.getElementById('modalShowDate').textContent = eventObj.extendedProps.dateDisplay;
+            document.getElementById('modalShowCity').textContent = eventObj.extendedProps.city;
+            
+            var venueEl = document.getElementById('modalShowVenue');
+            if (eventObj.extendedProps.venue) {
+                venueEl.textContent = eventObj.extendedProps.venue;
+                venueEl.style.display = 'inline';
+            } else {
+                venueEl.style.display = 'none';
+            }
+            
+            document.getElementById('modalShowDeparture').textContent = eventObj.extendedProps.departure_time;
+            document.getElementById('modalShowTime').textContent = eventObj.extendedProps.show_time;
+            
+            if (eventObj.extendedProps.notes) {
+                document.getElementById('modalShowNotesWrapper').classList.remove('d-none');
+                document.getElementById('modalShowNotes').textContent = eventObj.extendedProps.notes;
+            } else {
+                document.getElementById('modalShowNotesWrapper').classList.add('d-none');
+            }
+            
+            document.getElementById('modalBtnDetails').href = eventObj.url;
+            
+            var btnEdit = document.getElementById('modalBtnEdit');
+            if (btnEdit) {
+                btnEdit.href = eventObj.extendedProps.editUrl;
+            }
+            
+            var btnPdf = document.getElementById('modalBtnPdf');
+            if (btnPdf) {
+                btnPdf.href = eventObj.extendedProps.pdfUrl;
+            }
+            
+            var formDelete = document.getElementById('formDeleteShowCalendar');
+            if (formDelete) {
+                formDelete.action = eventObj.extendedProps.deleteUrl;
+            }
+            
+            // Exibe o modal principal
+            var myModal = new bootstrap.Modal(document.getElementById('showModal'));
+            myModal.show();
+        };
+
         var calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
             locale: 'pt-br',
             firstDay: 1, /* Começa na Segunda-feira (0 = Domingo) */
-            dayHeaderFormat: window.innerWidth < 768 ? { weekday: 'short' } : { weekday: 'long' },
-            aspectRatio: 1.45,
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,listMonth'
-            },
+            
+            dayHeaderFormat: initialConfig.dayHeaderFormat,
+            aspectRatio: initialConfig.aspectRatio,
+            height: initialConfig.height,
+            contentHeight: initialConfig.contentHeight,
+            fixedWeekCount: initialConfig.fixedWeekCount,
+            dayMaxEvents: initialConfig.dayMaxEvents,
+            headerToolbar: initialConfig.headerToolbar,
+            noEventsContent: 'Nenhum show cadastrado para este período.',
+
             buttonText: {
                 today: 'Hoje',
                 month: 'Mês',
                 list: 'Lista'
             },
+            
             windowResize: function(arg) {
-                if (window.innerWidth < 768) {
-                    calendar.setOption('dayHeaderFormat', { weekday: 'short' });
-                } else {
-                    calendar.setOption('dayHeaderFormat', { weekday: 'long' });
-                }
+                clearTimeout(window.resizeTimer);
+                window.resizeTimer = setTimeout(function() {
+                    var newIsMobile = mobileQuery.matches;
+                    if (newIsMobile !== isMobile) {
+                        isMobile = newIsMobile;
+                        var config = isMobile ? getMobileConfig() : getDesktopConfig();
+                        calendar.setOption('height', config.height);
+                        calendar.setOption('contentHeight', config.contentHeight);
+                        calendar.setOption('aspectRatio', config.aspectRatio);
+                        calendar.setOption('fixedWeekCount', config.fixedWeekCount);
+                        calendar.setOption('dayMaxEvents', config.dayMaxEvents);
+                        calendar.setOption('dayHeaderFormat', config.dayHeaderFormat);
+                        calendar.setOption('headerToolbar', config.headerToolbar);
+                        calendar.updateSize();
+                    }
+                }, 250);
             },
+            
+            moreLinkClick: function(arg) {
+                arg.jsEvent.preventDefault();
+                var dateStr = arg.date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+                // Capitaliza a primeira letra do dia da semana
+                dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+                
+                document.getElementById('dayEventsModalTitle').textContent = 'Eventos de ' + dateStr;
+                
+                var modalBody = document.getElementById('dayEventsModalBody');
+                modalBody.innerHTML = ''; // Limpa anterior
+                
+                arg.allSegs.forEach(function(seg) {
+                    var event = seg.event;
+                    var time = event.extendedProps.show_time !== '-' ? event.extendedProps.show_time : '';
+                    var loc = event.extendedProps.city || '';
+                    var titleText = event.title;
+                    if (event.extendedProps.eventName) {
+                        titleText += ' \u2022 ' + event.extendedProps.eventName;
+                    }
+                    var bg = event.backgroundColor;
+                    
+                    var card = document.createElement('div');
+                    card.className = 'card border-0 shadow-sm mb-2 event-modal-item';
+                    card.style.cursor = 'pointer';
+                    card.setAttribute('data-event-id', event.id);
+                    
+                    var cardBody = document.createElement('div');
+                    cardBody.className = 'card-body p-3 d-flex align-items-center';
+                    
+                    var colorDot = document.createElement('div');
+                    colorDot.style.width = '12px';
+                    colorDot.style.height = '12px';
+                    colorDot.style.borderRadius = '50%';
+                    colorDot.style.backgroundColor = bg;
+                    colorDot.style.marginRight = '12px';
+                    colorDot.style.flexShrink = '0';
+                    
+                    var textContainer = document.createElement('div');
+                    var titleDiv = document.createElement('div');
+                    titleDiv.className = 'fw-bold text-dark';
+                    titleDiv.style.fontSize = '0.95rem';
+                    titleDiv.style.lineHeight = '1.2';
+                    titleDiv.textContent = titleText;
+                    
+                    var metaDiv = document.createElement('div');
+                    metaDiv.className = 'text-muted small mt-1';
+                    
+                    if (loc) {
+                        var locSpan = document.createElement('span');
+                        locSpan.innerHTML = '<i class="fa-solid fa-location-dot me-1"></i>';
+                        locSpan.appendChild(document.createTextNode(loc));
+                        metaDiv.appendChild(locSpan);
+                    }
+                    
+                    if (time) {
+                        var timeSpan = document.createElement('span');
+                        timeSpan.className = loc ? 'ms-2' : '';
+                        timeSpan.innerHTML = '<i class="fa-regular fa-clock me-1"></i>';
+                        timeSpan.appendChild(document.createTextNode(time));
+                        metaDiv.appendChild(timeSpan);
+                    }
+                    
+                    textContainer.appendChild(titleDiv);
+                    if (loc || time) {
+                        textContainer.appendChild(metaDiv);
+                    }
+                    
+                    cardBody.appendChild(colorDot);
+                    cardBody.appendChild(textContainer);
+                    card.appendChild(cardBody);
+                    
+                    card.addEventListener('click', function() {
+                        var clickedEventId = this.getAttribute('data-event-id');
+                        var clickedEvent = calendar.getEventById(clickedEventId);
+                        
+                        var dayModalEl = document.getElementById('dayEventsModal');
+                        var dayModal = bootstrap.Modal.getInstance(dayModalEl);
+                        
+                        // Espera o modal do dia fechar totalmente antes de abrir o de detalhes
+                        dayModalEl.addEventListener('hidden.bs.modal', function onHidden() {
+                            dayModalEl.removeEventListener('hidden.bs.modal', onHidden);
+                            if (clickedEvent) {
+                                window.openEventDetails(clickedEvent);
+                            }
+                        });
+                        dayModal.hide();
+                    });
+                    
+                    modalBody.appendChild(card);
+                });
+                
+                var myModal = new bootstrap.Modal(document.getElementById('dayEventsModal'));
+                myModal.show();
+                return 'prevent'; // impede o comportamento padrao popover/week view
+            },
+            
             events: [
                 {% for show in shows %}
                 {
+                    id: 'show_{{ show.id }}', // Add ID for getEventById
                     title: '{{ show.title|escapejs }}',
                     start: '{{ show.date|date:"Y-m-d" }}',
                     url: '{% url "show_detail" band.slug show.id %}',
@@ -415,6 +643,70 @@
                 },
                 {% endfor %} 
             ],
+            
+            eventContent: function(arg) {
+                if (arg.view.type === 'listMonth' || arg.view.type === 'listWeek') {
+                    var event = arg.event;
+                    var time = event.extendedProps.show_time !== '-' ? event.extendedProps.show_time : '';
+                    var city = event.extendedProps.city || '';
+                    var bg = event.backgroundColor;
+                    
+                    var titleText = event.title;
+                    if (event.extendedProps.eventName) {
+                        titleText += ' \u2022 ' + event.extendedProps.eventName;
+                    }
+                    
+                    var wrapper = document.createElement('div');
+                    wrapper.className = 'd-flex align-items-center w-100';
+                    wrapper.style.padding = '4px 0';
+                    
+                    var colorDot = document.createElement('div');
+                    colorDot.style.width = '12px';
+                    colorDot.style.height = '12px';
+                    colorDot.style.borderRadius = '50%';
+                    colorDot.style.backgroundColor = bg;
+                    colorDot.style.marginRight = '12px';
+                    colorDot.style.flexShrink = '0';
+                    
+                    var textContainer = document.createElement('div');
+                    textContainer.className = 'flex-grow-1';
+                    
+                    var titleDiv = document.createElement('div');
+                    titleDiv.className = 'fw-bold text-dark';
+                    titleDiv.style.fontSize = '1.05rem';
+                    titleDiv.style.lineHeight = '1.2';
+                    titleDiv.textContent = titleText;
+                    
+                    var metaDiv = document.createElement('div');
+                    metaDiv.className = 'text-muted small mt-1';
+                    
+                    if (time) {
+                        var timeSpan = document.createElement('span');
+                        timeSpan.innerHTML = '<i class="fa-regular fa-clock me-1"></i>';
+                        timeSpan.appendChild(document.createTextNode(time));
+                        metaDiv.appendChild(timeSpan);
+                    }
+                    
+                    if (city) {
+                        var citySpan = document.createElement('span');
+                        citySpan.className = time ? 'ms-2' : '';
+                        citySpan.innerHTML = '<i class="fa-solid fa-location-dot me-1"></i>';
+                        citySpan.appendChild(document.createTextNode(city));
+                        metaDiv.appendChild(citySpan);
+                    }
+                    
+                    textContainer.appendChild(titleDiv);
+                    if (time || city) {
+                        textContainer.appendChild(metaDiv);
+                    }
+                    
+                    wrapper.appendChild(colorDot);
+                    wrapper.appendChild(textContainer);
+                    
+                    return { domNodes: [wrapper] };
+                }
+            },
+            
             eventDidMount: function(info) {
                 var today = new Date();
                 today.setHours(0,0,0,0);
@@ -423,64 +715,11 @@
                     info.el.style.opacity = '0.5'; // Deixa o evento mais transparente
                     info.el.style.filter = 'grayscale(30%)'; // Tira um pouco da cor para não chamar atenção
                 }
-
-                // Customiza título na list view se houver nome do evento
-                if (info.view.type === 'listMonth' || info.view.type === 'listWeek') {
-                    if (info.event.extendedProps.eventName) {
-                        var titleEl = info.el.querySelector('.fc-list-event-title a');
-                        if (titleEl) {
-                            titleEl.innerHTML = titleEl.innerHTML + ' <span style="font-size: 0.75rem; opacity: 0.65; font-weight: 500; margin-left: 6px;">&bull; ' + info.event.extendedProps.eventName + '</span>';
-                        }
-                    }
-                }
             },
+            
             eventClick: function(info) {
                 info.jsEvent.preventDefault(); // Previne ir direto para a URL da página de detalhes
-                
-                // Preenche os dados do modal
-                document.getElementById('modalShowTitle').textContent = info.event.title;
-                document.getElementById('modalShowStatus').innerHTML = '<span class="badge bg-' + info.event.extendedProps.statusColor + ' px-3 py-2">' + info.event.extendedProps.statusDisplay + '</span>';
-                document.getElementById('modalShowDate').textContent = info.event.extendedProps.dateDisplay;
-                document.getElementById('modalShowCity').textContent = info.event.extendedProps.city;
-                
-                var venueEl = document.getElementById('modalShowVenue');
-                if (info.event.extendedProps.venue) {
-                    venueEl.textContent = info.event.extendedProps.venue;
-                    venueEl.style.display = 'inline';
-                } else {
-                    venueEl.style.display = 'none';
-                }
-                
-                document.getElementById('modalShowDeparture').textContent = info.event.extendedProps.departure_time;
-                document.getElementById('modalShowTime').textContent = info.event.extendedProps.show_time;
-                
-                if (info.event.extendedProps.notes) {
-                    document.getElementById('modalShowNotesWrapper').classList.remove('d-none');
-                    document.getElementById('modalShowNotes').textContent = info.event.extendedProps.notes;
-                } else {
-                    document.getElementById('modalShowNotesWrapper').classList.add('d-none');
-                }
-                
-                document.getElementById('modalBtnDetails').href = info.event.url;
-                
-                var btnEdit = document.getElementById('modalBtnEdit');
-                if (btnEdit) {
-                    btnEdit.href = info.event.extendedProps.editUrl;
-                }
-                
-                var btnPdf = document.getElementById('modalBtnPdf');
-                if (btnPdf) {
-                    btnPdf.href = info.event.extendedProps.pdfUrl;
-                }
-                
-                var formDelete = document.getElementById('formDeleteShowCalendar');
-                if (formDelete) {
-                    formDelete.action = info.event.extendedProps.deleteUrl;
-                }
-                
-                // Exibe o modal
-                var myModal = new bootstrap.Modal(document.getElementById('showModal'));
-                myModal.show();
+                window.openEventDetails(info.event);
             }
         });
         calendar.render();
