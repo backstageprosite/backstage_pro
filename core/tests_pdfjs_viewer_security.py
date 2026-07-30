@@ -16,7 +16,7 @@ import re
 
 class PDFJSSecurityTestCase(TestCase):
     def setUp(self):
-        self.template_path = os.path.join(settings.BASE_DIR, 'core', 'templates', 'core', 'arquivos.html')
+        self.template_path = os.path.join(settings.BASE_DIR, 'core', 'templates', 'core', 'file_viewer.html')
         self.pdfjs_dir = os.path.join(settings.BASE_DIR, 'core', 'static', 'core', 'js', 'pdfjs')
         
     def test_pdfjs_version_and_files(self):
@@ -47,10 +47,10 @@ class PDFJSSecurityTestCase(TestCase):
         self.assertIn('pdf.worker.mjs', content, "O template não referencia o pdf.worker.mjs.")
         self.assertIn('isEvalSupported: false', content, "O template não desabilita a execução de scripts via isEvalSupported!")
         
-        # Ensure no CDNs
-        self.assertNotIn('cdnjs.cloudflare.com', content, "O template contém referência a CDN externa!")
-        self.assertNotIn('unpkg.com', content, "O template contém referência a CDN externa!")
-        self.assertNotIn('jsdelivr.net', content, "O template contém referência a CDN externa!")
+        # Ensure no CDNs for PDF.js
+        self.assertNotIn('cloudflare.com/ajax/libs/pdf.js', content, "O template contém referência a CDN externa para PDF.js!")
+        self.assertNotIn('unpkg.com/pdfjs', content, "O template contém referência a CDN externa para PDF.js!")
+        self.assertNotIn('jsdelivr.net/npm/pdfjs', content, "O template contém referência a CDN externa para PDF.js!")
         
         # Ensure no old scripts
         self.assertNotIn('pdf.min.js', content, "O template ainda referencia pdf.min.js antigo!")

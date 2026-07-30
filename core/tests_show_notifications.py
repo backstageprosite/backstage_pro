@@ -107,7 +107,7 @@ class ShowNotificationsTests(TestCase):
         self.assertTrue(all(f":rev:1:" in k for k in keys))
         
     def test_reactivation_and_re_cancel(self):
-        """21, 22. Reativação não gera, segundo cancelamento gera evento novo (revision+1)"""
+        """21, 22. Reativação gera evento de confirmação, segundo cancelamento gera evento novo (revision+2)"""
         show = Show.objects.create(band=self.band, title='Show Re', status='CANCELADO', date=date(2026, 10, 1))
         url = reverse('shows_edit', kwargs={'band_slug': self.band.slug, 'pk': show.id})
         
@@ -122,8 +122,8 @@ class ShowNotificationsTests(TestCase):
             print("Erros form reativar:", resp1.context['form'].errors)
         self.assertEqual(resp1.status_code, 302)
         show.refresh_from_db()
-        self.assertEqual(show.notification_revision, 0) # Sem incremento pq não cancelou nem mudou data/hora
-        self.assertEqual(Notification.objects.count(), 0)
+        self.assertEqual(show.notification_revision, 1) # Incrementa pois mudou para CONFIRMADO
+        self.assertEqual(Notification.objects.filter(event_type='SHOW_CONFIRMED').count(), 2)
         
         # 2. Cancelar novamente
         data2 = {
@@ -136,7 +136,7 @@ class ShowNotificationsTests(TestCase):
             print("Erros form cancelar:", resp2.context['form'].errors)
         self.assertEqual(resp2.status_code, 302)
         show.refresh_from_db()
-        self.assertEqual(show.notification_revision, 1)
+        self.assertEqual(show.notification_revision, 2) # Incrementa pois mudou para CANCELADO
         self.assertEqual(Notification.objects.filter(event_type='SHOW_CANCELLED').count(), 2)
 
     def test_recipients_rules(self):
@@ -190,7 +190,7 @@ class ShowNotificationsTests(TestCase):
         data = {
             'band': self.band.id,
             'title': 'Admin Show',
-            'status': 'PRE_RESERVADO',
+            'status': 'CONFIRMADO',
             'payment_status': 'PENDENTE',
             'date': '2026-10-01',
             # Formsets required by admin? We might need management form data for admin inlines
