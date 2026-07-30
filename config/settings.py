@@ -106,11 +106,11 @@ for host in ALLOWED_HOSTS_RAW:
         if IS_PRODUCTION:
             raise ImproperlyConfigured("Empty ALLOWED_HOSTS entry is not allowed.")
         continue
-        
+
     if IS_PRODUCTION:
         if '://' in host_clean or '/' in host_clean or '?' in host_clean or '#' in host_clean or '@' in host_clean:
             raise ImproperlyConfigured(f"Invalid characters in ALLOWED_HOSTS entry: {host_clean}")
-            
+
     if host_clean not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host_clean)
 
@@ -130,11 +130,11 @@ for origin in CSRF_TRUSTED_ORIGINS_RAW:
     origin_clean = origin.strip().lower()
     if not origin_clean:
         continue
-        
+
     if IS_PRODUCTION:
         if '*' in origin_clean:
             raise ImproperlyConfigured("Wildcard '*' in CSRF_TRUSTED_ORIGINS is forbidden in production.")
-        
+
         parsed = urllib.parse.urlparse(origin_clean)
         if parsed.scheme != 'https':
             raise ImproperlyConfigured(f"CSRF_TRUSTED_ORIGINS must use https in production. Found: {origin_clean}")
@@ -142,7 +142,7 @@ for origin in CSRF_TRUSTED_ORIGINS_RAW:
              raise ImproperlyConfigured("CSRF_TRUSTED_ORIGINS missing hostname.")
         if parsed.username or parsed.password or (parsed.path and parsed.path != '/') or parsed.query or parsed.fragment:
             raise ImproperlyConfigured(f"CSRF_TRUSTED_ORIGINS format is invalid. Cannot contain credentials, paths, queries or fragments: {origin_clean}")
-            
+
     if origin_clean not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(origin_clean)
 
@@ -204,7 +204,7 @@ CSRF_COOKIE_SECURE = IS_PRODUCTION
 SECURE_HSTS_SECONDS = env_int('SECURE_HSTS_SECONDS', default=3600 if IS_PRODUCTION else 0)
 if IS_PRODUCTION and SECURE_HSTS_SECONDS <= 0:
     raise ImproperlyConfigured("SECURE_HSTS_SECONDS deve ser maior que zero em produção.")
-    
+
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=False)
 SECURE_HSTS_PRELOAD = env_bool('SECURE_HSTS_PRELOAD', default=False)
 if IS_PRODUCTION and SECURE_HSTS_PRELOAD and (not SECURE_HSTS_INCLUDE_SUBDOMAINS or SECURE_HSTS_SECONDS <= 0):

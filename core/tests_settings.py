@@ -7,7 +7,7 @@ class SettingsSecurityTests(unittest.TestCase):
     """
     Testes isolados de segurança e parsing para o config/settings.py.
     """
-    
+
     @classmethod
     def setUpClass(cls):
         cls.env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
@@ -24,10 +24,10 @@ class SettingsSecurityTests(unittest.TestCase):
         # 1. Whitelist mínima
         whitelist = ['PATH', 'SYSTEMROOT', 'SYSTEMDRIVE', 'USERPROFILE', 'COMSPEC', 'TEMP', 'TMP', 'WINDIR']
         env = {k: v for k, v in os.environ.items() if k.upper() in whitelist}
-        
+
         # 2. Injeta o cenário
         env.update(env_vars)
-        
+
         script = (
             "import os, sys, django; "
             "os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings'); "
@@ -45,16 +45,16 @@ class SettingsSecurityTests(unittest.TestCase):
             "print(f'SECURE_HSTS_INCLUDE_SUBDOMAINS={settings.SECURE_HSTS_INCLUDE_SUBDOMAINS}'); "
             "print(f'SECURE_HSTS_PRELOAD={settings.SECURE_HSTS_PRELOAD}'); "
         )
-        
+
         # 6. Definir cwd explicitamente, 8. Timeout
         cwd = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        
+
         try:
             return subprocess.run(
-                [sys.executable, "-c", script], 
-                env=env, 
+                [sys.executable, "-c", script],
+                env=env,
                 cwd=cwd,
-                capture_output=True, 
+                capture_output=True,
                 text=True,
                 timeout=10
             )
@@ -65,12 +65,12 @@ class SettingsSecurityTests(unittest.TestCase):
     def test_local_dev_starts(self):
         res = self.run_settings_check({})
         self.assertEqual(res.returncode, 0, res.stderr)
-        
+
     # 2. Local usa SQLite
     def test_local_uses_sqlite(self):
         res = self.run_settings_check({})
         self.assertIn("DATABASES=True", res.stdout)
-        
+
     # 3. Local usa fallback de SECRET_KEY
     def test_local_fallback_secret_key(self):
         res = self.run_settings_check({"IGNORE_DOTENV": "1"}) # By-pass the local .env if it exists in the user's directory for tests simulating pure absence
@@ -474,7 +474,7 @@ class SettingsSecurityTests(unittest.TestCase):
         res = self.run_settings_check({"IGNORE_DOTENV": "1"})
         self.assertEqual(res.returncode, 0, res.stderr)
         self.assertIn("testserver", res.stdout)
-        
+
     # 39. DJANGO_ENV=production sem Railway não carrega .env
     def test_production_no_railway_doesnt_load_dotenv(self):
         # Aqui injetamos propriedades malformadas que passariam se o .env fosse carregado e sobrescrevesse, ou verificamos se ele reclama de SECRET_KEY
@@ -484,7 +484,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("A secure SECRET_KEY must be provided in production.", res.stderr)
-        
+
     # 40. DJANGO_ENV=staging sem Railway não carrega .env
     def test_staging_no_railway_doesnt_load_dotenv(self):
         res = self.run_settings_check({
@@ -492,7 +492,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("A secure SECRET_KEY must be provided in production.", res.stderr)
-        
+
     # 41. Host com protocolo falha
     # Ja verificado no 19, re-implementando para ficar claro
     def test_host_protocol_fails_explicit(self):
@@ -505,7 +505,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("Invalid characters in ALLOWED_HOSTS", res.stderr)
-        
+
     # 42. Host com caminho falha
     def test_host_path_fails(self):
         res = self.run_settings_check({
@@ -517,7 +517,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("Invalid characters in ALLOWED_HOSTS", res.stderr)
-        
+
     # 43. Host com query falha
     def test_host_query_fails(self):
         res = self.run_settings_check({
@@ -529,7 +529,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("Invalid characters in ALLOWED_HOSTS", res.stderr)
-        
+
     # 44. Host com fragmento falha
     def test_host_fragment_fails(self):
         res = self.run_settings_check({
@@ -541,7 +541,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("Invalid characters in ALLOWED_HOSTS", res.stderr)
-        
+
     # 45. RAILWAY_PUBLIC_DOMAIN malformado falha
     def test_railway_domain_malformed_fails(self):
         res = self.run_settings_check({
@@ -553,7 +553,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("Invalid characters in ALLOWED_HOSTS", res.stderr)
-        
+
     # 46. CSRF com wildcard falha
     def test_csrf_wildcard_fails(self):
         res = self.run_settings_check({
@@ -565,7 +565,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("Wildcard '*' in CSRF_TRUSTED_ORIGINS is forbidden", res.stderr)
-        
+
     # 47. CSRF com credenciais falha
     def test_csrf_credentials_fails(self):
         res = self.run_settings_check({
@@ -577,7 +577,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("CSRF_TRUSTED_ORIGINS format is invalid", res.stderr)
-        
+
     # 48. CSRF com query falha
     def test_csrf_query_fails(self):
         res = self.run_settings_check({
@@ -589,7 +589,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("CSRF_TRUSTED_ORIGINS format is invalid", res.stderr)
-        
+
     # 49. CSRF com fragmento falha
     def test_csrf_fragment_fails(self):
         res = self.run_settings_check({
@@ -601,7 +601,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("CSRF_TRUSTED_ORIGINS format is invalid", res.stderr)
-        
+
     # 50. Subprocesso não herda DATABASE_URL externa
     def test_no_db_url_leak(self):
         # Ja testado pelo clean do dict env, se der ruim ele cai no 15.
@@ -613,7 +613,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("DATABASE_URL is required in production.", res.stderr)
-        
+
     # 51. Subprocesso não herda SECRET_KEY externa
     def test_no_secret_key_leak(self):
         res = self.run_settings_check({
@@ -624,7 +624,7 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertNotEqual(res.returncode, 0)
         self.assertIn("A secure SECRET_KEY must be provided in production.", res.stderr)
-        
+
     # 52. Subprocesso não herda DEBUG externo
     def test_no_debug_leak(self):
         res = self.run_settings_check({
@@ -636,4 +636,3 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertEqual(res.returncode, 0)
         self.assertIn("DEBUG=False", res.stdout)
-
