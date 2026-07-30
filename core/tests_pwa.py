@@ -235,11 +235,11 @@ class PWAManifestTestCase(TestCase):
         self.assertEqual(response['Cache-Control'], 'no-cache, no-store, must-revalidate')
         self.assertEqual(response['X-Content-Type-Options'], 'nosniff')
         self.assertEqual(response['Service-Worker-Allowed'], f'/{self.band_a.slug}/')
-        self.assertContains(response, f'"{self.band_a.slug}-v2"')
+        self.assertContains(response, f'"{self.band_a.slug}-v3"')
         self.assertContains(response, f'"/{self.band_a.slug}/"')
         self.assertNotContains(response, self.band_b.slug)
-        self.assertNotContains(response, 'skipWaiting')
-        self.assertNotContains(response, 'clients.claim')
+        self.assertContains(response, 'skipWaiting')
+        self.assertContains(response, 'clients.claim')
 
     def test_admin_service_worker(self):
         """Testa se o SW administrativo responde corretamente e isolado."""

@@ -175,7 +175,7 @@ class DashboardPendingItemsTests(TestCase):
         from .models import Show
         form = BandDashboardPendingItemForm(shows_qs=Show.objects.filter(band=self.band_a))
         rendered_select = str(form['show'])
-        self.assertIn('<option value="" selected>Selecione um show</option>', rendered_select)
+        self.assertIn('<option value="" selected>Geral</option>', rendered_select)
 
     def test_pending_form_show_label_with_date(self):
         import datetime
@@ -313,7 +313,7 @@ class DashboardPendingItemsTests(TestCase):
         content = response.content.decode('utf-8')
         date_str = target_date.strftime('%d/%m/%Y')
         self.assertIn(f'{date_str} - EVENTO BAND', content)
-        self.assertIn('<option value="" selected>Selecione um show</option>', content)
+        self.assertIn('<option value="" selected>Geral</option>', content)
 
     # 5. EDIT TESTS
     def test_produtor_can_edit_pending_item(self):

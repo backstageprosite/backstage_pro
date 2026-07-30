@@ -25,7 +25,7 @@ class PendingItemsAndDashboardTest(TestCase):
         self.next_week = self.today + datetime.timedelta(days=7)
         
     def test_dashboard_limits(self):
-        """Dashboard should show exactly max 4 upcoming shows and 4 pending items"""
+        """Dashboard should show exactly max 6 upcoming shows and 4 pending items"""
         # Create 5 shows for tomorrow
         for i in range(5):
             Show.objects.create(band=self.band_a, title=f"Show {i}", date=self.tomorrow, show_time=datetime.time(20,0))
@@ -39,7 +39,7 @@ class PendingItemsAndDashboardTest(TestCase):
         response = self.client.get(reverse('dashboard', args=[self.band_a.slug]))
         
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['shows_proximos']), 4)
+        self.assertEqual(len(response.context['shows_proximos']), 6)
         self.assertEqual(len(response.context['dashboard_pending_items']), 4)
         
         # Test Integrante A limits (should not have pending items)
@@ -47,7 +47,7 @@ class PendingItemsAndDashboardTest(TestCase):
         response = self.client.get(reverse('dashboard', args=[self.band_a.slug]))
         self.assertEqual(response.status_code, 200)
         self.assertIsNone(response.context.get('dashboard_pending_items'))
-        self.assertEqual(len(response.context['shows_proximos']), 4)
+        self.assertEqual(len(response.context['shows_proximos']), 6)
         
     def test_pending_list_view_access(self):
         """Test if pendencias view loads correctly for members of the band"""

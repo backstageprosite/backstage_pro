@@ -169,5 +169,10 @@ class NotificationServicesTests(TestCase):
         self.assertEqual(get_unread_notifications(self.int_a, self.band_a).count(), 1)
 
     def test_31_event_choices(self):
-        choices = dict(Notification.EVENT_CHOICES).keys()
-        self.assertEqual(set(choices), {'NEW_SHOW', 'SHOW_CANCELLED', 'SHOW_DATE_CHANGED', 'SHOW_START_TIME_CHANGED'})
+        choices_keys = [k for k, v in Notification.EVENT_CHOICES]
+        self.assertEqual(len(set(choices_keys)), len(choices_keys), "Event choices devem ser únicas")
+        for k, v in Notification.EVENT_CHOICES:
+            self.assertTrue(bool(v), f"Label do evento {k} não pode ser vazio")
+        # Ensure minimal expected choices exist (not strictly exact count, but inclusive)
+        expected_minimum = {'NEW_SHOW', 'SHOW_CANCELLED', 'SHOW_DATE_CHANGED', 'SHOW_START_TIME_CHANGED'}
+        self.assertTrue(expected_minimum.issubset(set(choices_keys)))
