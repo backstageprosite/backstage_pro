@@ -62,7 +62,7 @@ class CalendarioMobileTests(TestCase):
         self.assertContains(response, "toLocaleDateString('pt-BR'")
         
         # Desktop aspectRatio
-        self.assertContains(response, "aspectRatio: 1.45")
+        self.assertContains(response, "aspectRatio: 1.6")
         
         # Modal Fechar button
         self.assertContains(response, 'data-bs-dismiss="modal"')
