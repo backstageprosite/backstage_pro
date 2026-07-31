@@ -205,8 +205,8 @@ class DashboardPendingItemsTests(TestCase):
         from django.db.models import Q, F
         from .models import Show
         Show.objects.all().delete()
-        Show.objects.create(band=self.band_a, title='SHOW A', date=datetime.date(2026, 8, 1))
-        Show.objects.create(band=self.band_a, title='SHOW B', date=datetime.date(2026, 7, 30))
+        Show.objects.create(band=self.band_a, title='SHOW A', date=timezone.localdate() + datetime.timedelta(days=2))
+        Show.objects.create(band=self.band_a, title='SHOW B', date=timezone.localdate() + datetime.timedelta(days=1))
         shows = Show.objects.filter(
             Q(band=self.band_a) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
         ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
@@ -225,7 +225,7 @@ class DashboardPendingItemsTests(TestCase):
         from .models import Show
         Show.objects.all().delete()
         Show.objects.create(band=self.band_a, title='SHOW SEM DATA', date=None)
-        Show.objects.create(band=self.band_a, title='SHOW DATADO', date=datetime.date(2026, 12, 1))
+        Show.objects.create(band=self.band_a, title='SHOW DATADO', date=timezone.localdate() + datetime.timedelta(days=10))
         shows = Show.objects.filter(
             Q(band=self.band_a) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
         ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
@@ -248,7 +248,7 @@ class DashboardPendingItemsTests(TestCase):
         from django.utils import timezone
         from django.db.models import Q, F
         from .models import Show
-        Show.objects.create(band=self.band_b, title='OTHER BAND SHOW', date=datetime.date(2026, 7, 24))
+        Show.objects.create(band=self.band_b, title='OTHER BAND SHOW', date=timezone.localdate() + datetime.timedelta(days=5))
         shows = Show.objects.filter(
             Q(band=self.band_a) & (Q(date__gte=timezone.localdate()) | Q(date__isnull=True))
         ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
