@@ -14,10 +14,10 @@ class RoomListModelsTest(TestCase):
     def setUp(self):
         self.band1 = Band.objects.create(name="Banda 1", slug="banda-1")
         self.band2 = Band.objects.create(name="Banda 2", slug="banda-2")
-        
+
         self.show1 = Show.objects.create(band=self.band1, title="Show 1")
         self.show2 = Show.objects.create(band=self.band2, title="Show 2")
-        
+
         self.integrante1 = Integrante.objects.create(band=self.band1, name="Int 1", role="Musico", category="MUSICO")
         self.integrante2 = Integrante.objects.create(band=self.band1, name="Int 2", role="Musico", category="MUSICO")
         self.integrante_b2 = Integrante.objects.create(band=self.band2, name="Int B2", role="Musico", category="MUSICO")
@@ -76,10 +76,17 @@ class RoomListModelsTest(TestCase):
         )
         with self.assertRaisesMessage(ValidationError, "Check-out deve ser posterior ao check-in"):
             rl.clean()
-            
+
         rl.check_out = now
         with self.assertRaisesMessage(ValidationError, "Check-out deve ser posterior ao check-in"):
             rl.clean()
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                RoomList.objects.create(
+                    band=self.band1, show=self.show1, hotel_name="H1", city="C1",
+                    check_in=now, check_out=now
+                )
 
     def test_07_checkin_checkout_nulos_em_rascunho(self):
         """7. Check-in ou check-out nulos são permitidos em rascunho"""
@@ -112,7 +119,7 @@ class RoomListModelsTest(TestCase):
         """10. Detecção de was_sent"""
         rl = RoomList(band=self.band1, show=self.show1, hotel_name="H1", city="C1")
         self.assertFalse(rl.was_sent)
-        
+
         rl.last_sent_to_hotel_at = timezone.now()
         rl.last_sent_revision = 1
         self.assertTrue(rl.was_sent)
@@ -124,7 +131,7 @@ class RoomListModelsTest(TestCase):
         rl.last_sent_revision = 1
         rl.content_revision = 1
         self.assertFalse(rl.needs_resend)
-        
+
         rl.content_revision = 2
         self.assertTrue(rl.needs_resend)
 
@@ -166,7 +173,7 @@ class RoomListModelsTest(TestCase):
         rl1 = RoomList.objects.create(band=self.band1, show=self.show1, hotel_name="H1", city="C1")
         rl2 = RoomList.objects.create(band=self.band1, show=self.show1, hotel_name="H2", city="C2")
         r2 = Room.objects.create(room_list=rl2, number_or_name="101", type=Room.RoomTypeChoices.INDIVIDUAL, capacity=1)
-        
+
         p = RoomListParticipant(
             room_list=rl1, original_integrante=self.integrante1, room=r2,
             snapshot_name="Int 1"
@@ -213,7 +220,7 @@ class RoomListModelsTest(TestCase):
         self.integrante1.save()
         p.refresh_from_db()
         self.assertEqual(p.snapshot_name, "Int 1")  # não muda
-        
+
     def test_21_somente_um_lodgingtemplate_por_banda(self):
         """21. Uma banda pode ter somente um LodgingTemplate"""
         LodgingTemplate.objects.create(band=self.band1)
@@ -242,7 +249,7 @@ class RoomListModelsTest(TestCase):
         lt1 = LodgingTemplate.objects.create(band=self.band1)
         lt2 = LodgingTemplate.objects.create(band=self.band2)
         tr2 = TemplateRoom.objects.create(template=lt2, type=Room.RoomTypeChoices.INDIVIDUAL, capacity=1)
-        
+
         tp = TemplateParticipant(
             template=lt1, room=tr2, original_integrante=self.integrante1
         )
@@ -263,7 +270,7 @@ class RoomListModelsTest(TestCase):
         lt = LodgingTemplate.objects.create(band=self.band1)
         tr = TemplateRoom.objects.create(template=lt, type=Room.RoomTypeChoices.INDIVIDUAL, capacity=1)
         TemplateParticipant.objects.create(template=lt, room=tr, original_integrante=self.integrante1)
-        
+
         self.integrante1.delete()
         self.assertEqual(TemplateParticipant.objects.count(), 0)
 
@@ -272,7 +279,7 @@ class RoomListModelsTest(TestCase):
         rl = RoomList.objects.create(band=self.band1, show=self.show1, hotel_name="H1", city="C1")
         r = Room.objects.create(room_list=rl, number_or_name="101", type=Room.RoomTypeChoices.INDIVIDUAL, capacity=1)
         RoomListParticipant.objects.create(room_list=rl, room=r, original_integrante=self.integrante1, snapshot_name="Int 1")
-        
+
         rl.delete()
         self.assertEqual(Room.objects.count(), 0)
         self.assertEqual(RoomListParticipant.objects.count(), 0)
@@ -282,3 +289,12 @@ class RoomListModelsTest(TestCase):
         # test_08, test_09, test_12, test_13, test_17, test_25 já testaram as constraints do banco via IntegrityError
         # Aqui, apenas afirmamos que sim.
         pass
+
+    def test_29_last_sent_rev_sem_data_rejeitado(self):
+        """29. last_sent_revision preenchida sem last_sent_to_hotel_at (DB Constraint)"""
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                RoomList.objects.create(
+                    band=self.band1, show=self.show1, hotel_name="H1", city="C1",
+                    content_revision=2, last_sent_revision=1
+                )
