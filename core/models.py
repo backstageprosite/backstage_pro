@@ -1107,7 +1107,7 @@ class RoomList(models.Model):
         PUBLICADA = 'PUBLICADA', 'Publicada'
         ARQUIVADA = 'ARQUIVADA', 'Arquivada'
 
-    band = models.ForeignKey('Band', on_delete=models.CASCADE, related_name='room_lists')
+    band = models.ForeignKey('Band', on_delete=models.PROTECT, related_name='room_lists')
     show = models.ForeignKey('Show', on_delete=models.PROTECT, related_name='room_lists')
 
     hotel_name = models.CharField(max_length=255)
@@ -1264,7 +1264,6 @@ class RoomListParticipant(models.Model):
 
 class LodgingTemplate(models.Model):
     band = models.OneToOneField('Band', on_delete=models.CASCADE, related_name='lodging_template')
-    default_hotel_notes = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1292,7 +1291,6 @@ class TemplateParticipant(models.Model):
     template = models.ForeignKey(LodgingTemplate, on_delete=models.CASCADE, related_name='participants')
     room = models.ForeignKey(TemplateRoom, on_delete=models.CASCADE, related_name='participants')
     original_integrante = models.ForeignKey('Integrante', on_delete=models.CASCADE, related_name='template_participations')
-    needs_lodging = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)

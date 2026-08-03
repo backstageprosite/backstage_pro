@@ -298,3 +298,16 @@ class RoomListModelsTest(TestCase):
                     band=self.band1, show=self.show1, hotel_name="H1", city="C1",
                     content_revision=2, last_sent_revision=1
                 )
+
+    def test_30_band_roomlist_protect(self):
+        """30. Exclusão de Banda com RoomList é bloqueada (PROTECT)"""
+        RoomList.objects.create(band=self.band1, show=self.show1, hotel_name="H1", city="C1")
+        with self.assertRaises(ProtectedError):
+            self.band1.delete()
+
+    def test_31_band_template_cascade(self):
+        """31. Exclusão de Banda com apenas LodgingTemplate remove o template (CASCADE)"""
+        LodgingTemplate.objects.create(band=self.band1)
+        self.assertEqual(LodgingTemplate.objects.count(), 1)
+        self.band1.delete()
+        self.assertEqual(LodgingTemplate.objects.count(), 0)
