@@ -1088,6 +1088,7 @@ class Integrante(models.Model):
     birth_date = models.CharField(max_length=15, blank=True, null=True, verbose_name="Data de Nascimento")
     miles_number = models.CharField(max_length=100, blank=True, null=True, verbose_name="Número Milhas")
     order = models.PositiveIntegerField(default=0, verbose_name="Ordem")
+    is_active = models.BooleanField(default=True, verbose_name="Ativo")
 
     class Meta:
         ordering = ['order', 'id']
@@ -1096,6 +1097,30 @@ class Integrante(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.role} ({self.get_category_display()})"
+
+class ShowParticipant(models.Model):
+    show = models.ForeignKey('Show', on_delete=models.CASCADE, related_name='participants')
+    integrante = models.ForeignKey(Integrante, on_delete=models.CASCADE, related_name='show_participations')
+    order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Escala de Integrante'
+        verbose_name_plural = 'Escalas de Integrantes'
+        ordering = ['order', 'integrante__name']
+        constraints = [
+            models.UniqueConstraint(fields=['show', 'integrante'], name='unique_integrante_per_show')
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.show_id and self.integrante_id:
+            if self.show.band_id != self.integrante.band_id:
+                raise ValidationError({"integrante": "O integrante escalado deve pertencer à mesma banda do show."})
+
+    def __str__(self):
+        return f"{self.integrante.name} em {self.show.title}"
 
 # ============================================================
 # MÓDULO DE HOSPEDAGEM E ROOM LIST
