@@ -1187,8 +1187,14 @@ class RoomList(models.Model):
             if self.check_out <= self.check_in:
                 raise ValidationError({"check_out": "Check-out deve ser posterior ao check-in quando ambos existirem."})
 
-        if self.last_sent_revision is not None and self.last_sent_to_hotel_at is None:
-            raise ValidationError({"last_sent_to_hotel_at": "Se last_sent_revision existir, last_sent_to_hotel_at também deve existir."})
+        if self.content_revision < 1:
+            raise ValidationError({"content_revision": "A revisão de conteúdo deve ser maior ou igual a 1."})
+
+        if self.last_sent_revision is not None:
+            if self.last_sent_revision > self.content_revision:
+                raise ValidationError({"last_sent_revision": "A revisão enviada não pode ser maior que a revisão atual de conteúdo."})
+            if self.last_sent_to_hotel_at is None:
+                raise ValidationError({"last_sent_to_hotel_at": "Se last_sent_revision existir, last_sent_to_hotel_at também deve existir."})
 
 class Room(models.Model):
     class RoomTypeChoices(models.TextChoices):
@@ -1223,6 +1229,8 @@ class Room(models.Model):
         super().clean()
         if self.number_or_name:
             self.number_or_name = self.number_or_name.strip()
+        if self.capacity is not None and self.capacity <= 0:
+            raise ValidationError({"capacity": "A capacidade do quarto deve ser maior que zero."})
 
 class RoomListParticipant(models.Model):
     room_list = models.ForeignKey(RoomList, on_delete=models.CASCADE, related_name='participants')
@@ -1286,6 +1294,11 @@ class TemplateRoom(models.Model):
         indexes = [
             models.Index(fields=['template', 'order']),
         ]
+
+    def clean(self):
+        super().clean()
+        if self.capacity is not None and self.capacity <= 0:
+            raise ValidationError({"capacity": "A capacidade do quarto modelo deve ser maior que zero."})
 
 class TemplateParticipant(models.Model):
     template = models.ForeignKey(LodgingTemplate, on_delete=models.CASCADE, related_name='participants')

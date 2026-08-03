@@ -311,3 +311,33 @@ class RoomListModelsTest(TestCase):
         self.assertEqual(LodgingTemplate.objects.count(), 1)
         self.band1.delete()
         self.assertEqual(LodgingTemplate.objects.count(), 0)
+
+    def test_32_clean_content_revision(self):
+        """32. Clean() exige content_revision >= 1"""
+        rl = RoomList(band=self.band1, show=self.show1, hotel_name="H1", city="C1", content_revision=0)
+        with self.assertRaisesMessage(ValidationError, "A revisão de conteúdo deve ser maior ou igual a 1."):
+            rl.full_clean()
+
+    def test_33_clean_last_sent_revision_maior(self):
+        """33. Clean() rejeita last_sent_revision > content_revision"""
+        now = timezone.now()
+        rl = RoomList(
+            band=self.band1, show=self.show1, hotel_name="H1", city="C1",
+            content_revision=1, last_sent_revision=2, last_sent_to_hotel_at=now
+        )
+        with self.assertRaisesMessage(ValidationError, "A revisão enviada não pode ser maior que a revisão atual de conteúdo."):
+            rl.full_clean()
+
+    def test_34_clean_room_capacity(self):
+        """34. Clean() exige capacity > 0 em Room"""
+        rl = RoomList.objects.create(band=self.band1, show=self.show1, hotel_name="H1", city="C1")
+        r = Room(room_list=rl, number_or_name="101", type=Room.RoomTypeChoices.CASAL, capacity=0)
+        with self.assertRaisesMessage(ValidationError, "A capacidade do quarto deve ser maior que zero."):
+            r.full_clean()
+
+    def test_35_clean_template_room_capacity(self):
+        """35. Clean() exige capacity > 0 em TemplateRoom"""
+        t = LodgingTemplate.objects.create(band=self.band1)
+        r = TemplateRoom(template=t, type=Room.RoomTypeChoices.CASAL, capacity=0)
+        with self.assertRaisesMessage(ValidationError, "A capacidade do quarto modelo deve ser maior que zero."):
+            r.full_clean()
