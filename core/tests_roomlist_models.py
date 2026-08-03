@@ -341,3 +341,38 @@ class RoomListModelsTest(TestCase):
         r = TemplateRoom(template=t, type=Room.RoomTypeChoices.CASAL, capacity=0)
         with self.assertRaisesMessage(ValidationError, "A capacidade do quarto modelo deve ser maior que zero."):
             r.full_clean()
+
+    def test_36_clean_last_sent_revision_sem_data_rejeitado(self):
+        """36. Clean() rejeita last_sent_revision preenchida sem data"""
+        rl = RoomList(
+            band=self.band1, show=self.show1, hotel_name="H1", city="C1",
+            content_revision=2, last_sent_revision=1, last_sent_to_hotel_at=None
+        )
+        with self.assertRaisesMessage(ValidationError, "Se last_sent_revision existir, last_sent_to_hotel_at também deve existir."):
+            rl.full_clean()
+
+    def test_37_clean_room_strip(self):
+        """37. Room.clean() faz strip de number_or_name"""
+        rl = RoomList.objects.create(band=self.band1, show=self.show1, hotel_name="H1", city="C1")
+        r = Room(room_list=rl, number_or_name=" 101 ", type=Room.RoomTypeChoices.CASAL, capacity=2)
+        r.full_clean()
+        self.assertEqual(r.number_or_name, "101")
+
+    def test_38_exclusao_room_set_null(self):
+        """38. Exclusão de Room aplica SET_NULL em RoomListParticipant.room"""
+        rl = RoomList.objects.create(band=self.band1, show=self.show1, hotel_name="H1", city="C1")
+        r = Room.objects.create(room_list=rl, number_or_name="101", type=Room.RoomTypeChoices.CASAL, capacity=2)
+        p = RoomListParticipant.objects.create(
+            room_list=rl, room=r, snapshot_name="Teste"
+        )
+        self.assertEqual(p.room, r)
+        r.delete()
+        p.refresh_from_db()
+        self.assertIsNone(p.room)
+
+    def test_39_dois_participants_orig_nulo(self):
+        """39. Dois participantes históricos com original_integrante nulo são permitidos"""
+        rl = RoomList.objects.create(band=self.band1, show=self.show1, hotel_name="H1", city="C1")
+        RoomListParticipant.objects.create(room_list=rl, snapshot_name="T1")
+        RoomListParticipant.objects.create(room_list=rl, snapshot_name="T2")
+        self.assertEqual(RoomListParticipant.objects.filter(room_list=rl).count(), 2)
