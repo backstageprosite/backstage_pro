@@ -1096,3 +1096,212 @@ class Integrante(models.Model):
         
     def __str__(self):
         return f"{self.name} - {self.role} ({self.get_category_display()})"
+
+# ============================================================
+# MÓDULO DE HOSPEDAGEM E ROOM LIST
+# ============================================================
+
+class RoomList(models.Model):
+    class StatusChoices(models.TextChoices):
+        RASCUNHO = 'RASCUNHO', 'Rascunho'
+        PUBLICADA = 'PUBLICADA', 'Publicada'
+        ARQUIVADA = 'ARQUIVADA', 'Arquivada'
+
+    band = models.ForeignKey('Band', on_delete=models.CASCADE, related_name='room_lists')
+    show = models.ForeignKey('Show', on_delete=models.PROTECT, related_name='room_lists')
+    
+    hotel_name = models.CharField(max_length=255)
+    city = models.CharField(max_length=255)
+    address = models.CharField(max_length=500, blank=True, null=True)
+    contact = models.CharField(max_length=255, blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
+    reservation_code = models.CharField(max_length=100, blank=True, null=True)
+    
+    check_in = models.DateTimeField(blank=True, null=True)
+    check_out = models.DateTimeField(blank=True, null=True)
+    
+    notes = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.RASCUNHO)
+    
+    published_at = models.DateTimeField(blank=True, null=True)
+    published_by = models.ForeignKey(
+        'User', on_delete=models.SET_NULL, null=True, blank=True, related_name='published_room_lists'
+    )
+    
+    archived_at = models.DateTimeField(blank=True, null=True)
+    archived_by = models.ForeignKey(
+        'User', on_delete=models.SET_NULL, null=True, blank=True, related_name='archived_room_lists'
+    )
+    
+    last_sent_to_hotel_at = models.DateTimeField(blank=True, null=True)
+    last_sent_by = models.ForeignKey(
+        'User', on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_room_lists'
+    )
+    
+    content_revision = models.PositiveBigIntegerField(default=1)
+    last_sent_revision = models.PositiveBigIntegerField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(content_revision__gte=1),
+                name='content_revision_gte_1'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(last_sent_revision__lte=models.F('content_revision')) | models.Q(last_sent_revision__isnull=True),
+                name='last_sent_rev_lte_content_rev'
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['band', 'status']),
+            models.Index(fields=['show', 'status']),
+            models.Index(fields=['band', 'check_in']),
+        ]
+
+    @property
+    def was_sent(self):
+        return bool(self.last_sent_to_hotel_at and self.last_sent_revision)
+
+    @property
+    def needs_resend(self):
+        return self.was_sent and self.content_revision > self.last_sent_revision
+
+    def clean(self):
+        super().clean()
+        if self.show and self.band:
+            if self.show.band != self.band:
+                raise ValidationError({"band": "RoomList.band deve ser a mesma banda do Show."})
+        
+        if self.check_in and self.check_out:
+            if self.check_out <= self.check_in:
+                raise ValidationError({"check_out": "Check-out deve ser posterior ao check-in quando ambos existirem."})
+        
+        if self.last_sent_revision is not None and self.last_sent_to_hotel_at is None:
+            raise ValidationError({"last_sent_to_hotel_at": "Se last_sent_revision existir, last_sent_to_hotel_at também deve existir."})
+
+class Room(models.Model):
+    class RoomTypeChoices(models.TextChoices):
+        INDIVIDUAL = 'INDIVIDUAL', 'Individual'
+        CASAL = 'CASAL', 'Casal'
+        DUPLO = 'DUPLO', 'Duplo'
+        TRIPLO = 'TRIPLO', 'Triplo'
+        QUADRUPLO = 'QUADRUPLO', 'Quádruplo'
+        PERSONALIZADO = 'PERSONALIZADO', 'Personalizado'
+
+    room_list = models.ForeignKey(RoomList, on_delete=models.CASCADE, related_name='rooms')
+    number_or_name = models.CharField(max_length=100)
+    type = models.CharField(max_length=20, choices=RoomTypeChoices.choices)
+    capacity = models.PositiveIntegerField()
+    beds_config = models.CharField(max_length=255, blank=True, null=True)
+    has_ac = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['room_list', 'number_or_name'], name='unique_room_number_per_list'),
+            models.CheckConstraint(condition=models.Q(capacity__gt=0), name='room_capacity_gt_0'),
+        ]
+        indexes = [
+            models.Index(fields=['room_list', 'order']),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.number_or_name:
+            self.number_or_name = self.number_or_name.strip()
+
+class RoomListParticipant(models.Model):
+    room_list = models.ForeignKey(RoomList, on_delete=models.CASCADE, related_name='participants')
+    original_integrante = models.ForeignKey('Integrante', on_delete=models.SET_NULL, null=True, blank=True, related_name='room_participations')
+    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True, related_name='participants')
+    needs_lodging = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+    
+    snapshot_name = models.CharField(max_length=255)
+    snapshot_cpf = models.CharField(max_length=20, blank=True, null=True)
+    snapshot_role = models.CharField(max_length=150, blank=True, null=True)
+    snapshot_category = models.CharField(max_length=50, blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['room_list', 'original_integrante'],
+                condition=models.Q(original_integrante__isnull=False),
+                name='unique_integrante_per_room_list'
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['room_list', 'room']),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.original_integrante and self.room_list:
+            if self.original_integrante.band != self.room_list.band:
+                raise ValidationError({"original_integrante": "O integrante original deve pertencer à mesma banda da Room List."})
+        
+        if self.room and self.room_list:
+            if self.room.room_list != self.room_list:
+                raise ValidationError({"room": "O quarto escolhido deve pertencer à mesma Room List do participante."})
+
+
+class LodgingTemplate(models.Model):
+    band = models.OneToOneField('Band', on_delete=models.CASCADE, related_name='lodging_template')
+    default_hotel_notes = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class TemplateRoom(models.Model):
+    template = models.ForeignKey(LodgingTemplate, on_delete=models.CASCADE, related_name='rooms')
+    type = models.CharField(max_length=20, choices=Room.RoomTypeChoices.choices)
+    capacity = models.PositiveIntegerField()
+    beds_config = models.CharField(max_length=255, blank=True, null=True)
+    has_ac = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=models.Q(capacity__gt=0), name='template_room_capacity_gt_0'),
+        ]
+        indexes = [
+            models.Index(fields=['template', 'order']),
+        ]
+
+class TemplateParticipant(models.Model):
+    template = models.ForeignKey(LodgingTemplate, on_delete=models.CASCADE, related_name='participants')
+    room = models.ForeignKey(TemplateRoom, on_delete=models.CASCADE, related_name='participants')
+    original_integrante = models.ForeignKey('Integrante', on_delete=models.CASCADE, related_name='template_participations')
+    needs_lodging = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['template', 'original_integrante'], name='unique_integrante_per_template'),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.original_integrante and self.template:
+            if self.original_integrante.band != self.template.band:
+                raise ValidationError({"original_integrante": "Integrante deve pertencer à banda do template."})
+        
+        if self.room and self.template:
+            if self.room.template != self.template:
+                raise ValidationError({"room": "TemplateRoom deve pertencer ao mesmo LodgingTemplate."})
+
