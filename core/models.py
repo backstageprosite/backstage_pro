@@ -1088,7 +1088,7 @@ class Integrante(models.Model):
     birth_date = models.CharField(max_length=15, blank=True, null=True, verbose_name="Data de Nascimento")
     miles_number = models.CharField(max_length=100, blank=True, null=True, verbose_name="Número Milhas")
     order = models.PositiveIntegerField(default=0, verbose_name="Ordem")
-    is_active = models.BooleanField(default=True, verbose_name="Ativo")
+    is_active = models.BooleanField(default=True, db_index=True, verbose_name="Ativo")
 
     class Meta:
         ordering = ['order', 'id']
@@ -1108,7 +1108,7 @@ class ShowParticipant(models.Model):
     class Meta:
         verbose_name = 'Escala de Integrante'
         verbose_name_plural = 'Escalas de Integrantes'
-        ordering = ['order', 'integrante__name']
+        ordering = ['integrante__order', 'integrante__name', 'integrante_id']
         constraints = [
             models.UniqueConstraint(fields=['show', 'integrante'], name='unique_integrante_per_show')
         ]

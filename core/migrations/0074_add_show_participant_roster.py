@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='integrante',
             name='is_active',
-            field=models.BooleanField(default=True, verbose_name='Ativo'),
+            field=models.BooleanField(default=True, db_index=True, verbose_name='Ativo'),
         ),
         migrations.CreateModel(
             name='ShowParticipant',
@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
             options={
                 'verbose_name': 'Escala de Integrante',
                 'verbose_name_plural': 'Escalas de Integrantes',
-                'ordering': ['order', 'integrante__name'],
+                'ordering': ['integrante__order', 'integrante__name', 'integrante_id'],
                 'constraints': [models.UniqueConstraint(fields=('show', 'integrante'), name='unique_integrante_per_show')],
             },
         ),
