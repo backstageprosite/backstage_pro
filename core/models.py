@@ -752,9 +752,9 @@ class BandDashboardPendingItemQuerySet(models.QuerySet):
         from django.db.models import Case, When, Value, IntegerField, F
         from django.db.models.functions import Coalesce
         from django.utils import timezone
-        
+
         today = timezone.localdate()
-        
+
         return self.annotate(
             effective_date=Coalesce('due_date', 'show__date')
         ).annotate(
@@ -800,7 +800,7 @@ class BandDashboardPendingItem(models.Model):
         target_date = self.due_date or (self.show.date if self.show else None)
         if not target_date:
             return {'label': 'Geral', 'class': 'bg-secondary'}
-        
+
         from django.utils import timezone
         hoje = timezone.localdate()
         diff = (target_date - hoje).days
@@ -840,7 +840,7 @@ class Partner(models.Model):
     phone = models.CharField(max_length=50, blank=True, null=True, verbose_name='Telefone')
     image = models.ImageField(upload_to='partners/logos/', verbose_name='Logomarca ou Imagem')
     is_active = models.BooleanField(default=True, verbose_name='Ativo')
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -859,7 +859,7 @@ class Partner(models.Model):
         ig = self.instagram.strip()
         if not ig:
             return None
-            
+
         import urllib.parse
         import re
         if ig.startswith('http://') or ig.startswith('https://'):
@@ -874,10 +874,10 @@ class Partner(models.Model):
         elif '://' in ig or (':' in ig and not ig.startswith('@')):
             # Prevent things like javascript:, ftp://, etc when not using http
             return None
-        
+
         ig = ig.split('?')[0].split('#')[0]
         ig = ig.replace('@', '').replace('/', '')
-        
+
         if not ig or not re.match(r'^[\w\.]+$', ig):
             return None
         return f'https://www.instagram.com/{ig}/'
@@ -900,13 +900,13 @@ class Partner(models.Model):
         num = re.sub(r'\D', '', self.phone)
         if not num:
             return None
-        
+
         if len(num) in (10, 11):
             num = '55' + num
-            
+
         if not num.startswith('55') or len(num) < 12:
             return None
-            
+
         return f'https://wa.me/{num}'
 
     @property
@@ -917,15 +917,15 @@ class Partner(models.Model):
         num = re.sub(r'\D', '', self.phone)
         if not num:
             return self.phone
-            
+
         if num.startswith('55') and len(num) in (12, 13):
             num = num[2:]
-            
+
         if len(num) == 11:
             return f"({num[:2]}) {num[2:7]}-{num[7:]}"
         elif len(num) == 10:
             return f"({num[:2]}) {num[2:6]}-{num[6:]}"
-            
+
         return self.phone
 
 
@@ -943,14 +943,14 @@ class SupportTicket(models.Model):
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='support_tickets')
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_support_tickets')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NEW')
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_message_at = models.DateTimeField(auto_now_add=True)
-    
+
     admin_last_read_at = models.DateTimeField(null=True, blank=True)
     producer_last_read_at = models.DateTimeField(null=True, blank=True)
-    
+
     resolved_at = models.DateTimeField(null=True, blank=True)
     archived_at = models.DateTimeField(null=True, blank=True)
 
@@ -1015,7 +1015,7 @@ class SystemSettings(models.Model):
     Configurações globais do sistema Backstage Pro (Etapa 2), incluindo identidade visual.
     """
     logo = models.ImageField(upload_to='system_logos/', null=True, blank=True)
-    
+
     ios_installation_guide_image = models.ImageField(
         upload_to="app_install_guides/ios/",
         null=True,
@@ -1026,7 +1026,7 @@ class SystemSettings(models.Model):
         ],
         verbose_name="Guia de Instalação iOS"
     )
-    
+
     android_installation_guide_image = models.ImageField(
         upload_to="app_install_guides/android/",
         null=True,
@@ -1077,7 +1077,7 @@ class Integrante(models.Model):
         ('EQUIPE_TECNICA', 'Equipe Técnica'),
         ('SERVICOS', 'Serviços'),
     ]
-    
+
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='integrantes')
     name = models.CharField(max_length=255, verbose_name="Nome")
     role = models.CharField(max_length=150, verbose_name="Função")
@@ -1088,11 +1088,264 @@ class Integrante(models.Model):
     birth_date = models.CharField(max_length=15, blank=True, null=True, verbose_name="Data de Nascimento")
     miles_number = models.CharField(max_length=100, blank=True, null=True, verbose_name="Número Milhas")
     order = models.PositiveIntegerField(default=0, verbose_name="Ordem")
-    
+    is_active = models.BooleanField(default=True, db_index=True, verbose_name="Ativo")
+
     class Meta:
         ordering = ['order', 'id']
         verbose_name = "Integrante"
         verbose_name_plural = "Integrantes"
-        
+
     def __str__(self):
         return f"{self.name} - {self.role} ({self.get_category_display()})"
+
+class ShowParticipant(models.Model):
+    show = models.ForeignKey('Show', on_delete=models.CASCADE, related_name='participants')
+    integrante = models.ForeignKey(Integrante, on_delete=models.CASCADE, related_name='show_participations')
+    order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Escala de Integrante'
+        verbose_name_plural = 'Escalas de Integrantes'
+        ordering = ['integrante__order', 'integrante__name', 'integrante_id']
+        constraints = [
+            models.UniqueConstraint(fields=['show', 'integrante'], name='unique_integrante_per_show')
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.show_id and self.integrante_id:
+            if self.show.band_id != self.integrante.band_id:
+                raise ValidationError({"integrante": "O integrante escalado deve pertencer à mesma banda do show."})
+
+    def __str__(self):
+        return f"{self.integrante.name} em {self.show.title}"
+
+# ============================================================
+# MÓDULO DE HOSPEDAGEM E ROOM LIST
+# ============================================================
+
+class RoomList(models.Model):
+    class StatusChoices(models.TextChoices):
+        RASCUNHO = 'RASCUNHO', 'Rascunho'
+        PUBLICADA = 'PUBLICADA', 'Publicada'
+        ARQUIVADA = 'ARQUIVADA', 'Arquivada'
+
+    band = models.ForeignKey('Band', on_delete=models.PROTECT, related_name='room_lists')
+    show = models.ForeignKey('Show', on_delete=models.PROTECT, related_name='room_lists')
+
+    hotel_name = models.CharField(max_length=255)
+    city = models.CharField(max_length=255)
+    address = models.CharField(max_length=500, blank=True, null=True)
+    contact = models.CharField(max_length=255, blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
+    reservation_code = models.CharField(max_length=100, blank=True, null=True)
+
+    check_in = models.DateTimeField(blank=True, null=True)
+    check_out = models.DateTimeField(blank=True, null=True)
+
+    notes = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.RASCUNHO)
+
+    published_at = models.DateTimeField(blank=True, null=True)
+    published_by = models.ForeignKey(
+        'User', on_delete=models.SET_NULL, null=True, blank=True, related_name='published_room_lists'
+    )
+
+    archived_at = models.DateTimeField(blank=True, null=True)
+    archived_by = models.ForeignKey(
+        'User', on_delete=models.SET_NULL, null=True, blank=True, related_name='archived_room_lists'
+    )
+
+    last_sent_to_hotel_at = models.DateTimeField(blank=True, null=True)
+    last_sent_by = models.ForeignKey(
+        'User', on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_room_lists'
+    )
+
+    content_revision = models.PositiveBigIntegerField(default=1)
+    last_sent_revision = models.PositiveBigIntegerField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(content_revision__gte=1),
+                name='content_revision_gte_1'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(last_sent_revision__lte=models.F('content_revision')) | models.Q(last_sent_revision__isnull=True),
+                name='last_sent_rev_lte_content_rev'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(last_sent_revision__isnull=True) | models.Q(last_sent_to_hotel_at__isnull=False),
+                name='last_sent_rev_requires_date'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(check_in__isnull=True) | models.Q(check_out__isnull=True) | models.Q(check_out__gt=models.F('check_in')),
+                name='check_out_gt_check_in'
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['band', 'status']),
+            models.Index(fields=['show', 'status']),
+            models.Index(fields=['band', 'check_in']),
+        ]
+
+    @property
+    def was_sent(self):
+        return bool(self.last_sent_to_hotel_at and self.last_sent_revision)
+
+    @property
+    def needs_resend(self):
+        return self.was_sent and self.content_revision > self.last_sent_revision
+
+    def clean(self):
+        super().clean()
+        if self.show and self.band:
+            if self.show.band != self.band:
+                raise ValidationError({"band": "RoomList.band deve ser a mesma banda do Show."})
+
+        if self.check_in and self.check_out:
+            if self.check_out <= self.check_in:
+                raise ValidationError({"check_out": "Check-out deve ser posterior ao check-in quando ambos existirem."})
+
+        if self.content_revision < 1:
+            raise ValidationError({"content_revision": "A revisão de conteúdo deve ser maior ou igual a 1."})
+
+        if self.last_sent_revision is not None:
+            if self.last_sent_revision > self.content_revision:
+                raise ValidationError({"last_sent_revision": "A revisão enviada não pode ser maior que a revisão atual de conteúdo."})
+            if self.last_sent_to_hotel_at is None:
+                raise ValidationError({"last_sent_to_hotel_at": "Se last_sent_revision existir, last_sent_to_hotel_at também deve existir."})
+
+class Room(models.Model):
+    class RoomTypeChoices(models.TextChoices):
+        INDIVIDUAL = 'INDIVIDUAL', 'Individual'
+        CASAL = 'CASAL', 'Casal'
+        DUPLO = 'DUPLO', 'Duplo'
+        TRIPLO = 'TRIPLO', 'Triplo'
+        QUADRUPLO = 'QUADRUPLO', 'Quádruplo'
+        PERSONALIZADO = 'PERSONALIZADO', 'Personalizado'
+
+    room_list = models.ForeignKey(RoomList, on_delete=models.CASCADE, related_name='rooms')
+    number_or_name = models.CharField(max_length=100)
+    type = models.CharField(max_length=20, choices=RoomTypeChoices.choices)
+    capacity = models.PositiveIntegerField()
+    beds_config = models.CharField(max_length=255, blank=True, null=True)
+    has_ac = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['room_list', 'number_or_name'], name='unique_room_number_per_list'),
+            models.CheckConstraint(condition=models.Q(capacity__gt=0), name='room_capacity_gt_0'),
+        ]
+        indexes = [
+            models.Index(fields=['room_list', 'order']),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.number_or_name:
+            self.number_or_name = self.number_or_name.strip()
+        if self.capacity is not None and self.capacity <= 0:
+            raise ValidationError({"capacity": "A capacidade do quarto deve ser maior que zero."})
+
+class RoomListParticipant(models.Model):
+    room_list = models.ForeignKey(RoomList, on_delete=models.CASCADE, related_name='participants')
+    original_integrante = models.ForeignKey('Integrante', on_delete=models.SET_NULL, null=True, blank=True, related_name='room_participations')
+    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True, related_name='participants')
+    needs_lodging = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    snapshot_name = models.CharField(max_length=255)
+    snapshot_cpf = models.CharField(max_length=20, blank=True, null=True)
+    snapshot_role = models.CharField(max_length=150, blank=True, null=True)
+    snapshot_category = models.CharField(max_length=50, blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['room_list', 'original_integrante'],
+                condition=models.Q(original_integrante__isnull=False),
+                name='unique_integrante_per_room_list'
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['room_list', 'room']),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.original_integrante and self.room_list:
+            if self.original_integrante.band != self.room_list.band:
+                raise ValidationError({"original_integrante": "O integrante original deve pertencer à mesma banda da Room List."})
+
+        if self.room and self.room_list:
+            if self.room.room_list != self.room_list:
+                raise ValidationError({"room": "O quarto escolhido deve pertencer à mesma Room List do participante."})
+
+
+class LodgingTemplate(models.Model):
+    band = models.OneToOneField('Band', on_delete=models.CASCADE, related_name='lodging_template')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class TemplateRoom(models.Model):
+    template = models.ForeignKey(LodgingTemplate, on_delete=models.CASCADE, related_name='rooms')
+    type = models.CharField(max_length=20, choices=Room.RoomTypeChoices.choices)
+    capacity = models.PositiveIntegerField()
+    beds_config = models.CharField(max_length=255, blank=True, null=True)
+    has_ac = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=models.Q(capacity__gt=0), name='template_room_capacity_gt_0'),
+        ]
+        indexes = [
+            models.Index(fields=['template', 'order']),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.capacity is not None and self.capacity <= 0:
+            raise ValidationError({"capacity": "A capacidade do quarto modelo deve ser maior que zero."})
+
+class TemplateParticipant(models.Model):
+    template = models.ForeignKey(LodgingTemplate, on_delete=models.CASCADE, related_name='participants')
+    room = models.ForeignKey(TemplateRoom, on_delete=models.CASCADE, related_name='participants')
+    original_integrante = models.ForeignKey('Integrante', on_delete=models.CASCADE, related_name='template_participations')
+    order = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['template', 'original_integrante'], name='unique_integrante_per_template'),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.original_integrante and self.template:
+            if self.original_integrante.band != self.template.band:
+                raise ValidationError({"original_integrante": "Integrante deve pertencer à banda do template."})
+
+        if self.room and self.template:
+            if self.room.template != self.template:
+                raise ValidationError({"room": "TemplateRoom deve pertencer ao mesmo LodgingTemplate."})
+

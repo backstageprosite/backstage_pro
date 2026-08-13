@@ -1,0 +1,72 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ action }} Quarto - {{ request.band.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ action }} Quarto</h2>
+        <a href="{% url 'room_list_manage' request.band.slug room_list.id %}" class="btn btn-secondary">Voltar</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm p-4">
+        <p class="text-muted">Lista: <strong>{{ room_list.hotel_name }}</strong></p>
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.number_or_name.id_for_label }}" class="form-label">{{ form.number_or_name.label }}</label>
+                    {{ form.number_or_name }}
+                    {% if form.number_or_name.errors %}
+                        <div class="text-danger mt-1">{{ form.number_or_name.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.type.id_for_label }}" class="form-label">{{ form.type.label }}</label>
+                    {{ form.type }}
+                    {% if form.type.errors %}
+                        <div class="text-danger mt-1">{{ form.type.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.capacity.id_for_label }}" class="form-label">{{ form.capacity.label }}</label>
+                    {{ form.capacity }}
+                    {% if form.capacity.errors %}
+                        <div class="text-danger mt-1">{{ form.capacity.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.beds_config.id_for_label }}" class="form-label">{{ form.beds_config.label }}</label>
+                    {{ form.beds_config }}
+                    {% if form.beds_config.errors %}
+                        <div class="text-danger mt-1">{{ form.beds_config.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mb-3 form-check">
+                {{ form.has_ac }}
+                <label for="{{ form.has_ac.id_for_label }}" class="form-check-label">{{ form.has_ac.label }}</label>
+                {% if form.has_ac.errors %}
+                    <div class="text-danger mt-1">{{ form.has_ac.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-3">Salvar Quarto</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
