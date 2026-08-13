@@ -1,0 +1,205 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Gerenciar Hospedagem - {{ request.band.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gerenciar Hospedagem: {{ room_list.show.city }}</h2>
+        <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-secondary">Voltar para Listagem</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm p-4 mb-4">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Show:</strong> {{ room_list.show.date|date:"d/m/Y" }} - {{ room_list.show.city }}</p>
+                <p><strong>Hotel:</strong> {{ room_list.hotel_name }}</p>
+                <p><strong>Status:</strong> <span class="badge bg-info">{{ room_list.get_status_display }}</span></p>
+                {% if room_list.status == 'PUBLICADA' %}
+                    <p><strong>Último Envio:</strong> {{ room_list.last_sent_to_hotel_at|date:"d/m/Y H:i"|default:"Não enviado" }}</p>
+                    {% if room_list.needs_resend %}
+                        <p><span class="badge bg-warning text-dark">Alterado após envio (Reenvio recomendado)</span></p>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="col-md-6 text-end">
+                {% if room_list.status == 'RASCUNHO' %}
+                    <a href="{% url 'room_list_edit' request.band.slug room_list.id %}" class="btn btn-warning mb-2">Editar Dados</a>
+                    <a href="{% url 'room_list_room_create' request.band.slug room_list.id %}" class="btn btn-primary mb-2">Adicionar Quarto</a>
+                    
+                    <hr>
+                    <form method="post" action="{% url 'room_list_sync' request.band.slug room_list.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-primary mb-2 btn-sm">Sincronizar Escalados</button>
+                    </form>
+                    <form method="post" action="{% url 'room_list_apply_template' request.band.slug room_list.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-secondary mb-2 btn-sm">Aplicar Modelo</button>
+                    </form>
+                    <form method="post" action="{% url 'room_list_publish' request.band.slug room_list.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-success mb-2 btn-sm">Publicar</button>
+                    </form>
+                    <form method="post" action="{% url 'room_list_archive' request.band.slug room_list.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-danger mb-2 btn-sm">Arquivar</button>
+                    </form>
+                    <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                {% elif room_list.status == 'PUBLICADA' %}
+                    {% if is_produtor %}
+                        <form method="post" action="{% url 'room_list_reopen' request.band.slug room_list.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-warning mb-2 btn-sm">Reabrir Edição</button>
+                        </form>
+                        <form method="post" action="{% url 'room_list_mark_sent' request.band.slug room_list.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-info mb-2 btn-sm">Marcar como Enviado</button>
+                        </form>
+                        <form method="post" action="{% url 'room_list_archive' request.band.slug room_list.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-danger mb-2 btn-sm">Arquivar</button>
+                        </form>
+                    {% endif %}
+                    <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <h4>Quartos</h4>
+            {% if rooms %}
+                <div class="row">
+                {% for room in rooms %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <strong>{{ room.number_or_name }}</strong>
+                                {% if room_list.status == 'RASCUNHO' %}
+                                <div>
+                                    <a href="{% url 'room_list_room_edit' request.band.slug room_list.id room.id %}" class="btn btn-sm btn-outline-warning">Editar</a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-body drop-zone" data-room-id="{{ room.id }}" style="min-height: 100px; background-color: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 5px;">
+                                <p class="mb-1 text-muted"><small>Tipo: {{ room.get_type_display }} (Lotação: {{ room.participants.count }} / {{ room.capacity }})</small></p>
+                                
+                                {% for p in room.participants.all %}
+                                    <div class="badge bg-primary draggable-participant p-2 m-1 w-100 text-start" 
+                                         draggable="{% if room_list.status == 'RASCUNHO' %}true{% else %}false{% endif %}" 
+                                         data-participant-id="{{ p.id }}" style="cursor: move;">
+                                        {{ p.snapshot_name }}
+                                        
+                                        <!-- Mobile select fallback (No JS required) -->
+                                        {% if room_list.status == 'RASCUNHO' %}
+                                        <div class="mt-2 d-md-none">
+                                            <form method="post" action="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-light w-100 border">Remover Quarto</button>
+                                            </form>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-secondary">Nenhum quarto adicionado.</div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <h4>Não Alocados</h4>
+            <div class="card shadow-sm p-3 drop-zone" data-room-id="" style="min-height: 200px; background-color: #fff3cd; border: 2px dashed #ffe69c;">
+                {% if participants %}
+                    {% for p in participants %}
+                        {% if not p.room %}
+                            <div class="badge bg-warning text-dark draggable-participant p-2 m-1 w-100 text-start" 
+                                 draggable="{% if room_list.status == 'RASCUNHO' %}true{% else %}false{% endif %}" 
+                                 data-participant-id="{{ p.id }}" style="cursor: move;">
+                                {{ p.snapshot_name }}
+                                
+                                <!-- Mobile select fallback (No JS required) -->
+                                {% if room_list.status == 'RASCUNHO' %}
+                                <div class="mt-2 d-md-none">
+                                    <form method="post" action="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}" class="d-flex">
+                                        {% csrf_token %}
+                                        <select name="room_id" class="form-select form-select-sm me-1" required>
+                                            <option value="" disabled selected>Alocar em...</option>
+                                            {% for r in rooms %}
+                                                <option value="{{ r.id }}">{{ r.number_or_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-light border">Ok</button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted mb-0">Nenhum integrante sincronizado.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+
+<style>
+    .draggable-participant.dragging { opacity: 0.5; }
+    .drop-zone.drag-over { background-color: #e2e3e5 !important; }
+</style>
+
+<script>
+    window.ROOMLIST_ID = "{{ room_list.id }}";
+    
+    // Mobile allocate logic
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.mobile-allocator').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const participantId = e.target.dataset.participantId;
+                const roomId = e.target.value;
+                
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                let url = roomId 
+                    ? `/banda/relatorios/hospedagem/${window.ROOMLIST_ID}/participantes/${participantId}/alocar/`
+                    : `/banda/relatorios/hospedagem/${window.ROOMLIST_ID}/participantes/${participantId}/desalocar/`;
+                
+                let formData = new FormData();
+                if (roomId) formData.append('room_id', roomId);
+                
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status !== 'success') {
+                        alert('Erro: ' + data.message);
+                    }
+                    window.location.reload();
+                })
+                .catch(err => {
+                    alert('Erro na requisição.');
+                    window.location.reload();
+                });
+            });
+        });
+    });
+</script>
+<script src="{% static 'core/js/room_list.js' %}"></script>
+{% endblock %}

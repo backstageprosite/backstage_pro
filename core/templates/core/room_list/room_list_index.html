@@ -1,0 +1,55 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Hospedagem - {{ request.band.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Listas de Hospedagem</h2>
+        <a href="{% url 'room_list_select_show' request.band.slug %}" class="btn btn-primary">
+            Adicionar Lista
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    {% if room_lists %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Data do Show</th>
+                    <th>Cidade</th>
+                    <th>Hotel</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for room_list in room_lists %}
+                <tr>
+                    <td>{{ room_list.show.date|date:"d/m/Y" }}</td>
+                    <td>{{ room_list.city }}</td>
+                    <td>{{ room_list.hotel_name }}</td>
+                    <td>{{ room_list.get_status_display }}</td>
+                    <td>
+                        <a href="{% url 'room_list_manage' request.band.slug room_list.id %}" class="btn btn-sm btn-info">Gerenciar</a>
+                        <a href="{% url 'room_list_edit' request.band.slug room_list.id %}" class="btn btn-sm btn-warning">Editar</a>
+                        <a href="{% url 'room_list_delete' request.band.slug room_list.id %}" class="btn btn-sm btn-danger">Excluir</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-secondary text-center">
+        Nenhuma lista de hospedagem encontrada para esta banda.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

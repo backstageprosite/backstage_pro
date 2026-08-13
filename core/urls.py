@@ -102,3 +102,35 @@ urlpatterns = [
     # Visualizador HTML Dedicado PWA
     path('arquivos/visualizar/<str:file_type>/<int:pk>/', file_views.internal_file_viewer, name='file_viewer'),
 ]
+
+urlpatterns += [
+    # Room List - WEB-02A
+    path('relatorios/hospedagem/', views.room_list_index, name='room_list_index'),
+    path('relatorios/hospedagem/nova/', views.room_list_select_show, name='room_list_select_show'),
+    path('shows/<int:show_id>/hospedagem/criar/', views.room_list_create, name='room_list_create'),
+    path('hospedagem/<int:pk>/editar/', views.room_list_edit, name='room_list_edit'),
+
+
+    path('hospedagem/<int:pk>/', views.room_list_manage, name='room_list_manage'),
+    path('hospedagem/<int:pk>/excluir/', views.room_list_delete, name='room_list_delete'),
+    
+    # Quartos
+    path('hospedagem/<int:pk>/quartos/criar/', views.room_list_room_create, name='room_list_room_create'),
+    path('hospedagem/<int:pk>/quartos/<int:room_id>/editar/', views.room_list_room_edit, name='room_list_room_edit'),
+    path('hospedagem/<int:pk>/quartos/<int:room_id>/excluir/', views.room_list_room_delete, name='room_list_room_delete'),
+    # Sincronização e Operações
+    path('hospedagem/<int:pk>/sincronizar/', views.room_list_sync, name='room_list_sync'),
+    path('hospedagem/<int:pk>/participantes/<int:participant_id>/alocar/', views.room_list_allocate, name='room_list_allocate'),
+    path('hospedagem/<int:pk>/participantes/<int:participant_id>/desalocar/', views.room_list_unassign, name='room_list_unassign'),
+    path('hospedagem/<int:pk>/acoes/publicar/', views.room_list_publish, name='room_list_publish'),
+    path('hospedagem/<int:pk>/acoes/reabrir/', views.room_list_reopen, name='room_list_reopen'),
+    path('hospedagem/<int:pk>/acoes/arquivar/', views.room_list_archive, name='room_list_archive'),
+    path('hospedagem/<int:pk>/acoes/marcar-enviada/', views.room_list_mark_sent, name='room_list_mark_sent'),
+    path('hospedagem/<int:pk>/acoes/aplicar-modelo/', views.room_list_apply_template, name='room_list_apply_template'),
+
+    # Modelo Padrão
+    path('configuracoes/hospedagem/modelo/', views.lodging_template_manage, name='lodging_template_manage'),
+    
+    # PDF Room List
+    path('hospedagem/<int:pk>/pdf/', views.room_list_pdf_view, name='room_list_pdf'),
+]

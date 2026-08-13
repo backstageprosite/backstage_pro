@@ -1,0 +1,193 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Room List - [{{ room_list.show.date|date:"d-m-Y" }}] {{ room_list.show.title }}</title>
+    <!-- Bootstrap CSS for grid -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #000000;
+            font-family: sans-serif;
+            padding: 20px;
+            font-size: 12px;
+        }
+        .card {
+            border: 1px solid #dee2e6;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        .card-header {
+            font-weight: bold;
+            font-size: 13px;
+            padding: 4px 8px !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .header-dados { background-color: #212529 !important; color: #0dcaf0 !important; border-bottom: 2px solid #212529; }
+        .header-hotel { background-color: #0dcaf0 !important; color: #212529 !important; border-bottom: 2px solid #0dcaf0; }
+        .header-quartos { background-color: #198754 !important; color: #ffffff !important; border-bottom: 2px solid #198754; }
+
+        .list-group-item {
+            padding: 4px 8px;
+            border-bottom: 1px solid #eee;
+            background: transparent;
+        }
+        .card-body { padding: 8px 12px; }
+        h2 { margin: 0; padding: 0; font-size: 20px; }
+        h5 { margin: 0; padding: 0; font-size: 16px; }
+        h6 { font-weight: bold; margin-bottom: 2px; color: #444; font-size: 11px; }
+        p { margin-bottom: 0; }
+        
+        .room-row { border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; }
+        .room-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        @media screen {
+            .print-only { display: none !important; }
+        }
+        @media print {
+            body { padding: 0; margin: 0; font-size: 10px; margin-bottom: 20px; }
+            a { text-decoration: none; color: #000 !important; }
+            .card-header { font-size: 11px; padding: 3px 6px !important; }
+            h6 { font-size: 10px; }
+            .list-group-item { padding: 2px 4px; }
+            .btn, .no-print { display: none !important; }
+            .card { box-shadow: none; margin-bottom: 10px; page-break-inside: avoid; }
+            .container { max-width: 100% !important; width: 100% !important; padding: 0; margin: 0; }
+            .text-muted { color: #6c757d !important; }
+            .print-only { display: flex !important; }
+
+            @page { margin: 0.8cm; }
+
+            #print-footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                border-top: 1px solid #ddd;
+                padding-top: 5px;
+                padding-bottom: 5px;
+                font-size: 10px;
+                color: #777;
+                display: flex;
+                flex-direction: column;
+                background: white;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Cabeçalho com Logo na Esquerda e Títulos Centralizados -->
+        <div class="mb-3 border-bottom pb-2 d-flex align-items-center">
+            <div style="width: 150px; text-align: left;">
+                {% if room_list.band.logo %}
+                <img src="{% url 'public_band_logo' room_list.band.slug %}" alt="{{ room_list.band.name }}" style="max-width: 100%; max-height: 80px;">
+                {% endif %}
+            </div>
+            <div class="text-center flex-grow-1" style="padding-right: 150px;">
+                <h2 class="mb-0">Room List: {{ room_list.show.title }}</h2>
+                <h5 class="text-secondary mt-1">{{ room_list.show.event_name|default:room_list.show.title }} - {{ room_list.show.city }} ({{ room_list.show.date|date:"d/m/Y" }})</h5>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Informações do Hotel -->
+            <div class="col-12 mb-3">
+                <div class="card">
+                    <div class="card-header header-hotel py-1"><i class="fa-solid fa-hotel me-1"></i> Hotel: {{ room_list.hotel_name }}</div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><strong>Cidade:</strong> {{ room_list.city }}</li>
+                            {% if room_list.address %}
+                            <li class="list-group-item"><strong>Endereço:</strong> {{ room_list.address }}</li>
+                            {% endif %}
+                            {% if room_list.contact or room_list.phone %}
+                            <li class="list-group-item">
+                                {% if room_list.contact %}<strong>Contato:</strong> {{ room_list.contact }}{% endif %}
+                                {% if room_list.contact and room_list.phone %} - {% endif %}
+                                {% if room_list.phone %}<strong>Telefone:</strong> {{ room_list.phone }}{% endif %}
+                            </li>
+                            {% endif %}
+                            {% if room_list.reservation_code %}
+                            <li class="list-group-item"><strong>Código de Reserva:</strong> {{ room_list.reservation_code }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Quartos -->
+            <div class="col-12 mb-3">
+                <div class="card">
+                    <div class="card-header header-quartos py-1"><i class="fa-solid fa-bed me-1"></i> Quartos e Ocupantes</div>
+                    <div class="card-body p-3">
+                        {% for room in rooms %}
+                        <div class="room-row mb-3 pb-3 border-bottom">
+                            <div class="fw-bold fs-6 mb-2">
+                                Quarto {{ forloop.counter }} - {{ room.get_room_type_display }} / {{ room.get_config_type_display }}
+                                {% if room.has_air_conditioning %}<span class="badge bg-info text-dark ms-2"><i class="fa-solid fa-snowflake"></i> Ar-cond.</span>{% endif %}
+                            </div>
+                            <ul class="mb-0 ps-3">
+                                {% for part in room.participants.all %}
+                                <li>
+                                    <strong>{{ part.snapshot_name }}</strong> 
+                                    {% if part.snapshot_role %}({{ part.snapshot_role }}){% endif %}
+                                </li>
+                                {% empty %}
+                                <li class="text-muted fst-italic">Quarto vazio</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted mb-0">Nenhum quarto configurado nesta Room List.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Totais -->
+            <div class="col-12 mb-3">
+                <div class="card">
+                    <div class="card-body d-flex justify-content-between p-2 px-3 fw-bold bg-light">
+                        <span>Total de Quartos: {{ rooms|length }}</span>
+                        <span>Total de Integrantes Hospedados: {{ participants|length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4 no-print border-top pt-3">
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fa-solid fa-print me-1"></i> Imprimir ou Salvar PDF
+            </button>
+            <button class="btn btn-secondary ms-2" onclick="window.close()">
+                <i class="fa-solid fa-xmark me-1"></i> Fechar aba
+            </button>
+        </div>
+    </div>
+
+    <div id="print-footer" class="print-only mt-2">
+        <div class="d-flex w-100 justify-content-between align-items-center mb-1 px-1">
+            <span style="flex: 1;"><strong>Room List:</strong> [{{ room_list.show.date|date:"d-m-Y" }}] {{ room_list.show.title }}</span>
+            <span style="flex: 1; text-align: center;"><strong>Emissor:</strong> {{ request.user.first_name }} {{ request.user.last_name }}</span>
+            <span style="flex: 1; text-align: right;"><strong>Gerado em:</strong> <span id="current-datetime"></span></span>
+        </div>
+    </div>
+
+    <script>
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('current-datetime').textContent = formattedDate;
+
+        window.onload = function() {
+            setTimeout(function() { window.print(); }, 500);
+        };
+    </script>
+</body>
+</html>

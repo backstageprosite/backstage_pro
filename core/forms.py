@@ -291,3 +291,163 @@ class IntegranteForm(forms.ModelForm):
             'birth_date': forms.TextInput(attrs={'class': 'form-control date-mask', 'style': 'border-radius: 8px;'}),
             'miles_number': forms.TextInput(attrs={'class': 'form-control', 'style': 'border-radius: 8px;'}),
         }
+from core.models import RoomList, Room, Show
+from django.utils import timezone
+from datetime import date
+
+class RoomListSelectShowForm(forms.Form):
+    show_id = forms.ModelChoiceField(
+        queryset=Show.objects.none(),
+        label="Selecione o Show",
+        widget=forms.Select(attrs={'class': 'form-select', 'style': 'border-radius: 8px;'})
+    )
+
+    def __init__(self, band, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # priorizar shows futuros ou ativos
+        # excluir shows que já possuam Room List
+        shows_with_room_list = RoomList.objects.filter(band=band).values_list('show_id', flat=True)
+        self.fields['show_id'].queryset = Show.objects.filter(
+            band=band,
+            date__gte=date.today()
+        ).exclude(id__in=shows_with_room_list).order_by('date')
+        
+class RoomListForm(forms.ModelForm):
+    class Meta:
+        model = RoomList
+        fields = [
+            'hotel_name', 'city', 'address', 'check_in', 'check_out',
+            'contact', 'phone', 'notes', 'reservation_code'
+        ]
+        widgets = {
+            'hotel_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'city': forms.TextInput(attrs={'class': 'form-control'}),
+            'address': forms.TextInput(attrs={'class': 'form-control'}),
+            'check_in': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'check_out': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'contact': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'reservation_code': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+        
+    def clean(self):
+        cleaned_data = super().clean()
+        check_in = cleaned_data.get('check_in')
+        check_out = cleaned_data.get('check_out')
+
+        if check_in and check_out and check_out < check_in:
+            self.add_error('check_out', 'O check-out não pode ser anterior ao check-in.')
+            
+        return cleaned_data
+
+class RoomForm(forms.ModelForm):
+    class Meta:
+        model = Room
+        fields = ['type', 'capacity', 'number_or_name', 'beds_config', 'has_ac']
+        widgets = {
+            'type': forms.Select(attrs={'class': 'form-select'}),
+            'capacity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'number_or_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'beds_config': forms.TextInput(attrs={'class': 'form-control'}),
+            'has_ac': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        
+    def clean_capacity(self):
+        capacity = self.cleaned_data.get('capacity')
+        if capacity is not None and capacity <= 0:
+            raise forms.ValidationError('A capacidade deve ser um número positivo.')
+        return capacity
+
+    def clean(self):
+        cleaned_data = super().clean()
+        room_type = cleaned_data.get('type')
+        capacity = cleaned_data.get('capacity')
+        
+        # Validar capacidade compatível com o tipo
+
+        if room_type and capacity:
+            from core.services.room_list_services import validate_room_capacity_for_type
+            try:
+                validate_room_capacity_for_type(room_type, capacity)
+            except Exception as e:
+                self.add_error('capacity', str(e))
+                
+        return cleaned_data
+
+class ActionConfirmForm(forms.Form):
+    pass
+
+from django.forms import inlineformset_factory
+from core.models import TemplateRoom, LodgingTemplate
+
+class TemplateRoomForm(forms.ModelForm):
+    participants = forms.ModelMultipleChoiceField(
+        queryset=Integrante.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 5})
+    )
+    
+    class Meta:
+        model = TemplateRoom
+        fields = ['type', 'capacity', 'order', 'beds_config', 'has_ac']
+        widgets = {
+            'type': forms.Select(attrs={'class': 'form-select'}),
+            'capacity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'order': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'beds_config': forms.TextInput(attrs={'class': 'form-control'}),
+            'has_ac': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.band = kwargs.pop('band', None)
+        super().__init__(*args, **kwargs)
+        if self.band:
+            self.fields['participants'].queryset = Integrante.objects.filter(band=self.band, is_active=True)
+        
+        if self.instance and self.instance.pk:
+            participant_ids = self.instance.participants.values_list('original_integrante_id', flat=True)
+            self.fields['participants'].initial = participant_ids
+
+    def clean(self):
+        cleaned_data = super().clean()
+        room_type = cleaned_data.get('type')
+        capacity = cleaned_data.get('capacity')
+        if room_type and capacity:
+            from core.services.room_list_services import validate_room_capacity_for_type
+            try:
+                validate_room_capacity_for_type(room_type, capacity)
+            except Exception as e:
+                self.add_error('capacity', str(e))
+        return cleaned_data
+
+class BaseTemplateRoomFormSet(forms.BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        self.band = kwargs.pop('band', None)
+        super().__init__(*args, **kwargs)
+        
+    def _construct_form(self, i, **kwargs):
+        kwargs['band'] = self.band
+        return super()._construct_form(i, **kwargs)
+
+    def clean(self):
+        super().clean()
+        all_participants = []
+        for form in self.forms:
+            if self.can_delete and self._should_delete_form(form):
+                continue
+            participants = form.cleaned_data.get('participants')
+            if participants:
+                for p in participants:
+                    if p.id in all_participants:
+                        form.add_error('participants', f"O integrante {p.name} não pode estar em dois quartos simultaneamente.")
+                    all_participants.append(p.id)
+
+TemplateRoomFormSet = inlineformset_factory(
+    LodgingTemplate, 
+    TemplateRoom, 
+    form=TemplateRoomForm,
+    formset=BaseTemplateRoomFormSet,
+    extra=1,
+    can_delete=True
+)

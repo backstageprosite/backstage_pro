@@ -1,0 +1,93 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Modelo Padrão de Hospedagem - {{ request.band.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Modelo Padrão de Hospedagem</h2>
+        <a href="{% url 'configuracoes' request.band.slug %}" class="btn btn-secondary">Voltar</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Editor do Modelo Padrão</h4>
+            {% if template %}
+            <form method="post" onsubmit="return confirm('Tem certeza que deseja excluir o modelo atual?');" class="m-0">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Excluir Modelo Inteiro</button>
+            </form>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <form method="post" id="templateForm">
+                {% csrf_token %}
+                {{ formset.management_form }}
+                
+                <div id="formset-container">
+                    {% for form in formset %}
+                    <div class="room-form mb-4 p-3 border rounded">
+                        <div class="row align-items-end mb-2">
+                            {{ form.id }}
+                            <div class="col-md-3">
+                                <label class="form-label">Tipo *</label>
+                                {{ form.type }}
+                                {% if form.type.errors %}<div class="text-danger small">{{ form.type.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Capacidade *</label>
+                                {{ form.capacity }}
+                                {% if form.capacity.errors %}<div class="text-danger small">{{ form.capacity.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Ordem</label>
+                                {{ form.order }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Config. Camas</label>
+                                {{ form.beds_config }}
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-check mt-4">
+                                    {{ form.has_ac }}
+                                    <label class="form-check-label">Com Ar?</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <label class="form-label">Participantes</label>
+                                {{ form.participants }}
+                                <small class="text-muted d-block">Pressione CTRL (ou CMD) para selecionar múltiplos integrantes.</small>
+                                {% if form.participants.errors %}<div class="text-danger small">{{ form.participants.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 text-end">
+                                {% if form.instance.pk %}
+                                <div class="form-check d-inline-block">
+                                    {{ form.DELETE }}
+                                    <label class="form-check-label text-danger">Excluir este quarto</label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="submit" class="btn btn-primary">Salvar Modelo Padrão</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
