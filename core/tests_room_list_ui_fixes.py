@@ -247,7 +247,7 @@ class RoomListUIFixesTests(TestCase):
         room = Room.objects.create(room_list=self.room_list, type='CASAL', capacity=2, beds_config='1 Cama de Casal')
         integ = Integrante.objects.create(band=self.band, name="PDF Member", role="Role", is_active=True)
         RoomListParticipant.objects.create(room_list=self.room_list, room=room, original_integrante=integ, snapshot_name=integ.name, order=0)
-        
+
         self.client.force_login(self.user)
         url = reverse('room_list_pdf', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
         res = self.client.get(url)

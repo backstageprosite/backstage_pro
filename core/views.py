@@ -3514,7 +3514,7 @@ def room_list_delete(request, band_slug, pk):
                 return redirect('room_list_index', band_slug=band_slug)
             except Exception as e:
                 messages.error(request, str(e))
-    
+
     return redirect('room_list_index', band_slug=band_slug)
 
 
