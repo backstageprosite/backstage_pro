@@ -3214,51 +3214,6 @@ def integrantes_pdf_view(request, band_slug):
 
 
 
-@band_required
-
-def room_list_pdf_view(request, band_slug, pk):
-
-    from core.models import RoomList
-
-    from django.core.exceptions import PermissionDenied
-
-    from django.shortcuts import render, get_object_or_404, Http404
-
-
-
-    try:
-
-        room_list = RoomList.objects.select_related('show', 'band').prefetch_related(
-
-            'rooms__participants'
-
-        ).get(pk=pk, show__band=request.band)
-
-    except RoomList.DoesNotExist:
-
-        raise Http404("Room List n�o encontrada.")
-
-
-
-    is_produtor = request.user.role == 'PRODUTOR' or request.user.is_superuser
-
-    if not is_produtor and room_list.status == RoomList.StatusChoices.RASCUNHO:
-
-        raise PermissionDenied("Acesso restrito. Room List em rascunho.")
-
-
-
-    return render(request, 'core/room_list/room_list_pdf.html', {
-        'band': request.band,
-
-        'room_list': room_list,
-
-        'rooms': room_list.rooms.all(),
-
-        'participants': room_list.participants.all(),
-
-    })
-
 
 
 
