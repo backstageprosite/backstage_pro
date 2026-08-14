@@ -178,3 +178,95 @@ class RoomListUIFixesTests(TestCase):
 
         self.assertIn(f'data-allocate-url="{expected_allocate}"', html)
         self.assertIn(f'data-unassign-url="{expected_unassign}"', html)
+
+    def test_reactivate_arquivada(self):
+        self.room_list.status = RoomList.StatusChoices.ARQUIVADA
+        self.room_list.save()
+        self.client.force_login(self.user)
+        url = reverse('room_list_reactivate', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, 302)
+        self.room_list.refresh_from_db()
+        self.assertEqual(self.room_list.status, RoomList.StatusChoices.RASCUNHO)
+
+    def test_reactivate_permission_denied(self):
+        self.room_list.status = RoomList.StatusChoices.ARQUIVADA
+        self.room_list.save()
+        other_user = User.objects.create_user(username="other", email="other@test.com", password="pwd", role="PRODUTOR")
+        self.client.force_login(other_user)
+        url = reverse('room_list_reactivate', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, 403)
+        self.room_list.refresh_from_db()
+        self.assertEqual(self.room_list.status, RoomList.StatusChoices.ARQUIVADA)
+
+    def test_delete_arquivada_post(self):
+        self.room_list.status = RoomList.StatusChoices.ARQUIVADA
+        self.room_list.save()
+        self.client.force_login(self.user)
+        url = reverse('room_list_delete', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, 302)
+        self.assertFalse(RoomList.objects.filter(pk=self.room_list.pk).exists())
+
+    def test_delete_arquivada_get(self):
+        self.room_list.status = RoomList.StatusChoices.ARQUIVADA
+        self.room_list.save()
+        self.client.force_login(self.user)
+        url = reverse('room_list_delete', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 302) # Redireciona para o index
+        self.assertTrue(RoomList.objects.filter(pk=self.room_list.pk).exists())
+
+    def test_delete_permission_denied(self):
+        self.room_list.status = RoomList.StatusChoices.ARQUIVADA
+        self.room_list.save()
+        other_user = User.objects.create_user(username="other_del", email="other_del@test.com", password="pwd", role="PRODUTOR")
+        self.client.force_login(other_user)
+        url = reverse('room_list_delete', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, 403)
+        self.assertTrue(RoomList.objects.filter(pk=self.room_list.pk).exists())
+
+    def test_confirm_modal_and_form(self):
+        self.room_list.status = RoomList.StatusChoices.ARQUIVADA
+        self.room_list.save()
+        self.client.force_login(self.user)
+        url = reverse('room_list_index', kwargs={'band_slug': self.band.slug})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        delete_url = reverse('room_list_delete', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
+        self.assertIn('data-bs-target="#deleteModal', html)
+        self.assertIn(f'action="{delete_url}"', html)
+
+    def test_pdf_content_and_status(self):
+        from core.models import Room, Integrante, RoomListParticipant
+        self.room_list.hotel_name = "Hotel PDF Test"
+        self.room_list.save()
+        room = Room.objects.create(room_list=self.room_list, type='CASAL', capacity=2, beds_config='1 Cama de Casal')
+        integ = Integrante.objects.create(band=self.band, name="PDF Member", role="Role", is_active=True)
+        RoomListParticipant.objects.create(room_list=self.room_list, room=room, original_integrante=integ, snapshot_name=integ.name, order=0)
+
+        self.client.force_login(self.user)
+        url = reverse('room_list_pdf', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(len(res.content) > 0)
+        html = res.content.decode('utf-8')
+        self.assertIn("Hotel PDF Test", html)
+        self.assertIn("1 Cama de Casal", html)
+        self.assertIn("PDF Member", html)
+
+    def test_room_list_confirm_delete_removed(self):
+        import os
+        import subprocess
+        # Procura referências do template excluído no repositório. O teste deve passar se a grep falhar ou retornar vazio.
+        # Usa um comando git seguro que não deve retornar nada (exceto erro 1 se não achar)
+        try:
+            # Exclude tests file from grep results
+            output = subprocess.check_output(['git', 'grep', 'room_list_confirm_delete.html', '--', ':/', ':!core/tests_room_list_ui_fixes.py'], stderr=subprocess.STDOUT)
+            output_str = output.decode('utf-8').strip()
+        except subprocess.CalledProcessError:
+            output_str = ""
+        self.assertEqual(output_str, "")

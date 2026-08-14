@@ -125,6 +125,7 @@ urlpatterns += [
     path('hospedagem/<int:pk>/acoes/publicar/', views.room_list_publish, name='room_list_publish'),
     path('hospedagem/<int:pk>/acoes/reabrir/', views.room_list_reopen, name='room_list_reopen'),
     path('hospedagem/<int:pk>/acoes/arquivar/', views.room_list_archive, name='room_list_archive'),
+    path('hospedagem/<int:pk>/acoes/reativar/', views.room_list_reactivate, name='room_list_reactivate'),
     path('hospedagem/<int:pk>/acoes/marcar-enviada/', views.room_list_mark_sent, name='room_list_mark_sent'),
     path('hospedagem/<int:pk>/acoes/aplicar-modelo/', views.room_list_apply_template, name='room_list_apply_template'),
 

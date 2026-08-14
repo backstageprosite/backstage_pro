@@ -67,7 +67,41 @@
                         </form>
                     {% endif %}
                     <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                {% elif room_list.status == 'ARQUIVADA' %}
+                    {% if is_produtor %}
+                        <form method="post" action="{% url 'room_list_reactivate' request.band.slug room_list.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-success mb-2 btn-sm"><i class="fa-solid fa-rotate-left"></i> Reativar</button>
+                        </form>
+                        <button type="button" class="btn btn-danger mb-2 btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ room_list.id }}">
+                            <i class="fa-solid fa-trash"></i> Excluir
+                        </button>
+                    {% endif %}
+                    <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF</a>
                 {% endif %}
+
+    <!-- Modal de Exclusão -->
+    <div class="modal fade" id="deleteModal{{ room_list.id }}" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel"><i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-start">
+                    <p>Tem certeza que deseja excluir a lista de hospedagem do show <strong>{{ room_list.show.title }}</strong>?</p>
+                    <p class="text-danger small fw-bold">Esta ação não poderá ser desfeita.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form method="post" action="{% url 'room_list_delete' request.band.slug room_list.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
             </div>
         </div>
     </div>

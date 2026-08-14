@@ -163,11 +163,18 @@ def validate_room_capacity_for_type(room_type, capacity):
         return
 
     expected_cap = _CAPACITY_LIMITS.get(room_type)
-    if expected_cap is not None and capacity != expected_cap:
-        raise RoomCapacityTypeMismatchError(
-            f"O tipo '{room_type}' exige capacidade exata de {expected_cap} ocupante(s), "
-            f"mas foi informado {capacity}."
-        )
+    if expected_cap is not None:
+        if room_type == Room.RoomTypeChoices.CASAL:
+            if capacity not in [1, 2]:
+                raise RoomCapacityTypeMismatchError(
+                    f"O tipo '{room_type}' exige capacidade de 1 ou 2 ocupante(s), "
+                    f"mas foi informado {capacity}."
+                )
+        elif capacity != expected_cap:
+            raise RoomCapacityTypeMismatchError(
+                f"O tipo '{room_type}' exige capacidade exata de {expected_cap} ocupante(s), "
+                f"mas foi informado {capacity}."
+            )
 
 
 def _assert_room_list_editable(room_list):
@@ -309,14 +316,24 @@ def get_pending_issues(room_list):
                 ))
         else:
             expected_cap = _CAPACITY_LIMITS.get(room.type)
-            if expected_cap is not None and room.capacity != expected_cap:
-                issues.append(PendingIssue(
-                    category='capacity_type_mismatch',
-                    severity='blocking',
-                    description=f'Quarto "{room.number_or_name}" é do tipo {room.type} (exige {expected_cap}) mas tem capacidade {room.capacity}.',
-                    related_object_id=room.pk,
-                    related_object_type='Room',
-                ))
+            if expected_cap is not None:
+                if room.type == Room.RoomTypeChoices.CASAL:
+                    if room.capacity not in [1, 2]:
+                        issues.append(PendingIssue(
+                            category='capacity_type_mismatch',
+                            severity='blocking',
+                            description=f'Quarto "{room.number_or_name}" é do tipo {room.type} (exige 1 ou 2 ocupantes) mas tem capacidade {room.capacity}.',
+                            related_object_id=room.pk,
+                            related_object_type='Room',
+                        ))
+                elif room.capacity != expected_cap:
+                    issues.append(PendingIssue(
+                        category='capacity_type_mismatch',
+                        severity='blocking',
+                        description=f'Quarto "{room.number_or_name}" é do tipo {room.type} (exige {expected_cap}) mas tem capacidade {room.capacity}.',
+                        related_object_id=room.pk,
+                        related_object_type='Room',
+                    ))
 
     # 4. Inconsistências defensivas nos quartos e participantes (blocking)
     names_seen = set()
@@ -566,6 +583,29 @@ def reopen_room_list(room_list_id, user):
     locked_rl.save()
     return locked_rl
 
+@transaction.atomic
+def reactivate_room_list(room_list_id, user):
+    """
+    Reativa uma Room List arquivada.
+
+    Locks: RoomList (select_for_update).
+    Transição: ARQUIVADA -> RASCUNHO.
+
+    Raises:
+        BandAccessDeniedError, RoomListServiceError
+    """
+    locked_rl = RoomList.objects.select_for_update().get(pk=room_list_id)
+    validate_band_access(user, locked_rl.band)
+
+    if locked_rl.status != RoomList.StatusChoices.ARQUIVADA:
+        raise RoomListServiceError(
+            "Somente Room Lists arquivadas podem ser reativadas."
+        )
+
+    locked_rl.status = RoomList.StatusChoices.RASCUNHO
+    locked_rl.save()
+    return locked_rl
+
 
 @transaction.atomic
 def archive_room_list(room_list_id, user):
@@ -620,10 +660,10 @@ def mark_room_list_as_sent(room_list_id, user):
 @transaction.atomic
 def delete_room_list(room_list_id, user):
     """
-    Exclui uma Room List em rascunho.
+    Exclui uma Room List em rascunho ou arquivada.
 
     Locks: RoomList (select_for_update).
-    Pré-condição: status == RASCUNHO.
+    Pré-condição: status in (RASCUNHO, ARQUIVADA).
 
     Raises:
         BandAccessDeniedError, RoomListServiceError
@@ -631,9 +671,9 @@ def delete_room_list(room_list_id, user):
     locked_rl = RoomList.objects.select_for_update().get(pk=room_list_id)
     validate_band_access(user, locked_rl.band)
 
-    if locked_rl.status != RoomList.StatusChoices.RASCUNHO:
+    if locked_rl.status not in [RoomList.StatusChoices.RASCUNHO, RoomList.StatusChoices.ARQUIVADA]:
         raise RoomListServiceError(
-            "Somente Room Lists em rascunho podem ser excluídas."
+            "Somente Room Lists em rascunho ou arquivadas podem ser excluídas."
         )
 
     locked_rl.delete()
