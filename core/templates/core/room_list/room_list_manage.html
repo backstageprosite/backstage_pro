@@ -1,13 +1,13 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Gerenciar Hospedagem - {{ request.band.name }}{% endblock %}
+{% block title %}Gerenciar Hospedagem - {{ request.band.name }}
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Gerenciar Hospedagem: {{ room_list.show.city }}</h2>
-        <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-secondary">Voltar para Listagem</a>
+        <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
     </div>
 
     {% if messages %}
@@ -33,12 +33,11 @@
                 {% if room_list.status == 'RASCUNHO' %}
                     <a href="{% url 'room_list_edit' request.band.slug room_list.id %}" class="btn btn-warning mb-2">Editar Dados</a>
                     <a href="{% url 'room_list_room_create' request.band.slug room_list.id %}" class="btn btn-primary mb-2">Adicionar Quarto</a>
-                    
+
                     <hr>
-                    <form method="post" action="{% url 'room_list_sync' request.band.slug room_list.id %}" class="d-inline">
-                        {% csrf_token %}
-                        <button class="btn btn-outline-primary mb-2 btn-sm">Sincronizar Escalados</button>
-                    </form>
+                    <button type="button" class="btn btn-outline-primary mb-2 btn-sm" data-bs-toggle="modal" data-bs-target="#modalSincronizar" {% if room_list.status != 'RASCUNHO' %}disabled{% endif %}>
+                        <i class="fa-solid fa-rotate me-1"></i> Sincronizar Integrantes
+                    </button>
                     <form method="post" action="{% url 'room_list_apply_template' request.band.slug room_list.id %}" class="d-inline">
                         {% csrf_token %}
                         <button class="btn btn-outline-secondary mb-2 btn-sm">Aplicar Modelo</button>
@@ -91,13 +90,16 @@
                             </div>
                             <div class="card-body drop-zone" data-room-id="{{ room.id }}" style="min-height: 100px; background-color: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 5px;">
                                 <p class="mb-1 text-muted"><small>Tipo: {{ room.get_type_display }} (Lotação: {{ room.participants.count }} / {{ room.capacity }})</small></p>
-                                
+
                                 {% for p in room.participants.all %}
-                                    <div class="badge bg-primary draggable-participant p-2 m-1 w-100 text-start" 
-                                         draggable="{% if room_list.status == 'RASCUNHO' %}true{% else %}false{% endif %}" 
-                                         data-participant-id="{{ p.id }}" style="cursor: move;">
+                                    <div class="badge bg-primary draggable-participant p-2 m-1 w-100 text-start"
+                                         draggable="{% if room_list.status == 'RASCUNHO' %}true{% else %}false{% endif %}"
+                                         data-participant-id="{{ p.id }}"
+                                         data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
+                                         data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
+                                         style="cursor: move;">
                                         {{ p.snapshot_name }}
-                                        
+
                                         <!-- Mobile select fallback (No JS required) -->
                                         {% if room_list.status == 'RASCUNHO' %}
                                         <div class="mt-2 d-md-none">
@@ -125,11 +127,14 @@
                 {% if participants %}
                     {% for p in participants %}
                         {% if not p.room %}
-                            <div class="badge bg-warning text-dark draggable-participant p-2 m-1 w-100 text-start" 
-                                 draggable="{% if room_list.status == 'RASCUNHO' %}true{% else %}false{% endif %}" 
-                                 data-participant-id="{{ p.id }}" style="cursor: move;">
+                            <div class="badge bg-warning text-dark draggable-participant p-2 m-1 w-100 text-start"
+                                 draggable="{% if room_list.status == 'RASCUNHO' %}true{% else %}false{% endif %}"
+                                 data-participant-id="{{ p.id }}"
+                                 data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
+                                 data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
+                                 style="cursor: move;">
                                 {{ p.snapshot_name }}
-                                
+
                                 <!-- Mobile select fallback (No JS required) -->
                                 {% if room_list.status == 'RASCUNHO' %}
                                 <div class="mt-2 d-md-none">
@@ -163,43 +168,80 @@
     .drop-zone.drag-over { background-color: #e2e3e5 !important; }
 </style>
 
+
+<script src="{% static 'core/js/room_list.js' %}?v=20260813"></script>
+
+<!-- Modal Sincronizar Integrantes -->
+<div class="modal fade" id="modalSincronizar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <form action="{% url 'room_list_sync' request.band.slug room_list.id %}" method="post" id="syncForm">
+                {% csrf_token %}
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-users me-2 text-primary"></i> Sincronizar Integrantes</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Selecione os integrantes da banda para adicionar à Room List. Integrantes já adicionados não serão duplicados.</p>
+
+                    <div class="form-check mb-3 border-bottom pb-2">
+                        <input class="form-check-input" type="checkbox" id="selectAllIntegrantes" onchange="toggleAllIntegrantes(this)">
+                        <label class="form-check-label fw-bold" for="selectAllIntegrantes">
+                            Selecionar todos
+                        </label>
+                    </div>
+
+                    <div class="integrantes-list">
+                        {% for integrante in active_integrantes %}
+                            <div class="form-check mb-2" data-integrante-id="{{ integrante.id }}">
+                                <input class="form-check-input integrante-checkbox" type="checkbox" name="integrantes" value="{{ integrante.id }}" id="integrante_{{ integrante.id }}">
+                                <label class="form-check-label d-flex justify-content-between align-items-center w-100" for="integrante_{{ integrante.id }}">
+                                    <span>
+                                        <strong>{{ integrante.name }}</strong>
+                                        <small class="text-muted ms-1">({{ integrante.role }})</small>
+                                    </span>
+                                    <span class="badge bg-secondary ja-incluido-badge" style="display: none;">Já incluído</span>
+                                </label>
+                            </div>
+                        {% empty %}
+                            <div class="alert alert-warning">Nenhum integrante ativo encontrado nesta banda.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSyncSubmit" onclick="this.disabled=true; this.form.submit();">Adicionar selecionados</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
-    window.ROOMLIST_ID = "{{ room_list.id }}";
-    
-    // Mobile allocate logic
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('.mobile-allocator').forEach(select => {
-            select.addEventListener('change', (e) => {
-                const participantId = e.target.dataset.participantId;
-                const roomId = e.target.value;
-                
-                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                let url = roomId 
-                    ? `/banda/relatorios/hospedagem/${window.ROOMLIST_ID}/participantes/${participantId}/alocar/`
-                    : `/banda/relatorios/hospedagem/${window.ROOMLIST_ID}/participantes/${participantId}/desalocar/`;
-                
-                let formData = new FormData();
-                if (roomId) formData.append('room_id', roomId);
-                
-                fetch(url, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': csrfToken },
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.status !== 'success') {
-                        alert('Erro: ' + data.message);
-                    }
-                    window.location.reload();
-                })
-                .catch(err => {
-                    alert('Erro na requisição.');
-                    window.location.reload();
-                });
-            });
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    const participantsIds = [
+        {% for p in participants %}
+            {% if p.original_integrante_id %}{{ p.original_integrante_id }},{% endif %}
+        {% endfor %}
+    ];
+
+    document.querySelectorAll('.form-check[data-integrante-id]').forEach(function(div) {
+        const id = parseInt(div.getAttribute('data-integrante-id'));
+        if (participantsIds.includes(id)) {
+            const checkbox = div.querySelector('input[type="checkbox"]');
+            checkbox.disabled = true;
+            checkbox.checked = false;
+            div.querySelector('.ja-incluido-badge').style.display = 'inline-block';
+        }
     });
+});
+
+function toggleAllIntegrantes(source) {
+    checkboxes = document.querySelectorAll('.integrante-checkbox:not(:disabled)');
+    for(var i=0, n=checkboxes.length;i<n;i++) {
+        checkboxes[i].checked = source.checked;
+    }
+}
 </script>
-<script src="{% static 'core/js/room_list.js' %}"></script>
+
 {% endblock %}

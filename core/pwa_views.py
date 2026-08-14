@@ -237,7 +237,7 @@ def band_service_worker(request, band_slug):
     sw_content = f"""
 "use strict";
 
-const SW_VERSION = {json.dumps(band.slug + "-v3")};
+const SW_VERSION = {json.dumps("backstage-" + band.slug + "-v4")};
 const BAND_SLUG = {json.dumps(band.slug)};
 const BAND_SCOPE = {json.dumps("/" + band.slug + "/")};
 const BAND_NAME = {json.dumps(band.name.strip())};
@@ -249,7 +249,14 @@ self.addEventListener("install", (event) => {{
 }});
 
 self.addEventListener("activate", (event) => {{
-    event.waitUntil(self.clients.claim());
+    event.waitUntil((async () => {{
+        const cacheNames = await caches.keys();
+        await Promise.all(
+            cacheNames.filter(name => name.startsWith("backstage-") && name !== SW_VERSION)
+                      .map(name => caches.delete(name))
+        );
+        await self.clients.claim();
+    }})());
 }});
 
 function normalizeInternalTarget(rawTarget) {{
