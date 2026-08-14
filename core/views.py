@@ -3514,14 +3514,8 @@ def room_list_delete(request, band_slug, pk):
                 return redirect('room_list_index', band_slug=band_slug)
             except Exception as e:
                 messages.error(request, str(e))
-    else:
-        form = ActionConfirmForm()
-
-    return render(request, 'core/room_list/room_list_confirm_delete.html', {
-        'band': request.band,
-        'room_list': room_list,
-        'form': form
-    })
+    
+    return redirect('room_list_index', band_slug=band_slug)
 
 
 from django.views.decorators.http import require_POST
