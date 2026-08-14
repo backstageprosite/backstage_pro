@@ -130,8 +130,9 @@
                         {% for room in rooms %}
                         <div class="room-row mb-3 pb-3 border-bottom">
                             <div class="fw-bold fs-6 mb-2">
-                                Quarto {{ forloop.counter }} - {{ room.get_room_type_display }} / {{ room.get_config_type_display }}
-                                {% if room.has_air_conditioning %}<span class="badge bg-info text-dark ms-2"><i class="fa-solid fa-snowflake"></i> Ar-cond.</span>{% endif %}
+                                Quarto {{ forloop.counter }} - {{ room.get_room_type_display }}
+                                {% if room.beds_config %} / {{ room.beds_config }}{% endif %}
+                                {% if room.has_ac %}<span class="badge bg-info text-dark ms-2"><i class="fa-solid fa-snowflake"></i> Ar-cond.</span>{% endif %}
                             </div>
                             <ul class="mb-0 ps-3">
                                 {% for part in room.participants.all %}

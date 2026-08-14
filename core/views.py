@@ -1,4 +1,4 @@
-﻿from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST
 
 import datetime
 
@@ -3607,6 +3607,18 @@ def room_list_reopen(request, band_slug, pk):
     try:
         room_list_services.reopen_room_list(pk, request.user)
         messages.success(request, 'Room List reaberta para edição.')
+    except (RoomListNotFoundError, BandAccessDeniedError) as e:
+        raise Http404(str(e))
+    except Exception as e:
+        messages.error(request, str(e))
+    return redirect('room_list_manage', band_slug=band_slug, pk=pk)
+
+@room_list_produtor_required
+@require_POST
+def room_list_reactivate(request, band_slug, pk):
+    try:
+        room_list_services.reactivate_room_list(pk, request.user)
+        messages.success(request, 'Room List reativada.')
     except (RoomListNotFoundError, BandAccessDeniedError) as e:
         raise Http404(str(e))
     except Exception as e:
