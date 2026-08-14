@@ -3,7 +3,6 @@
 {% block title %}Excluir Lista de Hospedagem - {{ request.band.name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Excluir Lista de Hospedagem</h2>
         <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-secondary">Cancelar</a>
@@ -20,12 +19,11 @@
         <p><strong>Show:</strong> {{ room_list.show.date|date:"d/m/Y" }} - {{ room_list.show.city }}</p>
         <p><strong>Hotel:</strong> {{ room_list.hotel_name }}</p>
         <p>Esta ação não poderá ser desfeita. Todos os quartos vinculados serão perdidos.</p>
-        
+
         <form method="post" class="mt-3">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">Sim, Excluir</button>
             <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-secondary ms-2">Cancelar</a>
         </form>
     </div>
-</div>
 {% endblock %}

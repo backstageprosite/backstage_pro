@@ -640,11 +640,9 @@ def delete_room_list(room_list_id, user):
 
 
 @transaction.atomic
-def sync_room_list_participants_from_show(room_list_id, user):
+def add_integrantes_to_room_list(room_list_id, user, integrantes_ids):
     """
-    Sincroniza participantes da Room List com a escala atual do show.
-    Adiciona novos integrantes escalados que não estejam na Room List,
-    sem remover nenhum existente.
+    Adiciona integrantes selecionados à Room List, sem remover nenhum existente.
 
     Locks: Show (select_for_update), depois RoomList (select_for_update).
 
@@ -676,22 +674,24 @@ def sync_room_list_participants_from_show(room_list_id, user):
         ).values_list('original_integrante_id', flat=True)
     )
 
-    show_participants = ShowParticipant.objects.filter(
-        show=locked_show
-    ).select_related('integrante')
+    from core.models import Integrante
+    integrantes = Integrante.objects.filter(
+        band=locked_rl.band,
+        is_active=True,
+        id__in=integrantes_ids
+    )
 
     participants_to_create = []
-    for sp in show_participants:
-        if sp.integrante_id not in existing_integrante_ids:
-            integrante = sp.integrante
+    for integrante in integrantes:
+        if integrante.id not in existing_integrante_ids:
             rlp = RoomListParticipant(
                 room_list=locked_rl,
                 original_integrante=integrante,
-                order=sp.order,
-                snapshot_name=integrante.name if integrante else sp.name,
-                snapshot_cpf=integrante.cpf if integrante else '',
-                snapshot_role=integrante.role if integrante else sp.role,
-                snapshot_category=integrante.category if integrante else sp.category,
+                order=0,
+                snapshot_name=integrante.name,
+                snapshot_cpf=integrante.cpf,
+                snapshot_role=integrante.role,
+                snapshot_category=integrante.category,
                 needs_lodging=True,
             )
             rlp.full_clean()
@@ -701,7 +701,7 @@ def sync_room_list_participants_from_show(room_list_id, user):
     if added > 0:
         RoomListParticipant.objects.bulk_create(participants_to_create)
         locked_rl.content_revision += 1
-        locked_rl.save(update_fields=['content_revision', 'updated_at'])
+        locked_rl.save(update_fields=['content_revision'])
 
     return locked_rl, added
 
@@ -1033,7 +1033,7 @@ def apply_template_to_room_list(room_list_id, user):
     ).select_related('original_integrante')
 
     rlp_dict = {
-        rlp.original_integrante_id: rlp 
+        rlp.original_integrante_id: rlp
         for rlp in locked_rl.participants.all() if rlp.original_integrante_id
     }
 
@@ -1042,14 +1042,14 @@ def apply_template_to_room_list(room_list_id, user):
     for t_part in template_participants:
         if t_part.room_id not in room_mapping:
             continue
-        
+
         rlp = rlp_dict.get(t_part.original_integrante_id)
         if not rlp:
             continue
-            
+
         target_room = room_mapping[t_part.room_id]
         room_occupancy_by_troom[t_part.room_id] += 1
-        
+
         if room_occupancy_by_troom[t_part.room_id] > target_room.capacity:
             raise RoomOverCapacityError("O quarto já atingiu sua capacidade máxima.")
 
@@ -1076,7 +1076,7 @@ def apply_template_to_room_list(room_list_id, user):
 def create_or_replace_lodging_template(band_id, rooms_payload, user):
     """
     Cria ou substitui integralmente o modelo padrão de hospedagem da banda.
-    
+
     rooms_payload: list de dicts com o formato:
     [
         {
@@ -1104,16 +1104,16 @@ def create_or_replace_lodging_template(band_id, rooms_payload, user):
     for room_data in rooms_payload:
         room_type = room_data.get('type')
         capacity = room_data.get('capacity')
-        
+
         if not room_type or capacity is None:
             raise RoomListServiceError("Cada quarto deve informar 'type' e 'capacity'.")
-            
+
         try:
             capacity = int(capacity)
         except ValueError:
             from django.core.exceptions import ValidationError
             raise ValidationError({'capacity': 'Capacidade deve ser um número inteiro.'})
-            
+
         if capacity <= 0:
             from django.core.exceptions import ValidationError
             raise ValidationError({'capacity': 'Capacidade deve ser maior que zero.'})
@@ -1123,7 +1123,7 @@ def create_or_replace_lodging_template(band_id, rooms_payload, user):
         participants = room_data.get('participants', [])
         if not isinstance(participants, list):
             raise RoomListServiceError("participants deve ser uma lista de IDs.")
-            
+
         if len(participants) > capacity:
             raise RoomOverCapacityError(f"Quarto do tipo {room_type} estourou a capacidade de {capacity}.")
 
@@ -1138,7 +1138,7 @@ def create_or_replace_lodging_template(band_id, rooms_payload, user):
         found_integrantes = set(Integrante.objects.filter(
             band=band, id__in=integrantes_needed
         ).values_list('id', flat=True))
-        
+
         missing = integrantes_needed - found_integrantes
         if missing:
             raise RoomListServiceError(f"Integrantes inválidos ou pertencentes a outra banda: {missing}")
@@ -1179,7 +1179,7 @@ def create_or_replace_lodging_template(band_id, rooms_payload, user):
 def delete_lodging_template(band_id, user):
     """
     Exclui o LodgingTemplate da banda e todos os seus filhos.
-    
+
     Retorna True se deletou, False se não existia.
     """
     band = Band.objects.select_for_update().get(pk=band_id)

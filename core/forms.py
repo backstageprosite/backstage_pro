@@ -64,7 +64,7 @@ class UserForm(forms.ModelForm):
         label='Confirmar Senha',
         required=True
     )
-    
+
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'username', 'email', 'role', 'is_active']
@@ -92,7 +92,7 @@ class UserForm(forms.ModelForm):
 
         if password and confirm_password and password != confirm_password:
             self.add_error('confirm_password', 'As senhas não coincidem.')
-            
+
         return cleaned_data
 
     def save(self, commit=True):
@@ -199,32 +199,32 @@ class ShowForm(forms.ModelForm):
             'wardrobe': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'transfer': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'transfer_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            
+
             # Técnica
             'local_production': forms.TextInput(attrs={'class': 'form-control'}),
             'local_production_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            
+
             'sound_system': forms.TextInput(attrs={'class': 'form-control'}),
             'sound_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            
+
             'lighting_system': forms.TextInput(attrs={'class': 'form-control'}),
             'lighting_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            
+
             'led_system': forms.TextInput(attrs={'class': 'form-control'}),
             'led_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            
+
             'backline': forms.TextInput(attrs={'class': 'form-control'}),
             'backline_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            
+
             'pyrotechnics': forms.TextInput(attrs={'class': 'form-control'}),
             'pyrotechnics_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            
+
             'generator_system': forms.TextInput(attrs={'class': 'form-control'}),
             'generator_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            
+
             'loaders_system': forms.TextInput(attrs={'class': 'form-control'}),
             'loaders_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            
+
             # Observações
             'internal_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'band_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -232,16 +232,16 @@ class ShowForm(forms.ModelForm):
 
 # Formsets para a aba de Anexos
 ContractDocumentFormSet = inlineformset_factory(
-    Show, 
-    ContractDocument, 
+    Show,
+    ContractDocument,
     form=ContractDocumentForm,
     extra=1,
     can_delete=True
 )
 
 FinancialReceiptFormSet = inlineformset_factory(
-    Show, 
-    FinancialReceipt, 
+    Show,
+    FinancialReceipt,
     form=FinancialReceiptForm,
     extra=1,
     can_delete=True
@@ -311,7 +311,7 @@ class RoomListSelectShowForm(forms.Form):
             band=band,
             date__gte=date.today()
         ).exclude(id__in=shows_with_room_list).order_by('date')
-        
+
 class RoomListForm(forms.ModelForm):
     class Meta:
         model = RoomList
@@ -319,6 +319,17 @@ class RoomListForm(forms.ModelForm):
             'hotel_name', 'city', 'address', 'check_in', 'check_out',
             'contact', 'phone', 'notes', 'reservation_code'
         ]
+        labels = {
+            'hotel_name': 'Nome do hotel',
+            'city': 'Cidade',
+            'address': 'Endereço',
+            'check_in': 'Check-in',
+            'check_out': 'Check-out',
+            'contact': 'Contato',
+            'phone': 'Telefone',
+            'notes': 'Observações',
+            'reservation_code': 'Código da reserva',
+        }
         widgets = {
             'hotel_name': forms.TextInput(attrs={'class': 'form-control'}),
             'city': forms.TextInput(attrs={'class': 'form-control'}),
@@ -330,7 +341,7 @@ class RoomListForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'reservation_code': forms.TextInput(attrs={'class': 'form-control'}),
         }
-        
+
     def clean(self):
         cleaned_data = super().clean()
         check_in = cleaned_data.get('check_in')
@@ -338,13 +349,20 @@ class RoomListForm(forms.ModelForm):
 
         if check_in and check_out and check_out < check_in:
             self.add_error('check_out', 'O check-out não pode ser anterior ao check-in.')
-            
+
         return cleaned_data
 
 class RoomForm(forms.ModelForm):
     class Meta:
         model = Room
         fields = ['type', 'capacity', 'number_or_name', 'beds_config', 'has_ac']
+        labels = {
+            'type': 'Tipo',
+            'capacity': 'Capacidade',
+            'number_or_name': 'Número ou nome do quarto',
+            'beds_config': 'Configuração das camas',
+            'has_ac': 'Possui ar-condicionado',
+        }
         widgets = {
             'type': forms.Select(attrs={'class': 'form-select'}),
             'capacity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
@@ -352,7 +370,7 @@ class RoomForm(forms.ModelForm):
             'beds_config': forms.TextInput(attrs={'class': 'form-control'}),
             'has_ac': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-        
+
     def clean_capacity(self):
         capacity = self.cleaned_data.get('capacity')
         if capacity is not None and capacity <= 0:
@@ -363,7 +381,7 @@ class RoomForm(forms.ModelForm):
         cleaned_data = super().clean()
         room_type = cleaned_data.get('type')
         capacity = cleaned_data.get('capacity')
-        
+
         # Validar capacidade compatível com o tipo
 
         if room_type and capacity:
@@ -372,7 +390,7 @@ class RoomForm(forms.ModelForm):
                 validate_room_capacity_for_type(room_type, capacity)
             except Exception as e:
                 self.add_error('capacity', str(e))
-                
+
         return cleaned_data
 
 class ActionConfirmForm(forms.Form):
@@ -387,10 +405,17 @@ class TemplateRoomForm(forms.ModelForm):
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': 5})
     )
-    
+
     class Meta:
         model = TemplateRoom
         fields = ['type', 'capacity', 'order', 'beds_config', 'has_ac']
+        labels = {
+            'type': 'Tipo',
+            'capacity': 'Capacidade',
+            'number_or_name': 'Número ou nome do quarto',
+            'beds_config': 'Configuração das camas',
+            'has_ac': 'Possui ar-condicionado',
+        }
         widgets = {
             'type': forms.Select(attrs={'class': 'form-select'}),
             'capacity': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
@@ -404,7 +429,7 @@ class TemplateRoomForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.band:
             self.fields['participants'].queryset = Integrante.objects.filter(band=self.band, is_active=True)
-        
+
         if self.instance and self.instance.pk:
             participant_ids = self.instance.participants.values_list('original_integrante_id', flat=True)
             self.fields['participants'].initial = participant_ids
@@ -425,7 +450,7 @@ class BaseTemplateRoomFormSet(forms.BaseInlineFormSet):
     def __init__(self, *args, **kwargs):
         self.band = kwargs.pop('band', None)
         super().__init__(*args, **kwargs)
-        
+
     def _construct_form(self, i, **kwargs):
         kwargs['band'] = self.band
         return super()._construct_form(i, **kwargs)
@@ -444,8 +469,8 @@ class BaseTemplateRoomFormSet(forms.BaseInlineFormSet):
                     all_participants.append(p.id)
 
 TemplateRoomFormSet = inlineformset_factory(
-    LodgingTemplate, 
-    TemplateRoom, 
+    LodgingTemplate,
+    TemplateRoom,
     form=TemplateRoomForm,
     formset=BaseTemplateRoomFormSet,
     extra=1,

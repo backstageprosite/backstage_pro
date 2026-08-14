@@ -58,7 +58,7 @@ def landing_page_logo_image_view(request, pk):
 
     from django.http import FileResponse, Http404
 
-    
+
 
     logo = get_object_or_404(LandingPageBandLogo, pk=pk)
 
@@ -66,7 +66,7 @@ def landing_page_logo_image_view(request, pk):
 
         raise Http404("Logo sem imagem")
 
-    
+
 
     try:
 
@@ -76,7 +76,7 @@ def landing_page_logo_image_view(request, pk):
 
             content_type = 'application/octet-stream'
 
-        
+
 
         response = FileResponse(logo.image.open('rb'), content_type=content_type)
 
@@ -178,13 +178,13 @@ class BandLoginView(LoginView):
 
             band = get_object_or_404(Band, slug=band_slug)
 
-            
+
 
             if request.user.is_superuser:
 
                 return redirect('admin_painel:dashboard')
 
-                
+
 
             if request.user.band:
 
@@ -198,7 +198,7 @@ class BandLoginView(LoginView):
 
                 raise PermissionDenied("Você não pertence a esta banda.")
 
-                
+
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -316,7 +316,7 @@ def dashboard_view(request, band_slug):
 
         total_contacts = Contact.objects.filter(band=band).count()
 
-        
+
 
         dashboard_pending_items = (
 
@@ -330,7 +330,7 @@ def dashboard_view(request, band_slug):
 
         )
 
-        
+
 
         from django.db.models import Q, F
 
@@ -344,7 +344,7 @@ def dashboard_view(request, band_slug):
 
         pending_item_form = BandDashboardPendingItemForm(shows_qs=shows)
 
-        
+
 
         for item in dashboard_pending_items:
 
@@ -400,7 +400,7 @@ def pending_list_view(request, band_slug):
 
     band = request.band
 
-    
+
 
     user_is_band_producer = request.user.band == band and getattr(request.user, 'role', '') == 'PRODUTOR'
 
@@ -410,13 +410,13 @@ def pending_list_view(request, band_slug):
 
         raise PermissionDenied("Apenas produtores podem visualizar ou gerenciar as pendências.")
 
-    
+
 
     from django.utils import timezone
 
     today = timezone.localdate()
 
-    
+
 
     dashboard_pending_items = (
 
@@ -452,7 +452,7 @@ def pending_list_view(request, band_slug):
 
         pending_item_form = BandDashboardPendingItemForm(shows_qs=shows)
 
-        
+
 
         for item in dashboard_pending_items:
 
@@ -666,7 +666,7 @@ def show_finance_detail_view(request, band_slug, pk):
 
                 show.fee = fee_val
 
-                
+
 
                 payment_status = request.POST.get('payment_status')
 
@@ -674,7 +674,7 @@ def show_finance_detail_view(request, band_slug, pk):
 
                     show.payment_status = payment_status
 
-                    
+
 
                 show.save()
 
@@ -1952,7 +1952,7 @@ def contatos_list_view(request, band_slug):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    
+
 
     # Base QuerySet
 
@@ -2692,7 +2692,7 @@ def add_dashboard_pending_item(request, band_slug):
 
         return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
 
-    
+
 
     from django.utils import timezone
 
@@ -2704,13 +2704,13 @@ def add_dashboard_pending_item(request, band_slug):
 
     ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
 
-    
+
 
     from .forms import BandDashboardPendingItemForm
 
     form = BandDashboardPendingItemForm(request.POST, shows_qs=shows)
 
-    
+
 
     if form.is_valid():
 
@@ -2732,7 +2732,7 @@ def add_dashboard_pending_item(request, band_slug):
 
             break
 
-            
+
 
     next_url = request.POST.get('next')
 
@@ -2744,7 +2744,7 @@ def add_dashboard_pending_item(request, band_slug):
 
             return redirect(next_url)
 
-            
+
 
     return redirect('dashboard', band_slug=band.slug)
 
@@ -2774,7 +2774,7 @@ def delete_dashboard_pending_item(request, band_slug, pending_id):
 
     messages.success(request, "Pendência excluída com sucesso.")
 
-    
+
 
     next_url = request.POST.get('next')
 
@@ -2786,7 +2786,7 @@ def delete_dashboard_pending_item(request, band_slug, pending_id):
 
             return redirect(next_url)
 
-            
+
 
     return redirect('dashboard', band_slug=band.slug)
 
@@ -2808,13 +2808,13 @@ def edit_dashboard_pending_item(request, band_slug, pending_id):
 
     pending_item = get_object_or_404(BandDashboardPendingItem, id=pending_id, band=band)
 
-    
+
 
     from django.utils import timezone
 
     from django.db.models import Q, F
 
-    
+
 
     shows = Show.objects.filter(
 
@@ -2822,13 +2822,13 @@ def edit_dashboard_pending_item(request, band_slug, pending_id):
 
     ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
 
-    
+
 
     from .forms import BandDashboardPendingItemForm
 
     form = BandDashboardPendingItemForm(request.POST, instance=pending_item, shows_qs=shows, prefix=f"edit_{pending_item.id}")
 
-    
+
 
     if form.is_valid():
 
@@ -2848,7 +2848,7 @@ def edit_dashboard_pending_item(request, band_slug, pending_id):
 
             break
 
-            
+
 
     next_url = request.POST.get('next')
 
@@ -2860,7 +2860,7 @@ def edit_dashboard_pending_item(request, band_slug, pending_id):
 
             return redirect(next_url)
 
-            
+
 
     return redirect('dashboard', band_slug=band.slug)
 
@@ -2902,7 +2902,7 @@ def rider_list_view(request, band_slug):
 
     band = request.band
 
-    
+
 
     if request.method == 'POST':
 
@@ -2910,7 +2910,7 @@ def rider_list_view(request, band_slug):
 
             raise PermissionDenied("Apenas produtores podem gerenciar Riders.")
 
-            
+
 
         if 'add_rider' in request.POST:
 
@@ -2934,7 +2934,7 @@ def rider_list_view(request, band_slug):
 
             return redirect('rider_list', band_slug=band.slug)
 
-            
+
 
         elif 'edit_rider' in request.POST:
 
@@ -2956,7 +2956,7 @@ def rider_list_view(request, band_slug):
 
             return redirect('rider_list', band_slug=band.slug)
 
-            
+
 
         elif 'delete_rider' in request.POST:
 
@@ -2976,7 +2976,7 @@ def rider_list_view(request, band_slug):
 
     form = RiderDocumentForm()
 
-    
+
 
     context = {
 
@@ -3016,7 +3016,7 @@ def integrantes_list_view(request, band_slug):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    
+
 
     if request.method == 'POST':
 
@@ -3024,7 +3024,7 @@ def integrantes_list_view(request, band_slug):
 
             return HttpResponseForbidden("Apenas produtores podem gerenciar integrantes.")
 
-            
+
 
         action = request.POST.get('action')
 
@@ -3080,7 +3080,7 @@ def integrantes_list_view(request, band_slug):
 
                     break
 
-                    
+
 
         return redirect('integrantes_list', band_slug=band.slug)
 
@@ -3090,7 +3090,7 @@ def integrantes_list_view(request, band_slug):
 
     add_form = IntegranteForm()
 
-    
+
 
     context = {
 
@@ -3120,7 +3120,7 @@ def integrante_delete_view(request, band_slug, pk):
 
         return HttpResponseForbidden("Apenas produtores podem gerenciar integrantes.")
 
-        
+
 
     integrante = get_object_or_404(Integrante, id=pk, band=band)
 
@@ -3146,7 +3146,7 @@ def integrantes_reorder_view(request, band_slug):
 
         return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
 
-        
+
 
     try:
 
@@ -3154,13 +3154,13 @@ def integrantes_reorder_view(request, band_slug):
 
         order_list = data.get('order', [])
 
-        
+
 
         for idx, item_id in enumerate(order_list):
 
             Integrante.objects.filter(id=item_id, band=band).update(order=idx)
 
-            
+
 
         return JsonResponse({'status': 'success'})
 
@@ -3178,7 +3178,7 @@ def integrantes_pdf_view(request, band_slug):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    
+
 
     ids_param = request.GET.get('ids', '')
 
@@ -3192,13 +3192,13 @@ def integrantes_pdf_view(request, band_slug):
 
         integrantes = Integrante.objects.none()
 
-        
+
 
     columns_param = request.GET.get('columns', 'role,category,cpf,vehicle,birth_date,miles_number')
 
     columns = columns_param.split(',') if columns_param else []
 
-        
+
 
     context = {
 
@@ -3249,6 +3249,7 @@ def room_list_pdf_view(request, band_slug, pk):
 
 
     return render(request, 'core/room_list/room_list_pdf.html', {
+        'band': request.band,
 
         'room_list': room_list,
 
@@ -3278,17 +3279,17 @@ def room_list_produtor_required(view_func):
     def _wrapped_view(request, band_slug, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('login', band_slug=band_slug)
-            
+
         band = get_object_or_404(Band, slug=band_slug)
         request.band = band
-        
+
         if not request.user.is_active:
             raise PermissionDenied("Usuário inativo.")
         if getattr(request.user, 'band_id', None) != request.band.id:
             raise PermissionDenied("Acesso negado à banda.")
         if getattr(request.user, 'role', None) != 'PRODUTOR':
             raise PermissionDenied("Acesso restrito a produtores.")
-            
+
         return view_func(request, band_slug, *args, **kwargs)
     return _wrapped_view
 
@@ -3296,6 +3297,7 @@ def room_list_produtor_required(view_func):
 def room_list_index(request, band_slug):
     room_lists = RoomList.objects.filter(band=request.band).select_related('show').order_by('show__date')
     return render(request, 'core/room_list/room_list_index.html', {
+        'band': request.band,
         'room_lists': room_lists
     })
 
@@ -3308,15 +3310,16 @@ def room_list_select_show(request, band_slug):
             return redirect('room_list_create', band_slug=band_slug, show_id=show.id)
     else:
         form = RoomListSelectShowForm(band=request.band)
-        
+
     return render(request, 'core/room_list/room_list_select_show.html', {
+        'band': request.band,
         'form': form
     })
 
 @room_list_produtor_required
 def room_list_create(request, band_slug, show_id):
     show = get_object_or_404(Show, id=show_id, band=request.band)
-    
+
     if request.method == 'POST':
         room_list_instance = RoomList(show=show, band=request.band)
         form = RoomListForm(request.POST, instance=room_list_instance)
@@ -3334,8 +3337,9 @@ def room_list_create(request, band_slug, show_id):
                 messages.error(request, str(e))
     else:
         form = RoomListForm()
-        
+
     return render(request, 'core/room_list/room_list_form.html', {
+        'band': request.band,
         'form': form,
         'show': show,
         'action': 'Criar'
@@ -3347,7 +3351,7 @@ def room_list_edit(request, band_slug, pk):
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
     except RoomListNotFoundError:
         raise Http404("Room List não encontrada.")
-        
+
     if request.method == 'POST':
         form = RoomListForm(request.POST, instance=room_list)
         if form.is_valid():
@@ -3363,8 +3367,9 @@ def room_list_edit(request, band_slug, pk):
                 messages.error(request, str(e))
     else:
         form = RoomListForm(instance=room_list)
-        
+
     return render(request, 'core/room_list/room_list_form.html', {
+        'band': request.band,
         'form': form,
         'room_list': room_list,
         'action': 'Editar'
@@ -3384,11 +3389,15 @@ def room_list_manage(request, band_slug, pk):
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
     except RoomListNotFoundError:
         raise Http404("Room List não encontrada.")
-        
+
     rooms = room_list.rooms.all().order_by('order', 'id')
     participants = room_list.participants.all()
-    
+    from core.models import Integrante
+    active_integrantes = Integrante.objects.filter(band=request.band, is_active=True).order_by('name')
+
     return render(request, 'core/room_list/room_list_manage.html', {
+        'active_integrantes': active_integrantes,
+        'band': request.band,
         'room_list': room_list,
         'rooms': rooms,
         'participants': participants,
@@ -3401,7 +3410,7 @@ def room_list_room_create(request, band_slug, pk):
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
     except RoomListNotFoundError:
         raise Http404("Room List não encontrada.")
-        
+
     if request.method == 'POST':
         form = RoomForm(request.POST)
         if form.is_valid():
@@ -3421,8 +3430,9 @@ def room_list_room_create(request, band_slug, pk):
                 messages.error(request, str(e))
     else:
         form = RoomForm()
-        
+
     return render(request, 'core/room_list/room_form.html', {
+        'band': request.band,
         'form': form,
         'room_list': room_list,
         'action': 'Adicionar'
@@ -3435,7 +3445,7 @@ def room_list_room_edit(request, band_slug, pk, room_id):
         room = room_list.rooms.get(id=room_id)
     except (RoomListNotFoundError, Room.DoesNotExist):
         raise Http404("Quarto ou Room List não encontrados.")
-        
+
     if request.method == 'POST':
         form = RoomForm(request.POST, instance=room)
         if form.is_valid():
@@ -3452,8 +3462,9 @@ def room_list_room_edit(request, band_slug, pk, room_id):
                 messages.error(request, str(e))
     else:
         form = RoomForm(instance=room)
-        
+
     return render(request, 'core/room_list/room_form.html', {
+        'band': request.band,
         'form': form,
         'room_list': room_list,
         'room': room,
@@ -3467,7 +3478,7 @@ def room_list_room_delete(request, band_slug, pk, room_id):
         room = room_list.rooms.get(id=room_id)
     except (RoomListNotFoundError, Room.DoesNotExist):
         raise Http404("Quarto ou Room List não encontrados.")
-        
+
     if request.method == 'POST':
         form = ActionConfirmForm(request.POST)
         if form.is_valid():
@@ -3479,8 +3490,9 @@ def room_list_room_delete(request, band_slug, pk, room_id):
                 messages.error(request, str(e))
     else:
         form = ActionConfirmForm()
-        
+
     return render(request, 'core/room_list/room_confirm_delete.html', {
+        'band': request.band,
         'room_list': room_list,
         'room': room,
         'form': form
@@ -3492,7 +3504,7 @@ def room_list_delete(request, band_slug, pk):
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
     except RoomListNotFoundError:
         raise Http404("Room List não encontrada.")
-        
+
     if request.method == 'POST':
         form = ActionConfirmForm(request.POST)
         if form.is_valid():
@@ -3504,8 +3516,9 @@ def room_list_delete(request, band_slug, pk):
                 messages.error(request, str(e))
     else:
         form = ActionConfirmForm()
-        
+
     return render(request, 'core/room_list/room_list_confirm_delete.html', {
+        'band': request.band,
         'room_list': room_list,
         'form': form
     })
@@ -3518,11 +3531,30 @@ import json
 @room_list_produtor_required
 @require_POST
 def room_list_sync(request, band_slug, pk):
+    is_fetch = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Content-Type') == 'application/json' or request.headers.get('Accept') == 'application/json'
+
+    if request.method != 'POST':
+        return redirect('room_list_manage', band_slug=band_slug, pk=pk)
+
+    integrantes_ids = request.POST.getlist('integrantes')
+    if not integrantes_ids:
+        if is_fetch:
+            return JsonResponse({'status': 'error', 'message': 'Nenhum integrante selecionado.'}, status=400)
+        messages.info(request, 'Nenhum integrante foi selecionado para adicionar.')
+        return redirect('room_list_manage', band_slug=band_slug, pk=pk)
+
     try:
-        room_list_services.sync_room_list_participants_from_show(pk, request.user)
-        return JsonResponse({'status': 'success'})
+        _, added = room_list_services.add_integrantes_to_room_list(pk, request.user, integrantes_ids)
+        msg = f'{added} integrante(s) adicionado(s) com sucesso.'
+        if is_fetch:
+            return JsonResponse({'status': 'success', 'message': msg})
+        messages.success(request, msg)
+        return redirect('room_list_manage', band_slug=band_slug, pk=pk)
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+        if is_fetch:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+        messages.error(request, f'Erro ao adicionar integrantes: {str(e)}')
+        return redirect('room_list_manage', band_slug=band_slug, pk=pk)
 
 @room_list_produtor_required
 @require_POST
@@ -3622,15 +3654,15 @@ def lodging_template_manage(request, band_slug):
     band = request.band
     from core.models import LodgingTemplate
     from core.forms import TemplateRoomFormSet
-    
+
     template = LodgingTemplate.objects.filter(band=band).first()
-    
+
     if request.method == 'POST':
         if request.POST.get('action') == 'delete':
             room_list_services.delete_lodging_template(band.id, request.user)
             messages.success(request, "Modelo excluído.")
             return redirect('lodging_template_manage', band_slug=band_slug)
-            
+
         formset = TemplateRoomFormSet(request.POST, instance=template, band=band)
         if formset.is_valid():
             rooms_payload = []
@@ -3642,7 +3674,7 @@ def lodging_template_manage(request, band_slug):
                     has_ac = form.cleaned_data.get('has_ac', True)
                     order = form.cleaned_data.get('order', 0)
                     participants = form.cleaned_data.get('participants', [])
-                    
+
                     rooms_payload.append({
                         'type': room_type,
                         'capacity': capacity,
@@ -3661,8 +3693,9 @@ def lodging_template_manage(request, band_slug):
             messages.error(request, "Erros no formulário. Verifique os campos.")
     else:
         formset = TemplateRoomFormSet(instance=template, band=band)
-        
+
     return render(request, 'core/room_list/lodging_template_manage.html', {
+        'band': request.band,
         'template': template,
         'formset': formset
     })
@@ -3672,17 +3705,17 @@ def lodging_template_manage(request, band_slug):
 @band_required
 def integrantes_pdf_view(request, band_slug):
     band = get_object_or_404(Band, slug=band_slug)
-    
+
     ids_param = request.GET.get('ids', '')
     if ids_param:
         ids_list = [int(id) for id in ids_param.split(',') if id.isdigit()]
         integrantes = Integrante.objects.filter(band=band, id__in=ids_list)
     else:
         integrantes = Integrante.objects.none()
-        
+
     columns_param = request.GET.get('columns', 'role,category,cpf,vehicle,birth_date,miles_number')
     columns = columns_param.split(',') if columns_param else []
-        
+
     context = {
         'band': band,
         'integrantes': integrantes,
@@ -3709,6 +3742,7 @@ def room_list_pdf_view(request, band_slug, pk):
         raise PermissionDenied("Acesso restrito. Room List em rascunho.")
 
     return render(request, 'core/room_list/room_list_pdf.html', {
+        'band': request.band,
         'room_list': room_list,
         'rooms': room_list.rooms.all(),
         'participants': room_list.participants.all(),
