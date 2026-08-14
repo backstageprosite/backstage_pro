@@ -241,32 +241,135 @@ class RoomListUIFixesTests(TestCase):
         self.assertIn(f'action="{delete_url}"', html)
 
     def test_pdf_content_and_status(self):
+        """Alocado aparece; não alocado não aparece; cabeçalho, hotel e totais presentes."""
         from core.models import Room, Integrante, RoomListParticipant
         self.room_list.hotel_name = "Hotel PDF Test"
         self.room_list.save()
-        room = Room.objects.create(room_list=self.room_list, type='CASAL', capacity=2, beds_config='1 Cama de Casal')
-        integ = Integrante.objects.create(band=self.band, name="PDF Member", role="Role", is_active=True)
-        RoomListParticipant.objects.create(room_list=self.room_list, room=room, original_integrante=integ, snapshot_name=integ.name, order=0)
+
+        # Quarto CASAL com Ar-Cond ligado
+        room = Room.objects.create(
+            room_list=self.room_list, type='CASAL', capacity=2,
+            beds_config='1 Cama de Casal', has_ac=True,
+        )
+        integ_alloc = Integrante.objects.create(band=self.band, name="PDF Member Alocado", role="Vocalista", is_active=True)
+        RoomListParticipant.objects.create(
+            room_list=self.room_list, room=room,
+            original_integrante=integ_alloc, snapshot_name=integ_alloc.name,
+            snapshot_role=integ_alloc.role, order=0,
+        )
+
+        # Integrante NÃO alocado
+        integ_unalloc = Integrante.objects.create(band=self.band, name="Nao Alocado Pessoa", role="Roadie", is_active=True)
+        RoomListParticipant.objects.create(
+            room_list=self.room_list, room=None,
+            original_integrante=integ_unalloc, snapshot_name=integ_unalloc.name,
+            snapshot_role=integ_unalloc.role, order=1,
+        )
 
         self.client.force_login(self.user)
         url = reverse('room_list_pdf', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
         res = self.client.get(url)
         self.assertEqual(res.status_code, 200)
-        self.assertTrue(len(res.content) > 0)
+        self.assertGreater(len(res.content), 0)
         html = res.content.decode('utf-8')
+
+        # Cabeçalho e hotel presentes
         self.assertIn("Hotel PDF Test", html)
-        self.assertIn("1 Cama de Casal", html)
-        self.assertIn("PDF Member", html)
+        self.assertIn("Quartos e Ocupantes", html)
+
+        # Integrante alocado aparece
+        self.assertIn("PDF Member Alocado", html)
+
+        # Integrante NÃO alocado NÃO aparece no PDF
+        self.assertNotIn("Nao Alocado Pessoa", html)
+
+        # Seção "Integrantes na Lista de Hospedagem" removida
+        self.assertNotIn("Integrantes na Lista de Hospedagem", html)
+
+        # Quarto número + tipo aparecem
+        self.assertIn("Quarto 1", html)
+        self.assertIn("Casal", html)
+
+        # Ar-Cond aparece quando has_ac=True
+        self.assertIn("Ar-Cond.", html)
+
+    def test_pdf_room_sem_ar_cond(self):
+        """Quarto sem ar-condicionado exibe 'Sem Ar-Cond.'"""
+        from core.models import Room, Integrante, RoomListParticipant
+        room = Room.objects.create(
+            room_list=self.room_list, type='INDIVIDUAL', capacity=1, has_ac=False,
+        )
+        integ = Integrante.objects.create(band=self.band, name="Sem AC Member", role="Tech", is_active=True)
+        RoomListParticipant.objects.create(
+            room_list=self.room_list, room=room,
+            original_integrante=integ, snapshot_name=integ.name,
+            snapshot_role=integ.role, order=0,
+        )
+        self.client.force_login(self.user)
+        url = reverse('room_list_pdf', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
+        res = self.client.get(url)
+        html = res.content.decode('utf-8')
+        self.assertIn("Sem Ar-Cond.", html)
+        self.assertNotIn("Integrantes na Lista de Hospedagem", html)
+
+    def test_pdf_participants_count_only_allocated(self):
+        """Total de integrantes hospedados conta somente os alocados."""
+        from core.models import Room, Integrante, RoomListParticipant
+        room = Room.objects.create(
+            room_list=self.room_list, type='DUPLO', capacity=2, has_ac=True,
+        )
+        for i in range(2):
+            integ = Integrante.objects.create(band=self.band, name=f"Alloc {i}", is_active=True)
+            RoomListParticipant.objects.create(
+                room_list=self.room_list, room=room,
+                original_integrante=integ, snapshot_name=integ.name, order=i,
+            )
+        # Não alocado
+        unalloc = Integrante.objects.create(band=self.band, name="Unalloc", is_active=True)
+        RoomListParticipant.objects.create(
+            room_list=self.room_list, room=None,
+            original_integrante=unalloc, snapshot_name=unalloc.name, order=99,
+        )
+        self.client.force_login(self.user)
+        url = reverse('room_list_pdf', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
+        res = self.client.get(url)
+        html = res.content.decode('utf-8')
+        # Deve mostrar 2 (não 3) hospedados
+        self.assertIn("Total de Integrantes Hospedados: 2", html)
+        self.assertNotIn("Total de Integrantes Hospedados: 3", html)
+
+    def test_pdf_button_adicionar_lista(self):
+        """Botão da listagem apresenta '+ Adicionar'."""
+        self.client.force_login(self.user)
+        url = reverse('room_list_index', kwargs={'band_slug': self.band.slug})
+        res = self.client.get(url)
+        html = res.content.decode('utf-8')
+        self.assertIn("+ Adicionar", html)
+        self.assertNotIn("Adicionar Lista", html)
+
+    def test_single_pdf_view_definition(self):
+        """Existe somente uma definição de room_list_pdf_view rastreada."""
+        import subprocess
+        try:
+            output = subprocess.check_output(
+                ['git', 'grep', '-c', 'def room_list_pdf_view', '--', 'core/views.py'],
+                stderr=subprocess.STDOUT,
+            )
+            count_str = output.decode('utf-8').strip()
+        except subprocess.CalledProcessError:
+            count_str = "0"
+        # git grep -c retorna o número de LINHAS que casam (1 linha = 1 definição)
+        self.assertEqual(count_str, "core/views.py:1")
 
     def test_room_list_confirm_delete_removed(self):
-        import os
         import subprocess
-        # Procura referências do template excluído no repositório. O teste deve passar se a grep falhar ou retornar vazio.
-        # Usa um comando git seguro que não deve retornar nada (exceto erro 1 se não achar)
         try:
-            # Exclude tests file from grep results
-            output = subprocess.check_output(['git', 'grep', 'room_list_confirm_delete.html', '--', ':/', ':!core/tests_room_list_ui_fixes.py'], stderr=subprocess.STDOUT)
+            output = subprocess.check_output(
+                ['git', 'grep', 'room_list_confirm_delete.html', '--', ':/', ':!core/tests_room_list_ui_fixes.py'],
+                stderr=subprocess.STDOUT,
+            )
             output_str = output.decode('utf-8').strip()
         except subprocess.CalledProcessError:
             output_str = ""
         self.assertEqual(output_str, "")
+

@@ -3706,5 +3706,5 @@ def room_list_pdf_view(request, band_slug, pk):
         'band': request.band,
         'room_list': room_list,
         'rooms': room_list.rooms.all(),
-        'participants': room_list.participants.all(),
+        'participants': room_list.participants.filter(room__isnull=False),
     })
