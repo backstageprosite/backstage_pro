@@ -372,4 +372,3 @@ class RoomListUIFixesTests(TestCase):
         except subprocess.CalledProcessError:
             output_str = ""
         self.assertEqual(output_str, "")
-
