@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="fw-bold m-0">
-        <i class="fa-solid {% if is_edit %}fa-pen-to-square{% else %}fa-plus-circle{% endif %} text-primary me-2"></i> 
+        <i class="fa-solid {% if is_edit %}fa-pen-to-square{% else %}fa-plus-circle{% endif %} text-primary me-2"></i>
         {% if is_edit %}Editar Contato{% else %}Adicionar Contato{% endif %}
     </h4>
     <a href="{% url 'contatos_list' band.slug %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
@@ -15,15 +15,18 @@
     <div class="card-body p-4 p-md-5">
         <form method="post">
             {% csrf_token %}
-            
+
             {% if form.errors %}
                 <div class="alert alert-danger" style="border-radius: 8px;">
                     <i class="fa-solid fa-triangle-exclamation me-2"></i> Verifique os erros no formulário abaixo.
+                    {% if form.non_field_errors %}
+                        <div class="mt-2 fw-bold">{{ form.non_field_errors }}</div>
+                    {% endif %}
                 </div>
             {% endif %}
 
             <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">Informações do Contato</h5>
-            
+
             <div class="row g-3 mb-4">
                 <div class="col-md-8">
                     <label class="form-label fw-bold">{{ form.name.label }}</label>
@@ -56,7 +59,7 @@
             </div>
 
             <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">Detalhes</h5>
-            
+
             <div class="row g-3 mb-4">
                 <div class="col-12">
                     <label class="form-label fw-bold">{{ form.notes.label }}</label>
@@ -65,10 +68,37 @@
                         <div class="text-danger small mt-1">{{ form.notes.errors }}</div>
                     {% endif %}
                 </div>
+
+                <div class="col-12 mt-3">
+                    <label class="form-label fw-bold">{{ form.public_information.label }}</label>
+                    {{ form.public_information }}
+                    {% if form.public_information.errors %}
+                        <div class="text-danger small mt-1">{{ form.public_information.errors }}</div>
+                    {% endif %}
+                </div>
+
+                {% if request.user.is_produtor %}
+                <div class="col-12 mt-3">
+                    <div class="form-check">
+                        {{ form.is_shared_globally }}
+                        <label class="form-check-label fw-bold small" for="{{ form.is_shared_globally.id_for_label }}">
+                            {{ form.is_shared_globally.label }}
+                        </label>
+                        {% if form.is_shared_globally.help_text %}
+                            <div class="form-text mt-1" style="font-size: 0.8rem; color: #6c757d;">
+                                {{ form.is_shared_globally.help_text }}
+                            </div>
+                        {% endif %}
+                        {% if form.is_shared_globally.errors %}
+                            <div class="text-danger small mt-1">{{ form.is_shared_globally.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <hr class="my-4">
-            
+
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                 <a href="{% url 'contatos_list' band.slug %}" class="btn btn-light border px-4 fw-bold rounded-pill">Cancelar</a>
                 <button type="submit" class="btn btn-success px-4 fw-bold rounded-pill shadow-sm">

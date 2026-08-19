@@ -2009,109 +2009,120 @@ def contatos_list_view(request, band_slug):
 @band_required
 
 def contato_create_view(request, band_slug):
-
     if not request.user.is_produtor():
-
         return HttpResponseForbidden("Apenas produtores podem adicionar contatos.")
 
-
-
     band = get_object_or_404(Band, slug=band_slug)
 
-
-
     if request.method == 'POST':
-
         form = ContactForm(request.POST)
-
         if form.is_valid():
-
             contact = form.save(commit=False)
-
             contact.band = band
-
+            if contact.is_shared_globally:
+                from django.utils import timezone
+                contact.shared_by = request.user
+                contact.shared_at = timezone.now()
             contact.save()
-
             messages.success(request, "Contato criado com sucesso!")
-
             return redirect('contatos_list', band_slug=band.slug)
-
     else:
-
         form = ContactForm()
 
-
-
     context = {
-
         'band': band,
-
         'form': form,
-
         'is_edit': False
-
     }
-
     return render(request, 'core/contato_form.html', context)
 
-
-
 @login_required
-
 @band_required
-
 def contato_edit_view(request, band_slug, pk):
-
     if not request.user.is_produtor():
-
         return HttpResponseForbidden("Apenas produtores podem editar contatos.")
 
-
-
     band = get_object_or_404(Band, slug=band_slug)
-
     contact_to_edit = get_object_or_404(Contact, pk=pk, band=band)
-
-
+    was_shared = contact_to_edit.is_shared_globally
 
     if request.method == 'POST':
-
         form = ContactForm(request.POST, instance=contact_to_edit)
-
         if form.is_valid():
+            contact = form.save(commit=False)
 
-            form.save()
+            if contact.is_shared_globally and not was_shared:
+                from django.utils import timezone
+                contact.shared_by = request.user
+                contact.shared_at = timezone.now()
+            elif not contact.is_shared_globally:
+                contact.shared_by = None
+                contact.shared_at = None
 
+            contact.save()
             messages.success(request, "Contato atualizado com sucesso!")
-
             return redirect('contatos_list', band_slug=band.slug)
-
     else:
-
         form = ContactForm(instance=contact_to_edit)
 
-
-
     context = {
-
         'band': band,
-
         'form': form,
-
         'is_edit': True,
-
         'contact_to_edit': contact_to_edit
-
     }
-
     return render(request, 'core/contato_form.html', context)
 
+@login_required
+def banco_de_dados_view(request):
+    user_band = request.user.band
+    if not request.user.is_superuser:
+        if not user_band or not user_band.is_active:
+            return HttpResponseForbidden("Acesso negado: Vínculo com banda ativa necessário.")
+        if request.user.role not in ['PRODUTOR', 'INTEGRANTE']:
+            return HttpResponseForbidden("Acesso negado: Perfil não autorizado.")
 
+    contacts = Contact.objects.filter(
+        is_shared_globally=True,
+        band__is_active=True
+    ).select_related('band', 'shared_by').order_by('name')
+
+    search_query = request.GET.get('q', '').strip()
+    search_type = request.GET.get('tipo', '').strip()
+    search_location = request.GET.get('local', '').strip()
+    search_band = request.GET.get('banda', '').strip()
+
+    if search_query:
+        contacts = contacts.filter(
+            models.Q(name__icontains=search_query) |
+            models.Q(phone__icontains=search_query) |
+            models.Q(email__icontains=search_query)
+        )
+    if search_type:
+        contacts = contacts.filter(contact_type=search_type)
+    if search_location:
+        contacts = contacts.filter(location__icontains=search_location)
+    if search_band:
+        contacts = contacts.filter(band__name__icontains=search_band)
+
+    from django.core.paginator import Paginator
+    paginator = Paginator(contacts, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'band': user_band,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'search_type': search_type,
+        'search_location': search_location,
+        'search_band': search_band,
+        'contact_types': Contact.CONTACT_TYPE_CHOICES
+    }
+    return render(request, 'core/banco_de_dados.html', context)
 
 @login_required
-
 @band_required
-
 def contato_delete_view(request, band_slug, pk):
 
     if not request.user.is_produtor():

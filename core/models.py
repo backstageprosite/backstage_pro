@@ -293,10 +293,47 @@ class Contact(models.Model):
     link = models.URLField(max_length=500, blank=True, null=True, verbose_name='Link')
     notes = models.TextField(blank=True, null=True, verbose_name='Observações')
 
+    public_information = models.TextField(blank=True, null=True, verbose_name='Informações públicas')
+    is_shared_globally = models.BooleanField(default=False, verbose_name='Compartilhado globalmente')
+    shared_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='shared_contacts', verbose_name='Compartilhado por')
+    shared_at = models.DateTimeField(null=True, blank=True, verbose_name='Compartilhado em')
+
+    normalized_phone = models.CharField(max_length=50, blank=True, null=True, db_index=True)
+    normalized_email = models.EmailField(max_length=254, blank=True, null=True, db_index=True)
+
     class Meta:
         verbose_name = 'Contato (Banco de Dados)'
         verbose_name_plural = 'Banco de Dados'
         ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['normalized_phone'],
+                condition=models.Q(is_shared_globally=True, normalized_phone__isnull=False) & ~models.Q(normalized_phone=''),
+                name='unique_global_phone'
+            ),
+            models.UniqueConstraint(
+                fields=['normalized_email'],
+                condition=models.Q(is_shared_globally=True, normalized_email__isnull=False) & ~models.Q(normalized_email=''),
+                name='unique_global_email'
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.phone:
+            import re
+            digits = re.sub(r'\D', '', self.phone)
+            if digits.startswith('55') and len(digits) > 11:
+                digits = digits[2:]
+            self.normalized_phone = digits
+        else:
+            self.normalized_phone = ""
+
+        if self.email:
+            self.normalized_email = self.email.strip().lower()
+        else:
+            self.normalized_email = ""
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} - {self.get_contact_type_display()}"

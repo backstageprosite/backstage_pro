@@ -21,6 +21,8 @@ urlpatterns = [
     path('redefinir-senha/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('redefinir-senha/concluido/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
+    path('bancodedados/', views.banco_de_dados_view, name='banco_de_dados_global'),
+
     path('<slug:band_slug>/', include('core.urls')),
 ]
 
