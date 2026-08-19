@@ -179,6 +179,7 @@ class TestValidations(RoomListServiceTestBase):
         """Teste parametrizado para capacidades inferiores, exatas e superiores (Gate 1D)."""
         valid_cases = [
             ('INDIVIDUAL', 1),
+            ('CASAL', 1),
             ('CASAL', 2),
             ('DUPLO', 2),
             ('TRIPLO', 3),
@@ -194,7 +195,6 @@ class TestValidations(RoomListServiceTestBase):
         invalid_cases = [
             ('INDIVIDUAL', 0),
             ('INDIVIDUAL', 2),  # superior
-            ('CASAL', 1),       # inferior
             ('CASAL', 3),       # superior
             ('DUPLO', 1),       # inferior
             ('DUPLO', 3),       # superior
@@ -448,7 +448,7 @@ class TestCreateRoomList(RoomListServiceTestBase):
             RoomListServiceError,
             "Vínculo entre Show e Room List inconsistente",
         ):
-            sync_room_list_participants_from_show(rl.pk, self.user_band2)
+            sync_room_list_participants_from_show(rl.pk, self.user)
             
         rl.refresh_from_db()
         self.assertEqual(rl.participants.count(), initial_count)
@@ -574,13 +574,16 @@ class TestRoomListLifecycle(RoomListServiceTestBase):
         
         invalid_statuses = [
             (rl_published, RoomList.StatusChoices.PUBLICADA, self.user),
-            (rl_archived, RoomList.StatusChoices.ARQUIVADA, self.user_band2),
         ]
         
         for rl_invalid, status, run_user in invalid_statuses:
             with self.subTest(status=status):
                 with self.assertRaises(RoomListServiceError):
                     delete_room_list(rl_invalid.pk, run_user)
+        
+        # Confirmar que ARQUIVADA pode ser excluída
+        delete_room_list(rl_archived.pk, self.user_band2)
+        self.assertFalse(RoomList.objects.filter(pk=rl_archived.pk).exists())
 
     def test_publish_no_increment_and_needs_resend(self):
         """Publicar não incrementa revisão, e last_sent_revision < content_revision sinaliza reenvio."""

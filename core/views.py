@@ -3689,7 +3689,10 @@ def integrantes_pdf_view(request, band_slug):
 def room_list_pdf_view(request, band_slug, pk):
     from core.models import RoomList
     from django.core.exceptions import PermissionDenied
-    from django.shortcuts import render, get_object_or_404, Http404
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from xhtml2pdf import pisa
+    import io
 
     try:
         room_list = RoomList.objects.select_related('show', 'band').prefetch_related(
@@ -3702,9 +3705,83 @@ def room_list_pdf_view(request, band_slug, pk):
     if not is_produtor and room_list.status == RoomList.StatusChoices.RASCUNHO:
         raise PermissionDenied("Acesso restrito. Room List em rascunho.")
 
-    return render(request, 'core/room_list/room_list_pdf.html', {
+    context = {
         'band': request.band,
         'room_list': room_list,
         'rooms': room_list.rooms.all(),
         'participants': room_list.participants.filter(room__isnull=False),
-    })
+        'unallocated': room_list.participants.filter(room__isnull=True),
+    }
+    html_string = render_to_string('core/room_list/room_list_pdf.html', context, request=request)
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
+        return response
+    return HttpResponse('Erro ao gerar PDF', status=500)
+
+
+@login_required
+@band_required
+def room_list_hotel_pdf_view(request, band_slug, pk):
+    from core.models import RoomList
+    from django.core.exceptions import PermissionDenied
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from xhtml2pdf import pisa
+    import io
+
+    is_produtor = request.user.role == 'PRODUTOR' or request.user.is_superuser
+    if not is_produtor:
+        raise PermissionDenied("Acesso exclusivo para produtores.")
+
+    try:
+        room_list = RoomList.objects.select_related('show', 'band').prefetch_related(
+            'rooms__participants'
+        ).get(pk=pk, show__band=request.band)
+    except RoomList.DoesNotExist:
+        raise Http404("Room List não encontrada.")
+
+    context = {
+        'band': request.band,
+        'room_list': room_list,
+        'rooms': room_list.rooms.all(),
+        'participants': room_list.participants.filter(room__isnull=False),
+        'unallocated': room_list.participants.filter(room__isnull=True),
+        'total_rooms': room_list.rooms.count(),
+        'total_participants': room_list.participants.count(),
+        'is_hotel_pdf': True,
+    }
+    html_string = render_to_string('core/room_list/room_list_pdf.html', context, request=request)
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
+        response['Cache-Control'] = 'private, no-store'
+        response['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
+        return response
+    return HttpResponse('Erro ao gerar PDF', status=500)
+
+
+@login_required
+@band_required
+@require_POST
+def delete_room_view(request, band_slug, room_pk):
+    from core.models import Room, RoomList
+    from django.core.exceptions import PermissionDenied
+
+    is_produtor = request.user.role == 'PRODUTOR' or request.user.is_superuser
+    if not is_produtor:
+        raise PermissionDenied("Acesso exclusivo para produtores.")
+
+    room = get_object_or_404(Room, pk=room_pk, room_list__show__band=request.band)
+
+    if room.room_list.status != RoomList.StatusChoices.RASCUNHO:
+        messages.error(request, "Não é possível excluir quartos de uma Room List que não está em Rascunho.")
+        return redirect('room_list_manage', band_slug=band_slug, pk=room.room_list.pk)
+
+    room.delete()
+    messages.success(request, "Quarto excluído com sucesso. Os ocupantes foram movidos para Não Alocados.")
+    return redirect('room_list_manage', band_slug=band_slug, pk=room.room_list.pk)

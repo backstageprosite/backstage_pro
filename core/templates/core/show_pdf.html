@@ -199,7 +199,7 @@
         </div>
 
         <!-- Logística e Produção -->
-        {% if show.transport or show.flight_number or show.airline or show.accommodation or show.transfer or show.dressing_room or show.catering or show.wardrobe or show.attractions %}
+        {% if show.transport or show.flight_number or show.airline or show.accommodation or show.transfer or show.dressing_room or show.catering or show.wardrobe or show.attractions or show.room_lists.exists %}
         <div class="card mb-2 border-success">
             <div class="card-header header-logistica py-1"><i class="fa-solid fa-truck-fast me-1"></i> Logística & Produção</div>
             <div class="card-body">
@@ -223,23 +223,30 @@
                         </p>
                     </div>
                     {% endif %}
-                    {% if show.accommodation %}
+                    {% with room_list=show.room_lists.first %}
+                    {% if show.accommodation or room_list %}
                     <div class="col-6 mb-3">
                         <h6 class="text-muted"><i class="fa-solid fa-bed me-1"></i> Hospedagem</h6>
+                        {% if show.accommodation %}
                         <p class="mb-1">
                             {{ show.accommodation|linebreaksbr }}
                             {% if show.accommodation_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.accommodation_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.accommodation_contact }}</a></span>{% endif %}
                         </p>
+                        {% endif %}
                         {% if show.checkout_time %}
                         <p class="mb-1">
                             <strong>Saída (Checkout):</strong> {{ show.checkout_time|time:"H:i" }}
                         </p>
+                        {% endif %}
+                        {% if room_list and room_list.status == 'PUBLICADA' %}
+                        <p class="mb-0 mt-1"><a href="{{ request.scheme }}://{{ request.get_host }}{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" style="font-size: 0.85em;"><i class="fa-solid fa-file-pdf me-1"></i> Room List: Visualizar PDF</a></p>
                         {% endif %}
                         {% if show.accommodation_link %}
                         <p class="mb-0 mt-1"><a href="{{ show.accommodation_link }}" target="_blank" style="font-size: 0.85em;"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir Localização no Mapa</a></p>
                         {% endif %}
                     </div>
                     {% endif %}
+                    {% endwith %}
                     {% if show.transfer %}
                     <div class="col-6 mb-3">
                         <h6 class="text-muted"><i class="fa-solid fa-right-left me-1"></i> Palco/Baldeação</h6>

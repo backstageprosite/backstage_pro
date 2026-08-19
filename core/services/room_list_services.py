@@ -485,6 +485,58 @@ def create_room_list(show_id, band_id, user, hotel_name, city, **kwargs):
 
 
 @transaction.atomic
+def sync_room_list_participants_from_show(room_list_id, user):
+    """
+    Sincroniza participantes da escala do show para a Room List,
+    adicionando apenas os que ainda não estão presentes.
+
+    Raises:
+        BandAccessDeniedError, RoomListServiceError, ValidationError
+    Returns:
+        (room_list, added_count)
+    """
+    locked_rl = RoomList.objects.select_for_update().get(pk=room_list_id)
+    validate_band_access(user, locked_rl.band)
+
+    # Garantir consistência entre band do show e band da room list
+    locked_rl.refresh_from_db()
+    show = Show.objects.select_for_update().get(pk=locked_rl.show_id)
+    if show.band_id != locked_rl.band_id:
+        raise RoomListServiceError("Vínculo entre Show e Room List inconsistente.")
+
+    existing_integrante_ids = set(
+        locked_rl.participants.filter(original_integrante__isnull=False)
+        .values_list('original_integrante_id', flat=True)
+    )
+
+    show_participants = ShowParticipant.objects.filter(
+        show=show
+    ).select_related('integrante')
+
+    to_create = []
+    for sp in show_participants:
+        integrante = sp.integrante
+        if integrante and integrante.pk in existing_integrante_ids:
+            continue
+        rlp = RoomListParticipant(
+            room_list=locked_rl,
+            original_integrante=integrante,
+            order=sp.order,
+            snapshot_name=integrante.name if integrante else getattr(sp, 'name', ''),
+            snapshot_cpf=integrante.cpf if integrante else '',
+            snapshot_role=integrante.role if integrante else getattr(sp, 'role', ''),
+            snapshot_category=integrante.category if integrante else getattr(sp, 'category', 'MUSICO'),
+            needs_lodging=True,
+        )
+        rlp.full_clean()
+        to_create.append(rlp)
+
+    RoomListParticipant.objects.bulk_create(to_create)
+    locked_rl.refresh_from_db()
+    return locked_rl, len(to_create)
+
+
+@transaction.atomic
 def update_room_list(room_list_id, user, **kwargs):
     """
     Atualiza dados do hotel.

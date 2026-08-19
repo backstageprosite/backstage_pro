@@ -132,6 +132,8 @@ urlpatterns += [
     # Modelo Padrão
     path('configuracoes/hospedagem/modelo/', views.lodging_template_manage, name='lodging_template_manage'),
     
-    # PDF Room List
+    # Room List
     path('hospedagem/<int:pk>/pdf/', views.room_list_pdf_view, name='room_list_pdf'),
+    path('hospedagem/<int:pk>/pdf/hotel/', views.room_list_hotel_pdf_view, name='room_list_hotel_pdf'),
+    path('hospedagem/quarto/<int:room_pk>/delete/', views.delete_room_view, name='delete_room'),
 ]

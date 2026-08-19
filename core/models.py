@@ -1272,6 +1272,15 @@ class RoomListParticipant(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def formatted_cpf(self):
+        if not self.snapshot_cpf:
+            return None
+        c = ''.join(filter(str.isdigit, self.snapshot_cpf))
+        if len(c) == 11:
+            return f"{c[:3]}.{c[3:6]}.{c[6:9]}-{c[9:]}"
+        return self.snapshot_cpf
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
