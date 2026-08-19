@@ -126,7 +126,7 @@ class UserEditForm(forms.ModelForm):
 class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact
-        fields = ['name', 'contact_type', 'phone', 'email', 'location', 'link', 'notes']
+        fields = ['name', 'contact_type', 'phone', 'email', 'location', 'link', 'notes', 'public_information', 'is_shared_globally']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome do contato'}),
             'contact_type': forms.Select(attrs={'class': 'form-select'}),
@@ -135,7 +135,49 @@ class ContactForm(forms.ModelForm):
             'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Endereço ou Local'}),
             'link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://exemplo.com'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Observações (opcional)'}),
+            'public_information': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Informações públicas (opcional)'}),
+            'is_shared_globally': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+        help_texts = {
+            'is_shared_globally': 'Os dados públicos deste contato ficarão visíveis para produtores e integrantes de todas as bandas cadastradas no Backstage Pro.'
+        }
+        labels = {
+            'is_shared_globally': 'Compartilhar contato com o Banco de Dados Geral'
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_shared_globally = cleaned_data.get('is_shared_globally')
+        phone = cleaned_data.get('phone')
+        email = cleaned_data.get('email')
+
+        if is_shared_globally:
+            import re
+            norm_phone = ""
+            if phone:
+                digits = re.sub(r'\D', '', phone)
+                if digits.startswith('55') and len(digits) > 11:
+                    digits = digits[2:]
+                norm_phone = digits
+
+            norm_email = ""
+            if email:
+                norm_email = email.strip().lower()
+
+            qs = Contact.objects.filter(is_shared_globally=True)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            dup_found = False
+            if norm_phone and qs.filter(normalized_phone=norm_phone).exists():
+                dup_found = True
+            elif norm_email and qs.filter(normalized_email=norm_email).exists():
+                dup_found = True
+
+            if dup_found:
+                raise forms.ValidationError("Este contato já está cadastrado no Banco de Dados.")
+
+        return cleaned_data
 
 class ShowForm(forms.ModelForm):
     class Meta:
