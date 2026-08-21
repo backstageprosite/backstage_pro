@@ -125,7 +125,7 @@
                                         <form method="POST" action="{% url 'admin_painel:assinaturas_cancelar' sub.id %}" class="d-inline w-100">
                                             {% csrf_token %}
                                             <button type="submit" class="dropdown-item py-2 fw-medium text-danger" onclick="return confirm('Tem certeza que deseja cancelar esta assinatura?');">
-                                                <i class="fa-solid fa-trash text-danger me-2"></i>Cancelar / Excluir
+                                                <i class="fa-solid fa-trash text-danger me-2"></i>Excluir
                                             </button>
                                         </form>
                                     </li>

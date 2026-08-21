@@ -70,16 +70,6 @@
                         <td>
                             <div class="fw-semibold">
                                 {{ rec.due_date|date:"d/m/Y" }}
-                                {% if rec.status == 'PENDENTE' %}
-                                    <br>
-                                    {% if rec.is_vencido %}
-                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2" style="font-size: 0.7rem;">Vencido</span>
-                                      {% elif rec.is_vencendo_7d %}
-                                        <span class="badge bg-warning-subtle text-warning rounded-pill px-2" style="font-size: 0.7rem; background-color: #ffc107 !important; color: #000 !important;">Proxi. Vencimento</span>
-                                      {% elif rec.status == 'PENDENTE' %}
-                                        <span class="badge bg-primary-subtle text-primary rounded-pill px-2" style="font-size: 0.7rem;">No prazo</span>
-                                      {% endif %}
-                                {% endif %}
                             </div>
                         </td>
                         <td>
@@ -95,9 +85,15 @@
                             {% if rec.status == 'PAGO' %}
                                 <span class="badge bg-success px-3 py-2 rounded-pill"><i class="fa-solid fa-check-double me-1"></i>Pago</span>
                             {% elif rec.status == 'ATRASADO' %}
-                                <span class="badge bg-danger px-3 py-2 rounded-pill"><i class="fa-solid fa-triangle-exclamation me-1"></i>Atrasado</span>
+                                <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill"><i class="fa-solid fa-triangle-exclamation me-1"></i>Atrasado</span>
                             {% elif rec.status == 'PENDENTE' %}
-                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>Pendente</span>
+                                {% if rec.is_vencido %}
+                                    <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill border border-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>Vencido</span>
+                                {% elif rec.is_vencendo_7d %}
+                                    <span class="badge bg-warning-subtle text-dark px-3 py-2 rounded-pill border border-warning"><i class="fa-solid fa-clock me-1"></i>Prox. Vencimento</span>
+                                {% else %}
+                                    <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill border border-primary"><i class="fa-solid fa-clock me-1"></i>Pendente</span>
+                                {% endif %}
                             {% elif rec.status == 'CANCELADO' %}
                                 <span class="badge bg-secondary px-3 py-2 rounded-pill"><i class="fa-solid fa-ban me-1"></i>Cancelado</span>
                             {% else %}
