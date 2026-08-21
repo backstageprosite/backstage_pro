@@ -4,8 +4,8 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <h4 class="fw-bold m-0"><i class="fa-solid fa-folder-open text-primary me-2"></i> Gerenciador de Arquivos</h4>
     <div>
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-secondary rounded-pill fw-bold px-4 py-2">
-            <i class="fa-solid fa-arrow-left me-2"></i> Voltar
+        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
         </a>
     </div>
 </div>
@@ -52,17 +52,17 @@
                                             <small class="text-muted">Documento do Show</small>
                                         </div>
                                     </div>
-                                    <div class="d-flex gap-2">
-                                        <a href="{% url 'file_viewer' band.slug 'contract' doc.pk %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm px-3 js-pwa-file-action" data-download-url="{% url 'download_contract' band.slug doc.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-filename="{{ doc.file.name|default:'documento' }}" title="Download">
-                                            <i class="fa-solid fa-download"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}" title="Editar">
-                                            <i class="fa-solid fa-pen-to-square"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#deleteDocModal{{ doc.id }}" title="Excluir">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                    </div>
+                                    <div class="dropdown">
+    <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle fw-bold px-3 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
+        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.95rem;">
+        <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-download-url="{% url 'download_contract' band.slug doc.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-filename="{{ doc.file.name|default:'documento' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
+        <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteDocModal{{ doc.id }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
+    </ul>
+</div>
                                 </li>
                                 {% endfor %}
                                 
@@ -78,17 +78,17 @@
                                             <small class="text-muted">Comprovante Financeiro &bull; <strong class="text-dark">R$ {{ receipt.value|floatformat:"2g" }}</strong></small>
                                         </div>
                                     </div>
-                                    <div class="d-flex gap-2">
-                                        <a href="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm px-3 js-pwa-file-action" data-download-url="{% url 'download_receipt' band.slug receipt.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-filename="{{ receipt.file.name|default:'comprovante' }}" title="Download">
-                                            <i class="fa-solid fa-download"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#editReceiptModal{{ receipt.id }}" title="Editar">
-                                            <i class="fa-solid fa-pen-to-square"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#deleteReceiptModal{{ receipt.id }}" title="Excluir">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                    </div>
+                                    <div class="dropdown">
+    <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle fw-bold px-3 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
+        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.95rem;">
+        <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-download-url="{% url 'download_receipt' band.slug receipt.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-filename="{{ receipt.file.name|default:'comprovante' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
+        <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editReceiptModal{{ receipt.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteReceiptModal{{ receipt.id }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
+    </ul>
+</div>
                                 </li>
                                 {% endfor %}
                             </ul>

@@ -518,3 +518,42 @@ TemplateRoomFormSet = inlineformset_factory(
     extra=1,
     can_delete=True
 )
+from django import forms
+from django.utils import timezone
+from datetime import datetime
+
+class BandNoticeForm(forms.ModelForm):
+    fire_now = forms.BooleanField(label='Disparar Aviso Agora', required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch', 'id': 'fireNowSwitch'}))
+    date = forms.DateField(label='Data', required=False, widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control'}))
+    time = forms.TimeField(label='Horário', required=False, widget=forms.TimeInput(format='%H:%M', attrs={'type': 'time', 'class': 'form-control'}))
+
+    class Meta:
+        from core.models import BandNotice
+        model = BandNotice
+        fields = ['message']
+        widgets = {
+            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Digite o aviso para a banda...'}),
+        }
+
+    def clean_message(self):
+        message = self.cleaned_data.get('message')
+        if not message or not message.strip():
+            raise forms.ValidationError('A mensagem não pode ser vazia.')
+        return message.strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        fire_now = cleaned_data.get('fire_now')
+        date = cleaned_data.get('date')
+        time = cleaned_data.get('time')
+        
+        if fire_now:
+            cleaned_data['scheduled_at'] = timezone.now()
+        else:
+            if not date or not time:
+                raise forms.ValidationError('Data e horário são obrigatórios se não for disparar agora.')
+            naive_datetime = datetime.combine(date, time)
+            aware_datetime = timezone.make_aware(naive_datetime, timezone.get_current_timezone())
+            cleaned_data['scheduled_at'] = aware_datetime
+            
+        return cleaned_data

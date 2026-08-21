@@ -306,7 +306,7 @@ def dashboard_view(request, band_slug):
 
     administrative_notices = None
 
-    user_is_band_producer = request.user.band == band and getattr(request.user, 'role', '') == 'PRODUTOR'
+    user_is_band_producer = request.user.band == band and request.user.is_produtor()
 
 
 
@@ -366,6 +366,9 @@ def dashboard_view(request, band_slug):
 
 
 
+    from core.models import BandNotice
+    band_notices = BandNotice.objects.filter(band=band)[:5]
+
     context = {
 
         'band': band,
@@ -386,6 +389,7 @@ def dashboard_view(request, band_slug):
 
         'user_is_band_producer': user_is_band_producer,
 
+        'band_notices': band_notices,
     }
 
     return render(request, 'core/dashboard.html', context)
@@ -402,7 +406,7 @@ def pending_list_view(request, band_slug):
 
 
 
-    user_is_band_producer = request.user.band == band and getattr(request.user, 'role', '') == 'PRODUTOR'
+    user_is_band_producer = request.user.band == band and request.user.is_produtor()
 
     if not user_is_band_producer:
 
@@ -434,7 +438,7 @@ def pending_list_view(request, band_slug):
 
     pending_item_form = None
 
-    user_is_band_producer = request.user.band == band and getattr(request.user, 'role', '') == 'PRODUTOR'
+    user_is_band_producer = request.user.band == band and request.user.is_produtor()
 
 
 
@@ -465,6 +469,9 @@ def pending_list_view(request, band_slug):
             item.edit_form = BandDashboardPendingItemForm(instance=item, shows_qs=item_shows, prefix=f"edit_{item.id}")
 
 
+
+    from core.models import BandNotice
+    band_notices = BandNotice.objects.filter(band=band)[:5]
 
     context = {
 
@@ -694,6 +701,16 @@ def show_finance_detail_view(request, band_slug, pk):
 
             if receipt_form.is_valid():
 
+                from core.file_policy import check_show_limits
+                from django.core.exceptions import ValidationError
+                new_files_sizes = [f.size for f in request.FILES.values()]
+                if new_files_sizes:
+                    try:
+                        check_show_limits(show, new_files_sizes)
+                    except ValidationError as e:
+                        messages.error(request, e.message)
+                        return redirect('show_finance_detail', band_slug=band_slug, pk=show.id)
+
                 receipt = receipt_form.save(commit=False)
 
                 receipt.show = show
@@ -709,6 +726,16 @@ def show_finance_detail_view(request, band_slug, pk):
             payment_form = ShowPaymentForm(request.POST, request.FILES)
 
             if payment_form.is_valid():
+
+                from core.file_policy import check_show_limits
+                from django.core.exceptions import ValidationError
+                new_files_sizes = [f.size for f in request.FILES.values()]
+                if new_files_sizes:
+                    try:
+                        check_show_limits(show, new_files_sizes)
+                    except ValidationError as e:
+                        messages.error(request, e.message)
+                        return redirect('show_finance_detail', band_slug=band_slug, pk=show.id)
 
                 payment = payment_form.save(commit=False)
 
@@ -813,34 +840,42 @@ def show_finance_detail_view(request, band_slug, pk):
 @band_required
 
 def show_pdf_view(request, band_slug, pk):
-
     """
-
     View específica para o formato de impressão (PDF) para a banda.
-
     Somente usuários com perfil de produtor (ou staff) devem acessar, mas
-
     como o botão está no admin, basta verificar se é produtor.
-
     """
-
     if not request.user.is_produtor():
-
         messages.error(request, 'Você não tem permissão para exportar PDFs.')
-
         return redirect('calendario', band_slug=band_slug)
-
-
 
     show = get_object_or_404(Show, pk=pk, band=request.band)
 
+    try:
+        from core.services.weather_services import get_weather_for_show
+        weather = get_weather_for_show(show.city, show.date)
+    except Exception:
+        weather = None
 
+    from django.template.loader import render_to_string
+    from xhtml2pdf import pisa
+    import io
+    from django.http import HttpResponse
 
-    return render(request, 'core/show_pdf.html', {
-
-        'show': show
-
-    })
+    context = {
+        'show': show,
+        'weather': weather,
+        'request': request,
+    }
+    html_string = render_to_string('core/show_pdf.html', context, request=request)
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'inline; filename="show.pdf"'
+        response['Cache-Control'] = 'private, no-store'
+        return response
+    return HttpResponse('Erro ao gerar PDF', status=500)
 
 
 
@@ -950,15 +985,26 @@ def agenda_pdf_view(request, band_slug):
 
 
 
-    return render(request, 'core/agenda_pdf.html', {
+    from django.template.loader import render_to_string
+    from xhtml2pdf import pisa
+    import io
+    from django.http import HttpResponse
 
+    context = {
         'shows': shows,
-
         'band': request.band,
-
         'today': datetime.date.today(),
-
-    })
+        'request': request,
+    }
+    html_string = render_to_string('core/agenda_pdf.html', context, request=request)
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'inline; filename="agenda.pdf"'
+        response['Cache-Control'] = 'private, no-store'
+        return response
+    return HttpResponse('Erro ao gerar PDF', status=500)
 
 
 
@@ -1110,7 +1156,7 @@ def relatorios_index_view(request, band_slug):
 
     if hasattr(band, 'subscription'):
 
-        subscription = band.subscription
+        subscription = band.subscriptions.filter(status='ATIVO', is_deleted=False).first()
 
 
 
@@ -1142,7 +1188,7 @@ def minha_assinatura_view(request, band_slug):
 
 
 
-    subscription = band.subscription
+    subscription = band.subscriptions.filter(status='ATIVO', is_deleted=False).first()
 
     faturas = subscription.records.all().order_by('-due_date')
 
@@ -1594,6 +1640,27 @@ def show_edit_view(request, band_slug, pk):
 
             if form.is_valid() and doc_formset.is_valid():
 
+                from core.file_policy import check_show_limits
+                from django.core.exceptions import ValidationError
+                new_files_sizes = [f.size for f in request.FILES.values()]
+                if new_files_sizes:
+                    try:
+                        check_show_limits(show_to_edit, new_files_sizes)
+                    except ValidationError as e:
+                        messages.error(request, e.message)
+                        from core.file_policy import get_show_files_info
+                        files_count, files_size = get_show_files_info(show_to_edit)
+                        context = {
+                            'band': band,
+                            'form': form,
+                            'is_edit': True,
+                            'show_to_edit': show_to_edit,
+                            'doc_formset': doc_formset,
+                            'files_count': files_count,
+                            'files_size_mb': round(files_size / 1024 / 1024, 2) if files_size else 0
+                        }
+                        return render(request, 'core/show_form.html', context)
+
                 # Detectar eventos relevantes
 
                 new_date = form.cleaned_data.get('date')
@@ -1686,6 +1753,9 @@ def show_edit_view(request, band_slug, pk):
 
 
 
+    from core.file_policy import get_show_files_info
+    files_count, files_size = get_show_files_info(show_to_edit)
+
     context = {
 
         'band': band,
@@ -1696,7 +1766,11 @@ def show_edit_view(request, band_slug, pk):
 
         'show_to_edit': show_to_edit,
 
-        'doc_formset': doc_formset
+        'doc_formset': doc_formset,
+
+        'files_count': files_count,
+
+        'files_size_mb': round(files_size / 1024 / 1024, 2) if files_size else 0
 
     }
 
@@ -2079,7 +2153,7 @@ def banco_de_dados_view(request):
     if not request.user.is_superuser:
         if not user_band or not user_band.is_active:
             return HttpResponseForbidden("Acesso negado: Vínculo com banda ativa necessário.")
-        if request.user.role not in ['PRODUTOR', 'INTEGRANTE']:
+        if request.user.role not in ['PRODUTOR', 'EMPRESARIO', 'INTEGRANTE']:
             return HttpResponseForbidden("Acesso negado: Perfil não autorizado.")
 
     contacts = Contact.objects.filter(
@@ -2699,7 +2773,7 @@ def add_dashboard_pending_item(request, band_slug):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    if request.user.band != band or getattr(request.user, 'role', '') != 'PRODUTOR':
+    if request.user.band != band or not request.user.is_produtor():
 
         return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
 
@@ -2771,7 +2845,7 @@ def delete_dashboard_pending_item(request, band_slug, pending_id):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    if request.user.band != band or getattr(request.user, 'role', '') != 'PRODUTOR':
+    if request.user.band != band or not request.user.is_produtor():
 
         return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
 
@@ -2813,7 +2887,7 @@ def edit_dashboard_pending_item(request, band_slug, pending_id):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    if request.user.band != band or getattr(request.user, 'role', '') != 'PRODUTOR':
+    if request.user.band != band or not request.user.is_produtor():
 
         return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
 
@@ -3031,7 +3105,7 @@ def integrantes_list_view(request, band_slug):
 
     if request.method == 'POST':
 
-        if getattr(request.user, 'role', '') != 'PRODUTOR':
+        if not request.user.is_produtor():
 
             return HttpResponseForbidden("Apenas produtores podem gerenciar integrantes.")
 
@@ -3127,7 +3201,7 @@ def integrante_delete_view(request, band_slug, pk):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    if getattr(request.user, 'role', '') != 'PRODUTOR':
+    if not request.user.is_produtor():
 
         return HttpResponseForbidden("Apenas produtores podem gerenciar integrantes.")
 
@@ -3153,7 +3227,7 @@ def integrantes_reorder_view(request, band_slug):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    if getattr(request.user, 'role', '') != 'PRODUTOR':
+    if not request.user.is_produtor():
 
         return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
 
@@ -3253,7 +3327,7 @@ def room_list_produtor_required(view_func):
             raise PermissionDenied("Usuário inativo.")
         if getattr(request.user, 'band_id', None) != request.band.id:
             raise PermissionDenied("Acesso negado à banda.")
-        if getattr(request.user, 'role', None) != 'PRODUTOR':
+        if not request.user.is_produtor():
             raise PermissionDenied("Acesso restrito a produtores.")
 
         return view_func(request, band_slug, *args, **kwargs)
@@ -3343,7 +3417,7 @@ def room_list_edit(request, band_slug, pk):
 
 @band_required
 def room_list_manage(request, band_slug, pk):
-    is_produtor = request.user.role == 'PRODUTOR' or request.user.is_superuser
+    is_produtor = request.user.is_produtor()
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
     except RoomListNotFoundError:
@@ -3712,7 +3786,7 @@ def room_list_pdf_view(request, band_slug, pk):
     except RoomList.DoesNotExist:
         raise Http404("Room List não encontrada.")
 
-    is_produtor = request.user.role == 'PRODUTOR' or request.user.is_superuser
+    is_produtor = request.user.is_produtor()
     if not is_produtor and room_list.status == RoomList.StatusChoices.RASCUNHO:
         raise PermissionDenied("Acesso restrito. Room List em rascunho.")
 
@@ -3729,6 +3803,7 @@ def room_list_pdf_view(request, band_slug, pk):
     if not pdf.err:
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
+        response['Cache-Control'] = 'private, no-store'
         return response
     return HttpResponse('Erro ao gerar PDF', status=500)
 
@@ -3743,7 +3818,7 @@ def room_list_hotel_pdf_view(request, band_slug, pk):
     from xhtml2pdf import pisa
     import io
 
-    is_produtor = request.user.role == 'PRODUTOR' or request.user.is_superuser
+    is_produtor = request.user.is_produtor()
     if not is_produtor:
         raise PermissionDenied("Acesso exclusivo para produtores.")
 
@@ -3783,7 +3858,7 @@ def delete_room_view(request, band_slug, room_pk):
     from core.models import Room, RoomList
     from django.core.exceptions import PermissionDenied
 
-    is_produtor = request.user.role == 'PRODUTOR' or request.user.is_superuser
+    is_produtor = request.user.is_produtor()
     if not is_produtor:
         raise PermissionDenied("Acesso exclusivo para produtores.")
 
@@ -3796,3 +3871,130 @@ def delete_room_view(request, band_slug, room_pk):
     room.delete()
     messages.success(request, "Quarto excluído com sucesso. Os ocupantes foram movidos para Não Alocados.")
     return redirect('room_list_manage', band_slug=band_slug, pk=room.room_list.pk)
+
+@room_list_produtor_required
+def room_list_participant_delete(request, band_slug, pk, participant_id):
+    if request.method != 'POST':
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied('Método não permitido.')
+    
+    from django.shortcuts import get_object_or_404, redirect
+    from django.contrib import messages
+    from core.models import RoomList, RoomListParticipant
+    
+    room_list = get_object_or_404(RoomList, pk=pk, band__slug=band_slug)
+    if room_list.status != 'RASCUNHO':
+        messages.error(request, 'Não é possível excluir integrantes de uma Room List que não está em rascunho.')
+        return redirect('room_list_manage', band_slug=band_slug, pk=pk)
+        
+    participant = get_object_or_404(RoomListParticipant, pk=participant_id, room_list=room_list)
+    participant.delete()
+    
+    messages.success(request, f'Integrante {participant.snapshot_name} removido da lista com sucesso.')
+    return redirect('room_list_manage', band_slug=band_slug, pk=pk)
+
+
+from django.utils import timezone
+
+
+@login_required
+@band_required
+def band_notices_index(request, band_slug):
+    if not request.user.is_produtor():
+        messages.error(request, 'Acesso restrito.')
+        return redirect('dashboard', band_slug=band_slug)
+        
+    notices = request.band.notices.all()
+    from core.forms import BandNoticeForm
+    form = BandNoticeForm()
+    
+    return render(request, 'core/notices/band_notices_index.html', {'notices': notices, 'band': request.band, 'form': form})
+
+@login_required
+@band_required
+def band_notices_create(request, band_slug):
+    if not request.user.is_produtor():
+        return redirect('dashboard', band_slug=band_slug)
+        
+    if request.method == 'POST':
+        from core.forms import BandNoticeForm
+        form = BandNoticeForm(request.POST)
+        if form.is_valid():
+            notice = form.save(commit=False)
+            notice.band = request.band
+            notice.created_by = request.user
+            notice.scheduled_at = form.cleaned_data['scheduled_at']
+            
+            if form.cleaned_data.get('fire_now'):
+                from django.utils import timezone
+                from core.services.notification_services import send_push_notification_to_band
+                notice.sent_at = timezone.now()
+                notice.save()
+                try:
+                    send_push_notification_to_band(
+                        band=notice.band,
+                        title='Aviso da Produção',
+                        message=notice.message,
+                        exclude_user=notice.created_by,
+                        url=f'/{notice.band.slug}/painel/'
+                    )
+                except Exception as e:
+                    pass
+                messages.success(request, 'Aviso disparado com sucesso!')
+            else:
+                notice.save()
+                messages.success(request, 'Aviso agendado com sucesso!')
+                
+            return redirect('band_notices_index', band_slug=band_slug)
+        else:
+            notices = request.band.notices.all()
+            return render(request, 'core/notices/band_notices_index.html', {'notices': notices, 'band': request.band, 'form': form})
+            
+    return redirect('band_notices_index', band_slug=band_slug)
+
+@login_required
+@band_required
+def band_notices_edit(request, band_slug, pk):
+    if not request.user.is_produtor():
+        return redirect('dashboard', band_slug=band_slug)
+        
+    from core.models import BandNotice
+    from core.forms import BandNoticeForm
+    from django.shortcuts import get_object_or_404
+    
+    notice = get_object_or_404(BandNotice, pk=pk, band=request.band)
+    
+    if request.method == 'POST':
+        form = BandNoticeForm(request.POST, instance=notice)
+        if form.is_valid():
+            notice = form.save(commit=False)
+            notice.scheduled_at = form.cleaned_data['scheduled_at']
+            notice.save()
+            messages.success(request, 'Aviso atualizado com sucesso!')
+            return redirect('band_notices_index', band_slug=band_slug)
+    else:
+        from django.utils import timezone
+        local_time = timezone.localtime(notice.scheduled_at)
+        initial = {'date': local_time.date(), 'time': local_time.time()}
+        form = BandNoticeForm(instance=notice, initial=initial)
+        
+    return render(request, 'core/notices/band_notices_form.html', {'form': form, 'band': request.band, 'notice': notice})
+
+@login_required
+@band_required
+def band_notices_delete(request, band_slug, pk):
+    if not request.user.is_produtor():
+        return redirect('dashboard', band_slug=band_slug)
+        
+    if request.method != 'POST':
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied('Método não permitido.')
+        
+    from core.models import BandNotice
+    from django.shortcuts import get_object_or_404
+    
+    notice = get_object_or_404(BandNotice, pk=pk, band=request.band)
+    notice.delete()
+    messages.success(request, 'Aviso excluído.')
+    return redirect('band_notices_index', band_slug=band_slug)
+

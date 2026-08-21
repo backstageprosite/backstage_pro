@@ -166,7 +166,17 @@
                                          data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
                                          data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
                                          style="cursor: move;">
-                                        {{ p.snapshot_name }}
+                                         <div class="d-flex justify-content-between align-items-center w-100">
+                                              <span>{{ p.snapshot_name }}</span>
+                                              {% if room_list.status == 'RASCUNHO' %}
+                                              <form method="post" action="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" class="d-inline m-0 p-0">
+                                                  {% csrf_token %}
+                                                  <button type="submit" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover integrante" onclick="return confirm('Deseja realmente remover {{ p.snapshot_name }} desta lista? (Ele poderá ser adicionado novamente em Sincronizar)');">
+                                                      <i class="fa-solid fa-xmark text-white"></i>
+                                                  </button>
+                                              </form>
+                                              {% endif %}
+                                          </div>
 
                                         <!-- Mobile select fallback (No JS required) -->
                                         {% if room_list.status == 'RASCUNHO' %}
@@ -201,7 +211,17 @@
                                  data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
                                  data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
                                  style="cursor: move;">
-                                {{ p.snapshot_name }}
+                                  <div class="d-flex justify-content-between align-items-center w-100">
+                                      <span>{{ p.snapshot_name }}</span>
+                                      {% if room_list.status == 'RASCUNHO' %}
+                                      <form method="post" action="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" class="d-inline m-0 p-0">
+                                          {% csrf_token %}
+                                          <button type="submit" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover integrante" onclick="return confirm('Deseja realmente remover {{ p.snapshot_name }} desta lista? (Ele poderá ser adicionado novamente em Sincronizar)');">
+                                              <i class="fa-solid fa-xmark text-dark"></i>
+                                          </button>
+                                      </form>
+                                      {% endif %}
+                                  </div>
 
                                 <!-- Mobile select fallback (No JS required) -->
                                 {% if room_list.status == 'RASCUNHO' %}

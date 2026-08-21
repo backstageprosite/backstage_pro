@@ -1,5 +1,5 @@
 from django.urls import path
-from . import admin_views, pwa_views, admin_views_support
+from . import admin_views, pwa_views, admin_views_support, admin_views_expenses
 
 app_name = 'admin_painel'
 
@@ -36,10 +36,16 @@ urlpatterns = [
     path('cobrancas/', admin_views.AdminCobrancasView.as_view(), name='cobrancas'),
     path('cobrancas/nova/', admin_views.admin_cobranca_create, name='cobrancas_nova'),
     path('cobrancas/<int:pk>/editar/', admin_views.admin_cobranca_edit, name='cobrancas_editar'),
+    path('cobrancas/<int:pk>/excluir/', admin_views.admin_cobranca_delete, name='cobrancas_excluir'),
+    path('cobrancas/<int:pk>/pagar/', admin_views.admin_cobranca_pagar, name='cobrancas_pagar'),
     path('cobrancas/<int:pk>/status/<str:status>/', admin_views.admin_cobranca_change_status, name='cobrancas_status'),
     
     path('relatorios/', admin_views.AdminRelatoriosView.as_view(), name='relatorios'),
     path('relatorios/financeiro/', admin_views.AdminRelatorioFinanceiroView.as_view(), name='relatorio_financeiro'),
+    path('relatorios/financeiro/despesas/nova/', admin_views_expenses.admin_expense_create, name='expense_create'),
+    path('relatorios/financeiro/despesas/<int:pk>/editar/', admin_views_expenses.admin_expense_edit, name='expense_edit'),
+    path('relatorios/financeiro/despesas/<int:pk>/paga/', admin_views_expenses.admin_expense_mark_paid, name='expense_mark_paid'),
+    path('relatorios/financeiro/despesas/<int:pk>/excluir/', admin_views_expenses.admin_expense_delete, name='expense_delete'),
     
     path('relatorios/parceiros/', admin_views.AdminPartnerListView.as_view(), name='parceiros'),
     path('relatorios/parceiros/novo/', admin_views.admin_partner_create, name='parceiros_novo'),

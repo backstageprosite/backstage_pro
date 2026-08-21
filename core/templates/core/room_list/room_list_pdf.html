@@ -9,7 +9,7 @@
         margin-bottom: 1.5cm;
         @frame footer {
             -pdf-frame-content: footer_content;
-            left: 1cm; width: 19cm; top: 27.5cm; height: 1.5cm;
+            left: 1cm; width: 19cm; top: 27.8cm; height: 1cm;
         }
     }
     body {
@@ -19,200 +19,186 @@
     }
     .header-table {
         width: 100%;
-        border-bottom: 2px solid #212529;
-        margin-bottom: 15px;
-        padding-bottom: 5px;
-    }
-    .header-table td {
-        vertical-align: middle;
-    }
-    .logo-td {
-        width: 140px;
-        text-align: left;
-    }
-    .title-td {
-        text-align: center;
-    }
-    .placeholder-td {
-        width: 140px;
+        border-bottom: 2px solid #000;
+        margin-bottom: 12px;
+        padding-bottom: 4px;
     }
     .logo-img {
-        max-width: 130px;
-        max-height: 60px;
+        max-width: 140px;
+        max-height: 50px;
     }
     
-    .section {
-        border: 1px solid #dee2e6;
-        margin-bottom: 15px;
-        padding: 0;
-    }
-    .section-header {
-        background-color: #212529;
-        color: #0dcaf0;
-        font-weight: bold;
-        font-size: 12px;
-        padding: 4px 8px;
-        border-bottom: 1px solid #212529;
-    }
-    .header-quartos {
-        background-color: #198754;
-        color: #ffffff;
-        border-bottom: 1px solid #198754;
-    }
-    .section-body {
-        padding: 8px;
-    }
-    table.grid-table {
+    .main-table {
         width: 100%;
-    }
-    table.grid-table td {
-        padding: 3px;
-        border-bottom: 1px solid #eee;
-    }
-    h2 { margin: 0; padding: 0; font-size: 18px; }
-    h5 { margin: 0; padding: 0; font-size: 13px; color: #444; }
-
-    .room-block {
-        margin-bottom: 8px;
-        padding-bottom: 4px;
-        border-bottom: 1px solid #ddd;
-    }
-    .room-heading {
-        font-weight: bold;
-        font-size: 12px;
-        margin-bottom: 2px;
-    }
-    .room-occupants {
-        padding-left: 15px;
-        margin: 0;
-    }
-    .room-occupants li {
-        padding: 2px 0;
-        font-size: 11px;
-    }
-
-    .totals-bar {
-        background-color: #f8f9fa;
         border: 1px solid #ccc;
-        padding: 4px 8px;
-        font-size: 12px;
+        border-collapse: collapse;
+        margin-bottom: 12px;
+    }
+    .main-table td {
+        padding: 3px 6px;
+        font-size: 10px;
+        vertical-align: top;
+    }
+    .main-table .header-td {
+        padding: 4px 6px;
+        font-size: 11px;
         font-weight: bold;
-        width: 100%;
-        margin-bottom: 10px;
+        border-bottom: 1px solid #ccc;
     }
-    .totals-table {
-        width: 100%;
+    
+    .bg-cyan {
+        background-color: #0dcaf0;
+        color: #000;
     }
-    .totals-table td {
-        width: 50%;
+    .bg-green {
+        background-color: #198754;
+        color: #fff;
     }
-    .totals-right {
-        text-align: right;
+    
+    .badge-ac {
+        background-color: #0dcaf0;
+        color: #000;
+        padding: 2px 4px;
+        font-weight: bold;
+        font-size: 9px;
     }
 
     #footer_content {
-        border-top: 1px solid #ddd;
+        border-top: 1px solid #ccc;
         padding-top: 4px;
         font-size: 9px;
-        color: #555;
-    }
-    .footer-table {
-        width: 100%;
-    }
-    .footer-table td {
-        vertical-align: top;
+        color: #666;
     }
 </style>
 </head>
 <body>
 
 <div id="footer_content">
-    <table class="footer-table">
+    <table style="width: 100%;">
         <tr>
             <td style="width: 33%; text-align: left;"><strong>Room List:</strong> [{{ room_list.show.date|date:"d-m-Y" }}] {{ room_list.show.title }}</td>
             <td style="width: 33%; text-align: center;"><strong>Emissor:</strong> {{ request.user.first_name }} {{ request.user.last_name }}</td>
-            <td style="width: 33%; text-align: right;"><strong>Gerado em:</strong> {% now "d/m/Y H:i" %}</td>
+            <td style="width: 33%; text-align: right;"><strong>Gerado em:</strong> {% now "d/m/Y \à\s H:i" %}</td>
         </tr>
     </table>
 </div>
 
 <table class="header-table">
     <tr>
-        <td class="logo-td">
+        <td style="width: 150px; text-align: left; vertical-align: middle;">
             {% if room_list.band.logo %}
                 <img src="{{ request.scheme }}://{{ request.get_host }}{% url 'public_band_logo' room_list.band.slug %}" class="logo-img">
             {% else %}
-                <div style="font-weight:900; font-size:14px; color:#212529;">LOGO DA<br>BANDA</div>
+                <div style="font-weight:900; font-size:16px; color:#000;">LOGO DA<br>BANDA</div>
             {% endif %}
         </td>
-        <td class="title-td">
-            <h2>Room List: {{ room_list.show.title }}</h2>
-            <h5>{{ room_list.show.event_name|default:room_list.show.title }} - {{ room_list.show.city }} ({{ room_list.show.date|date:"d/m/Y" }})</h5>
+        <td style="text-align: center; vertical-align: middle;">
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 2px;">Room List: {{ room_list.show.title }}</div>
+            <div style="font-size: 11px; color: #555;">{{ room_list.show.event_name|default:room_list.show.title }} - {{ room_list.show.city }} ({{ room_list.show.date|date:"d/m/Y" }})</div>
         </td>
-        <td class="placeholder-td"></td>
+        <td style="width: 150px;"></td>
     </tr>
 </table>
 
-<div class="section">
-    <div class="section-header">
-        Hotel: {{ room_list.hotel_name }}
-    </div>
-    <div class="section-body">
-        <table class="grid-table">
-            <tr><td><strong>Cidade:</strong> {{ room_list.city }}</td></tr>
-            {% if room_list.address %}
-            <tr><td><strong>Endereço:</strong> {{ room_list.address }}</td></tr>
-            {% endif %}
-            {% if room_list.contact or room_list.phone %}
-            <tr><td>
-                {% if room_list.contact %}<strong>Contato:</strong> {{ room_list.contact }}{% endif %}
-                {% if room_list.contact and room_list.phone %} | {% endif %}
-                {% if room_list.phone %}<strong>Tel:</strong> {{ room_list.phone }}{% endif %}
-            </td></tr>
-            {% endif %}
-            {% if room_list.reservation_code %}
-            <tr><td><strong>Reserva:</strong> {{ room_list.reservation_code }}</td></tr>
-            {% endif %}
-        </table>
-    </div>
-</div>
+<table class="main-table">
+    <tr>
+        <td class="header-td bg-cyan">
+            Hotel: {{ room_list.hotel_name }}
+        </td>
+    </tr>
+    <tr>
+        <td style="border-bottom: 1px solid #ccc;">
+            <strong>Cidade:</strong> {{ room_list.city }}
+        </td>
+    </tr>
+    {% if room_list.address %}
+    <tr>
+        <td style="{% if room_list.contact or room_list.phone or room_list.reservation_code %}border-bottom: 1px solid #ccc;{% endif %}">
+            <strong>Endereço:</strong> {{ room_list.address }}
+        </td>
+    </tr>
+    {% endif %}
+    {% if room_list.contact or room_list.phone %}
+    <tr>
+        <td style="{% if room_list.reservation_code %}border-bottom: 1px solid #ccc;{% endif %}">
+            {% if room_list.contact %}<strong>Contato:</strong> {{ room_list.contact }}{% endif %}
+            {% if room_list.contact and room_list.phone %} | {% endif %}
+            {% if room_list.phone %}<strong>Tel:</strong> {{ room_list.phone }}{% endif %}
+        </td>
+    </tr>
+    {% endif %}
+    {% if room_list.reservation_code %}
+    <tr>
+        <td>
+            <strong>Reserva:</strong> {{ room_list.reservation_code }}
+        </td>
+    </tr>
+    {% endif %}
+</table>
 
-<div class="section">
-    <div class="section-header header-quartos">
-        Quartos e Ocupantes
-    </div>
-    <div class="section-body">
-        {% for room in rooms %}
-        <div class="room-block">
-            <div class="room-heading">
-                Quarto {{ forloop.counter }}
-                &mdash; {{ room.get_type_display }}
-                {% if room.has_ac %} &mdash; Ar-Cond.{% else %} &mdash; Sem Ar-Cond.{% endif %}
-            </div>
-            <ul class="room-occupants">
-                {% for part in room.participants.all %}
-                <li>
-                    <strong>{{ part.snapshot_name }}</strong>{% if part.snapshot_role %} &mdash; {{ part.snapshot_role }}{% endif %}{% if is_hotel_pdf %} &mdash; CPF: {% if part.snapshot_cpf %}{{ part.formatted_cpf }}{% else %}CPF não informado{% endif %}{% endif %}
-                </li>
+<table class="main-table">
+    <tr>
+        <td colspan="2" class="header-td bg-green">
+            Quartos e Ocupantes
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2" style="padding: 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                {% for room in rooms %}
+                    {% if forloop.counter0|divisibleby:2 %}
+                    <tr>
+                    {% endif %}
+                        
+                        <td style="width: 50%; padding: 6px; vertical-align: top; border-bottom: 1px solid #ccc; {% if forloop.counter0|divisibleby:2 %}border-right: 1px solid #ccc;{% endif %}">
+                            <div style="font-size: 10px; margin-bottom: 4px; font-weight: bold;">
+                                Quarto {{ room.number_or_name|default:forloop.counter }} &middot; {{ room.get_type_display }} 
+                                &nbsp;
+                                {% if room.has_ac %}
+                                    <span class="badge-ac">Ar-Cond.</span>
+                                {% else %}
+                                    <span style="color:#666; font-size:9px; font-weight:normal;">&middot; Sem Ar-Cond.</span>
+                                {% endif %}
+                            </div>
+                            <div style="padding-left: 8px;">
+                                {% for part in room.participants.all %}
+                                    <div style="font-size: 9.5px; padding: 1.5px 0;">
+                                        &bull; <strong>{{ part.snapshot_name }}</strong>{% if part.snapshot_role %} &mdash; {{ part.snapshot_role }}{% endif %}{% if is_hotel_pdf %} &mdash; CPF: {% if part.snapshot_cpf %}{{ part.formatted_cpf }}{% else %}não informado{% endif %}{% endif %}
+                                    </div>
+                                {% empty %}
+                                    <div style="color: #888; font-style: italic; font-size: 9.5px;">Quarto vazio</div>
+                                {% endfor %}
+                            </div>
+                        </td>
+
+                    {% if forloop.counter|divisibleby:2 or forloop.last %}
+                        {% if forloop.last and not forloop.counter|divisibleby:2 %}
+                            <td style="width: 50%; padding: 6px; vertical-align: top; border-bottom: 1px solid #ccc;"></td>
+                        {% endif %}
+                    </tr>
+                    {% endif %}
                 {% empty %}
-                <li style="list-style:none; color:#888; font-style:italic;">Quarto vazio</li>
+                <tr>
+                    <td style="padding: 8px; color: #888; font-style: italic;">
+                        Nenhum quarto configurado nesta Room List.
+                    </td>
+                </tr>
                 {% endfor %}
-            </ul>
-        </div>
-        {% empty %}
-        <p style="color:#888; font-style:italic; margin:4px 0;">Nenhum quarto configurado nesta Room List.</p>
-        {% endfor %}
-    </div>
-</div>
+            </table>
+        </td>
+    </tr>
+</table>
 
-<div class="totals-bar">
-    <table class="totals-table">
-        <tr>
-            <td style="text-align: left;">Total de Quartos: {{ rooms|length }}</td>
-            <td class="totals-right">Total de Integrantes Hospedados: {{ participants|length }}</td>
-        </tr>
-    </table>
-</div>
+<table class="main-table">
+    <tr>
+        <td style="width: 50%; border-right: 1px solid #ccc; font-weight: bold; font-size: 10px;">
+            Total de Quartos: {{ rooms|length }}
+        </td>
+        <td style="width: 50%; font-weight: bold; font-size: 10px; text-align: right;">
+            Total de Integrantes Hospedados: {{ participants|length }}
+        </td>
+    </tr>
+</table>
 
 </body>
 </html>

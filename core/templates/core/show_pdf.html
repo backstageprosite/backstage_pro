@@ -53,10 +53,10 @@
             .print-only { display: none !important; }
         }
         @media print {
-            body { padding: 0; margin: 0; font-size: 10px; margin-bottom: 20px; }
+            body { padding: 0; margin: 0; font-size: 11px; margin-bottom: 20px; }
             a { text-decoration: none; color: #0f7fb1 !important; }
-            .card-header { font-size: 11px; padding: 3px 6px !important; }
-            h6 { font-size: 10px; }
+            .card-header { font-size: 12px; padding: 3px 6px !important; }
+            h6 { font-size: 11px; }
             .list-group-item { padding: 2px 4px; }
             .btn, .no-print { display: none !important; }
             .card { box-shadow: none; margin-bottom: 10px; page-break-inside: avoid; }
@@ -91,17 +91,31 @@
         <div class="mb-3 border-bottom pb-2 d-flex align-items-center">
 
             <!-- Logo da Banda -->
-            <div style="width: 150px; text-align: left;">
+            <div style="width: 180px; text-align: left;">
                 {% if show.band.logo %}
-                <img src="{% url 'public_band_logo' show.band.slug %}" alt="{{ show.band.name }}" style="max-width: 100%; max-height: 80px;">
+                <img src="{% url 'public_band_logo' show.band.slug %}" alt="{{ show.band.name }}" style="max-width: 100%; max-height: 100px;">
                 {% endif %}
             </div>
 
             <!-- Títulos Centralizados -->
-            <div class="text-center flex-grow-1" style="padding-right: 150px;"> <!-- Padding-right compensa a largura da logo para manter o texto 100% no meio -->
+            <div class="text-center flex-grow-1">
                 <h2 class="mb-0">{{ show.title }} - {{ show.date|date:"d/m/Y" }}</h2>
                 {% if show.event_name %}
                 <h5 class="text-secondary mt-1">{{ show.event_name }}</h5>
+                {% endif %}
+            </div>
+
+            <!-- Previsão do Tempo -->
+            <div style="width: 180px; text-align: right; font-size: 12px;">
+                {% if weather %}
+                <div style="border: 1px solid #ddd; padding: 4px 6px; border-radius: 4px; display: inline-block; text-align: left; background-color: #f8f9fa;">
+                    <div style="font-weight: bold; margin-bottom: 2px;">
+                        <i class="fa-solid fa-cloud-sun text-secondary"></i> Clima - {{ show.city|truncatechars:15 }}
+                    </div>
+                    <div>{{ weather.condition }}</div>
+                    <div>Temp: {{ weather.min }}°C a {{ weather.max }}°C</div>
+                    <div>Chuva: {{ weather.precip }}%</div>
+                </div>
                 {% endif %}
             </div>
 
@@ -385,15 +399,7 @@
         </div>
         {% endif %}
 
-        <div class="text-center mt-4 no-print border-top pt-3">
-            <p class="text-muted mb-2">Para salvar em PDF, mude o campo "Destino" na tela de impressão para "Salvar como PDF".</p>
-            <button class="btn btn-primary" onclick="window.print()">
-                <i class="fa-solid fa-print me-1"></i> Imprimir ou Salvar PDF
-            </button>
-            <button class="btn btn-secondary ms-2" onclick="window.close()">
-                <i class="fa-solid fa-xmark me-1"></i> Fechar aba
-            </button>
-        </div>
+
     </div>
 
     <!-- Rodapé Exclusivo de Impressão -->
@@ -410,13 +416,6 @@
         const now = new Date();
         const formattedDate = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         document.getElementById('current-datetime').textContent = formattedDate;
-
-        // Dispara a impressão automaticamente assim que a página carrega
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 500);
-        };
     </script>
 </body>
 </html>

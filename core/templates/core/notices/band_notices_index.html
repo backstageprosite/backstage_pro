@@ -1,0 +1,175 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}Avisos da Banda - {{ band.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <h4 class="fw-bold m-0"><i class="fa-solid fa-bullhorn text-warning me-2"></i> Avisos da Banda</h4>
+    <div>
+        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+        </a>
+        <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalNovoAviso">
+            <i class="fa-solid fa-plus me-1"></i> Novo Aviso
+        </button>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white border-bottom pt-3 pb-3">
+        <h5 class="fw-bold m-0">Avisos Recentes</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if notices %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="border-0 ps-4">Status</th>
+                        <th class="border-0">Mensagem</th>
+                        <th class="border-0">Criado por / em</th>
+                        <th class="border-0 text-end pe-4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for notice in notices %}
+                    <tr>
+                        <td class="ps-4" style="width: 200px;">
+                            {% if notice.sent_at %}
+                            <div class="badge bg-success text-white">
+                                <i class="fa-solid fa-check-double me-1"></i> Enviado
+                            </div>
+                            <small class="d-block text-muted mt-1">{{ notice.sent_at|date:"d/m/Y H:i" }}</small>
+                            {% else %}
+                            <div class="badge bg-warning text-dark">
+                                <i class="fa-regular fa-clock me-1"></i> Agendado
+                            </div>
+                            <small class="d-block text-muted mt-1">{{ notice.scheduled_at|date:"d/m/Y H:i" }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="max-height: 80px; overflow-y: auto; white-space: pre-wrap; font-size: 0.95rem;">{{ notice.message }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-medium">{{ notice.created_by.first_name|default:notice.created_by.username }}</div>
+                            <small class="text-muted">{{ notice.created_at|date:"d/m/Y H:i" }}</small>
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle fw-bold px-3 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
+                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.95rem;">
+                                    <li>
+                                        <a class="dropdown-item py-2 fw-medium" href="{% url 'band_notices_edit' band.slug notice.id %}">
+                                            <i class="fa-solid fa-pen text-primary me-2"></i> Editar
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteNoticeModal{{ notice.id }}">
+                                            <i class="fa-solid fa-trash text-danger me-2"></i> Excluir
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Modal Excluir -->
+                            <div class="modal fade text-start" id="deleteNoticeModal{{ notice.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content" style="border-radius: 12px; border: none;">
+                                        <div class="modal-header border-bottom-0 pb-0">
+                                            <h5 class="modal-title fw-bold text-dark">Excluir Aviso</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body pt-3 pb-2 text-wrap" style="white-space: normal;">
+                                            Tem certeza que deseja excluir este aviso?
+                                            <div class="mt-2 text-muted small">Esta ação não pode ser desfeita e, caso o aviso esteja agendado, ele será cancelado.</div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 pt-2">
+                                            <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                                            <form action="{% url 'band_notices_delete' band.slug notice.id %}" method="post" class="m-0">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">Excluir Aviso</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-5 text-center text-muted">
+            <i class="fa-solid fa-inbox fs-1 mb-3 opacity-50"></i>
+            <h5 class="fw-bold mb-1">Nenhum aviso publicado.</h5>
+            <p class="mb-0">Clique em Novo Aviso para agendar uma notificação.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Novo Aviso -->
+<div class="modal fade" id="modalNovoAviso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-bullhorn text-warning me-2"></i> Novo Aviso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'band_notices_create' band.slug %}" method="post">
+                <div class="modal-body pt-3 pb-2">
+                    {% csrf_token %}
+                                        <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Mensagem do Aviso</label>
+                        {{ form.message }}
+                    </div>
+                    <div class="mb-3 form-check form-switch">
+                        {{ form.fire_now }}
+                        <label class="form-check-label fw-bold text-dark ms-1" for="fireNowSwitch">Disparar Aviso Agora</label>
+                    </div>
+                    <div class="mb-3" id="dateContainer">
+                        <label class="form-label text-muted small fw-bold">Data de Disparo</label>
+                        {{ form.date }}
+                    </div>
+                    <div class="mb-3" id="timeContainer">
+                        <label class="form-label text-muted small fw-bold">Horário de Disparo</label>
+                        {{ form.time }}
+                    </div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const fireNowCheckbox = document.getElementById("fireNowSwitch");
+    const dateContainer = document.getElementById("dateContainer");
+    const timeContainer = document.getElementById("timeContainer");
+    
+    function toggleDateInputs() {
+        if (fireNowCheckbox.checked) {
+            dateContainer.style.display = "none";
+            timeContainer.style.display = "none";
+        } else {
+            dateContainer.style.display = "block";
+            timeContainer.style.display = "block";
+        }
+    }
+    
+    if (fireNowCheckbox) {
+        fireNowCheckbox.addEventListener("change", toggleDateInputs);
+        toggleDateInputs();
+    }
+});
+</script>
+                </div>
+                <div class="modal-footer border-top-0 pt-2">
+                    <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Publicar Aviso
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

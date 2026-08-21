@@ -7,7 +7,7 @@
         <h4 class="fw-bold m-0"><i class="fa-solid fa-users-gear text-primary me-2"></i> Integrantes</h4>
     </div>
     
-    {% if request.user.role == 'PRODUTOR' %}
+    {% if request.user.is_produtor %}
     <div class="d-flex flex-wrap gap-2">
         <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-light rounded-pill px-3 shadow-sm border">
             <i class="fa-solid fa-arrow-left me-1"></i> Voltar
@@ -16,7 +16,7 @@
             <i class="fa-solid fa-file-pdf me-1"></i> Gerar PDF
         </button>
         <button type="button" class="btn fw-bold text-dark rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addIntegranteModal" style="background-color: #6BD443;">
-            <i class="fa-solid fa-plus me-1"></i> Adicionar
+            <i class="fa-solid fa-plus me-1"></i> Novo Integrante
         </button>
     </div>
     {% else %}
@@ -43,7 +43,7 @@
                         </th>
                         <th class="fw-bold border-bottom-0 py-3">Nome</th>
                         <th class="fw-bold border-bottom-0 py-3">Função</th>
-                        {% if request.user.role == 'PRODUTOR' %}
+                        {% if request.user.is_produtor %}
                         <th class="pe-4 text-end fw-bold border-bottom-0 py-3">Ações</th>
                         {% endif %}
                     </tr>
@@ -60,7 +60,7 @@
                         </td>
                         <td class="py-3 px-4 text-muted small">{{ item.role }}</td>
                         
-                        {% if request.user.role == 'PRODUTOR' %}
+                        {% if request.user.is_produtor %}
                         <td class="py-3 px-4">
                             <div class="dropdown d-flex justify-content-end">
                                 <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
@@ -84,7 +84,7 @@
                         {% endif %}
                     </tr>
 
-                    {% if request.user.role == 'PRODUTOR' %}
+                    {% if request.user.is_produtor %}
                     <!-- Modal Editar Integrante -->
                     <div class="modal fade" id="editIntegranteModal{{ item.id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
@@ -188,7 +188,7 @@
     </div>
 </div>
 
-{% if request.user.role == 'PRODUTOR' %}
+{% if request.user.is_produtor %}
 <!-- Modal Adicionar Integrante -->
 <div class="modal fade" id="addIntegranteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -240,7 +240,7 @@
                 </div>
                 <div class="modal-footer border-top-0 pt-2">
                     <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Adicionar</button>
+                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Adicionar Integrante</button>
                 </div>
             </form>
         </div>
@@ -342,7 +342,7 @@
     }
 
     // Drag and Drop (SortableJS)
-    {% if request.user.role == 'PRODUTOR' and integrantes %}
+    {% if request.user.is_produtor and integrantes %}
     document.addEventListener('DOMContentLoaded', function () {
         const el = document.getElementById('sortableList');
         if (el) {

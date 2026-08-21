@@ -89,7 +89,7 @@
         }
     </style>
 </head>
-<body onload="setTimeout(function(){ window.print(); }, 500);">
+<body>
     <div class="pdf-container">
         <!-- Cabeçalho com Logo -->
         <div class="text-start mb-4 d-flex align-items-center">
@@ -147,11 +147,7 @@
             <p class="text-center mt-5 text-muted">Nenhum show cadastrado na agenda.</p>
         {% endfor %}
 
-        <!-- Botões de Ação (não aparecem na impressão) -->
-        <div class="text-center mt-5 no-print">
-            <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print me-2"></i> Imprimir / Salvar PDF</button>
-            <button onclick="window.close()" class="btn btn-outline-secondary ms-2">Fechar aba</button>
-        </div>
+
     </div>
 
     <!-- Rodapé Exclusivo de Impressão -->

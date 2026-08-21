@@ -62,14 +62,28 @@ class AdminSubscriptionForm(forms.ModelForm):
     class Meta:
         model = BandSubscription
         fields = [
-            'band', 'plan_name', 'billing_cycle', 'contracted_value', 
-            'start_date', 'next_due_date', 'status', 'payment_method_preference',
+            'band', 'billing_cycle', 'contracted_value', 
+            'start_date', 'next_due_date', 'status', 'payment_method_preference', 'auto_renew',
             'financial_responsible_name', 'billing_phone', 'billing_email', 'internal_notes'
         ]
         widgets = {
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'next_due_date': forms.DateInput(attrs={'type': 'date'}),
         }
+        
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        cycle_to_plan = {
+            'MENSAL': 'Mensal',
+            'BIMESTRAL': 'Bimestral',
+            'TRIMESTRAL': 'Trimestral',
+            'SEMESTRAL': 'Semestral',
+            'ANUAL': 'Anual'
+        }
+        instance.plan_name = cycle_to_plan.get(instance.billing_cycle, 'Mensal')
+        if commit:
+            instance.save()
+        return instance
 
 class AdminBillingRecordForm(forms.ModelForm):
     class Meta:

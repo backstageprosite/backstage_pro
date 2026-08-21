@@ -11,9 +11,9 @@
         </div>
         <div class="d-flex gap-2">
 
-            {% if request.user.role == 'PRODUTOR' or request.user.is_superuser %}
+            {% if request.user.is_produtor %}
             <button type="button" class="btn fw-bold text-dark rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addPendingModal" style="background-color: #6BD443;">
-                <i class="fa-solid fa-plus me-1"></i> Adicionar
+                <i class="fa-solid fa-plus me-1"></i> Nova Pendência
             </button>
             {% endif %}
         </div>
@@ -30,7 +30,7 @@
                             <th class="fw-bold border-bottom-0 py-3">Data</th>
                             <th class="fw-bold border-bottom-0 py-3">Show</th>
                             <th class="fw-bold border-bottom-0 py-3">Status</th>
-                            {% if request.user.role == 'PRODUTOR' %}
+                            {% if request.user.is_produtor %}
                             <th class="pe-4 text-end fw-bold border-bottom-0 py-3">Ações</th>
                             {% endif %}
                         </tr>
@@ -58,7 +58,7 @@
                             <td class="py-3 px-4">
                                 <span class="badge rounded-pill {{ item.status_info.class }} fw-medium px-3 py-2">{{ item.status_info.label }}</span>
                             </td>
-                            {% if request.user.role == 'PRODUTOR' %}
+                            {% if request.user.is_produtor %}
                             <td class="py-3 px-4">
                                 <div class="dropdown d-flex justify-content-end">
                                     <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
@@ -148,14 +148,14 @@
             <div class="d-flex flex-column align-items-center justify-content-center text-center p-5 text-muted">
                 <i class="fa-regular fa-circle-check fs-1 mb-3 opacity-50"></i>
                 <h5 class="fw-bold mb-1">Nenhuma pendência cadastrada.</h5>
-                <p class="mb-0">{% if request.user.role == 'PRODUTOR' %}Clique em Adicionar para criar uma nova.{% endif %}</p>
+                <p class="mb-0">{% if request.user.is_produtor %}Clique em Adicionar para criar uma nova.{% endif %}</p>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-{% if request.user.role == 'PRODUTOR' or request.user.is_superuser %}
+{% if request.user.is_produtor %}
 <!-- Add Pending Modal -->
 <div class="modal fade" id="addPendingModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -185,7 +185,7 @@
                 </div>
                 <div class="modal-footer border-top-0 pt-2">
                     <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Adicionar</button>
+                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Adicionar Pendência</button>
                 </div>
             </form>
         </div>

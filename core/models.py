@@ -1,4 +1,5 @@
 from django.db import models
+from core.file_policy import validate_file_size_and_type
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 import hashlib
@@ -14,7 +15,7 @@ def validate_image_size(value):
 class Band(models.Model):
     name = models.CharField(max_length=100, verbose_name="Nome da Banda")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug (URL)")
-    logo = models.ImageField(upload_to='bands/logos/', blank=True, null=True, verbose_name="Logo da Banda")
+    logo = models.ImageField(validators=[validate_file_size_and_type], upload_to='bands/logos/', blank=True, null=True, verbose_name="Logo da Banda")
 
     # Controle de Assinatura (SaaS)
     SUBSCRIPTION_PLAN_CHOICES = (
@@ -36,6 +37,33 @@ class Band(models.Model):
         verbose_name = "Banda"
         verbose_name_plural = "Bandas"
 
+
+    @property
+    def dynamic_status(self):
+        if self.status == 'PAGO':
+            return 'PAGO'
+        elif self.status == 'CANCELADO':
+            return 'CANCELADO'
+            
+        from django.utils import timezone
+        today = timezone.localdate()
+        
+        if today > self.due_date:
+            return 'VENCIDO'
+        elif 0 <= (self.due_date - today).days <= 7:
+            return 'PROX_VENCIMENTO'
+        else:
+            return 'PENDENTE'
+            
+    def get_dynamic_status_display(self):
+        st = self.dynamic_status
+        if st == 'VENCIDO': return 'Vencido'
+        if st == 'PROX_VENCIMENTO': return 'Próx. Vencimento'
+        if st == 'PENDENTE': return 'Pendente'
+        if st == 'PAGO': return 'Pago'
+        if st == 'CANCELADO': return 'Cancelado'
+        return st
+
     def __str__(self):
         return self.name
 
@@ -45,6 +73,7 @@ class User(AbstractUser):
     """
     ROLE_CHOICES = (
         ('PRODUTOR', 'Produtor'),
+        ('EMPRESARIO', 'Empresário'),
         ('INTEGRANTE', 'Integrante'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='INTEGRANTE', verbose_name='Perfil')
@@ -52,7 +81,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=False, blank=True, null=True, verbose_name='E-mail')
 
     def is_produtor(self):
-        return self.role == 'PRODUTOR' or self.is_superuser
+        return self.role in ['PRODUTOR', 'EMPRESARIO'] or self.is_superuser
 
     class Meta:
         verbose_name = "Usuário"
@@ -185,7 +214,7 @@ def receipt_upload_path(instance, filename):
 class ContractDocument(models.Model):
     show = models.ForeignKey(Show, on_delete=models.CASCADE, related_name='documents')
     description = models.CharField(max_length=200, verbose_name='Descrição do Documento')
-    file = models.FileField(upload_to=contract_upload_path, verbose_name='Arquivo / Documento')
+    file = models.FileField(validators=[validate_file_size_and_type], upload_to=contract_upload_path, verbose_name='Arquivo / Documento')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -202,7 +231,7 @@ class FinancialReceipt(models.Model):
     date = models.DateField(blank=True, null=True, verbose_name='Data')
     category = models.CharField(max_length=100, blank=True, null=True, verbose_name='Categoria')
     value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor (R$)')
-    file = models.FileField(upload_to=receipt_upload_path, verbose_name='Arquivo / Comprovante')
+    file = models.FileField(validators=[validate_file_size_and_type], upload_to=receipt_upload_path, verbose_name='Arquivo / Comprovante')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -241,7 +270,7 @@ class ShowPayment(models.Model):
     receipt_date = models.DateField(blank=True, null=True, verbose_name='Data de Recebimento')
     payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES, default='PIX', verbose_name='Forma de Pagamento')
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='RECEBIDO', verbose_name='Status')
-    file = models.FileField(upload_to=payment_upload_path, blank=True, null=True, verbose_name='Arquivo / Comprovante')
+    file = models.FileField(validators=[validate_file_size_and_type], upload_to=payment_upload_path, blank=True, null=True, verbose_name='Arquivo / Comprovante')
     observations = models.TextField(blank=True, null=True, verbose_name='Observações')
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -318,6 +347,35 @@ class Contact(models.Model):
             )
         ]
 
+    @property
+    def dynamic_status(self):
+        if self.status == 'PAGO':
+            return 'PAGO'
+        elif self.status == 'CANCELADO':
+            return 'CANCELADO'
+        elif self.status == 'ISENTO':
+            return 'ISENTO'
+        
+        from django.utils import timezone
+        today = timezone.localdate()
+        
+        if today > self.due_date:
+            return 'VENCIDO'
+        elif 0 <= (self.due_date - today).days <= 7:
+            return 'PROX_VENCIMENTO'
+        else:
+            return 'PENDENTE'
+            
+    def get_dynamic_status_display(self):
+        st = self.dynamic_status
+        if st == 'VENCIDO': return 'Vencido'
+        if st == 'PROX_VENCIMENTO': return 'Próx. Vencimento'
+        if st == 'PENDENTE': return 'Pendente'
+        if st == 'PAGO': return 'Pago'
+        if st == 'CANCELADO': return 'Cancelado'
+        if st == 'ISENTO': return 'Isento'
+        return st
+
     def save(self, *args, **kwargs):
         if self.phone:
             import re
@@ -346,12 +404,8 @@ class BandSubscription(models.Model):
         ('PERSONALIZADO', 'Personalizado'),
     )
     STATUS_CHOICES = (
-        ('ATIVO', 'Ativo'),
-        ('VENCENDO', 'Vencendo'),
-        ('VENCIDO', 'Vencido'),
-        ('SUSPENSO', 'Suspenso'),
-        ('TESTE', 'Teste'),
-        ('CANCELADO', 'Cancelado'),
+        ('ATIVO', 'Ativa'),
+        ('DESATIVADO', 'Desativada'),
     )
     PAYMENT_METHOD_CHOICES = (
         ('PIX', 'Pix'),
@@ -362,13 +416,14 @@ class BandSubscription(models.Model):
         ('OUTRO', 'Outro'),
     )
 
-    band = models.OneToOneField(Band, on_delete=models.CASCADE, related_name='subscription', verbose_name='Banda')
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='subscriptions', verbose_name='Banda')
     plan_name = models.CharField(max_length=100, default='Mensal', verbose_name='Nome do Plano')
     billing_cycle = models.CharField(max_length=20, choices=CYCLE_CHOICES, default='MENSAL', verbose_name='Ciclo de Cobrança')
     contracted_value = models.DecimalField(max_digits=10, decimal_places=2, default=300.00, verbose_name='Valor Contratado')
     start_date = models.DateField(blank=True, null=True, verbose_name='Data de Início')
     next_due_date = models.DateField(blank=True, null=True, verbose_name='Próximo Vencimento')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='TESTE', verbose_name='Status da Assinatura')
+    auto_renew = models.BooleanField(default=False, verbose_name='Renovar automaticamente')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ATIVO', verbose_name='Status da Assinatura')
     payment_method_preference = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES, default='PIX', verbose_name='Preferência de Pagamento')
 
     financial_responsible_name = models.CharField(max_length=200, blank=True, null=True, verbose_name='Responsável Financeiro')
@@ -376,12 +431,16 @@ class BandSubscription(models.Model):
     billing_email = models.EmailField(blank=True, null=True, verbose_name='E-mail de Cobrança')
     internal_notes = models.TextField(blank=True, null=True, verbose_name='Observações Internas')
 
+    is_deleted = models.BooleanField(default=False, verbose_name='Excluída')
+    deleted_at = models.DateTimeField(null=True, blank=True, verbose_name='Data de Exclusão')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = 'Assinatura SaaS'
         verbose_name_plural = 'Assinaturas SaaS'
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"Assinatura - {self.band.name}"
@@ -395,7 +454,7 @@ def rider_upload_path(instance, filename):
 class RiderDocument(models.Model):
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='riders', verbose_name='Banda')
     name = models.CharField(max_length=200, verbose_name='Nome')
-    file = models.FileField(upload_to=rider_upload_path, verbose_name='Arquivo')
+    file = models.FileField(validators=[validate_file_size_and_type], upload_to=rider_upload_path, verbose_name='Arquivo')
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name='ID de Compartilhamento Público')
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Criado por')
@@ -412,7 +471,6 @@ class BillingRecord(models.Model):
     STATUS_CHOICES = (
         ('PENDENTE', 'Pendente'),
         ('PAGO', 'Pago'),
-        ('ATRASADO', 'Atrasado'),
         ('CANCELADO', 'Cancelado'),
         ('ISENTO', 'Isento'),
     )
@@ -426,27 +484,73 @@ class BillingRecord(models.Model):
     )
 
     subscription = models.ForeignKey(BandSubscription, on_delete=models.CASCADE, related_name='records', verbose_name='Assinatura')
-    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='billing_records', verbose_name='Banda')
+    band = models.ForeignKey('Band', on_delete=models.CASCADE, related_name='billing_records', verbose_name='Banda')
     reference_period = models.CharField(max_length=100, verbose_name='Período de Referência (Ex: Agosto/2026)')
+    
+    # Snapshot fields
+    plan_name = models.CharField(max_length=100, blank=True, null=True, verbose_name='Nome do Plano na Época')
+    billing_cycle = models.CharField(max_length=20, blank=True, null=True, verbose_name='Ciclo na Época')
+    
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor Cobrado')
     due_date = models.DateField(verbose_name='Vencimento da Fatura')
     paid_date = models.DateField(blank=True, null=True, verbose_name='Data do Pagamento')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDENTE', verbose_name='Status')
     payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES, blank=True, null=True, verbose_name='Forma de Pagamento')
-    proof_file = models.FileField(upload_to=billing_proof_upload_path, blank=True, null=True, verbose_name='Comprovante')
+    proof_file = models.FileField(validators=[validate_file_size_and_type], upload_to=billing_proof_upload_path, blank=True, null=True, verbose_name='Comprovante')
     notes = models.TextField(blank=True, null=True, verbose_name='Observações')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_billings', verbose_name='Criado por')
+    created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_billings', verbose_name='Criado por')
 
     class Meta:
         verbose_name = 'Fatura SaaS'
         verbose_name_plural = 'Faturas SaaS'
         ordering = ['-due_date', '-created_at']
+        unique_together = ('subscription', 'due_date')
 
     def __str__(self):
         return f"{self.band.name} - {self.reference_period} ({self.get_status_display()})"
+
+    @property
+    def dynamic_status(self):
+        if self.status == 'PAGO':
+            return 'PAGO'
+        elif self.status == 'CANCELADO':
+            return 'CANCELADO'
+        elif self.status == 'ISENTO':
+            return 'ISENTO'
+        
+        from django.utils import timezone
+        today = timezone.localdate()
+        
+        if today > self.due_date:
+            return 'VENCIDO'
+        elif 0 <= (self.due_date - today).days <= 7:
+            return 'PROX_VENCIMENTO'
+        else:
+            return 'PENDENTE'
+            
+    def get_dynamic_status_display(self):
+        st = self.dynamic_status
+        if st == 'VENCIDO': return 'Vencido'
+        if st == 'PROX_VENCIMENTO': return 'Próx. Vencimento'
+        if st == 'PENDENTE': return 'Pendente'
+        if st == 'PAGO': return 'Pago'
+        if st == 'CANCELADO': return 'Cancelado'
+        if st == 'ISENTO': return 'Isento'
+        return st
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        old_status = None
+        if not is_new:
+            old_status = type(self).objects.get(pk=self.pk).status
+
+        super().save(*args, **kwargs)
+
+        
+
 
 class Notification(models.Model):
     EVENT_CHOICES = (
@@ -538,6 +642,35 @@ class WebPushSubscription(models.Model):
             validate_unique=validate_unique,
             validate_constraints=validate_constraints,
         )
+
+    @property
+    def dynamic_status(self):
+        if self.status == 'PAGO':
+            return 'PAGO'
+        elif self.status == 'CANCELADO':
+            return 'CANCELADO'
+        elif self.status == 'ISENTO':
+            return 'ISENTO'
+        
+        from django.utils import timezone
+        today = timezone.localdate()
+        
+        if today > self.due_date:
+            return 'VENCIDO'
+        elif 0 <= (self.due_date - today).days <= 7:
+            return 'PROX_VENCIMENTO'
+        else:
+            return 'PENDENTE'
+            
+    def get_dynamic_status_display(self):
+        st = self.dynamic_status
+        if st == 'VENCIDO': return 'Vencido'
+        if st == 'PROX_VENCIMENTO': return 'Próx. Vencimento'
+        if st == 'PENDENTE': return 'Pendente'
+        if st == 'PAGO': return 'Pago'
+        if st == 'CANCELADO': return 'Cancelado'
+        if st == 'ISENTO': return 'Isento'
+        return st
 
     def save(self, *args, **kwargs):
         self._refresh_endpoint_hash()
@@ -854,6 +987,27 @@ class BandDashboardPendingItem(models.Model):
     def __str__(self):
         return f'{self.show.title if self.show else "Geral"} - {self.description[:50]}'
 
+
+class BandNotice(models.Model):
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='notices', verbose_name='Banda')
+    message = models.TextField(verbose_name='Mensagem')
+    scheduled_at = models.DateTimeField(verbose_name='Agendado para')
+    sent_at = models.DateTimeField(null=True, blank=True, verbose_name='Enviado em')
+    created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_band_notices', verbose_name='Criado por')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    
+    class Meta:
+        verbose_name = 'Aviso da Banda'
+        verbose_name_plural = 'Avisos da Banda'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['sent_at', 'scheduled_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.band.name} - Aviso {self.id}'
+
+
 class AdministrativeBandNotice(models.Model):
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='administrative_notices', null=True, blank=True, verbose_name='Banda Destino', help_text='Deixe em branco para enviar a todas as bandas (Todos).')
     created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_administrative_notices', verbose_name='Criado por')
@@ -875,7 +1029,7 @@ class Partner(models.Model):
     segment = models.CharField(max_length=100, verbose_name='Segmento de Atuação')
     instagram = models.CharField(max_length=200, blank=True, null=True, verbose_name='Instagram')
     phone = models.CharField(max_length=50, blank=True, null=True, verbose_name='Telefone')
-    image = models.ImageField(upload_to='partners/logos/', verbose_name='Logomarca ou Imagem')
+    image = models.ImageField(validators=[validate_file_size_and_type], upload_to='partners/logos/', verbose_name='Logomarca ou Imagem')
     is_active = models.BooleanField(default=True, verbose_name='Ativo')
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1033,7 +1187,7 @@ def support_ticket_attachment_path(instance, filename):
 
 class SupportTicketAttachment(models.Model):
     message = models.ForeignKey(SupportTicketMessage, on_delete=models.CASCADE, related_name='attachments')
-    file = models.FileField(upload_to=support_ticket_attachment_path)
+    file = models.FileField(validators=[validate_file_size_and_type], upload_to=support_ticket_attachment_path)
     original_name = models.CharField(max_length=255)
     mime_type = models.CharField(max_length=100)
     size_bytes = models.PositiveIntegerField()
@@ -1051,7 +1205,7 @@ class SystemSettings(models.Model):
     """
     Configurações globais do sistema Backstage Pro (Etapa 2), incluindo identidade visual.
     """
-    logo = models.ImageField(upload_to='system_logos/', null=True, blank=True)
+    logo = models.ImageField(validators=[validate_file_size_and_type], upload_to='system_logos/', null=True, blank=True)
 
     ios_installation_guide_image = models.ImageField(
         upload_to="app_install_guides/ios/",
@@ -1087,7 +1241,7 @@ class SystemSettings(models.Model):
 
 class LandingPageBandLogo(models.Model):
     name = models.CharField(max_length=255, verbose_name="Nome da banda ou artista")
-    image = models.ImageField(upload_to='landing/band_logos/', verbose_name="Logomarca")
+    image = models.ImageField(validators=[validate_file_size_and_type], upload_to='landing/band_logos/', verbose_name="Logomarca")
     display_order = models.PositiveIntegerField(default=0, verbose_name="Ordem de exibição")
     is_active = models.BooleanField(default=True, verbose_name="Ativo")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1395,3 +1549,72 @@ class TemplateParticipant(models.Model):
             if self.room.template != self.template:
                 raise ValidationError({"room": "TemplateRoom deve pertencer ao mesmo LodgingTemplate."})
 
+
+class Expense(models.Model):
+    STATUS_CHOICES = (
+        ('PENDENTE', 'Pendente'),
+        ('PAGO', 'Pago'),
+        ('VENCIDO', 'Vencido'),
+        ('CANCELADO', 'Cancelado'),
+    )
+    CYCLE_CHOICES = (
+        ('MENSAL', 'Mensal'),
+        ('TRIMESTRAL', 'Trimestral'),
+        ('SEMESTRAL', 'Semestral'),
+        ('ANUAL', 'Anual'),
+    )
+
+    description = models.CharField(max_length=200, verbose_name='Descrição')
+    provider = models.CharField(max_length=200, blank=True, null=True, verbose_name='Fornecedor / Beneficiário')
+    category = models.CharField(max_length=100, verbose_name='Categoria')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor')
+    competence_date = models.DateField(verbose_name='Data de Competência')
+    due_date = models.DateField(verbose_name='Data de Vencimento')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDENTE', verbose_name='Status')
+    paid_date = models.DateField(blank=True, null=True, verbose_name='Data do Pagamento')
+    payment_method = models.CharField(max_length=50, blank=True, null=True, verbose_name='Método de Pagamento')
+    internal_notes = models.TextField(blank=True, null=True, verbose_name='Observações Internas')
+    proof_file = models.FileField(validators=[validate_file_size_and_type], upload_to='expenses_proofs/', blank=True, null=True, verbose_name='Comprovante')
+    
+    is_recurring = models.BooleanField(default=False, verbose_name='Despesa Recorrente?')
+    recurrence_cycle = models.CharField(max_length=20, choices=CYCLE_CHOICES, blank=True, null=True, verbose_name='Ciclo da Recorrência')
+    recurrence_end_date = models.DateField(blank=True, null=True, verbose_name='Data Final da Recorrência')
+    parent_expense = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='child_expenses', verbose_name='Despesa de Origem')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Despesa Administrativa'
+        verbose_name_plural = 'Despesas Administrativas'
+        ordering = ['-due_date', '-created_at']
+
+    def __str__(self):
+        return f"{self.description} - R$ {self.amount}"
+
+# ============================================================
+# AUTOMATIC FILE DELETION ON RECORD DELETE
+# ============================================================
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+from django.db.models import FileField
+import os
+
+@receiver(post_delete)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    """
+    Deletes file from filesystem when corresponding object is deleted.
+    Applies to all models in the 'core' app with FileField (or ImageField).
+    """
+    if getattr(sender._meta, 'app_label', None) != 'core':
+        return
+        
+    for field in sender._meta.fields:
+        if isinstance(field, FileField):
+            file_field = getattr(instance, field.name, None)
+            if file_field and hasattr(file_field, 'path'):
+                try:
+                    if os.path.isfile(file_field.path):
+                        os.remove(file_field.path)
+                except Exception:
+                    pass

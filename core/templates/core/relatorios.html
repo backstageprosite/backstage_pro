@@ -5,8 +5,8 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <h4 class="fw-bold m-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i> Relatórios Financeiros</h4>
     <div>
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-secondary rounded-pill fw-bold px-4 py-2">
-            <i class="fa-solid fa-arrow-left me-2"></i> Voltar
+        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
         </a>
     </div>
 </div>
@@ -181,7 +181,7 @@
                         </td>
                         <td class="pe-4 text-end text-nowrap">
                             <a href="{% url 'show_finance_detail' band.slug show.id %}" class="btn btn-sm btn-outline-primary rounded-pill fw-bold">
-                                Editar
+                                <i class="fa-solid fa-pen-to-square text-primary me-1"></i> Editar
                             </a>
                         </td>
                     </tr>

@@ -393,6 +393,19 @@
                     <div class="alert alert-warning mb-4" style="border-radius: 8px;">
                         <i class="fa-solid fa-lock me-2"></i> Apenas produtores possuem acesso a essas informações
                     </div>
+
+                    {% if is_edit %}
+                    <div class="alert alert-info mb-4 shadow-sm" style="border-radius: 8px;">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fa-solid fa-hard-drive me-2"></i> <strong>Uso de Armazenamento</strong>
+                        </div>
+                        <ul class="mb-0 small text-dark" style="list-style-type: none; padding-left: 1.5rem;">
+                            <li>Arquivos: <strong>{{ files_count|default:"0" }}</strong> de 7</li>
+                            <li>Espaço utilizado: <strong>{{ files_size_mb|default:"0" }} MB</strong> de 35 MB</li>
+                            <li>Máximo por arquivo: <strong>10 MB</strong></li>
+                        </ul>
+                    </div>
+                    {% endif %}
                     
                     {% if not is_edit %}
                         <div class="text-center py-5">
@@ -637,6 +650,11 @@
                 });
             }
         }
+
+        // Add accept attribute to all file inputs for attachments
+        document.querySelectorAll('input[type="file"]').forEach(function(el) {
+            el.setAttribute('accept', '.pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx');
+        });
     });
 </script>
 {% endblock %}

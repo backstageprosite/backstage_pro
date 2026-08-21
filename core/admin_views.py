@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.core.management import call_command
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.views import LoginView
@@ -68,7 +69,7 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
         # Alertas Vencimentos
         context['bandas_vencidas'] = BandSubscription.objects.filter(status='VENCIDO')
         context['bandas_vencendo_7d'] = BandSubscription.objects.filter(next_due_date__gt=today, next_due_date__lte=seven_days_from_now)
-        context['bandas_sem_assinatura'] = Band.objects.filter(subscription__isnull=True)
+        context['bandas_sem_assinatura'] = Band.objects.filter(subscriptions__isnull=True)
         context['faturas_atrasadas'] = BillingRecord.objects.filter(status='ATRASADO')
 
         if context['bandas_vencidas'].exists():
@@ -138,7 +139,7 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
     context_object_name = 'assinaturas'
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().filter(is_deleted=False)
         q = self.request.GET.get('q', '')
         status = self.request.GET.get('status', '')
         cycle = self.request.GET.get('cycle', '')
@@ -258,9 +259,11 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
                 start_date = today.replace(day=1)
                 end_date = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
 
-        # Base Querysets
-        billings = BillingRecord.objects.all()
+                # Base Querysets
+        billings = BillingRecord.objects.filter(subscription__is_deleted=False)
         subs = BandSubscription.objects.all()
+        from .models import Expense
+        expenses = Expense.objects.all()
 
         # Applying Filters
         if band_id:
@@ -275,49 +278,57 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             subs = subs.filter(billing_cycle=cycle)
             billings = billings.filter(subscription__billing_cycle=cycle)
 
-        # 1. Valores Recebidos (PAGO no perÃ­odo baseado em paid_date)
+        # Receitas recebidas (Cobranças pagas pela data de pagamento)
         recebido = billings.filter(
             status='PAGO',
             paid_date__gte=start_date,
             paid_date__lte=end_date
         ).aggregate(total=Sum('amount'))['total'] or 0
 
-        # 2. Valores Pendentes (PENDENTE no perÃ­odo baseado em due_date, >= hoje)
-        pendente = billings.filter(
-            status='PENDENTE',
-            due_date__gte=max(today, start_date),
+        # Despesas pagas
+        despesa_paga = expenses.filter(
+            status='PAGO',
+            paid_date__gte=start_date,
+            paid_date__lte=end_date
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        # Saldo realizado
+        saldo_realizado = recebido - despesa_paga
+
+        # Valores a receber (Cobranças pendentes ou vencidas no período baseado em due_date)
+        a_receber = billings.filter(
+            Q(status='PENDENTE', due_date__lt=timezone.localdate()) | Q(status='PENDENTE', due_date__gte=start_date, due_date__lte=end_date),
+            due_date__gte=start_date,
             due_date__lte=end_date
         ).aggregate(total=Sum('amount'))['total'] or 0
 
-        # 3. Valores Futuros (PENDENTE com due_date > hoje)
-        # Vamos pegar todo o valor futuro, ou limitar ao perÃ­odo se aplicÃ¡vel.
-        # A regra diz: "soma de cobranÃ§as futuras ainda não pagas, com due_date maior que hoje. Pode incluir BillingRecord com status PENDENTE e vencimento futuro."
-        futuro = billings.filter(
+        # Valores a pagar (Despesas pendentes ou vencidas no período baseado em due_date)
+        a_pagar = expenses.filter(
+            Q(status='PENDENTE') | Q(status='VENCIDO'),
+            due_date__gte=start_date,
+            due_date__lte=end_date
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        # Cobranças vencidas
+        cobrancas_vencidas = billings.filter(
             status='PENDENTE',
-            due_date__gt=today
+            due_date__lt=today
         ).aggregate(total=Sum('amount'))['total'] or 0
 
-        # 4. Valores Atrasados (ATRASADO ou PENDENTE < hoje)
-        atrasado = billings.filter(
-            Q(status='ATRASADO') | Q(status='PENDENTE', due_date__lt=today)
+        # Despesas vencidas
+        despesas_vencidas = expenses.filter(
+            Q(status='PENDENTE') | Q(status='VENCIDO'),
+            due_date__lt=today
         ).aggregate(total=Sum('amount'))['total'] or 0
 
-        # 5. Receita Prevista Mensal (Valor Contratado das assinaturas ATIVAS)
-        receita_prevista_mensal = BandSubscription.objects.filter(status='ATIVO').aggregate(total=Sum('contracted_value'))['total'] or 0
-
-        # 6. Total de Bandas Ativas Pagantes
-        total_bandas_ativas = BandSubscription.objects.filter(status='ATIVO').count()
-
-        # GrÃ¡ficos Data
-
-        # GrÃ¡fico 1: Recebido x Pendente x Futuro x Atrasado
+        # Update chart data to match new KPIs
         chart_bars = {
-            'labels': ['Recebido', 'Pendente', 'Futuro', 'Atrasado'],
-            'data': [float(recebido), float(pendente), float(futuro), float(atrasado)]
+            'labels': ['Recebido', 'Despesas', 'A Receber', 'A Pagar'],
+            'data': [float(recebido), float(despesa_paga), float(a_receber), float(a_pagar)]
         }
-
-        # GrÃ¡fico 2: Pizza de Status
+        
         status_counts = billings.values('status').annotate(total=Count('id'))
+
         status_labels = []
         status_data = []
         for s in status_counts:
@@ -359,7 +370,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
         # Tabela 1: Resumo por Banda
         band_summaries = []
-        all_bands = Band.objects.filter(subscription__isnull=False)
+        all_bands = Band.objects.filter(subscriptions__is_deleted=False).distinct()
         if band_id:
             all_bands = all_bands.filter(id=band_id)
 
@@ -372,7 +383,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
             band_summaries.append({
                 'band': band,
-                'subscription': band.subscription,
+                'subscription': band.subscriptions.filter(status='ATIVO', is_deleted=False).first(),
                 'recebido': rec,
                 'pendente': pend,
                 'futuro': fut,
@@ -389,12 +400,13 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'cycle': cycle,
             'period': period,
 
-            'kpi_recebido': recebido,
-            'kpi_pendente': pendente,
-            'kpi_futuro': futuro,
-            'kpi_atrasado': atrasado,
-            'kpi_receita_prevista': receita_prevista_mensal,
-            'kpi_total_bandas': total_bandas_ativas,
+            'recebido': recebido,
+            'despesa_paga': despesa_paga,
+            'saldo_realizado': saldo_realizado,
+            'a_receber': a_receber,
+            'a_pagar': a_pagar,
+            'cobrancas_vencidas': cobrancas_vencidas,
+            'despesas_vencidas': despesas_vencidas,
 
             'chart_bars': json.dumps(chart_bars),
             'chart_pie': json.dumps(chart_pie),
@@ -402,8 +414,8 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'chart_top_bandas': json.dumps(chart_top_bandas),
 
             'band_summaries': band_summaries,
-            'billings': billings.order_by('-due_date')[:100], # limit to 100 to avoid huge tables initially
-            'all_bands': Band.objects.filter(subscription__isnull=False).order_by('name'),
+            'all_bands': Band.objects.filter(subscriptions__is_deleted=False).distinct().order_by('name'),
+            'expenses': expenses.order_by('-due_date')
         })
 
         return context
@@ -554,13 +566,16 @@ def admin_assinatura_edit(request, pk):
                     messages.error(request, f"Erro ({field}): {error}")
     return redirect('admin_painel:assinaturas')
 
+from django.utils import timezone
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_assinatura_cancel(request, pk):
     if request.method == 'POST':
         sub = get_object_or_404(BandSubscription, pk=pk)
-        sub.status = 'CANCELADO'
+        sub.is_deleted = True
+        sub.deleted_at = timezone.now()
+        sub.status = 'DESATIVADO'
         sub.save()
-        messages.success(request, "Assinatura cancelada com sucesso!")
+        messages.success(request, "Assinatura excluída com sucesso!")
     return redirect('admin_painel:assinaturas')
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
@@ -606,6 +621,77 @@ def admin_cobranca_edit(request, pk):
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"Erro ({field}): {error}")
+    return redirect('admin_painel:cobrancas')
+
+
+
+from django.db import transaction
+from dateutil.relativedelta import relativedelta
+from datetime import date
+from django.contrib import messages
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_cobranca_pagar(request, pk):
+    if request.method == 'POST':
+        rec = get_object_or_404(BillingRecord, pk=pk)
+        
+        # Check if already paid to prevent double payment
+        if rec.status == 'PAGO':
+            messages.warning(request, "Esta fatura já consta como paga.")
+            return redirect('admin_painel:cobrancas')
+            
+        paid_date_str = request.POST.get('paid_date')
+        payment_method = request.POST.get('payment_method', '')
+        notes = request.POST.get('notes', '')
+        
+        try:
+            paid_date = datetime.datetime.strptime(paid_date_str, '%Y-%m-%d').date() if paid_date_str else timezone.localdate()
+        except ValueError:
+            paid_date = timezone.localdate()
+            
+        with transaction.atomic():
+            rec.paid_date = paid_date
+            rec.status = 'PAGO'
+            
+            # If the user model is available, maybe save in notes or log somewhere
+            admin_user = request.user.get_full_name() or request.user.username
+            rec.notes = f"{rec.notes}\n[Pago recebido via {payment_method} em {paid_date} por {admin_user}]. Obs: {notes}".strip()
+            rec.save()
+            
+            sub = rec.subscription
+            if sub and sub.auto_renew:
+                # Calculate new due date based on previous due date, not paid_date
+                old_date = sub.next_due_date or rec.due_date
+                
+                cycle = sub.billing_cycle
+                if cycle == 'MENSAL':
+                    new_date = old_date + relativedelta(months=1)
+                elif cycle == 'BIMESTRAL':
+                    new_date = old_date + relativedelta(months=2)
+                elif cycle == 'TRIMESTRAL':
+                    new_date = old_date + relativedelta(months=3)
+                elif cycle == 'SEMESTRAL':
+                    new_date = old_date + relativedelta(months=6)
+                elif cycle == 'ANUAL':
+                    new_date = old_date + relativedelta(months=12)
+                else:
+                    # fallback
+                    new_date = old_date + relativedelta(months=1)
+                
+                sub.next_due_date = new_date
+                sub.save()
+                messages.success(request, f"Pagamento confirmado. Assinatura renovada automaticamente até {new_date.strftime('%d/%m/%Y')}.")
+            else:
+                messages.success(request, "Pagamento confirmado. A assinatura não foi renovada automaticamente.")
+                
+    return redirect('admin_painel:cobrancas')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_cobranca_delete(request, pk):
+    if request.method == 'POST':
+        rec = get_object_or_404(BillingRecord, pk=pk)
+        rec.delete()
+        messages.success(request, "Fatura excluída com sucesso!")
     return redirect('admin_painel:cobrancas')
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
