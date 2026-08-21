@@ -58,6 +58,7 @@
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Plano</th>
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Valor</th>
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Vencimento</th>
+                        <th class="text-center text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Status</th>
                         <th class="text-end pe-4 text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Ações</th>
                     </tr>
                 </thead>
@@ -123,8 +124,8 @@
                             </div>
                         </td>
                     </tr>
-                    
-                    
+
+
                       <!-- Modal Toggle Status Assinatura -->
                       <div class="modal fade" id="modalToggleStatus{{ sub.id }}" tabindex="-1" aria-hidden="true">
                           <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -160,7 +161,7 @@
                                     {% csrf_token %}
                                     <div class="modal-body py-4 text-start">
                                         <input type="hidden" name="band" value="{{ sub.band.id }}">
-                                        
+
                                         <div class="row">
                                             <input type="hidden" name="plan_name" value="{{ sub.plan_name }}">
                                             <div class="col-md-4 mb-3">
@@ -176,7 +177,7 @@
                                                 <input type="number" step="0.01" name="contracted_value" class="form-control" value="{{ sub.contracted_value|stringformat:'s' }}">
                                             </div>
                                         </div>
-                                        
+
                                         <div class="row">
                                             <div class="col-md-4 mb-3">
                                                 <label class="form-label fw-semibold">Data Inicial</label>
@@ -195,10 +196,10 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        
+
                                         <hr class="my-4">
                                         <h6 class="fw-bold mb-3 text-secondary">Dados Financeiros e Contato</h6>
-                                        
+
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label fw-semibold">Responsável Financeiro</label>
@@ -213,7 +214,7 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        
+
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label fw-semibold">WhatsApp de Cobrança</label>
@@ -224,7 +225,7 @@
                                                 <input type="email" name="billing_email" class="form-control" value="{{ sub.billing_email|default:'' }}">
                                             </div>
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label fw-semibold">Notas Internas</label>
                                             <textarea name="internal_notes" class="form-control" rows="2">{{ sub.internal_notes|default:'' }}</textarea>
@@ -276,7 +277,7 @@
             <form method="POST" action="{% url 'admin_painel:assinaturas_nova' %}">
                 {% csrf_token %}
                 <div class="modal-body py-4 text-start">
-                    
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Banda Cliente</label>
                         <select name="band" class="form-select" required>
@@ -302,7 +303,7 @@
                             <input type="number" step="0.01" name="contracted_value" class="form-control" value="300.00" required>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-semibold">Data Inicial</label>
@@ -321,10 +322,10 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <hr class="my-4">
                     <h6 class="fw-bold mb-3 text-secondary">Dados Financeiros e Contato</h6>
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold">Responsável Financeiro</label>
@@ -339,7 +340,7 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold">WhatsApp de Cobrança</label>
@@ -350,7 +351,7 @@
                             <input type="email" name="billing_email" class="form-control">
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Notas Internas</label>
                         <textarea name="internal_notes" class="form-control" rows="2"></textarea>
@@ -400,7 +401,7 @@
                 }
             });
         });
-        
+
         document.querySelectorAll('select[name="billing_cycle"]').forEach(function(cycleSelect) {
             cycleSelect.addEventListener('change', function() {
                 var form = this.closest('form');
@@ -408,7 +409,7 @@
                 if (startInput) {
                     var evt = new Event('change');
                     startInput.dispatchEvent(evt);
-                    
+
                     // Update hidden plan_name
                     var hiddenPlan = form.querySelector('input[name="plan_name"]');
                     if (hiddenPlan) {
@@ -421,7 +422,7 @@
         });
     });
     </script>
-    
+
 {% endblock %}
 
 {% block extra_js %}
@@ -454,7 +455,7 @@
                 }
             });
         });
-        
+
         document.querySelectorAll('select[name="billing_cycle"]').forEach(function(cycleSelect) {
             cycleSelect.addEventListener('change', function() {
                 var form = this.closest('form');
@@ -462,7 +463,7 @@
                 if (startInput) {
                     var evt = new Event('change');
                     startInput.dispatchEvent(evt);
-                    
+
                     // Update hidden plan_name
                     var hiddenPlan = form.querySelector('input[name="plan_name"]');
                     if (hiddenPlan) {
@@ -475,5 +476,5 @@
         });
     });
     </script>
-    
+
 {% endblock %}

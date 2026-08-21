@@ -9,9 +9,11 @@
         <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2">
             <i class="fa-solid fa-arrow-left me-1"></i> Voltar
         </a>
+        {% if request.user.is_produtor %}
         <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalNovoAviso">
             <i class="fa-solid fa-plus me-1"></i> Novo Aviso
         </button>
+        {% endif %}
     </div>
 </div>
 
@@ -55,6 +57,7 @@
                             <small class="text-muted">{{ notice.created_at|date:"d/m/Y H:i" }}</small>
                         </td>
                         <td class="text-end pe-4">
+                            {% if request.user.is_produtor %}
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle fw-bold px-3 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
                                     <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
@@ -73,7 +76,7 @@
                                     </li>
                                 </ul>
                             </div>
-                            
+
                             <!-- Modal Excluir -->
                             <div class="modal fade text-start" id="deleteNoticeModal{{ notice.id }}" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
@@ -96,6 +99,7 @@
                                     </div>
                                 </div>
                             </div>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -112,6 +116,7 @@
     </div>
 </div>
 
+{% if request.user.is_produtor %}
 <!-- Modal Novo Aviso -->
 <div class="modal fade" id="modalNovoAviso" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -144,7 +149,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const fireNowCheckbox = document.getElementById("fireNowSwitch");
     const dateContainer = document.getElementById("dateContainer");
     const timeContainer = document.getElementById("timeContainer");
-    
+
     function toggleDateInputs() {
         if (fireNowCheckbox.checked) {
             dateContainer.style.display = "none";
@@ -154,7 +159,7 @@ document.addEventListener("DOMContentLoaded", function() {
             timeContainer.style.display = "block";
         }
     }
-    
+
     if (fireNowCheckbox) {
         fireNowCheckbox.addEventListener("change", toggleDateInputs);
         toggleDateInputs();
@@ -172,4 +177,5 @@ document.addEventListener("DOMContentLoaded", function() {
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}

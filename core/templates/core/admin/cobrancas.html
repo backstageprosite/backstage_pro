@@ -90,7 +90,7 @@
                                 {% if rec.is_vencido %}
                                     <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill border border-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>Vencido</span>
                                 {% elif rec.is_vencendo_7d %}
-                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>Vencendo</span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>Vencendo</span>
                                 {% else %}
                                     <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill border border-primary"><i class="fa-solid fa-clock me-1"></i>Pendente</span>
                                 {% endif %}
@@ -121,7 +121,7 @@ Atenciosamente,
 Vinicius Lopes
 Backstage Pro</textarea>
                                     <a href="https://wa.me/{{ phone }}?text=Ol%C3%A1%2C%20{{ rec.subscription.financial_responsible_name|default:'respons%C3%A1vel'|urlencode }}%2E%20Tudo%20bem%3F%0A%0AEstou%20passando%20para%20lembrar%20sobre%20a%20assinatura%20do%20Backstage%20Pro%20da%20banda%20{{ rec.band.name|urlencode }}%2E%0A%0APlano%3A%20{{ rec.subscription.plan_name|urlencode }}%0APer%C3%ADodo%3A%20{{ rec.reference_period|urlencode }}%0AValor%3A%20R%24%20{{ rec.amount }}%0AVencimento%3A%20{{ rec.due_date|date:'d/m/Y' }}%0A%0AO%20pagamento%20pode%20ser%20regularizado%20conforme%20combinado%2E%0A%0AQualquer%20d%C3%BAvida%2C%20fico%20%C3%A0%20disposi%C3%A7%C3%A3o%2E%0A%0AAtenciosamente%2C%0AVinicius%20Lopes%0ABackstage%20Pro" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Enviar WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-                                    <button class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm" onclick="copyToClipboard('msgText{{ rec.id }}')" title="Copiar Mensagem">
+                                    <button class="btn btn-sm btn-secondary rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" onclick="copyToClipboard('msgText{{ rec.id }}')" title="Copiar Mensagem">
                                         <i class="fa-solid fa-copy"></i>
                                     </button>
                                 </div>
@@ -131,24 +131,41 @@ Backstage Pro</textarea>
                             {% endwith %}
                         </td>
                         <td class="text-end pe-4">
-                            {% if rec.status != 'PAGO' %}
-                            <form method="POST" action="{% url 'admin_painel:cobrancas_pagar' rec.id %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-success rounded-pill shadow-sm mb-1" title="Marcar como Paga" onclick="return confirm('Confirmar pagamento?');">
-                                    <i class="fa-solid fa-check"></i>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle fw-bold px-3 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
+                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
                                 </button>
-                            </form>
-                            {% endif %}
-
-                            {% if rec.proof_file %}
-                            <a href="{{ rec.proof_file.url }}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill shadow-sm mb-1" title="Ver Comprovante">
-                                <i class="fa-solid fa-file-invoice"></i>
-                            </a>
-                            {% endif %}
-
-                            <button class="btn btn-sm btn-outline-primary rounded-pill shadow-sm mb-1 px-3" data-bs-toggle="modal" data-bs-target="#modalEditCobranca{{ rec.id }}" title="Editar Fatura">
-                                Editar
-                            </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.95rem;">
+                                    {% if rec.status != 'PAGO' %}
+                                    <li>
+                                        <form method="POST" action="{% url 'admin_painel:cobrancas_pagar' rec.id %}" class="m-0">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item py-2 fw-medium text-success" onclick="return confirm('Confirmar pagamento?');">
+                                                <i class="fa-solid fa-check text-success w-20px me-2"></i> Pagar
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                    {% if rec.proof_file %}
+                                    <li>
+                                        <a href="{{ rec.proof_file.url }}" target="_blank" class="dropdown-item py-2 fw-medium text-info">
+                                            <i class="fa-solid fa-file-invoice text-info w-20px me-2"></i> Comprovante
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    <li>
+                                        <button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditCobranca{{ rec.id }}">
+                                            <i class="fa-solid fa-pen-to-square text-primary w-20px me-2"></i> Editar
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalDeleteCobranca{{ rec.id }}">
+                                            <i class="fa-solid fa-trash text-danger w-20px me-2"></i> Excluir
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>
 

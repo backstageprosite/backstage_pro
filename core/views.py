@@ -3873,19 +3873,19 @@ def room_list_participant_delete(request, band_slug, pk, participant_id):
     if request.method != 'POST':
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied('Método não permitido.')
-    
+
     from django.shortcuts import get_object_or_404, redirect
     from django.contrib import messages
     from core.models import RoomList, RoomListParticipant
-    
+
     room_list = get_object_or_404(RoomList, pk=pk, band__slug=band_slug)
     if room_list.status != 'RASCUNHO':
         messages.error(request, 'Não é possível excluir integrantes de uma Room List que não está em rascunho.')
         return redirect('room_list_manage', band_slug=band_slug, pk=pk)
-        
+
     participant = get_object_or_404(RoomListParticipant, pk=participant_id, room_list=room_list)
     participant.delete()
-    
+
     messages.success(request, f'Integrante {participant.snapshot_name} removido da lista com sucesso.')
     return redirect('room_list_manage', band_slug=band_slug, pk=pk)
 
@@ -3896,14 +3896,10 @@ from django.utils import timezone
 @login_required
 @band_required
 def band_notices_index(request, band_slug):
-    if not request.user.is_produtor():
-        messages.error(request, 'Acesso restrito.')
-        return redirect('dashboard', band_slug=band_slug)
-        
     notices = request.band.notices.all()
     from core.forms import BandNoticeForm
     form = BandNoticeForm()
-    
+
     return render(request, 'core/notices/band_notices_index.html', {'notices': notices, 'band': request.band, 'form': form})
 
 @login_required
@@ -3911,7 +3907,7 @@ def band_notices_index(request, band_slug):
 def band_notices_create(request, band_slug):
     if not request.user.is_produtor():
         return redirect('dashboard', band_slug=band_slug)
-        
+
     if request.method == 'POST':
         from core.forms import BandNoticeForm
         form = BandNoticeForm(request.POST)
@@ -3920,7 +3916,7 @@ def band_notices_create(request, band_slug):
             notice.band = request.band
             notice.created_by = request.user
             notice.scheduled_at = form.cleaned_data['scheduled_at']
-            
+
             if form.cleaned_data.get('fire_now'):
                 from django.utils import timezone
                 from core.services.notifications import notify_band_users
@@ -3942,12 +3938,12 @@ def band_notices_create(request, band_slug):
             else:
                 notice.save()
                 messages.success(request, 'Aviso agendado com sucesso!')
-                
+
             return redirect('band_notices_index', band_slug=band_slug)
         else:
             notices = request.band.notices.all()
             return render(request, 'core/notices/band_notices_index.html', {'notices': notices, 'band': request.band, 'form': form})
-            
+
     return redirect('band_notices_index', band_slug=band_slug)
 
 @login_required
@@ -3955,13 +3951,13 @@ def band_notices_create(request, band_slug):
 def band_notices_edit(request, band_slug, pk):
     if not request.user.is_produtor():
         return redirect('dashboard', band_slug=band_slug)
-        
+
     from core.models import BandNotice
     from core.forms import BandNoticeForm
     from django.shortcuts import get_object_or_404
-    
+
     notice = get_object_or_404(BandNotice, pk=pk, band=request.band)
-    
+
     if request.method == 'POST':
         form = BandNoticeForm(request.POST, instance=notice)
         if form.is_valid():
@@ -3975,7 +3971,7 @@ def band_notices_edit(request, band_slug, pk):
         local_time = timezone.localtime(notice.scheduled_at)
         initial = {'date': local_time.date(), 'time': local_time.time()}
         form = BandNoticeForm(instance=notice, initial=initial)
-        
+
     return render(request, 'core/notices/band_notices_form.html', {'form': form, 'band': request.band, 'notice': notice})
 
 @login_required
@@ -3983,14 +3979,14 @@ def band_notices_edit(request, band_slug, pk):
 def band_notices_delete(request, band_slug, pk):
     if not request.user.is_produtor():
         return redirect('dashboard', band_slug=band_slug)
-        
+
     if request.method != 'POST':
         from django.core.exceptions import PermissionDenied
         raise PermissionDenied('Método não permitido.')
-        
+
     from core.models import BandNotice
     from django.shortcuts import get_object_or_404
-    
+
     notice = get_object_or_404(BandNotice, pk=pk, band=request.band)
     notice.delete()
     messages.success(request, 'Aviso excluído.')
