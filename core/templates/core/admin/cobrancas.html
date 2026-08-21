@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-file-invoice-dollar me-2 text-primary"></i> Fatura e Cobrança</h4>
+    <h4 class="fw-bold m-0"><i class="fa-solid fa-file-invoice-dollar me-2 text-primary"></i> Faturas</h4>
     
 </div>
 
@@ -72,13 +72,13 @@
                                 {{ rec.due_date|date:"d/m/Y" }}
                                 {% if rec.status == 'PENDENTE' %}
                                     <br>
-                                    {% if rec.due_date < today %}
-                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2" style="font-size: 0.7rem;">Em atraso</span>
-                                    {% elif rec.due_date <= today %}
-                                        <span class="badge bg-warning-subtle text-warning rounded-pill px-2" style="font-size: 0.7rem;">Vence hoje/breve</span>
-                                    {% else %}
+                                    {% if rec.is_vencido %}
+                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2" style="font-size: 0.7rem;">Vencido</span>
+                                      {% elif rec.is_vencendo_7d %}
+                                        <span class="badge bg-warning-subtle text-warning rounded-pill px-2" style="font-size: 0.7rem; background-color: #ffc107 !important; color: #000 !important;">Proxi. Vencimento</span>
+                                      {% elif rec.status == 'PENDENTE' %}
                                         <span class="badge bg-primary-subtle text-primary rounded-pill px-2" style="font-size: 0.7rem;">No prazo</span>
-                                    {% endif %}
+                                      {% endif %}
                                 {% endif %}
                             </div>
                         </td>

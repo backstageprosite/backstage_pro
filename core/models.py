@@ -513,6 +513,21 @@ class BillingRecord(models.Model):
         return f"{self.band.name} - {self.reference_period} ({self.get_status_display()})"
 
     @property
+    def is_vencendo_7d(self):
+        import datetime
+        if self.status != 'PENDENTE' or not self.due_date: return False
+        hoje = datetime.date.today()
+        diff = (self.due_date - hoje).days
+        return 0 <= diff <= 7
+        
+    @property
+    def is_vencido(self):
+        import datetime
+        if self.status != 'PENDENTE' or not self.due_date: return False
+        return self.due_date < datetime.date.today()
+
+
+    @property
     def dynamic_status(self):
         if self.status == 'PAGO':
             return 'PAGO'

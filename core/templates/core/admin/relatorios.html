@@ -7,7 +7,7 @@
 
 <div class="row">
     <!-- Relatório Financeiro SaaS -->
-    <div class="col-md-4 col-sm-6 mb-4">
+    <div class="col-6 col-md-4 col-lg-3 col-sm-6 mb-4">
         <a href="{% url 'admin_painel:relatorio_financeiro' %}" class="text-decoration-none">
             <div class="card shadow-sm border-0 h-100 card-hover-premium" style="border-radius: 12px;">
                 <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
@@ -21,7 +21,7 @@
     </div>
 
     <!-- Catálogo de Parceiros -->
-    <div class="col-md-4 col-sm-6 mb-4">
+    <div class="col-6 col-md-4 col-lg-3 col-sm-6 mb-4">
         <a href="{% url 'admin_painel:parceiros' %}" class="text-decoration-none">
             <div class="card shadow-sm border-0 h-100 card-hover-premium" style="border-radius: 12px;">
                 <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
@@ -35,7 +35,7 @@
     </div>
 
     <!-- Fale Conosco -->
-    <div class="col-md-4 col-sm-6 mb-4">
+    <div class="col-6 col-md-4 col-lg-3 col-sm-6 mb-4">
         <a href="{% url 'admin_painel:support_list' %}" class="text-decoration-none">
             <div class="card shadow-sm border-0 h-100 card-hover-premium position-relative" style="border-radius: 12px;">
                 {% if support_unread_count and support_unread_count > 0 %}
@@ -54,7 +54,7 @@
     </div>
 
     <!-- Site -->
-    <div class="col-md-4 col-sm-6 mb-4">
+    <div class="col-6 col-md-4 col-lg-3 col-sm-6 mb-4">
         <a href="{% url 'admin_painel:site_logos' %}" class="text-decoration-none">
             <div class="card shadow-sm border-0 h-100 card-hover-premium" style="border-radius: 12px;">
                 <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
@@ -68,7 +68,7 @@
     </div>
     <!-- Web Push -->
     {% if user_has_admin_web_push_perm %}
-    <div class="col-md-4 col-sm-6 mb-4">
+    <div class="col-6 col-md-4 col-lg-3 col-sm-6 mb-4">
         <a href="{% url 'admin_painel:admin_web_push_dashboard' %}" class="text-decoration-none">
             <div class="card shadow-sm border-0 h-100 card-hover-premium" style="border-radius: 12px;">
                 <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
