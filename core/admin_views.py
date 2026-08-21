@@ -161,6 +161,7 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['form_create'] = AdminSubscriptionForm()
         context['today'] = datetime.date.today()
+        context['seven_days'] = datetime.date.today() + datetime.timedelta(days=7)
         return context
 
 class AdminCobrancasView(AdminRequiredMixin, ListView):

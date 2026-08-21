@@ -58,7 +58,6 @@
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Plano</th>
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Valor</th>
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Vencimento</th>
-                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Pagamento</th>
                         <th class="text-muted text-uppercase text-center" style="font-size: 0.8rem; letter-spacing: 0.5px;">Status</th>
                         <th class="text-end pe-4 text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Ações</th>
                     </tr>
@@ -89,23 +88,15 @@
                             <div class="fw-semibold">
                                 {% if sub.next_due_date %}
                                     {{ sub.next_due_date|date:"d/m/Y" }}
+                                    {% if sub.next_due_date < today %}
+                                        <br><span class="badge bg-danger rounded-pill px-2 mt-1" style="font-size: 0.7rem;">Vencido</span>
+                                    {% elif sub.next_due_date <= seven_days %}
+                                        <br><span class="badge bg-warning text-dark rounded-pill px-2 mt-1" style="font-size: 0.7rem;">Proxi. Vencimento</span>
+                                    {% endif %}
                                 {% else %}
                                     <span class="text-muted">Não definido</span>
                                 {% endif %}
                             </div>
-                        </td>
-                        <td>
-                            {% if sub.next_due_date %}
-                                {% if sub.status == 'VENCIDO' %}
-                                    <span class="badge bg-danger-subtle text-danger rounded-pill px-2" style="font-size: 0.7rem;">Vencido</span>
-                                {% elif sub.status == 'VENCENDO' or sub.next_due_date <= today %}
-                                    <span class="badge bg-warning-subtle text-warning rounded-pill px-2" style="font-size: 0.7rem;">Prox. Vencimento</span>
-                                {% else %}
-                                    <span class="badge bg-success-subtle text-success rounded-pill px-2" style="font-size: 0.7rem;">No Prazo</span>
-                                {% endif %}
-                            {% else %}
-                                -
-                            {% endif %}
                         </td>
                         <td class="text-center">
                             {% if sub.status == 'ATIVO' %}
@@ -123,17 +114,29 @@
                             {% endif %}
                         </td>
                         <td class="text-end pe-4">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill shadow-sm me-1" data-bs-toggle="modal" data-bs-target="#modalEditSub{{ sub.id }}">
-                                Editar
-                            </button>
-                            {% if sub.status != 'CANCELADO' %}
-                                <form method="POST" action="{% url 'admin_painel:assinaturas_cancelar' sub.id %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill shadow-sm" onclick="return confirm('Tem certeza que deseja cancelar esta assinatura?');">
-                                        Cancelar
-                                    </button>
-                                </form>
-                            {% endif %}
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                    <li>
+                                        <button class="dropdown-item py-2 fw-medium" type="button" data-bs-toggle="modal" data-bs-target="#modalEditSub{{ sub.id }}">
+                                            <i class="fa-solid fa-pen-to-square text-primary me-2"></i>Editar
+                                        </button>
+                                    </li>
+                                    {% if sub.status != 'CANCELADO' %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="POST" action="{% url 'admin_painel:assinaturas_cancelar' sub.id %}" class="d-inline w-100">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item py-2 fw-medium text-danger" onclick="return confirm('Tem certeza que deseja cancelar esta assinatura?');">
+                                                <i class="fa-solid fa-trash text-danger me-2"></i>Cancelar / Excluir
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
                         </td>
                     </tr>
                     
