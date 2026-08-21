@@ -861,9 +861,13 @@ def show_pdf_view(request, band_slug, pk):
     como o botão está no admin, basta verificar se é produtor.
     """
     if not request.user.is_produtor():
+        from django.contrib import messages
+        from django.shortcuts import redirect
         messages.error(request, 'Você não tem permissão para exportar PDFs.')
         return redirect('calendario', band_slug=band_slug)
 
+    from django.shortcuts import get_object_or_404, render
+    from core.models import Show
     show = get_object_or_404(Show, pk=pk, band=request.band)
 
     try:
@@ -872,30 +876,15 @@ def show_pdf_view(request, band_slug, pk):
     except Exception:
         weather = None
 
-    from django.template.loader import render_to_string
-    from xhtml2pdf import pisa
-    import io
-    from django.http import HttpResponse
-
     context = {
         'show': show,
         'weather': weather,
         'request': request,
+        'pdf_logo_base64': get_image_base64(request.band.logo),
     }
-    html_string = render_to_string('core/show_pdf.html', context, request=request)
-    result = io.BytesIO()
-    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
-    if not pdf.err:
-        response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        response['Content-Disposition'] = 'inline; filename="show.pdf"'
-        response['Cache-Control'] = 'private, no-store'
-        return response
-    return HttpResponse('Erro ao gerar PDF', status=500)
-
-
+    return render(request, 'core/show_pdf.html', context)
 
 @band_required
-
 def agenda_pdf_view(request, band_slug):
 
     """
