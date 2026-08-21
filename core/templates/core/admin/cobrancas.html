@@ -138,7 +138,7 @@ Backstage Pro</textarea>
                         </td>
                         <td class="text-end pe-4">
                             {% if rec.status != 'PAGO' %}
-                            <form method="POST" action="{% url 'admin_painel:cobranca_marcar_paga' rec.id %}" class="d-inline">
+                            <form method="POST" action="{% url 'admin_painel:cobrancas_pagar' rec.id %}" class="d-inline">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-outline-success rounded-pill shadow-sm mb-1" title="Marcar como Paga" onclick="return confirm('Confirmar pagamento?');">
                                     <i class="fa-solid fa-check"></i>
