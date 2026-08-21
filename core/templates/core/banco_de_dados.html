@@ -63,17 +63,17 @@
                         <td class="fw-medium text-dark phone-format">{{ contato.phone|default:"-" }}</td>
                         <td>
                             {% if contato.contact_type == 'FORNECEDOR' %}
-                                <span class="badge bg-secondary px-3 py-2"><i class="fa-solid fa-truck-fast me-1"></i> Fornecedor</span>
+                                <span class="badge bg-secondary-subtle text-secondary px-3 py-2 border border-secondary border-opacity-25"><i class="fa-solid fa-truck-fast me-1"></i> Fornecedor</span>
                             {% elif contato.contact_type == 'CONTRATANTE' %}
-                                <span class="badge bg-primary px-3 py-2"><i class="fa-solid fa-handshake me-1"></i> Contratante</span>
+                                <span class="badge bg-primary-subtle text-primary px-3 py-2 border border-primary border-opacity-25"><i class="fa-solid fa-handshake me-1"></i> Contratante</span>
                             {% elif contato.contact_type == 'ESTABELECIMENTO' %}
-                                <span class="badge bg-dark px-3 py-2"><i class="fa-solid fa-building me-1"></i> Estabelecimento</span>
+                                <span class="badge bg-dark-subtle text-dark px-3 py-2 border border-dark border-opacity-25"><i class="fa-solid fa-building me-1"></i> Estabelecimento</span>
                             {% elif contato.contact_type == 'HOSPEDAGEM' %}
-                                <span class="badge bg-info text-dark px-3 py-2"><i class="fa-solid fa-hotel me-1"></i> Hospedagem</span>
+                                <span class="badge bg-info-subtle text-info px-3 py-2 border border-info border-opacity-25"><i class="fa-solid fa-hotel me-1"></i> Hospedagem</span>
                             {% elif contato.contact_type == 'RESTAURANTE' %}
-                                <span class="badge bg-warning text-dark px-3 py-2"><i class="fa-solid fa-utensils me-1"></i> Restaurante</span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-2 border border-warning border-opacity-25"><i class="fa-solid fa-utensils me-1"></i> Restaurante</span>
                             {% elif contato.contact_type == 'PRODUTOR' %}
-                                <span class="badge bg-danger px-3 py-2"><i class="fa-solid fa-user-tie me-1"></i> Produtor</span>
+                                <span class="badge bg-danger-subtle text-danger px-3 py-2 border border-danger border-opacity-25"><i class="fa-solid fa-user-tie me-1"></i> Produtor</span>
                             {% else %}
                                 <span class="badge bg-light text-dark px-3 py-2 border">{{ contato.get_contact_type_display }}</span>
                             {% endif %}
@@ -126,7 +126,7 @@
                 <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if search_type %}&tipo={{ search_type }}{% endif %}{% if search_location %}&local={{ search_location }}{% endif %}{% if search_band %}&banda={{ search_band }}{% endif %}">&laquo;</a>
             </li>
         {% endif %}
-        
+
         {% for num in page_obj.paginator.page_range %}
             {% if page_obj.number == num %}
                 <li class="page-item active"><span class="page-link">{{ num }}</span></li>
@@ -134,7 +134,7 @@
                 <li class="page-item"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if search_type %}&tipo={{ search_type }}{% endif %}{% if search_location %}&local={{ search_location }}{% endif %}{% if search_band %}&banda={{ search_band }}{% endif %}">{{ num }}</a></li>
             {% endif %}
         {% endfor %}
-        
+
         {% if page_obj.has_next %}
             <li class="page-item">
                 <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if search_type %}&tipo={{ search_type }}{% endif %}{% if search_location %}&local={{ search_location }}{% endif %}{% if search_band %}&banda={{ search_band }}{% endif %}">&raquo;</a>
@@ -158,7 +158,7 @@
                     <label class="form-label fw-bold small text-muted mb-0">Nome</label>
                     <p class="mb-1 fs-5 fw-bold">{{ contato.name }}</p>
                 </div>
-                
+
                 <div class="row mb-3">
                     <div class="col-6">
                         <label class="form-label fw-bold small text-muted mb-0">Contato</label>
@@ -190,7 +190,7 @@
                     <label class="form-label fw-bold small text-muted mb-0">Local</label>
                     <p class="mb-1">{{ contato.location|default:"-" }}</p>
                 </div>
-                
+
                 {% if contato.link %}
                 <div class="mb-3">
                     <label class="form-label fw-bold small text-muted mb-0">Link</label>
@@ -206,11 +206,11 @@
                     </div>
                 </div>
                 {% endif %}
-                
+
                 <div class="mb-2 mt-4 text-muted small border-top pt-3">
-                    Compartilhado por: 
+                    Compartilhado por:
                     {% if contato.shared_by %}
-                        <strong>{{ contato.shared_by.first_name }} {{ contato.shared_by.last_name }}</strong> 
+                        <strong>{{ contato.shared_by.first_name }} {{ contato.shared_by.last_name }}</strong>
                         ({{ contato.shared_by.username }})
                     {% else %}
                         Desconhecido
@@ -246,12 +246,12 @@
                 } else if (digits.length === 10) {
                     formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6, 10)}`;
                 }
-                
+
                 let waDigits = digits;
                 if (!waDigits.startsWith('55')) {
                     waDigits = '55' + waDigits;
                 }
-                
+
                 cell.innerHTML = `<a href="https://wa.me/${waDigits}" target="_blank" class="text-success text-decoration-none fw-bold"><i class="fa-brands fa-whatsapp me-1"></i>${formatted}</a>`;
             }
         });

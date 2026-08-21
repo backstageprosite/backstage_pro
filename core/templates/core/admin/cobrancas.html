@@ -4,7 +4,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="fw-bold m-0"><i class="fa-solid fa-file-invoice-dollar me-2 text-primary"></i> Faturas</h4>
-    
+
 </div>
 
 <!-- Filtros e Busca -->
@@ -120,7 +120,7 @@ Qualquer dúvida, fico à disposição.
 Atenciosamente,
 Vinicius Lopes
 Backstage Pro</textarea>
-                                    <a href="https://wa.me/{{ phone }}?text=Ol%C3%A1%2C%20{{ rec.subscription.financial_responsible_name|default:\'respons%C3%A1vel\'|urlencode }}%2E%20Tudo%20bem%3F%0A%0AEstou%20passando%20para%20lembrar%20sobre%20a%20assinatura%20do%20Backstage%20Pro%20da%20banda%20{{ rec.band.name|urlencode }}%2E%0A%0APlano%3A%20{{ rec.subscription.plan_name|urlencode }}%0APer%C3%ADodo%3A%20{{ rec.reference_period|urlencode }}%0AValor%3A%20R%24%20{{ rec.amount }}%0AVencimento%3A%20{{ rec.due_date|date:\'d/m/Y\' }}%0A%0AO%20pagamento%20pode%20ser%20regularizado%20conforme%20combinado%2E%0A%0AQualquer%20d%C3%BAvida%2C%20fico%20%C3%A0%20disposi%C3%A7%C3%A3o%2E%0A%0AAtenciosamente%2C%0AVinicius%20Lopes%0ABackstage%20Pro" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Enviar WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                                    <a href="https://wa.me/{{ phone }}?text=Ol%C3%A1%2C%20{{ rec.subscription.financial_responsible_name|default:'respons%C3%A1vel'|urlencode }}%2E%20Tudo%20bem%3F%0A%0AEstou%20passando%20para%20lembrar%20sobre%20a%20assinatura%20do%20Backstage%20Pro%20da%20banda%20{{ rec.band.name|urlencode }}%2E%0A%0APlano%3A%20{{ rec.subscription.plan_name|urlencode }}%0APer%C3%ADodo%3A%20{{ rec.reference_period|urlencode }}%0AValor%3A%20R%24%20{{ rec.amount }}%0AVencimento%3A%20{{ rec.due_date|date:'d/m/Y' }}%0A%0AO%20pagamento%20pode%20ser%20regularizado%20conforme%20combinado%2E%0A%0AQualquer%20d%C3%BAvida%2C%20fico%20%C3%A0%20disposi%C3%A7%C3%A3o%2E%0A%0AAtenciosamente%2C%0AVinicius%20Lopes%0ABackstage%20Pro" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Enviar WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
                                     <button class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm" onclick="copyToClipboard('msgText{{ rec.id }}')" title="Copiar Mensagem">
                                         <i class="fa-solid fa-copy"></i>
                                     </button>
@@ -139,7 +139,7 @@ Backstage Pro</textarea>
                                 </button>
                             </form>
                             {% endif %}
-                            
+
                             {% if rec.proof_file %}
                             <a href="{{ rec.proof_file.url }}" target="_blank" class="btn btn-sm btn-outline-info rounded-pill shadow-sm mb-1" title="Ver Comprovante">
                                 <i class="fa-solid fa-file-invoice"></i>
@@ -165,7 +165,7 @@ Backstage Pro</textarea>
                                     <div class="modal-body py-4 text-start">
                                         <input type="hidden" name="band" value="{{ rec.band.id }}">
                                         <input type="hidden" name="subscription" value="{{ rec.subscription.id }}">
-                                        
+
                                         <div class="row">
                                             <div class="col-md-4 mb-3">
                                                 <label class="form-label fw-semibold">Período de Ref.</label>
@@ -180,7 +180,7 @@ Backstage Pro</textarea>
                                                 <input type="date" name="due_date" class="form-control" value="{{ rec.due_date|date:'Y-m-d' }}" required>
                                             </div>
                                         </div>
-                                        
+
                                         <div class="row">
                                             <div class="col-md-4 mb-3">
                                                 <label class="form-label fw-semibold">Status</label>
@@ -204,12 +204,12 @@ Backstage Pro</textarea>
                                                 </select>
                                             </div>
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label fw-semibold">Comprovante</label>
                                             <input type="file" name="proof_file" class="form-control">
                                         </div>
-                                        
+
                                         <div class="mb-3">
                                             <label class="form-label fw-semibold">Observações</label>
                                             <textarea name="notes" class="form-control" rows="2">{{ rec.notes|default:'' }}</textarea>
@@ -250,7 +250,7 @@ Backstage Pro</textarea>
             <form method="POST" action="{% url 'admin_painel:cobrancas_nova' %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-body py-4 text-start">
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold">Banda Cliente</label>
@@ -286,7 +286,7 @@ Backstage Pro</textarea>
                             <input type="date" name="due_date" class="form-control" required>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-semibold">Status Atual</label>
@@ -310,12 +310,12 @@ Backstage Pro</textarea>
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Anexar Comprovante</label>
                         <input type="file" name="proof_file" class="form-control">
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Observações (Interno)</label>
                         <textarea name="notes" class="form-control" rows="2"></textarea>
@@ -337,7 +337,7 @@ Backstage Pro</textarea>
 <script>
     function copyToClipboard(elementId) {
         var copyText = document.getElementById(elementId);
-        
+
         // Usa a API moderna do clipboard
         navigator.clipboard.writeText(copyText.value).then(function() {
             // Feedback visual (Toast)

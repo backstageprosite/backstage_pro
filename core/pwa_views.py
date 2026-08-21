@@ -19,7 +19,7 @@ def get_short_name(name):
         return "Banda"
     if len(clean_name) <= 20:
         return clean_name
-    
+
     # Corta no último espaço antes de 20 caracteres para preservar a palavra
     truncated = clean_name[:20]
     last_space = truncated.rfind(' ')
@@ -38,7 +38,7 @@ def get_band_icon_version(band):
     if band.logo and band.logo.name:
         components = [band.logo.name, PWA_ICON_STYLE_VERSION]
         is_reliable = False
-        
+
         try:
             # get_modified_time pode não estar implementado em todos os storages remotos
             mtime = band.logo.storage.get_modified_time(band.logo.name)
@@ -47,13 +47,13 @@ def get_band_icon_version(band):
                 is_reliable = True
         except Exception:
             pass
-            
+
         if not is_reliable:
             try:
                 components.append(str(band.logo.size))
             except Exception:
                 pass
-            
+
         token_string = "|".join(components)
         token_hash = hashlib.sha256(token_string.encode('utf-8')).hexdigest()[:8]
         return token_hash, is_reliable
@@ -64,12 +64,12 @@ def band_manifest(request, band_slug):
     Retorna o manifest dinâmico de uma banda específica.
     """
     band = get_object_or_404(Band, slug=band_slug)
-    
+
     if not band.is_active:
         raise Http404("Banda inativa.")
-        
+
     start_url = reverse('dashboard', kwargs={'band_slug': band.slug}) + '?source=pwa'
-    
+
     v = get_band_icon_version(band)
     icons = [
         {
@@ -97,7 +97,7 @@ def band_manifest(request, band_slug):
             "purpose": "maskable"
         }
     ]
-    
+
     manifest = {
         "name": band.name.strip(),
         "short_name": get_short_name(band.name),
@@ -112,7 +112,7 @@ def band_manifest(request, band_slug):
         "description": "Gestão de shows, agenda e equipe da banda.",
         "icons": icons
     }
-    
+
     response = JsonResponse(manifest)
     response['Content-Type'] = 'application/manifest+json'
     # Força a revalidação para que se o nome da banda mudar, o manifest mude rapidamente
@@ -125,7 +125,7 @@ def admin_manifest(request):
     Retorna o manifest dinâmico do painel administrativo geral.
     """
     start_url = reverse('admin_painel:dashboard') + '?source=pwa'
-    
+
     # Ícones fixos do admin (Backstage Pro)
     v = "white-bg-v2"
     icons = [
@@ -154,7 +154,7 @@ def admin_manifest(request):
             "purpose": "maskable"
         }
     ]
-    
+
     manifest = {
         "name": "Backstage Pro",
         "short_name": "Backstage Pro",
@@ -169,7 +169,7 @@ def admin_manifest(request):
         "description": "Painel administrativo do Backstage Pro.",
         "icons": icons
     }
-    
+
     response = JsonResponse(manifest)
     response['Content-Type'] = 'application/manifest+json'
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -188,29 +188,29 @@ def band_icon_view(request, band_slug, filename):
         'icon-maskable-512.png': (512, True, False),
         'apple-touch-icon.png': (180, False, True),
     }
-    
+
     if filename not in ALLOWED_ICONS:
         raise Http404("Ícone inválido ou não autorizado.")
-        
+
     size, maskable, apple = ALLOWED_ICONS[filename]
-    
+
     band = get_object_or_404(Band, slug=band_slug)
     if not band.is_active:
         raise Http404("Banda inativa.")
-        
+
     icon_data = generate_band_icon(band.logo, size, maskable, apple)
-    
+
     if not icon_data:
         # Fallback para o ícone fixo
         fallback_filename = f"backstage-{filename}"
         fallback_path = finders.find(f"core/pwa/icons/{fallback_filename}")
-        
+
         if fallback_path and os.path.exists(fallback_path):
             with open(fallback_path, 'rb') as f:
                 icon_data = f.read()
         else:
             raise Http404("Fallback icon missing.")
-            
+
     response = HttpResponse(icon_data, content_type='image/png')
     _, is_reliable = get_band_icon_version(band)
     if is_reliable:
@@ -226,10 +226,10 @@ def band_service_worker(request, band_slug):
     Retorna o Service Worker pass-through da banda.
     """
     band = get_object_or_404(Band, slug=band_slug)
-    
+
     if not band.is_active:
         raise Http404("Banda inativa.")
-        
+
     v, _ = get_band_icon_version(band)
     icon_url = reverse('band_icon', kwargs={'band_slug': band.slug, 'filename': 'icon-192.png'}) + f"?v={v}"
     notifications_url = reverse('notifications_list', kwargs={'band_slug': band.slug})
@@ -262,27 +262,27 @@ self.addEventListener("activate", (event) => {{
 function normalizeInternalTarget(rawTarget) {{
     if (typeof rawTarget !== 'string') return NOTIFICATIONS_URL;
     if (rawTarget.length > 500) return NOTIFICATIONS_URL;
-    
+
     if (!rawTarget.startsWith('/') || rawTarget.startsWith('//')) return NOTIFICATIONS_URL;
     if (/[\\x00-\\x1F\\x7F\\r\\n\\\\]/.test(rawTarget)) return NOTIFICATIONS_URL;
-    
+
     try {{
         const url = new URL(rawTarget, self.location.origin);
         if (url.origin !== self.location.origin) return NOTIFICATIONS_URL;
         if (!url.pathname.startsWith(BAND_SCOPE)) return NOTIFICATIONS_URL;
         if (url.pathname.startsWith('/painel/')) return NOTIFICATIONS_URL;
-        
+
         const segments = url.pathname.split('/');
         const badSegments = ['.', '..', '%2e', '%2e%2e', '%252e', '%252e%252e'];
         for (let b of badSegments) {{
             if (segments.includes(b)) return NOTIFICATIONS_URL;
         }}
-        
+
         const decoded = decodeURIComponent(url.pathname);
         const decSegments = decoded.split('/');
         if (decSegments.includes('.') || decSegments.includes('..')) return NOTIFICATIONS_URL;
         if (decoded.includes('//')) return NOTIFICATIONS_URL;
-        
+
         return url.pathname + url.search;
     }} catch (e) {{
         return NOTIFICATIONS_URL;
@@ -310,7 +310,7 @@ self.addEventListener("push", (event) => {{
             if (
                 payload.version === 1 &&
                 Number.isInteger(payload.notification_id) && payload.notification_id > 0 &&
-                ["NEW_SHOW", "SHOW_CANCELLED", "SHOW_DATE_CHANGED", "SHOW_START_TIME_CHANGED", "SHOW_CONFIRMED"].includes(payload.event_type) &&
+                ["NEW_SHOW", "SHOW_CANCELLED", "SHOW_DATE_CHANGED", "SHOW_START_TIME_CHANGED", "SHOW_CONFIRMED", "AVISO"].includes(payload.event_type) &&
                 payload.band_slug === BAND_SLUG &&
                 typeof payload.title === 'string' && payload.title.trim().length > 0 && payload.title.length <= 120 &&
                 !/[\\x00-\\x1F\\x7F<>]/.test(payload.title) &&
