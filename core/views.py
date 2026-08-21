@@ -989,26 +989,14 @@ def agenda_pdf_view(request, band_slug):
 
 
 
-    from django.template.loader import render_to_string
-    from xhtml2pdf import pisa
-    import io
-    from django.http import HttpResponse
-
     context = {
         'shows': shows,
         'band': request.band,
         'today': datetime.date.today(),
         'request': request,
+        'pdf_logo_base64': get_image_base64(request.band.logo),
     }
-    html_string = render_to_string('core/agenda_pdf.html', context, request=request)
-    result = io.BytesIO()
-    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
-    if not pdf.err:
-        response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        response['Content-Disposition'] = 'inline; filename="agenda.pdf"'
-        response['Cache-Control'] = 'private, no-store'
-        return response
-    return HttpResponse('Erro ao gerar PDF', status=500)
+    return render(request, 'core/agenda_pdf.html', context)
 
 
 
