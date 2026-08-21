@@ -5,7 +5,7 @@ from core.models import Band, User, BandSubscription, BillingRecord
 class AdminBandForm(forms.ModelForm):
     class Meta:
         model = Band
-        fields = ['name', 'slug', 'logo', 'subscription_plan', 'subscription_status', 'subscription_due_date', 'is_active']
+        fields = ['name', 'slug', 'logo', 'is_active']
         widgets = {
             'subscription_due_date': forms.DateInput(attrs={'type': 'date'}),
         }

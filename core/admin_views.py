@@ -1123,3 +1123,12 @@ class SiteLogoToggleActiveView(AdminRequiredMixin, View):
         messages.success(request, f'Logo {status_text} com sucesso!')
         return redirect('admin_painel:site_logos')
 
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_assinatura_status(request, pk):
+    if request.method == 'POST':
+        sub = get_object_or_404(BandSubscription, pk=pk)
+        sub.status = 'DESATIVADO' if sub.status == 'ATIVO' else 'ATIVO'
+        sub.save()
+        messages.success(request, f'Status da assinatura alterado com sucesso!')
+    return redirect('admin_painel:assinaturas')

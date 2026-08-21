@@ -90,7 +90,7 @@
                                 {% if rec.is_vencido %}
                                     <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill border border-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>Vencido</span>
                                 {% elif rec.is_vencendo_7d %}
-                                    <span class="badge bg-warning-subtle text-dark px-3 py-2 rounded-pill border border-warning"><i class="fa-solid fa-clock me-1"></i>Prox. Vencimento</span>
+                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>Vencendo</span>
                                 {% else %}
                                     <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill border border-primary"><i class="fa-solid fa-clock me-1"></i>Pendente</span>
                                 {% endif %}
@@ -120,9 +120,7 @@ Qualquer dúvida, fico à disposição.
 Atenciosamente,
 Vinicius Lopes
 Backstage Pro</textarea>
-                                    <a href="https://wa.me/{{ phone }}?text=Ol%C3%A1%2C%20{{ rec.subscription.financial_responsible_name|default:'respons%C3%A1vel'|urlencode }}%2E%20Tudo%20bem%3F%0A%0AEstou%20passando%20para%20lembrar%20sobre%20a%20assinatura%20do%20Backstage%20Pro%20da%20banda%20{{ rec.band.name|urlencode }}%2E%0A%0APlano%3A%20{{ rec.subscription.plan_name|urlencode }}%0APer%C3%ADodo%3A%20{{ rec.reference_period|urlencode }}%0AValor%3A%20R%24%20{{ rec.amount }}%0AVencimento%3A%20{{ rec.due_date|date:'d/m/Y' }}%0A%0AO%20pagamento%20pode%20ser%20regularizado%20conforme%20combinado%2E%0A%0AQualquer%20d%C3%BAvida%2C%20fico%20%C3%A0%20disposi%C3%A7%C3%A3o%2E%0A%0AAtenciosamente%2C%0AVinicius%20Lopes%0ABackstage%20Pro" target="_blank" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm" title="Enviar WhatsApp">
-                                        <i class="fa-brands fa-whatsapp me-1"></i> Enviar
-                                    </a>
+                                    <a href="https://wa.me/{{ phone }}?text=Ol%C3%A1%2C%20{{ rec.subscription.financial_responsible_name|default:\'respons%C3%A1vel\'|urlencode }}%2E%20Tudo%20bem%3F%0A%0AEstou%20passando%20para%20lembrar%20sobre%20a%20assinatura%20do%20Backstage%20Pro%20da%20banda%20{{ rec.band.name|urlencode }}%2E%0A%0APlano%3A%20{{ rec.subscription.plan_name|urlencode }}%0APer%C3%ADodo%3A%20{{ rec.reference_period|urlencode }}%0AValor%3A%20R%24%20{{ rec.amount }}%0AVencimento%3A%20{{ rec.due_date|date:\'d/m/Y\' }}%0A%0AO%20pagamento%20pode%20ser%20regularizado%20conforme%20combinado%2E%0A%0AQualquer%20d%C3%BAvida%2C%20fico%20%C3%A0%20disposi%C3%A7%C3%A3o%2E%0A%0AAtenciosamente%2C%0AVinicius%20Lopes%0ABackstage%20Pro" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Enviar WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
                                     <button class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm" onclick="copyToClipboard('msgText{{ rec.id }}')" title="Copiar Mensagem">
                                         <i class="fa-solid fa-copy"></i>
                                     </button>

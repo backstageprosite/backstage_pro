@@ -58,7 +58,6 @@
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Plano</th>
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Valor</th>
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Vencimento</th>
-                        <th class="text-muted text-uppercase text-center" style="font-size: 0.8rem; letter-spacing: 0.5px;">Status</th>
                         <th class="text-end pe-4 text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Ações</th>
                     </tr>
                 </thead>
@@ -93,27 +92,17 @@
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="text-center">
-                            {% if sub.status == 'ATIVO' %}
-                                <span class="badge bg-success px-3 py-2 rounded-pill"><i class="fa-solid fa-check-circle me-1"></i>{{ sub.get_status_display }}</span>
-                            {% elif sub.status == 'VENCENDO' %}
-                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>{{ sub.get_status_display }}</span>
-                            {% elif sub.status == 'VENCIDO' %}
-                                <span class="badge bg-danger px-3 py-2 rounded-pill"><i class="fa-solid fa-exclamation-triangle me-1"></i>{{ sub.get_status_display }}</span>
-                            {% elif sub.status == 'SUSPENSO' %}
-                                <span class="badge bg-secondary px-3 py-2 rounded-pill"><i class="fa-solid fa-ban me-1"></i>{{ sub.get_status_display }}</span>
-                            {% elif sub.status == 'TESTE' %}
-                                <span class="badge bg-info text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-flask me-1"></i>{{ sub.get_status_display }}</span>
-                            {% else %}
-                                <span class="badge bg-secondary rounded-pill px-2">{{ sub.get_status_display }}</span>
-                            {% endif %}
-                        </td>
                         <td class="text-end pe-4">
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false">
                                     <i class="fa-solid fa-gear"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                    <li>
+                                        <button class="dropdown-item fw-semibold text-{% if sub.status == 'ATIVO' %}danger{% else %}success{% endif %} py-2" data-bs-toggle="modal" data-bs-target="#modalToggleStatus{{ sub.id }}">
+                                            <i class="fa-solid fa-{% if sub.status == 'ATIVO' %}ban{% else %}check{% endif %} w-20px me-2"></i> {% if sub.status == 'ATIVO' %}Desativar{% else %}Ativar{% endif %}
+                                        </button>
+                                    </li>
                                     <li>
                                         <button class="dropdown-item py-2 fw-medium" type="button" data-bs-toggle="modal" data-bs-target="#modalEditSub{{ sub.id }}">
                                             <i class="fa-solid fa-pen-to-square text-primary me-2"></i>Editar
@@ -135,7 +124,31 @@
                         </td>
                     </tr>
                     
-                    <!-- Modal Edit Subscription -->
+                    
+                      <!-- Modal Toggle Status Assinatura -->
+                      <div class="modal fade" id="modalToggleStatus{{ sub.id }}" tabindex="-1" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered modal-sm">
+                              <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                                  <div class="modal-header border-bottom-0 pb-0 justify-content-end">
+                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                  </div>
+                                  <div class="modal-body py-4 text-center">
+                                      <p class="fs-5 mb-1">Tem certeza que deseja <strong>{% if sub.status == 'ATIVO' %}desativar{% else %}ativar{% endif %}</strong> a assinatura da banda {{ sub.band.name }}?</p>
+                                  </div>
+                                  <div class="modal-footer bg-light border-top-0 justify-content-center">
+                                      <form method="POST" action="{% url 'admin_painel:assinaturas_status' sub.id %}">
+                                          {% csrf_token %}
+                                          <button type="button" class="btn btn-outline-secondary rounded-pill px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
+                                          <button type="submit" class="btn btn-loading btn-{% if sub.status == 'ATIVO' %}danger{% else %}success{% endif %} rounded-pill px-4">
+                                              Confirmar
+                                          </button>
+                                      </form>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+
+                      <!-- Modal Edit Subscription -->
                     <div class="modal fade" id="modalEditSub{{ sub.id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered modal-lg">
                             <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">

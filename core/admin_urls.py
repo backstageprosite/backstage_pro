@@ -32,6 +32,7 @@ urlpatterns = [
     path('assinaturas/nova/', admin_views.admin_assinatura_create, name='assinaturas_nova'),
     path('assinaturas/<int:pk>/editar/', admin_views.admin_assinatura_edit, name='assinaturas_editar'),
     path('assinaturas/<int:pk>/cancelar/', admin_views.admin_assinatura_cancel, name='assinaturas_cancelar'),
+    path('assinaturas/<int:pk>/status/', admin_views.admin_assinatura_status, name='assinaturas_status'),
     
     path('cobrancas/', admin_views.AdminCobrancasView.as_view(), name='cobrancas'),
     path('cobrancas/nova/', admin_views.admin_cobranca_create, name='cobrancas_nova'),
