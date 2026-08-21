@@ -6,8 +6,29 @@
     <div>
         <h4 class="fw-bold m-0"><i class="fa-solid fa-chart-line text-primary me-2"></i> Relatório Financeiro</h4>
         <p class="text-muted mb-0">Controle financeiro das assinaturas das bandas</p>
+    <button type="button" class="btn fw-bold px-4 rounded-pill shadow-sm text-dark mt-2" style="background-color: #dc3545; color: white !important;" data-bs-toggle="modal" data-bs-target="#modalNovaDespesaAdmin">
+        <i class="fa-solid fa-plus me-2"></i>+ Despesa
+    </button>
+
+<!-- Modal Nova Despesa Admin -->
+<div class="modal fade" id="modalNovaDespesaAdmin" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-money-bill-transfer me-2 text-danger"></i>Nova Despesa Administrativa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">O módulo de despesas administrativas está em desenvolvimento. Por enquanto, as despesas são lançadas diretamente nos shows de cada banda.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light fw-medium rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
+      </div>
     </div>
-    <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-secondary rounded-pill shadow-sm">
+  </div>
+</div>
+    </div>
+    <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-light rounded-pill px-3 shadow-sm border">
         <i class="fa-solid fa-arrow-left me-2"></i>Voltar
     </a>
 </div>

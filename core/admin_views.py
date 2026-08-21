@@ -195,6 +195,7 @@ class AdminCobrancasView(AdminRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['form_create'] = AdminBillingRecordForm()
         context['today'] = datetime.date.today()
+        context['seven_days'] = datetime.date.today() + datetime.timedelta(days=7)
         return context
 
 class AdminRelatoriosView(AdminRequiredMixin, TemplateView):
