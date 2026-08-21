@@ -3923,16 +3923,18 @@ def band_notices_create(request, band_slug):
             
             if form.cleaned_data.get('fire_now'):
                 from django.utils import timezone
-                from core.services.notification_services import send_push_notification_to_band
+                from core.services.notifications import notify_band_users
                 notice.sent_at = timezone.now()
                 notice.save()
                 try:
-                    send_push_notification_to_band(
+                    notify_band_users(
                         band=notice.band,
+                        event_type='AVISO',
                         title='Aviso da Produção',
                         message=notice.message,
-                        exclude_user=notice.created_by,
-                        url=f'/{notice.band.slug}/painel/'
+                        target_url=f'/{notice.band.slug}/painel/',
+                        event_key_base=f'aviso_{notice.id}',
+                        actor=notice.created_by
                     )
                 except Exception as e:
                     pass

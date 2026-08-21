@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from core.models import BandNotice
-from core.services.notification_services import send_push_notification_to_band
+from core.services.notifications import notify_band_users
 from django.db import transaction
 
 class Command(BaseCommand):
