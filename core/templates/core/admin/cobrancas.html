@@ -126,14 +126,14 @@ Backstage Pro</textarea>
                                     </button>
                                 </div>
                             {% else %}
-                                <button class="btn btn-sm btn-secondary rounded-pill px-3 opacity-50" disabled title="Sem telefone cadastrado"><i class="fa-brands fa-whatsapp me-1"></i> Sem Tel</button>
+                                <button class="btn btn-sm btn-secondary rounded-circle shadow-sm opacity-50" disabled title="Sem telefone cadastrado" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;"><i class="fa-brands fa-whatsapp"></i></button>
                             {% endif %}
                             {% endwith %}
                         </td>
                         <td class="text-end pe-4">
                             <div class="dropdown">
-                                <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle fw-bold px-3 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
-                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                <button class="btn btn-sm btn-light border rounded-circle shadow-sm fw-bold" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" style="width: 35px; height: 35px; display: inline-flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-gear text-secondary"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.95rem;">
                                     {% if rec.status != 'PAGO' %}

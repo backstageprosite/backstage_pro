@@ -93,6 +93,17 @@
                                 {% endif %}
                             </div>
                         </td>
+                        <td class="text-center">
+                            {% if sub.status == 'ATIVO' %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Ativa
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2">
+                                    <i class="fa-solid fa-ban me-1"></i> Suspensa
+                                </span>
+                            {% endif %}
+                        </td>
                         <td class="text-end pe-4">
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-secondary rounded-pill shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false">
