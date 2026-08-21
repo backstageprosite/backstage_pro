@@ -229,23 +229,23 @@
                                 <td><strong>Local de Saída:</strong> {{ show.departure_location }}</td>
                             </tr>
                             {% endif %}
-                            {% if show.distance or show.travel_time %}
+                            {% if show.distance_km or show.travel_time %}
                             <tr>
                                 <td>
-                                    {% if show.distance %}<strong>Distância:</strong> {{ show.distance }} km{% endif %}
-                                    {% if show.distance and show.travel_time %} | {% endif %}
+                                    {% if show.distance_km %}<strong>Distância:</strong> {{ show.distance_km }} km{% endif %}
+                                    {% if show.distance_km and show.travel_time %} | {% endif %}
                                     {% if show.travel_time %}<strong>Tempo de Desloc.:</strong> {{ show.travel_time }}{% endif %}
                                 </td>
                             </tr>
                             {% endif %}
                             {% if show.departure_time %}
                             <tr>
-                                <td><strong>Saída:</strong> {{ show.departure_time|time:"H:i" }} - {{ show.date|date:"d/m/Y" }}</td>
+                                <td><strong>Saída:</strong> {{ show.departure_time|date:"H:i - d/m/Y" }}</td>
                             </tr>
                             {% endif %}
                             {% if show.arrival_time %}
                             <tr>
-                                <td><strong>Chegada:</strong> {{ show.arrival_time|time:"H:i" }} - {{ show.date|date:"d/m/Y" }}</td>
+                                <td><strong>Chegada:</strong> {{ show.arrival_time|date:"H:i - d/m/Y" }}</td>
                             </tr>
                             {% endif %}
                             
@@ -265,9 +265,9 @@
                             </tr>
                             {% endif %}
                             
-                            {% if show.show_duration %}
+                            {% if show.duration %}
                             <tr>
-                                <td style="border-bottom: none;"><strong>Duração do Show:</strong> {{ show.show_duration }}</td>
+                                <td style="border-bottom: none;"><strong>Duração do Show:</strong> {{ show.duration }}</td>
                             </tr>
                             {% endif %}
                         </table>
