@@ -107,31 +107,9 @@
                                                 <small class="text-muted d-block mt-1">Logo atual: {{ b.logo.name }}</small>
                                             {% endif %}
                                         </div>
-                                        <div class="row">
-                                            <div class="col-6 mb-3">
-                                                <label class="form-label fw-semibold">Plano</label>
-                                                <select name="subscription_plan" class="form-select">
-                                                    <option value="MENSAL" {% if b.subscription_plan == 'MENSAL' %}selected{% endif %}>Mensal</option>
-                                                    <option value="SEMESTRAL" {% if b.subscription_plan == 'SEMESTRAL' %}selected{% endif %}>Semestral</option>
-                                                    <option value="ANUAL" {% if b.subscription_plan == 'ANUAL' %}selected{% endif %}>Anual</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-6 mb-3">
-                                                <label class="form-label fw-semibold">Status Pgto</label>
-                                                <select name="subscription_status" class="form-select">
-                                                    <option value="PENDENTE" {% if b.subscription_status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
-                                                    <option value="CONFIRMADO" {% if b.subscription_status == 'CONFIRMADO' %}selected{% endif %}>Confirmado</option>
-                                                    <option value="CANCELADO" {% if b.subscription_status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Data de Vencimento</label>
-                                            <input type="date" name="subscription_due_date" class="form-control" value="{{ b.subscription_due_date|date:'Y-m-d' }}">
-                                        </div>
                                         <div class="form-check form-switch mt-4">
                                             <input class="form-check-input" type="checkbox" name="is_active" id="isActiveEdit{{ b.id }}" {% if b.is_active %}checked{% endif %}>
-                                            <label class="form-check-label fw-semibold" for="isActiveEdit{{ b.id }}">Acesso Liberado (Ativa)</label>
+                                            <label class="form-check-label fw-semibold" for="isActiveEdit{{ b.id }}">Acesso Liberado</label>
                                         </div>
                                     </div>
                                     <div class="modal-footer bg-light border-top-0">
@@ -231,13 +209,9 @@
                             </select>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Data de Vencimento</label>
-                        <input type="date" name="subscription_due_date" class="form-control">
-                    </div>
                     <div class="form-check form-switch mt-4">
                         <input class="form-check-input" type="checkbox" name="is_active" id="isActiveCreate" checked>
-                        <label class="form-check-label fw-semibold" for="isActiveCreate">Acesso Liberado (Ativa)</label>
+                        <label class="form-check-label fw-semibold" for="isActiveCreate">Acesso Liberado</label>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-top-0">
