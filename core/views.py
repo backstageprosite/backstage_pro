@@ -2,6 +2,21 @@ from django.views.decorators.http import require_POST
 
 import datetime
 
+
+import base64
+import os
+
+def get_image_base64(image_field):
+    if not image_field or not image_field.name:
+        return ""
+    try:
+        if hasattr(image_field, 'path') and os.path.exists(image_field.path):
+            with open(image_field.path, 'rb') as f:
+                return "data:image/png;base64," + base64.b64encode(f.read()).decode('utf-8')
+    except Exception:
+        pass
+    return ""
+
 from django.shortcuts import render, get_object_or_404, redirect
 
 from django.db import transaction
@@ -3781,7 +3796,7 @@ def room_list_pdf_view(request, band_slug, pk):
 
     try:
         room_list = RoomList.objects.select_related('show', 'band').prefetch_related(
-            'rooms__participants'
+            'rooms__participants__original_integrante'
         ).get(pk=pk, show__band=request.band)
     except RoomList.DoesNotExist:
         raise Http404("Room List não encontrada.")
@@ -3792,6 +3807,8 @@ def room_list_pdf_view(request, band_slug, pk):
 
     context = {
         'band': request.band,
+        'pdf_logo_base64': get_image_base64(request.band.logo),
+        'current_datetime': __import__('django.utils.timezone').utils.timezone.localtime().strftime('%d/%m/%Y às %H:%M'),
         'room_list': room_list,
         'rooms': room_list.rooms.all(),
         'participants': room_list.participants.filter(room__isnull=False),
@@ -3824,13 +3841,15 @@ def room_list_hotel_pdf_view(request, band_slug, pk):
 
     try:
         room_list = RoomList.objects.select_related('show', 'band').prefetch_related(
-            'rooms__participants'
+            'rooms__participants__original_integrante'
         ).get(pk=pk, show__band=request.band)
     except RoomList.DoesNotExist:
         raise Http404("Room List não encontrada.")
 
     context = {
         'band': request.band,
+        'pdf_logo_base64': get_image_base64(request.band.logo),
+        'current_datetime': __import__('django.utils.timezone').utils.timezone.localtime().strftime('%d/%m/%Y às %H:%M'),
         'room_list': room_list,
         'rooms': room_list.rooms.all(),
         'participants': room_list.participants.filter(room__isnull=False),

@@ -87,7 +87,7 @@
     <tr>
         <td style="width: 150px; text-align: left; vertical-align: middle;">
             {% if room_list.band.logo %}
-                <img src="{{ request.scheme }}://{{ request.get_host }}{% url 'public_band_logo' room_list.band.slug %}" class="logo-img">
+                {% if pdf_logo_base64 %}<img src="{{ pdf_logo_base64 }}" class="logo-img">{% endif %}
             {% else %}
                 <div style="font-weight:900; font-size:16px; color:#000;">LOGO DA<br>BANDA</div>
             {% endif %}

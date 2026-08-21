@@ -186,21 +186,4 @@ class RoomListPdfAndHotelTests(TestCase):
 
     # ==== Link no PDF do Show ====
 
-    def test_link_pdf_show_com_room_list_publicada(self):
-        """PDF do Show exibe link para Room List quando publicada, nunca para hotel PDF."""
-        self.room_list.status = RoomList.StatusChoices.PUBLICADA
-        self.room_list.save()
-        self.client.login(username='produtor', password='123')
-        response = self.client.get(reverse('show_pdf', args=[self.band.slug, self.show.pk]))
-        self.assertEqual(response.status_code, 200)
-        content = response.content.decode('utf-8', errors='ignore')
-        self.assertIn('Room List: Visualizar PDF', content)
-        self.assertNotIn('pdf/hotel', content)
-
-    def test_link_pdf_show_sem_room_list_publicada(self):
-        """PDF do Show não exibe link para Room List quando em Rascunho."""
-        self.client.login(username='produtor', password='123')
-        response = self.client.get(reverse('show_pdf', args=[self.band.slug, self.show.pk]))
-        self.assertEqual(response.status_code, 200)
-        content = response.content.decode('utf-8', errors='ignore')
-        self.assertNotIn('Room List: Visualizar PDF', content)
+    

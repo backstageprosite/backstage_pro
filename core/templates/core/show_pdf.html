@@ -1,421 +1,375 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <title>[{{ show.date|date:"d-m-Y" }}] {{ show.title }}</title>
-    <!-- Bootstrap CSS for grid -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            background-color: #ffffff;
-            color: #000000;
-            font-family: sans-serif;
-            padding: 20px;
-            font-size: 12px;
-        }
-        .card {
-            border: 1px solid #dee2e6;
-            margin-bottom: 20px;
-            page-break-inside: avoid;
-        }
-        .card-header {
-            font-weight: bold;
-            font-size: 13px;
-            padding: 4px 8px !important;
-            /* Force background colors to print */
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-
-        /* Cores dos Cabeçalhos (iguais ao site) */
-        .header-dados { background-color: #212529 !important; color: #0dcaf0 !important; border-bottom: 2px solid #212529; } /* bg-dark text-primary (cyan) */
-        .header-cronograma { background-color: #212529 !important; color: #0dcaf0 !important; border-bottom: 2px solid #212529; }
-        .header-logistica { background-color: #198754 !important; color: #ffffff !important; border-bottom: 2px solid #198754; } /* bg-success text-white */
-        .header-tecnicas { background-color: #ffc107 !important; color: #212529 !important; border-bottom: 2px solid #ffc107; } /* bg-warning text-dark */
-
-        .list-group-item {
-            padding: 4px 8px;
-            border-bottom: 1px solid #eee;
-            background: transparent;
-        }
-        .card-body { padding: 8px 12px; }
-        h2 { margin: 0; padding: 0; font-size: 20px; }
-        h5 { margin: 0; padding: 0; font-size: 16px; }
-        h6 { font-weight: bold; margin-bottom: 2px; color: #444; font-size: 11px; }
-        p { margin-bottom: 0; }
-        a { color: #0f7fb1; text-decoration: none; font-weight: 500; }
-
-        /* Print Styles */
-        @media screen {
-            .print-only { display: none !important; }
-        }
-        @media print {
-            body { padding: 0; margin: 0; font-size: 11px; margin-bottom: 20px; }
-            a { text-decoration: none; color: #0f7fb1 !important; }
-            .card-header { font-size: 12px; padding: 3px 6px !important; }
-            h6 { font-size: 11px; }
-            .list-group-item { padding: 2px 4px; }
-            .btn, .no-print { display: none !important; }
-            .card { box-shadow: none; margin-bottom: 10px; page-break-inside: avoid; }
-            .container { max-width: 100% !important; width: 100% !important; padding: 0; margin: 0; }
-            .text-muted { color: #6c757d !important; }
-            .print-only { display: flex !important; }
-
-            /* Margens menores para aproveitar a folha inteira */
-            @page { margin: 0.8cm; }
-
-            /* Custom Fixed Footer */
-            #print-footer {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                border-top: 1px solid #ddd;
-                padding-top: 5px;
-                padding-bottom: 5px;
-                font-size: 10px;
-                color: #777;
-                display: flex;
-                flex-direction: column;
-                background: white;
+        @page {
+            size: A4;
+            margin: 1cm;
+            @frame footer {
+                -pdf-frame-content: print-footer;
+                bottom: 1cm;
+                margin-left: 1cm;
+                margin-right: 1cm;
+                height: 1cm;
             }
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            color: #333;
+        }
+        .header-table {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .logo-cell {
+            width: 25%;
+            text-align: left;
+            vertical-align: top;
+        }
+        .title-cell {
+            width: 50%;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .weather-cell {
+            width: 25%;
+            text-align: right;
+            vertical-align: top;
+        }
+        .weather-card {
+            border: 1px solid #17a2b8;
+            border-radius: 5px;
+            padding: 5px;
+            background-color: #f8ffff;
+            text-align: left;
+            font-size: 10px;
+        }
+        .section-header {
+            background-color: #f0f0f0;
+            color: #333;
+            font-weight: bold;
+            padding: 5px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .section-header-green {
+            background-color: #28a745;
+            color: #fff;
+            font-weight: bold;
+            padding: 5px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+        .section-header-yellow {
+            background-color: #ffc107;
+            color: #000;
+            font-weight: bold;
+            padding: 5px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+        .section-header-red {
+            background-color: #dc3545;
+            color: #fff;
+            font-weight: bold;
+            padding: 5px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+        .two-cols {
+            width: 100%;
+        }
+        .two-cols td {
+            width: 50%;
+            vertical-align: top;
+            padding: 5px;
+        }
+        .item-title {
+            font-weight: bold;
+            color: #555;
+            margin-top: 5px;
+            margin-bottom: 2px;
+        }
+        .item-text {
+            margin-bottom: 10px;
+        }
+        .contact-info {
+            color: #17a2b8;
+            font-size: 9px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Cabeçalho com Logo na Esquerda e Títulos Centralizados -->
-        <div class="mb-3 border-bottom pb-2 d-flex align-items-center">
 
-            <!-- Logo da Banda -->
-            <div style="width: 180px; text-align: left;">
-                {% if show.band.logo %}
-                <img src="{% url 'public_band_logo' show.band.slug %}" alt="{{ show.band.name }}" style="max-width: 100%; max-height: 100px;">
+    <!-- Cabeçalho em Tabela -->
+    <table class="header-table">
+        <tr>
+            <td class="logo-cell">
+                {% if pdf_logo_base64 %}
+                    <img src="{{ pdf_logo_base64 }}" style="max-height: 80px; max-width: 150px;">
+                {% else %}
+                    <div style="font-weight: bold; font-size: 14px;">{{ show.band.name }}</div>
                 {% endif %}
-            </div>
-
-            <!-- Títulos Centralizados -->
-            <div class="text-center flex-grow-1">
-                <h2 class="mb-0">{{ show.title }} - {{ show.date|date:"d/m/Y" }}</h2>
+            </td>
+            <td class="title-cell">
+                <div style="font-size: 18px; font-weight: bold;">{{ show.date|date:"d/m/Y" }}</div>
+                <div style="font-size: 16px; font-weight: bold; margin-top: 5px;">{{ show.title }}</div>
                 {% if show.event_name %}
-                <h5 class="text-secondary mt-1">{{ show.event_name }}</h5>
+                    <div style="font-size: 12px; margin-top: 3px;">{{ show.event_name }}</div>
                 {% endif %}
-            </div>
-
-            <!-- Previsão do Tempo -->
-            <div style="width: 180px; text-align: right; font-size: 12px;">
+            </td>
+            <td class="weather-cell">
                 {% if weather %}
-                <div style="border: 1px solid #ddd; padding: 4px 6px; border-radius: 4px; display: inline-block; text-align: left; background-color: #f8f9fa;">
-                    <div style="font-weight: bold; margin-bottom: 2px;">
-                        <i class="fa-solid fa-cloud-sun text-secondary"></i> Clima - {{ show.city|truncatechars:15 }}
+                <div class="weather-card">
+                    <div style="font-weight: bold; color: #17a2b8; border-bottom: 1px solid #17a2b8; padding-bottom: 2px; margin-bottom: 2px;">
+                        Clima - {{ show.city }}
                     </div>
-                    <div>{{ weather.condition }}</div>
-                    <div>Temp: {{ weather.min }}°C a {{ weather.max }}°C</div>
-                    <div>Chuva: {{ weather.precip }}%</div>
+                    <div>{{ weather.description|title }}</div>
+                    <div>Min: {{ weather.temp_min }}°C | Máx: {{ weather.temp_max }}°C</div>
+                    {% if weather.pop %}
+                    <div>Chuva: {{ weather.pop }}%</div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="weather-card" style="color: #666; border-color: #ccc; background-color: #f9f9f9;">
+                    <div style="font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">Clima</div>
+                    Temporariamente indisponível.
                 </div>
                 {% endif %}
-            </div>
+            </td>
+        </tr>
+    </table>
 
-        </div>
+    <table class="two-cols">
+        <tr>
+            <!-- Coluna Esquerda: Dados do Evento -->
+            <td>
+                <div class="section-header">Dados do Evento</div>
+                
+                <div class="item-title">Status:</div>
+                <div class="item-text">{{ show.get_status_display }}</div>
 
-        <div class="row">
-            <!-- Informações Básicas -->
-            <div class="col-6 mb-3">
-                <div class="card h-100">
-                    <div class="card-header header-dados py-1"><i class="fa-solid fa-circle-info me-1"></i> Dados do Evento</div>
-                    <div class="card-body p-0">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item"><strong>Nome do Show:</strong> {{ show.title }}</li>
-                            <li class="list-group-item"><strong>Data:</strong> {{ show.date|date:"d/m/Y" }} - {{ show.date|date:"l"|upper }}</li>
-                            {% if show.event_name %}
-                            <li class="list-group-item"><strong>Nome do Evento:</strong> {{ show.event_name }}</li>
-                            {% endif %}
-                            {% if show.city %}
-                            <li class="list-group-item"><strong>Cidade:</strong> {{ show.city }}</li>
-                            {% endif %}
-                            {% if show.venue %}
-                            <li class="list-group-item">
-                                <strong>Local:</strong> {{ show.venue }}
-                            </li>
-                            {% endif %}
-                            {% if show.address or show.address_link %}
-                            <li class="list-group-item">
-                                {% if show.address %}<strong>Endereço:</strong> {{ show.address }}{% endif %}
-                                {% if show.address and show.address_link %} - {% endif %}
-                                {% if show.address_link %}
-                                <a href="{{ show.address_link }}" target="_blank">
-                                    <i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa
-                                </a>
-                                {% endif %}
-                            </li>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cronograma -->
-            <div class="col-6 mb-3">
-                <div class="card h-100">
-                    <div class="card-header header-cronograma py-1"><i class="fa-regular fa-clock me-1"></i> Cronograma</div>
-                    <div class="card-body p-0">
-                        <ul class="list-group list-group-flush">
-                            {% if show.departure_location or show.departure_location_link %}
-                            <li class="list-group-item">
-                                {% if show.departure_location %}<strong>Local de Saída:</strong> {{ show.departure_location }}{% endif %}
-                                {% if show.departure_location and show.departure_location_link %} - {% endif %}
-                                {% if show.departure_location_link %}
-                                <a href="{{ show.departure_location_link }}" target="_blank">
-                                    <i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa
-                                </a>
-                                {% endif %}
-                            </li>
-                            {% endif %}
-                            {% if show.distance_km or show.travel_time %}
-                            <li class="list-group-item">
-                                {% if show.distance_km %}<strong>Distância:</strong> {{ show.distance_km }}{% endif %}
-                                {% if show.distance_km and show.travel_time %} <span class="mx-1">|</span> {% endif %}
-                                {% if show.travel_time %}<strong>Tempo de Desloc.:</strong> {{ show.travel_time }}{% endif %}
-                            </li>
-                            {% endif %}
-                            {% if show.departure_time %}
-                            <li class="list-group-item"><strong>Saída:</strong> {{ show.departure_time|date:"H:i - d/m/Y" }}</li>
-                            {% endif %}
-                            {% if show.arrival_time %}
-                            <li class="list-group-item"><strong>Chegada:</strong> {{ show.arrival_time|date:"H:i - d/m/Y" }}</li>
-                            {% endif %}
-                              {% if show.soundcheck_time or show.soundcheck_end_time %}
-                              <li class="list-group-item">
-                                  <div class="d-flex flex-wrap gap-3">
-                                      <span style="white-space: nowrap;"><strong>Início Passagem:</strong> {% if show.soundcheck_time %}{{ show.soundcheck_time|time:"H:i" }}{% else %}Não informado{% endif %}</span>
-                                      <span style="white-space: nowrap;"><strong>Final Passagem:</strong> {% if show.soundcheck_end_time %}{{ show.soundcheck_end_time|time:"H:i" }}{% else %}Não informado{% endif %}</span>
-                                  </div>
-                              </li>
-                              {% endif %}
-                              {% if show.show_time or show.show_end_time %}
-                              <li class="list-group-item">
-                                  <div class="d-flex flex-wrap gap-3">
-                                      {% if show.show_time %}<span style="white-space: nowrap;" class="text-success"><strong>Início do Show:</strong> {{ show.show_time|time:"H:i" }}</span>{% endif %}
-                                      {% if show.show_end_time %}<span style="white-space: nowrap;" class="text-danger"><strong>Final do Show:</strong> {{ show.show_end_time|time:"H:i" }}</span>{% endif %}
-                                  </div>
-                              </li>
-                              {% endif %}
-                              {% if show.duration %}
-                              <li class="list-group-item"><strong>Duração do Show:</strong> {{ show.duration }}</li>
-                              {% endif %}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Logística e Produção -->
-        {% if show.transport or show.flight_number or show.airline or show.accommodation or show.transfer or show.dressing_room or show.catering or show.wardrobe or show.attractions or show.room_lists.exists %}
-        <div class="card mb-2 border-success">
-            <div class="card-header header-logistica py-1"><i class="fa-solid fa-truck-fast me-1"></i> Logística & Produção</div>
-            <div class="card-body">
-                <div class="row">
-                    {% if show.transport %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-bus me-1"></i> Transporte</h6>
-                        <p class="mb-1">
-                            {{ show.transport|linebreaksbr }}
-                            {% if show.transport_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.transport_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.transport_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.flight_number or show.airline or show.boarding_time %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-plane me-1"></i> Aéreo</h6>
-                        <p class="mb-1">
-                            {% if show.airline %}<strong>Empresa Aérea:</strong> {{ show.airline }}<br>{% endif %}
-                            {% if show.flight_number %}<strong>Voo:</strong> {{ show.flight_number }}<br>{% endif %}
-                            {% if show.boarding_time %}<strong>Embarque:</strong> {{ show.boarding_time|time:"H:i" }}{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% with room_list=show.room_lists.first %}
-                    {% if show.accommodation or room_list %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-bed me-1"></i> Hospedagem</h6>
-                        {% if show.accommodation %}
-                        <p class="mb-1">
-                            {{ show.accommodation|linebreaksbr }}
-                            {% if show.accommodation_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.accommodation_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.accommodation_contact }}</a></span>{% endif %}
-                        </p>
-                        {% endif %}
-                        {% if show.checkout_time %}
-                        <p class="mb-1">
-                            <strong>Saída (Checkout):</strong> {{ show.checkout_time|time:"H:i" }}
-                        </p>
-                        {% endif %}
-                        {% if room_list and room_list.status == 'PUBLICADA' %}
-                        <p class="mb-0 mt-1"><a href="{{ request.scheme }}://{{ request.get_host }}{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" style="font-size: 0.85em;"><i class="fa-solid fa-file-pdf me-1"></i> Room List: Visualizar PDF</a></p>
-                        {% endif %}
-                        {% if show.accommodation_link %}
-                        <p class="mb-0 mt-1"><a href="{{ show.accommodation_link }}" target="_blank" style="font-size: 0.85em;"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir Localização no Mapa</a></p>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                    {% endwith %}
-                    {% if show.transfer %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-right-left me-1"></i> Palco/Baldeação</h6>
-                        <p class="mb-1">
-                            {{ show.transfer|linebreaksbr }}
-                            {% if show.transfer_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.transfer_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.transfer_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.dressing_room %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-door-closed me-1"></i> Camarim</h6>
-                        <p class="mb-1">
-                            {{ show.dressing_room|linebreaksbr }}
-                            {% if show.dressing_room_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.dressing_room_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.dressing_room_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.catering %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-utensils me-1"></i> Alimentação</h6>
-                        <p>{{ show.catering|linebreaksbr }}</p>
-                    </div>
-                    {% endif %}
-                    {% if show.wardrobe %}
-                    <div class="col-6 mb-2">
-                        <h6 class="text-muted"><i class="fa-solid fa-shirt me-1"></i> Figurino</h6>
-                        <p>{{ show.wardrobe|linebreaksbr }}</p>
-                    </div>
-                    {% endif %}
-                    {% if show.attractions %}
-                    <div class="col-12 mb-2 mt-1">
-                        <h6 class="text-muted"><i class="fa-solid fa-users me-1"></i> Outras Atrações no Evento</h6>
-                        <p class="mb-1">{{ show.attractions|linebreaksbr }}</p>
-                    </div>
+                {% if show.cache %}
+                <div class="item-title">Cachê:</div>
+                <div class="item-text">R$ {{ show.cache|floatformat:2 }}</div>
+                {% endif %}
+                
+                <div class="item-title">Local:</div>
+                <div class="item-text">{{ show.venue }}</div>
+                
+                <div class="item-title">Cidade / Estado:</div>
+                <div class="item-text">{{ show.city }} / {{ show.state }}</div>
+                
+                {% if show.address %}
+                <div class="item-title">Endereço:</div>
+                <div class="item-text">{{ show.address }}</div>
+                {% endif %}
+                
+                {% if show.contractor_name %}
+                <div class="item-title">Contratante:</div>
+                <div class="item-text">
+                    {{ show.contractor_name }}
+                    {% if show.contractor_contact %}
+                    <br><span class="contact-info">Contato: {{ show.contractor_contact }}</span>
                     {% endif %}
                 </div>
-            </div>
-        </div>
-        {% endif %}
+                {% endif %}
+            </td>
+            
+            <!-- Coluna Direita: Cronograma -->
+            <td>
+                <div class="section-header">Cronograma</div>
+                <table style="width: 100%;">
+                    {% if show.arrival_time %}
+                    <tr>
+                        <td style="width: 40%; font-weight: bold;">Chegada na Cidade:</td>
+                        <td>{{ show.arrival_time|time:"H:i" }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if show.hotel_checkin_time %}
+                    <tr>
+                        <td style="font-weight: bold;">Check-in Hotel:</td>
+                        <td>{{ show.hotel_checkin_time|time:"H:i" }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if show.soundcheck_time %}
+                    <tr>
+                        <td style="font-weight: bold;">Passagem de Som:</td>
+                        <td>{{ show.soundcheck_time|time:"H:i" }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if show.dinner_time %}
+                    <tr>
+                        <td style="font-weight: bold;">Jantar:</td>
+                        <td>{{ show.dinner_time|time:"H:i" }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if show.departure_to_venue_time %}
+                    <tr>
+                        <td style="font-weight: bold;">Saída para Local:</td>
+                        <td>{{ show.departure_to_venue_time|time:"H:i" }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if show.show_time %}
+                    <tr>
+                        <td style="font-weight: bold; color: #17a2b8;">Horário do Show:</td>
+                        <td style="font-weight: bold;">{{ show.show_time|time:"H:i" }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if show.hotel_checkout_time %}
+                    <tr>
+                        <td style="font-weight: bold;">Check-out Hotel:</td>
+                        <td>{{ show.hotel_checkout_time|time:"H:i" }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </td>
+        </tr>
+    </table>
 
-        <!-- Informações Técnicas -->
-        {% if show.local_production or show.sound_system or show.lighting_system or show.led_system or show.backline or show.pyrotechnics or show.generator_system or show.loaders_system %}
-        <div class="card mb-2 border-warning">
-            <div class="card-header header-tecnicas py-1"><i class="fa-solid fa-screwdriver-wrench me-1"></i> Informações Técnicas</div>
-            <div class="card-body">
-                <div class="row">
-                    {% if show.local_production %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-user-tie me-1"></i> Produção Local</h6>
-                        <p class="mb-1">
-                            {{ show.local_production|linebreaksbr }}
-                            {% if show.local_production_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.local_production_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.local_production_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.sound_system %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-volume-high me-1"></i> Sistema de Sonorização</h6>
-                        <p class="mb-1">
-                            {{ show.sound_system|linebreaksbr }}
-                            {% if show.sound_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.sound_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.sound_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.lighting_system %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-regular fa-lightbulb me-1"></i> Sistema de Iluminação</h6>
-                        <p class="mb-1">
-                            {{ show.lighting_system|linebreaksbr }}
-                            {% if show.lighting_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.lighting_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.lighting_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.led_system %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-tv me-1"></i> Painel de LED</h6>
-                        <p class="mb-1">
-                            {{ show.led_system|linebreaksbr }}
-                            {% if show.led_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.led_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.led_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.backline %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-guitar me-1"></i> Backline</h6>
-                        <p class="mb-1">
-                            {{ show.backline|linebreaksbr }}
-                            {% if show.backline_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.backline_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.backline_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.pyrotechnics %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-fire me-1"></i> Efeitos / Pirotecnia</h6>
-                        <p class="mb-1">
-                            {{ show.pyrotechnics|linebreaksbr }}
-                            {% if show.pyrotechnics_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.pyrotechnics_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.pyrotechnics_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.generator_system %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-bolt me-1"></i> Geradores</h6>
-                        <p class="mb-1">
-                            {{ show.generator_system|linebreaksbr }}
-                            {% if show.generator_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.generator_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.generator_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.loaders_system %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-people-carry-box me-1"></i> Carregadores</h6>
-                        <p class="mb-1">
-                            {{ show.loaders_system|linebreaksbr }}
-                            {% if show.loaders_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.loaders_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.loaders_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
+    <div class="section-header-green">Logística e Produção</div>
+    <table class="two-cols">
+        <tr>
+            <td>
+                {% if show.transportation %}
+                <div class="item-title">Transporte:</div>
+                <div class="item-text">{{ show.transportation|linebreaksbr }}</div>
+                {% endif %}
+                {% if show.hotel_name %}
+                <div class="item-title">Hospedagem:</div>
+                <div class="item-text">
+                    {{ show.hotel_name }}
+                    {% if show.hotel_contact %}
+                    <br><span class="contact-info">Contato: {{ show.hotel_contact }}</span>
                     {% endif %}
                 </div>
-            </div>
-        </div>
-        {% endif %}
+                {% endif %}
+            </td>
+            <td>
+                {% if show.food_details %}
+                <div class="item-title">Alimentação (Camarim/Local):</div>
+                <div class="item-text">{{ show.food_details|linebreaksbr }}</div>
+                {% endif %}
+                {% if show.other_lineup %}
+                <div class="item-title">Outras Atrações:</div>
+                <div class="item-text">{{ show.other_lineup|linebreaksbr }}</div>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
 
-        <!-- Avisos para a Banda -->
-        {% if show.band_notes %}
-        <div class="card mb-2 border-danger">
-            <div class="card-header bg-danger text-white border-danger py-1" style="-webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #dc3545 !important; color: white !important;">
-                <i class="fa-solid fa-triangle-exclamation me-1"></i> Avisos para a Banda
-            </div>
-            <div class="card-body">
-                <p class="text-danger" style="color: #dc3545 !important; font-weight: bold;">
-                    {{ show.band_notes|linebreaksbr }}
-                </p>
-            </div>
-        </div>
-        {% endif %}
+    <div class="section-header-yellow">Informações Técnicas</div>
+    <table class="two-cols">
+        <tr>
+            <td>
+                {% if show.local_production %}
+                <div class="item-title">Produção Local:</div>
+                <div class="item-text">
+                    {{ show.local_production|linebreaksbr }}
+                    {% if show.local_production_contact %}
+                    <br><span class="contact-info">Contato: {{ show.local_production_contact }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if show.sound_system %}
+                <div class="item-title">Sistema de Sonorização:</div>
+                <div class="item-text">
+                    {{ show.sound_system|linebreaksbr }}
+                    {% if show.sound_contact %}
+                    <br><span class="contact-info">Contato: {{ show.sound_contact }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if show.lighting_system %}
+                <div class="item-title">Sistema de Iluminação:</div>
+                <div class="item-text">
+                    {{ show.lighting_system|linebreaksbr }}
+                    {% if show.lighting_contact %}
+                    <br><span class="contact-info">Contato: {{ show.lighting_contact }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if show.led_system %}
+                <div class="item-title">Painel de LED:</div>
+                <div class="item-text">
+                    {{ show.led_system|linebreaksbr }}
+                    {% if show.led_contact %}
+                    <br><span class="contact-info">Contato: {{ show.led_contact }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </td>
+            <td>
+                {% if show.backline %}
+                <div class="item-title">Backline:</div>
+                <div class="item-text">
+                    {{ show.backline|linebreaksbr }}
+                    {% if show.backline_contact %}
+                    <br><span class="contact-info">Contato: {{ show.backline_contact }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if show.pyrotechnics %}
+                <div class="item-title">Efeitos / Pirotecnia:</div>
+                <div class="item-text">
+                    {{ show.pyrotechnics|linebreaksbr }}
+                    {% if show.pyrotechnics_contact %}
+                    <br><span class="contact-info">Contato: {{ show.pyrotechnics_contact }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if show.generator_system %}
+                <div class="item-title">Geradores:</div>
+                <div class="item-text">
+                    {{ show.generator_system|linebreaksbr }}
+                    {% if show.generator_contact %}
+                    <br><span class="contact-info">Contato: {{ show.generator_contact }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if show.loaders_system %}
+                <div class="item-title">Carregadores:</div>
+                <div class="item-text">
+                    {{ show.loaders_system|linebreaksbr }}
+                    {% if show.loaders_contact %}
+                    <br><span class="contact-info">Contato: {{ show.loaders_contact }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
 
+    {% if show.band_notes %}
+    <div class="section-header-red">Avisos para a Banda</div>
+    <div style="border: 1px solid #dc3545; padding: 10px; color: #dc3545; font-weight: bold;">
+        {{ show.band_notes|linebreaksbr }}
+    </div>
+    {% endif %}
 
+    <div id="print-footer">
+        <table style="width: 100%; border-top: 1px solid #ddd; padding-top: 5px; font-size: 9px; color: #777;">
+            <tr>
+                <td style="width: 33%; text-align: left;">
+                    Documento: [{{ show.date|date:"d-m-Y" }}] {{ show.title }}
+                </td>
+                <td style="width: 33%; text-align: center;">
+                    Gerado via Backstage Pro
+                </td>
+                <td style="width: 33%; text-align: right;">
+                    Gerado em: {{ current_datetime }}
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <!-- Rodapé Exclusivo de Impressão -->
-    <div id="print-footer" class="print-only mt-2" style="border-top: 1px solid #ddd; padding-top: 5px; font-size: 11px;">
-        <div class="d-flex w-100 justify-content-between align-items-center mb-1 px-1">
-            <span style="flex: 1;"><strong>Documento:</strong> [{{ show.date|date:"d-m-Y" }}] {{ show.title }}</span>
-            <span style="flex: 1; text-align: center;">{% include 'core/pdf/_backstage_footer.html' %}</span>
-            <span style="flex: 1; text-align: right;"><strong>Gerado em:</strong> <span id="current-datetime"></span></span>
-        </div>
-    </div>
-
-    <script>
-        // Formata a data atual
-        const now = new Date();
-        const formattedDate = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        document.getElementById('current-datetime').textContent = formattedDate;
-    </script>
 </body>
 </html>
