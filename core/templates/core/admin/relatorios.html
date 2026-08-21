@@ -5,12 +5,12 @@
     <h4 class="fw-bold m-0"><i class="fa-solid fa-chart-line me-2 text-primary"></i> Relatórios</h4>
 </div>
 
-<div class="row">
+<div class="row relatorios-grid">
     <!-- Relatório Financeiro SaaS -->
     <div class="col-6 col-md-4 col-lg-3 col-sm-6 mb-4">
         <a href="{% url 'admin_painel:relatorio_financeiro' %}"  class="text-decoration-none">
-            <div class="card shadow-sm border-0 h-100 card-hover-premium" style="border-radius: 12px;">
-                <div class="card-body d-flex flex-column align-items-center justify-content-center py-4">
+            <div class="card shadow-sm border-0 h-100 card-hover-premium relatorios-card" style="border-radius: 12px;">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center py-3 py-md-4">
                     <div class="mb-2" style="font-size: 2.2rem;"><i class="fa-solid fa-chart-bar" style="color: #198754;"></i></div>
                     <h5 class="fw-bold text-dark m-0">Financeiro</h5>
                 </div>
@@ -21,8 +21,8 @@
     <!-- Catálogo de Parceiros -->
     <div class="col-6 col-md-4 col-lg-3 col-sm-6 mb-4">
         <a href="{% url 'admin_painel:parceiros' %}" class="text-decoration-none">
-            <div class="card shadow-sm border-0 h-100 card-hover-premium" style="border-radius: 12px;">
-                <div class="card-body d-flex flex-column align-items-center justify-content-center py-4">
+            <div class="card shadow-sm border-0 h-100 card-hover-premium relatorios-card" style="border-radius: 12px;">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center py-3 py-md-4">
                     <div class="mb-2" style="font-size: 2.2rem;"><i class="fa-solid fa-handshake" style="color: #0d6efd;"></i></div>
                     <h5 class="fw-bold text-dark m-0">Parceiros</h5>
                 </div>
@@ -39,7 +39,7 @@
                     {{ support_unread_count }}
                 </span>
                 {% endif %}
-                <div class="card-body d-flex flex-column align-items-center justify-content-center py-4">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center py-3 py-md-4">
                     <div class="mb-2" style="font-size: 2.2rem;"><i class="fa-solid fa-headset" style="color: #6f42c1;"></i></div>
                     <h5 class="fw-bold text-dark m-0">Fale Conosco</h5>
                 </div>
@@ -50,8 +50,8 @@
     <!-- Site -->
     <div class="col-6 col-md-4 col-lg-3 col-sm-6 mb-4">
         <a href="{% url 'admin_painel:site_logos' %}" class="text-decoration-none">
-            <div class="card shadow-sm border-0 h-100 card-hover-premium" style="border-radius: 12px;">
-                <div class="card-body d-flex flex-column align-items-center justify-content-center py-4">
+            <div class="card shadow-sm border-0 h-100 card-hover-premium relatorios-card" style="border-radius: 12px;">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center py-3 py-md-4">
                     <div class="mb-2" style="font-size: 2.2rem;"><i class="fa-solid fa-globe" style="color: #0dcaf0;"></i></div>
                     <h5 class="fw-bold text-dark m-0">Site</h5>
                 </div>
@@ -62,8 +62,8 @@
     {% if user_has_admin_web_push_perm %}
     <div class="col-6 col-md-4 col-lg-3 col-sm-6 mb-4">
         <a href="{% url 'admin_painel:admin_web_push_dashboard' %}" class="text-decoration-none">
-            <div class="card shadow-sm border-0 h-100 card-hover-premium" style="border-radius: 12px;">
-                <div class="card-body d-flex flex-column align-items-center justify-content-center py-4">
+            <div class="card shadow-sm border-0 h-100 card-hover-premium relatorios-card" style="border-radius: 12px;">
+                <div class="card-body d-flex flex-column align-items-center justify-content-center py-3 py-md-4">
                     <div class="mb-2" style="font-size: 2.2rem;"><i class="fa-solid fa-bell" style="color: #ffc107;"></i></div>
                     <h5 class="fw-bold text-dark m-0">Web Push</h5>
                 </div>

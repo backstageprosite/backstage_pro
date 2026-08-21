@@ -11,7 +11,7 @@
         </a>
         {% if request.user.is_produtor %}
         <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalNovoAviso">
-            <i class="fa-solid fa-plus me-1"></i> Novo Aviso
+            <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">Novo </span>Aviso
         </button>
         {% endif %}
     </div>
@@ -107,22 +107,22 @@
             </table>
         </div>
         {% else %}
-        <div class="p-5 text-center text-muted">
+        <div class="p-4 p-md-5 text-center text-muted empty-state-card">
             <i class="fa-solid fa-inbox fs-1 mb-3 opacity-50"></i>
             <h5 class="fw-bold mb-1">Nenhum aviso publicado.</h5>
-            <p class="mb-0">Clique em Novo Aviso para agendar uma notificação.</p>
+            <p class="mb-0">Clique em <span class="d-none d-sm-inline">Novo </span>Aviso para agendar uma notificação.</p>
         </div>
         {% endif %}
     </div>
 </div>
 
 {% if request.user.is_produtor %}
-<!-- Modal Novo Aviso -->
+<!-- Modal <span class="d-none d-sm-inline">Novo </span>Aviso -->
 <div class="modal fade" id="modalNovoAviso" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 12px; border: none;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-bullhorn text-warning me-2"></i> Novo Aviso</h5>
+                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-bullhorn text-warning me-2"></i> <span class="d-none d-sm-inline">Novo </span>Aviso</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{% url 'band_notices_create' band.slug %}" method="post">

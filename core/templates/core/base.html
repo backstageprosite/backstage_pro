@@ -159,7 +159,78 @@
                 margin-top: 0.25rem !important;
             }
         }
-    </style>
+    
+
+        /* --- AUDITORIA E OTIMIZAÇÃO MOBILE-FIRST COMPLETA --- */
+        @media (max-width: 767.98px) {
+            /* FASE 2 — CABEÇALHO MOBILE GLOBAL */
+            .navbar .container-fluid { flex-wrap: nowrap !important; }
+            .navbar .ms-auto { min-width: 0; }
+            
+            /* PADRONIZAÇÃO BÁSICA */
+            .btn-mobile-full { width: 100%; margin-bottom: 8px; }
+            .gap-mobile-2 { gap: 8px !important; }
+            
+            /* FASE 4 — PÁGINA RELATÓRIOS */
+            .relatorios-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 12px !important; }
+            .relatorios-grid > div { width: 100% !important; max-width: 100% !important; margin-bottom: 0 !important; }
+            .relatorios-card { height: 110px !important; padding: 12px !important; }
+            .relatorios-card i { font-size: 28px !important; margin-bottom: 8px !important; }
+            .relatorios-card h5 { font-size: 14px !important; margin-bottom: 0 !important; }
+            .relatorios-card p, .relatorios-card small { display: none !important; }
+
+            /* FASE 5 — PÁGINA PARCEIROS */
+            .partner-card-wrapper { max-width: 100% !important; }
+            .partner-card .img-wrapper { height: 120px !important; padding: 10px !important; }
+            .partner-card .card-body { padding: 16px !important; }
+            .partner-card h5 { font-size: 18px !important; }
+            .partner-card p.small { font-size: 14px !important; margin-bottom: 8px !important; }
+            .partner-card .btn { width: 100% !important; justify-content: center; }
+
+            /* FASE 6 — RELATÓRIOS FINANCEIROS */
+            .fin-kpi-card { padding: 12px !important; }
+            .fin-kpi-card h6 { font-size: 0.85rem !important; }
+            .fin-kpi-card .fs-3 { font-size: clamp(1.2rem, 5vw, 1.6rem) !important; }
+            
+            /* FASE 12 — AVISOS E FALE CONOSCO (EMPTY STATES) */
+            .empty-state-card { padding: 24px !important; }
+            .empty-state-card i.fa-3x { font-size: 2.5rem !important; margin-bottom: 12px !important; }
+            .empty-state-card h5 { font-size: 18px !important; }
+            .empty-state-card p { font-size: 14px !important; margin-bottom: 16px !important; }
+
+            /* TABELAS RESPONSIVAS -> CARDS (FASES 7, 8, 9, 10) */
+            .mobile-cards-table.table-responsive { border: none !important; overflow: visible !important; padding-bottom: 20px; }
+            .mobile-cards-table table, .mobile-cards-table thead, .mobile-cards-table tbody, .mobile-cards-table tr, .mobile-cards-table td {
+                display: block !important; width: 100% !important;
+            }
+            .mobile-cards-table thead { display: none !important; }
+            .mobile-cards-table tr {
+                margin-bottom: 16px !important; border-radius: 12px !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+                border: 1px solid #e9ecef !important; padding: 16px !important;
+                background-color: #fff !important; position: relative !important;
+            }
+            .mobile-cards-table td {
+                border: none !important; padding: 6px 0 !important;
+                display: flex !important; align-items: center !important; justify-content: space-between !important;
+                min-height: auto !important; text-align: left !important;
+            }
+            .mobile-cards-table td.actions-td {
+                border-top: 1px solid #f8f9fa !important; margin-top: 12px !important; padding-top: 12px !important;
+                justify-content: flex-end !important;
+            }
+            /* Inject label before td content if data-label exists */
+            .mobile-cards-table td[data-label]::before {
+                content: attr(data-label); font-weight: 600; font-size: 0.75rem; color: #6c757d;
+                text-transform: uppercase; margin-right: auto; padding-right: 12px;
+            }
+            .mobile-cards-table td > * { text-align: right; }
+            /* For cells that should just be flex rows (like Avatar + Name) */
+            .mobile-cards-table td.full-row { flex-direction: row !important; justify-content: flex-start !important; }
+            .mobile-cards-table td.full-row::before { display: none !important; }
+            .mobile-cards-table td.full-row > * { text-align: left; }
+        }
+</style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -269,22 +340,22 @@
                         {% if band %}Painel de Controle{% endif %}
                     </div>
 
-                    <div class="d-flex align-items-center ms-auto">
+                    <div class="d-flex align-items-center ms-auto flex-nowrap" style="min-width: 0;">
                         {% load notification_tags %}
                         {% render_notifications_bell %}
-                        <span class="text-dark me-3 fw-medium">
-                            <i class="fa-regular fa-circle-user text-primary me-1"></i> Olá, {{ user.username }} 
+                        <span class="text-dark me-2 me-md-3 fw-medium text-truncate" style="max-width: 150px;">
+                            <i class="fa-regular fa-circle-user text-primary me-1"></i> <span class="d-none d-md-inline">Olá, </span>{{ user.first_name|default:user.username }} 
                             {% if user.is_produtor %}
-                                <span class="badge bg-primary ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-crown me-1"></i> Produtor</span>
+                                <span class="badge bg-primary ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-crown"></i><span class="d-none d-md-inline ms-1">Produtor</span></span>
                             {% else %}
-                                <span class="badge bg-secondary ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-guitar me-1"></i> Integrante</span>
+                                <span class="badge bg-secondary ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-guitar"></i><span class="d-none d-md-inline ms-1">Integrante</span></span>
                             {% endif %}
                         </span>
                         {% if band %}
                             <form method="post" action="{% url 'logout' band.slug %}" class="d-inline">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold">
-                                    <i class="fa-solid fa-right-from-bracket me-1"></i> Sair
+                                    <i class="fa-solid fa-right-from-bracket"></i><span class="d-none d-md-inline ms-1">Sair</span>
                                 </button>
                             </form>
                         {% endif %}
