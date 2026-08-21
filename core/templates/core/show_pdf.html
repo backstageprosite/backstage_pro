@@ -22,67 +22,73 @@
         }
         .header-table {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
         }
         .logo-cell {
-            width: 25%;
+            width: 30%;
             text-align: left;
-            vertical-align: top;
+            vertical-align: middle;
         }
         .title-cell {
-            width: 50%;
+            width: 40%;
             text-align: center;
             vertical-align: middle;
         }
         .weather-cell {
-            width: 25%;
+            width: 30%;
             text-align: right;
-            vertical-align: top;
+            vertical-align: middle;
         }
         .weather-card {
-            border: 1px solid #17a2b8;
-            border-radius: 5px;
-            padding: 5px;
-            background-color: #f8ffff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 6px;
+            background-color: #f8f9fa;
             text-align: left;
             font-size: 10px;
+            display: block;
         }
-        .section-header {
-            background-color: #f0f0f0;
-            color: #333;
+        .section-header-dark {
+            background-color: #212529;
+            color: #0dcaf0;
             font-weight: bold;
             padding: 5px;
-            margin-top: 15px;
+            border-bottom: 2px solid #212529;
+            margin-top: 10px;
             margin-bottom: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            font-size: 12px;
         }
         .section-header-green {
-            background-color: #28a745;
-            color: #fff;
+            background-color: #198754;
+            color: #ffffff;
             font-weight: bold;
             padding: 5px;
-            margin-top: 15px;
+            border-bottom: 2px solid #198754;
+            margin-top: 10px;
             margin-bottom: 5px;
-            border-radius: 4px;
+            font-size: 12px;
         }
         .section-header-yellow {
             background-color: #ffc107;
-            color: #000;
+            color: #212529;
             font-weight: bold;
             padding: 5px;
-            margin-top: 15px;
+            border-bottom: 2px solid #ffc107;
+            margin-top: 10px;
             margin-bottom: 5px;
-            border-radius: 4px;
+            font-size: 12px;
         }
         .section-header-red {
             background-color: #dc3545;
-            color: #fff;
+            color: #ffffff;
             font-weight: bold;
             padding: 5px;
-            margin-top: 15px;
+            border-bottom: 2px solid #dc3545;
+            margin-top: 10px;
             margin-bottom: 5px;
-            border-radius: 4px;
+            font-size: 12px;
         }
         .two-cols {
             width: 100%;
@@ -90,20 +96,28 @@
         .two-cols td {
             width: 50%;
             vertical-align: top;
-            padding: 5px;
+            padding: 0px 5px 10px 5px;
         }
         .item-title {
             font-weight: bold;
-            color: #555;
-            margin-top: 5px;
+            color: #444;
             margin-bottom: 2px;
+            font-size: 11px;
         }
         .item-text {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .contact-info {
-            color: #17a2b8;
+            color: #0f7fb1;
             font-size: 9px;
+            text-decoration: none;
+        }
+        .text-secondary {
+            color: #6c757d;
+        }
+        .card-body-border {
+            border: 1px solid #eee;
+            padding: 5px;
         }
     </style>
 </head>
@@ -120,28 +134,25 @@
                 {% endif %}
             </td>
             <td class="title-cell">
-                <div style="font-size: 18px; font-weight: bold;">{{ show.date|date:"d/m/Y" }}</div>
-                <div style="font-size: 16px; font-weight: bold; margin-top: 5px;">{{ show.title }}</div>
+                <div style="font-size: 20px; font-weight: bold; margin-bottom: 0px; padding: 0;">{{ show.title }} - {{ show.date|date:"d/m/Y" }}</div>
                 {% if show.event_name %}
-                    <div style="font-size: 12px; margin-top: 3px;">{{ show.event_name }}</div>
+                    <div style="font-size: 16px; color: #6c757d; margin-top: 2px;">{{ show.event_name }}</div>
                 {% endif %}
             </td>
             <td class="weather-cell">
                 {% if weather %}
                 <div class="weather-card">
-                    <div style="font-weight: bold; color: #17a2b8; border-bottom: 1px solid #17a2b8; padding-bottom: 2px; margin-bottom: 2px;">
-                        Clima - {{ show.city }}
+                    <div style="font-weight: bold; margin-bottom: 2px; color: #6c757d;">
+                        Clima - {{ show.city|truncatechars:15 }}
                     </div>
-                    <div>{{ weather.description|title }}</div>
-                    <div>Min: {{ weather.temp_min }}°C | Máx: {{ weather.temp_max }}°C</div>
-                    {% if weather.pop %}
-                    <div>Chuva: {{ weather.pop }}%</div>
-                    {% endif %}
+                    <div>{{ weather.condition }}</div>
+                    <div>Temp: {{ weather.min }}°C a {{ weather.max }}°C</div>
+                    <div>Chuva: {{ weather.precip }}%</div>
                 </div>
                 {% else %}
-                <div class="weather-card" style="color: #666; border-color: #ccc; background-color: #f9f9f9;">
-                    <div style="font-weight: bold; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">Clima</div>
-                    Temporariamente indisponível.
+                <div class="weather-card" style="color: #6c757d;">
+                    <div style="font-weight: bold; margin-bottom: 2px;">Clima - {{ show.city|truncatechars:15 }}</div>
+                    <div>Clima indisponível no momento</div>
                 </div>
                 {% endif %}
             </td>
@@ -152,220 +163,267 @@
         <tr>
             <!-- Coluna Esquerda: Dados do Evento -->
             <td>
-                <div class="section-header">Dados do Evento</div>
-                
-                <div class="item-title">Status:</div>
-                <div class="item-text">{{ show.get_status_display }}</div>
+                <div class="section-header-dark">Dados do Evento</div>
+                <div class="card-body-border">
+                    <div class="item-title">Status</div>
+                    <div class="item-text">{{ show.get_status_display }}</div>
 
-                {% if show.cache %}
-                <div class="item-title">Cachê:</div>
-                <div class="item-text">R$ {{ show.cache|floatformat:2 }}</div>
-                {% endif %}
-                
-                <div class="item-title">Local:</div>
-                <div class="item-text">{{ show.venue }}</div>
-                
-                <div class="item-title">Cidade / Estado:</div>
-                <div class="item-text">{{ show.city }} / {{ show.state }}</div>
-                
-                {% if show.address %}
-                <div class="item-title">Endereço:</div>
-                <div class="item-text">{{ show.address }}</div>
-                {% endif %}
-                
-                {% if show.contractor_name %}
-                <div class="item-title">Contratante:</div>
-                <div class="item-text">
-                    {{ show.contractor_name }}
-                    {% if show.contractor_contact %}
-                    <br><span class="contact-info">Contato: {{ show.contractor_contact }}</span>
+                    {% if request.user.is_produtor and show.cache %}
+                    <div class="item-title">Cachê</div>
+                    <div class="item-text">R$ {{ show.cache|floatformat:2 }}</div>
+                    {% endif %}
+
+                    <div class="item-title">Local</div>
+                    <div class="item-text">{{ show.venue }}</div>
+
+                    <div class="item-title">Cidade / Estado</div>
+                    <div class="item-text">{{ show.city }} / {{ show.state }}</div>
+
+                    {% if show.address %}
+                    <div class="item-title">Endereço</div>
+                    <div class="item-text">{{ show.address }}</div>
+                    {% endif %}
+
+                    {% if show.contractor_name %}
+                    <div class="item-title">Contratante</div>
+                    <div class="item-text">
+                        {{ show.contractor_name }}
+                        {% if show.contractor_contact %}
+                        <br><span class="contact-info">Contato: {{ show.contractor_contact }}</span>
+                        {% endif %}
+                    </div>
                     {% endif %}
                 </div>
-                {% endif %}
             </td>
-            
+
             <!-- Coluna Direita: Cronograma -->
             <td>
-                <div class="section-header">Cronograma</div>
-                <table style="width: 100%;">
-                    {% if show.arrival_time %}
-                    <tr>
-                        <td style="width: 40%; font-weight: bold;">Chegada na Cidade:</td>
-                        <td>{{ show.arrival_time|time:"H:i" }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if show.hotel_checkin_time %}
-                    <tr>
-                        <td style="font-weight: bold;">Check-in Hotel:</td>
-                        <td>{{ show.hotel_checkin_time|time:"H:i" }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if show.soundcheck_time %}
-                    <tr>
-                        <td style="font-weight: bold;">Passagem de Som:</td>
-                        <td>{{ show.soundcheck_time|time:"H:i" }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if show.dinner_time %}
-                    <tr>
-                        <td style="font-weight: bold;">Jantar:</td>
-                        <td>{{ show.dinner_time|time:"H:i" }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if show.departure_to_venue_time %}
-                    <tr>
-                        <td style="font-weight: bold;">Saída para Local:</td>
-                        <td>{{ show.departure_to_venue_time|time:"H:i" }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if show.show_time %}
-                    <tr>
-                        <td style="font-weight: bold; color: #17a2b8;">Horário do Show:</td>
-                        <td style="font-weight: bold;">{{ show.show_time|time:"H:i" }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if show.hotel_checkout_time %}
-                    <tr>
-                        <td style="font-weight: bold;">Check-out Hotel:</td>
-                        <td>{{ show.hotel_checkout_time|time:"H:i" }}</td>
-                    </tr>
-                    {% endif %}
-                </table>
-            </td>
-        </tr>
-    </table>
-
-    <div class="section-header-green">Logística e Produção</div>
-    <table class="two-cols">
-        <tr>
-            <td>
-                {% if show.transportation %}
-                <div class="item-title">Transporte:</div>
-                <div class="item-text">{{ show.transportation|linebreaksbr }}</div>
-                {% endif %}
-                {% if show.hotel_name %}
-                <div class="item-title">Hospedagem:</div>
-                <div class="item-text">
-                    {{ show.hotel_name }}
-                    {% if show.hotel_contact %}
-                    <br><span class="contact-info">Contato: {{ show.hotel_contact }}</span>
-                    {% endif %}
+                <div class="section-header-dark">Cronograma</div>
+                <div class="card-body-border">
+                    <table style="width: 100%; font-size: 11px;">
+                        {% if show.arrival_time %}
+                        <tr>
+                            <td style="width: 50%; font-weight: bold; border-bottom: 1px solid #eee; padding: 3px 0;">Chegada na Cidade:</td>
+                            <td style="border-bottom: 1px solid #eee; padding: 3px 0;">{{ show.arrival_time|time:"H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if show.hotel_checkin_time %}
+                        <tr>
+                            <td style="font-weight: bold; border-bottom: 1px solid #eee; padding: 3px 0;">Check-in Hotel:</td>
+                            <td style="border-bottom: 1px solid #eee; padding: 3px 0;">{{ show.hotel_checkin_time|time:"H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if show.soundcheck_time %}
+                        <tr>
+                            <td style="font-weight: bold; border-bottom: 1px solid #eee; padding: 3px 0;">Passagem de Som:</td>
+                            <td style="border-bottom: 1px solid #eee; padding: 3px 0;">{{ show.soundcheck_time|time:"H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if show.dinner_time %}
+                        <tr>
+                            <td style="font-weight: bold; border-bottom: 1px solid #eee; padding: 3px 0;">Jantar:</td>
+                            <td style="border-bottom: 1px solid #eee; padding: 3px 0;">{{ show.dinner_time|time:"H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if show.departure_to_venue_time %}
+                        <tr>
+                            <td style="font-weight: bold; border-bottom: 1px solid #eee; padding: 3px 0;">Saída para Local:</td>
+                            <td style="border-bottom: 1px solid #eee; padding: 3px 0;">{{ show.departure_to_venue_time|time:"H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if show.show_time %}
+                        <tr>
+                            <td style="font-weight: bold; color: #0dcaf0; border-bottom: 1px solid #eee; padding: 3px 0;">Horário do Show:</td>
+                            <td style="font-weight: bold; border-bottom: 1px solid #eee; padding: 3px 0;">{{ show.show_time|time:"H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if show.hotel_checkout_time %}
+                        <tr>
+                            <td style="font-weight: bold; border-bottom: 1px solid #eee; padding: 3px 0;">Check-out Hotel:</td>
+                            <td style="border-bottom: 1px solid #eee; padding: 3px 0;">{{ show.hotel_checkout_time|time:"H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
                 </div>
-                {% endif %}
-            </td>
-            <td>
-                {% if show.food_details %}
-                <div class="item-title">Alimentação (Camarim/Local):</div>
-                <div class="item-text">{{ show.food_details|linebreaksbr }}</div>
-                {% endif %}
-                {% if show.other_lineup %}
-                <div class="item-title">Outras Atrações:</div>
-                <div class="item-text">{{ show.other_lineup|linebreaksbr }}</div>
-                {% endif %}
             </td>
         </tr>
     </table>
 
+    {% if show.transport or show.flight_number or show.airline or show.accommodation or show.transfer or show.dressing_room or show.catering or show.wardrobe or show.attractions or show.room_lists.exists %}
+    <div class="section-header-green">Logística & Produção</div>
+    <div class="card-body-border">
+        <table class="two-cols" style="margin-bottom: 0;">
+            <tr>
+                <td>
+                    {% if show.transport %}
+                    <div class="item-title">Transporte</div>
+                    <div class="item-text">
+                        {{ show.transport|linebreaksbr }}
+                        {% if show.transport_contact %}<br><span class="contact-info">Contato: {{ show.transport_contact }}</span>{% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if show.flight_number or show.airline or show.boarding_time %}
+                    <div class="item-title">Aéreo</div>
+                    <div class="item-text">
+                        {% if show.airline %}<strong>Empresa Aérea:</strong> {{ show.airline }}<br>{% endif %}
+                        {% if show.flight_number %}<strong>Voo:</strong> {{ show.flight_number }}<br>{% endif %}
+                        {% if show.boarding_time %}<strong>Embarque:</strong> {{ show.boarding_time|time:"H:i" }}{% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% with room_list=show.room_lists.first %}
+                    {% if show.accommodation or room_list %}
+                    <div class="item-title">Hospedagem</div>
+                    <div class="item-text">
+                        {% if show.accommodation %}
+                            {{ show.accommodation|linebreaksbr }}
+                            {% if show.accommodation_contact %}<br><span class="contact-info">Contato: {{ show.accommodation_contact }}</span>{% endif %}
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+
+                    {% if show.transfer %}
+                    <div class="item-title">Transfer / Deslocamento Local</div>
+                    <div class="item-text">
+                        {{ show.transfer|linebreaksbr }}
+                        {% if show.transfer_contact %}<br><span class="contact-info">Contato: {{ show.transfer_contact }}</span>{% endif %}
+                    </div>
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if show.dressing_room %}
+                    <div class="item-title">Camarim</div>
+                    <div class="item-text">
+                        {{ show.dressing_room|linebreaksbr }}
+                    </div>
+                    {% endif %}
+
+                    {% if show.catering %}
+                    <div class="item-title">Alimentação (Catering)</div>
+                    <div class="item-text">
+                        {{ show.catering|linebreaksbr }}
+                    </div>
+                    {% endif %}
+
+                    {% if show.wardrobe %}
+                    <div class="item-title">Figurino / Lavanderia</div>
+                    <div class="item-text">
+                        {{ show.wardrobe|linebreaksbr }}
+                    </div>
+                    {% endif %}
+
+                    {% if show.attractions %}
+                    <div class="item-title">Outras Atrações do Evento</div>
+                    <div class="item-text">
+                        {{ show.attractions|linebreaksbr }}
+                    </div>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if show.local_production or show.sound_system or show.lighting_system or show.led_system or show.backline or show.pyrotechnics or show.generator_system or show.loaders_system %}
     <div class="section-header-yellow">Informações Técnicas</div>
-    <table class="two-cols">
-        <tr>
-            <td>
-                {% if show.local_production %}
-                <div class="item-title">Produção Local:</div>
-                <div class="item-text">
-                    {{ show.local_production|linebreaksbr }}
-                    {% if show.local_production_contact %}
-                    <br><span class="contact-info">Contato: {{ show.local_production_contact }}</span>
+    <div class="card-body-border">
+        <table class="two-cols" style="margin-bottom: 0;">
+            <tr>
+                <td>
+                    {% if show.local_production %}
+                    <div class="item-title">Produção Local</div>
+                    <div class="item-text">
+                        {{ show.local_production|linebreaksbr }}
+                        {% if show.local_production_contact %}<br><span class="contact-info">Contato: {{ show.local_production_contact }}</span>{% endif %}
+                    </div>
                     {% endif %}
-                </div>
-                {% endif %}
-                {% if show.sound_system %}
-                <div class="item-title">Sistema de Sonorização:</div>
-                <div class="item-text">
-                    {{ show.sound_system|linebreaksbr }}
-                    {% if show.sound_contact %}
-                    <br><span class="contact-info">Contato: {{ show.sound_contact }}</span>
+
+                    {% if show.sound_system %}
+                    <div class="item-title">Sistema de Sonorização</div>
+                    <div class="item-text">
+                        {{ show.sound_system|linebreaksbr }}
+                        {% if show.sound_contact %}<br><span class="contact-info">Contato: {{ show.sound_contact }}</span>{% endif %}
+                    </div>
                     {% endif %}
-                </div>
-                {% endif %}
-                {% if show.lighting_system %}
-                <div class="item-title">Sistema de Iluminação:</div>
-                <div class="item-text">
-                    {{ show.lighting_system|linebreaksbr }}
-                    {% if show.lighting_contact %}
-                    <br><span class="contact-info">Contato: {{ show.lighting_contact }}</span>
+
+                    {% if show.lighting_system %}
+                    <div class="item-title">Sistema de Iluminação</div>
+                    <div class="item-text">
+                        {{ show.lighting_system|linebreaksbr }}
+                        {% if show.lighting_contact %}<br><span class="contact-info">Contato: {{ show.lighting_contact }}</span>{% endif %}
+                    </div>
                     {% endif %}
-                </div>
-                {% endif %}
-                {% if show.led_system %}
-                <div class="item-title">Painel de LED:</div>
-                <div class="item-text">
-                    {{ show.led_system|linebreaksbr }}
-                    {% if show.led_contact %}
-                    <br><span class="contact-info">Contato: {{ show.led_contact }}</span>
+
+                    {% if show.led_system %}
+                    <div class="item-title">Painel de LED</div>
+                    <div class="item-text">
+                        {{ show.led_system|linebreaksbr }}
+                        {% if show.led_contact %}<br><span class="contact-info">Contato: {{ show.led_contact }}</span>{% endif %}
+                    </div>
                     {% endif %}
-                </div>
-                {% endif %}
-            </td>
-            <td>
-                {% if show.backline %}
-                <div class="item-title">Backline:</div>
-                <div class="item-text">
-                    {{ show.backline|linebreaksbr }}
-                    {% if show.backline_contact %}
-                    <br><span class="contact-info">Contato: {{ show.backline_contact }}</span>
+                </td>
+
+                <td>
+                    {% if show.backline %}
+                    <div class="item-title">Backline</div>
+                    <div class="item-text">
+                        {{ show.backline|linebreaksbr }}
+                        {% if show.backline_contact %}<br><span class="contact-info">Contato: {{ show.backline_contact }}</span>{% endif %}
+                    </div>
                     {% endif %}
-                </div>
-                {% endif %}
-                {% if show.pyrotechnics %}
-                <div class="item-title">Efeitos / Pirotecnia:</div>
-                <div class="item-text">
-                    {{ show.pyrotechnics|linebreaksbr }}
-                    {% if show.pyrotechnics_contact %}
-                    <br><span class="contact-info">Contato: {{ show.pyrotechnics_contact }}</span>
+
+                    {% if show.pyrotechnics %}
+                    <div class="item-title">Efeitos / Pirotecnia</div>
+                    <div class="item-text">
+                        {{ show.pyrotechnics|linebreaksbr }}
+                        {% if show.pyrotechnics_contact %}<br><span class="contact-info">Contato: {{ show.pyrotechnics_contact }}</span>{% endif %}
+                    </div>
                     {% endif %}
-                </div>
-                {% endif %}
-                {% if show.generator_system %}
-                <div class="item-title">Geradores:</div>
-                <div class="item-text">
-                    {{ show.generator_system|linebreaksbr }}
-                    {% if show.generator_contact %}
-                    <br><span class="contact-info">Contato: {{ show.generator_contact }}</span>
+
+                    {% if show.generator_system %}
+                    <div class="item-title">Geradores</div>
+                    <div class="item-text">
+                        {{ show.generator_system|linebreaksbr }}
+                        {% if show.generator_contact %}<br><span class="contact-info">Contato: {{ show.generator_contact }}</span>{% endif %}
+                    </div>
                     {% endif %}
-                </div>
-                {% endif %}
-                {% if show.loaders_system %}
-                <div class="item-title">Carregadores:</div>
-                <div class="item-text">
-                    {{ show.loaders_system|linebreaksbr }}
-                    {% if show.loaders_contact %}
-                    <br><span class="contact-info">Contato: {{ show.loaders_contact }}</span>
+
+                    {% if show.loaders_system %}
+                    <div class="item-title">Carregadores</div>
+                    <div class="item-text">
+                        {{ show.loaders_system|linebreaksbr }}
+                        {% if show.loaders_contact %}<br><span class="contact-info">Contato: {{ show.loaders_contact }}</span>{% endif %}
+                    </div>
                     {% endif %}
-                </div>
-                {% endif %}
-            </td>
-        </tr>
-    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
 
     {% if show.band_notes %}
     <div class="section-header-red">Avisos para a Banda</div>
-    <div style="border: 1px solid #dc3545; padding: 10px; color: #dc3545; font-weight: bold;">
-        {{ show.band_notes|linebreaksbr }}
+    <div class="card-body-border">
+        <div style="color: #dc3545; font-weight: bold;">
+            {{ show.band_notes|linebreaksbr }}
+        </div>
     </div>
     {% endif %}
 
     <div id="print-footer">
-        <table style="width: 100%; border-top: 1px solid #ddd; padding-top: 5px; font-size: 9px; color: #777;">
+        <table style="width: 100%; border-top: 1px solid #ddd; padding-top: 5px; font-size: 10px; color: #555;">
             <tr>
                 <td style="width: 33%; text-align: left;">
-                    Documento: [{{ show.date|date:"d-m-Y" }}] {{ show.title }}
+                    <strong>Documento:</strong> [{{ show.date|date:"d-m-Y" }}] {{ show.title }}
                 </td>
                 <td style="width: 33%; text-align: center;">
-                    Gerado via Backstage Pro
+                    {% include 'core/pdf/_backstage_footer.html' %}
                 </td>
                 <td style="width: 33%; text-align: right;">
-                    Gerado em: {{ current_datetime }}
+                    <strong>Gerado em:</strong> {{ current_datetime }}
                 </td>
             </tr>
         </table>
