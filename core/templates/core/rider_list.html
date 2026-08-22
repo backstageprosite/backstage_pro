@@ -11,7 +11,7 @@
         </a>
         {% if request.user.is_produtor %}
         <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalAdicionarRider" style="background-color: #6BD443;">
-            <i class="bi bi-plus-circle me-1"></i> <span class="d-none d-sm-inline">Novo </span>Rider
+            <i class="fa-solid fa-plus me-1"></i> Adicionar Rider
         </button>
         {% endif %}
     </div>
@@ -76,7 +76,7 @@
             <h5 class="text-muted mb-3">Nenhum Rider cadastrado ainda.</h5>
             {% if request.user.is_produtor %}
             <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalAdicionarRider" style="background-color: #6BD443;">
-                <i class="bi bi-plus-circle me-1"></i> <span class="d-none d-sm-inline">Novo </span>Rider
+                <i class="fa-solid fa-plus me-1"></i> Adicionar Rider
             </button>
             {% endif %}
         </div>

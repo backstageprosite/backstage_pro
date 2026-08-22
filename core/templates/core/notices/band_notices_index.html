@@ -29,7 +29,7 @@
                     <tr>
                         <th class="border-0 ps-4">Status</th>
                         <th class="border-0">Mensagem</th>
-                        <th class="border-0">Criado por / em</th>
+                        
                         <th class="border-0 text-end pe-4">Ações</th>
                     </tr>
                 </thead>
@@ -52,10 +52,7 @@
                         <td>
                             <div style="max-height: 80px; overflow-y: auto; white-space: pre-wrap; font-size: 0.95rem;">{{ notice.message }}</div>
                         </td>
-                        <td>
-                            <div class="fw-medium">{{ notice.created_by.first_name|default:notice.created_by.username }}</div>
-                            <small class="text-muted">{{ notice.created_at|date:"d/m/Y H:i" }}</small>
-                        </td>
+
                         <td class="text-end pe-4">
                             {% if request.user.is_produtor %}
                             <div class="dropdown">

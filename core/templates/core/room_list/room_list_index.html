@@ -3,12 +3,12 @@
 {% block title %}Hospedagem - {{ request.band.name }}{% endblock %}
 
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <h2>Listas de Hospedagem</h2>
         <div>
             <a href="{% url 'relatorios_index' request.band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
             <a href="{% url 'room_list_select_show' request.band.slug %}" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443;">
-                <i class="bi bi-plus-circle me-1"></i> + <span class="d-none d-sm-inline">Nova </span>Hospedagem
+                <i class="fa-solid fa-plus me-1"></i> Hospedagem
             </a>
         </div>
     </div>
