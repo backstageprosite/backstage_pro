@@ -186,15 +186,15 @@ Backstage Pro</textarea>
                                         <div class="row">
                                             <div class="col-md-4 mb-3">
                                                 <label class="form-label fw-semibold">Período de Ref.</label>
-                                                <input type="text" name="reference_period" class="form-control" value="{{ rec.reference_period }}" required>
+                                                <input type="text" name="reference_period" class="form-control bg-light" value="{{ rec.reference_period }}" readonly>
                                             </div>
                                             <div class="col-md-4 mb-3">
                                                 <label class="form-label fw-semibold">Valor</label>
-                                                <input type="number" step="0.01" name="amount" class="form-control" value="{{ rec.amount }}" required>
+                                                <input type="number" step="0.01" name="amount" class="form-control bg-light" value="{{ rec.amount }}" readonly>
                                             </div>
                                             <div class="col-md-4 mb-3">
                                                 <label class="form-label fw-semibold">Vencimento</label>
-                                                <input type="date" name="due_date" class="form-control" value="{{ rec.due_date|date:'Y-m-d' }}" required>
+                                                <input type="date" name="due_date" class="form-control bg-light" value="{{ rec.due_date|date:'Y-m-d' }}" readonly>
                                             </div>
                                         </div>
 
