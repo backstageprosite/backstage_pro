@@ -61,26 +61,50 @@ class FaturamentoTests(TestCase):
         record = BillingRecord.objects.first()
         self.assertEqual(record.status, 'PENDENTE')
 
-    def test_billing_marcar_paga(self):
+    def test_billing_marcar_paga_auto_renew_true(self):
+        self.subscription.auto_renew = True
+        self.subscription.save()
         record = BillingRecord.objects.create(
-            subscription=self.subscription,
-            band=self.band,
-            reference_period='Agosto/2026',
-            amount=500,
-            due_date=datetime.date(2026, 8, 1),
-            status='PENDENTE'
+            subscription=self.subscription, band=self.band, reference_period='Agosto/2026',
+            amount=500, due_date=datetime.date(2026, 8, 1), status='PENDENTE'
         )
-        old_due = self.subscription.next_due_date
-        
-        response = self.client.post(reverse('admin_painel:cobrancas_status', args=[record.id, 'PAGO']))
+        response = self.client.post(reverse('admin_painel:cobrancas_pagar', args=[record.id]), {
+            'paid_date': '2026-08-10', 'payment_method': 'PIX', 'notes': 'Test'
+        })
         self.assertEqual(response.status_code, 302)
-        
         record.refresh_from_db()
         self.assertEqual(record.status, 'PAGO')
-        self.assertIsNotNone(record.paid_date)
-        
         self.subscription.refresh_from_db()
         self.assertEqual(self.subscription.next_due_date, datetime.date(2026, 9, 1))
+
+    def test_billing_marcar_paga_auto_renew_false(self):
+        self.subscription.auto_renew = False
+        self.subscription.save()
+        record = BillingRecord.objects.create(
+            subscription=self.subscription, band=self.band, reference_period='Agosto/2026',
+            amount=500, due_date=datetime.date(2026, 8, 1), status='PENDENTE'
+        )
+        response = self.client.post(reverse('admin_painel:cobrancas_pagar', args=[record.id]), {
+            'paid_date': '2026-08-10'
+        })
+        record.refresh_from_db()
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.next_due_date, datetime.date(2026, 8, 1))
+
+    def test_billing_marcar_paga_desativada(self):
+        self.subscription.auto_renew = True
+        self.subscription.status = 'DESATIVADO'
+        self.subscription.save()
+        record = BillingRecord.objects.create(
+            subscription=self.subscription, band=self.band, reference_period='Agosto/2026',
+            amount=500, due_date=datetime.date(2026, 8, 1), status='PENDENTE'
+        )
+        response = self.client.post(reverse('admin_painel:cobrancas_status', args=[record.id, 'PAGO']))
+        record.refresh_from_db()
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.next_due_date, datetime.date(2026, 8, 1))
+        self.assertEqual(self.subscription.status, 'ATIVO') # A regra atual ativa a banda ao pagar!
+
         
     def test_expense_crud(self):
         # Create

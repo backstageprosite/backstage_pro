@@ -125,7 +125,9 @@ class FilePolicyTests(TestCase):
         self.client.force_login(self.user)
         initial_files = sum([len(files) for r, d, files in os.walk(TEMP_MEDIA_ROOT)])
         response = self.client.get(reverse('agenda_pdf', args=[self.band.slug]))
-        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/html', response['Content-Type'])
+        self.assertContains(response, 'window.print()')
         final_files = sum([len(files) for r, d, files in os.walk(TEMP_MEDIA_ROOT)])
         self.assertEqual(initial_files, final_files)
 
@@ -133,7 +135,9 @@ class FilePolicyTests(TestCase):
         self.client.force_login(self.user)
         initial_files = sum([len(files) for r, d, files in os.walk(TEMP_MEDIA_ROOT)])
         response = self.client.get(reverse('show_pdf', args=[self.band.slug, self.show.id]))
-        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('text/html', response['Content-Type'])
+        self.assertContains(response, 'window.print()')
         final_files = sum([len(files) for r, d, files in os.walk(TEMP_MEDIA_ROOT)])
         self.assertEqual(initial_files, final_files)
 
