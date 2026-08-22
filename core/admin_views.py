@@ -417,8 +417,11 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
             'band_summaries': band_summaries,
             'all_bands': Band.objects.filter(subscriptions__is_deleted=False).distinct().order_by('name'),
-            'expenses': expenses.order_by('-due_date')
+            'expenses': expenses.order_by('-due_date'),
         })
+
+        from core.admin_views_expenses import ExpenseForm
+        context['expense_form'] = ExpenseForm()
 
         return context
 

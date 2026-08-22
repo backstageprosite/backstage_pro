@@ -4,6 +4,8 @@ from django.utils import timezone
 from .models import Expense
 from django import forms
 import datetime
+from django.contrib.auth.decorators import user_passes_test
+from .admin_views import is_admin_geral
 
 class ExpenseForm(forms.ModelForm):
     class Meta:
@@ -20,6 +22,7 @@ class ExpenseForm(forms.ModelForm):
             'recurrence_end_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_expense_create(request):
     if request.method == 'POST':
         form = ExpenseForm(request.POST, request.FILES)
@@ -30,6 +33,7 @@ def admin_expense_create(request):
             messages.error(request, "Erro ao adicionar despesa."); print(form.errors)
     return redirect('admin_painel:relatorio_financeiro')
 
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_expense_edit(request, pk):
     expense = get_object_or_404(Expense, pk=pk)
     if request.method == 'POST':
@@ -41,6 +45,7 @@ def admin_expense_edit(request, pk):
             messages.error(request, "Erro ao atualizar despesa.")
     return redirect('admin_painel:relatorio_financeiro')
 
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_expense_mark_paid(request, pk):
     if request.method == 'POST':
         expense = get_object_or_404(Expense, pk=pk)
@@ -50,6 +55,7 @@ def admin_expense_mark_paid(request, pk):
         messages.success(request, "Despesa marcada como paga!")
     return redirect('admin_painel:relatorio_financeiro')
 
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_expense_delete(request, pk):
     if request.method == 'POST':
         expense = get_object_or_404(Expense, pk=pk)

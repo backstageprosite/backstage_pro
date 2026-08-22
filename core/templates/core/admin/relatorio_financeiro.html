@@ -19,18 +19,101 @@
 
 <!-- Modal Nova Despesa Admin -->
 <div class="modal fade" id="modalNovaDespesaAdmin" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="fa-solid fa-money-bill-transfer me-2 text-danger"></i>Nova Despesa Administrativa</h5>
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius: 12px; border: none;">
+      <div class="modal-header bg-light border-bottom-0">
+        <h5 class="modal-title fw-bold"><i class="fa-solid fa-money-bill-transfer me-2 text-danger"></i>Nova Despesa Administrativa</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <p class="text-muted">O módulo de despesas administrativas está em desenvolvimento. Por enquanto, as despesas são lançadas diretamente nos shows de cada banda.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light fw-medium rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
-      </div>
+      <form method="POST" action="{% url 'admin_painel:expense_create' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">Descrição *</label>
+                    <input type="text" name="description" class="form-control" required placeholder="Ex: Servidor AWS, Marketing...">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">Fornecedor / Beneficiário</label>
+                    <input type="text" name="provider" class="form-control" placeholder="Opcional">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-semibold">Categoria *</label>
+                    <input type="text" name="category" class="form-control" required placeholder="Ex: Infraestrutura, Sistema...">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-semibold">Valor *</label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="number" step="0.01" name="amount" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-semibold">Status *</label>
+                    <select name="status" class="form-select" required>
+                        <option value="PENDENTE">Pendente</option>
+                        <option value="PAGO">Pago</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-semibold">Data de Competência *</label>
+                    <input type="date" name="competence_date" class="form-control" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-semibold">Data de Vencimento *</label>
+                    <input type="date" name="due_date" class="form-control" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-semibold">Data do Pagamento</label>
+                    <input type="date" name="paid_date" class="form-control">
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">Método de Pagamento</label>
+                    <input type="text" name="payment_method" class="form-control" placeholder="Pix, Boleto, Cartão...">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">Comprovante</label>
+                    <input type="file" name="proof_file" class="form-control">
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label fw-semibold">Observações Internas</label>
+                    <textarea name="internal_notes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <h6 class="fw-bold mb-3"><i class="fa-solid fa-rotate me-2 text-primary"></i>Recorrência (Opcional)</h6>
+            <div class="row align-items-center">
+                <div class="col-md-4 mb-3">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" role="switch" name="is_recurring" id="isRecurringToggle">
+                        <label class="form-check-label fw-semibold" for="isRecurringToggle">Despesa Recorrente?</label>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-semibold">Ciclo</label>
+                    <select name="recurrence_cycle" class="form-select">
+                        <option value="">--</option>
+                        <option value="MENSAL">Mensal</option>
+                        <option value="TRIMESTRAL">Trimestral</option>
+                        <option value="SEMESTRAL">Semestral</option>
+                        <option value="ANUAL">Anual</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-semibold">Data Final (Opcional)</label>
+                    <input type="date" name="recurrence_end_date" class="form-control">
+                </div>
+            </div>
+            
+        </div>
+        <div class="modal-footer bg-light border-top-0">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger rounded-pill px-4">Salvar Despesa</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
