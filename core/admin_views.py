@@ -569,17 +569,46 @@ def admin_assinatura_edit(request, pk):
         if form.is_valid():
             sub = form.save()
             
-            # Limpa faturas pendentes que não fazem mais sentido com a nova data
+            # Sincroniza faturas pendentes com a nova data da assinatura
             if sub.next_due_date:
                 today = timezone.localdate()
                 seven_days = today + datetime.timedelta(days=7)
                 
+                pending_invoices = BillingRecord.objects.filter(subscription=sub, status='PENDENTE')
+                
                 if sub.next_due_date > seven_days:
-                    # Nova data tá mais de 7 dias pra frente, exclui tudo pendente
-                    BillingRecord.objects.filter(subscription=sub, status='PENDENTE').delete()
+                    # Nova data tá mais de 7 dias pra frente, exclui faturas pendentes
+                    pending_invoices.delete()
                 else:
-                    # Dentro de 7 dias, exclui se a data não bate com a nova next_due_date
-                    BillingRecord.objects.filter(subscription=sub, status='PENDENTE').exclude(due_date=sub.next_due_date).delete()
+                    # Dentro de 7 dias (ou já passou). Garantimos que a fatura reflete a assinatura.
+                    month_names = {
+                        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+                        5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+                        9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+                    }
+                    ref_period = f"{month_names[sub.next_due_date.month]}/{sub.next_due_date.year}"
+                    
+                    if pending_invoices.exists():
+                        # Atualiza a fatura pendente existente
+                        for inv in pending_invoices:
+                            inv.due_date = sub.next_due_date
+                            inv.amount = sub.contracted_value
+                            inv.reference_period = ref_period
+                            inv.plan_name = getattr(sub, 'plan_name', '')
+                            inv.billing_cycle = sub.billing_cycle
+                            inv.save()
+                    else:
+                        # Se não existir, cria a fatura imediatamente para já aparecer na tela
+                        BillingRecord.objects.create(
+                            subscription=sub,
+                            band=sub.band,
+                            reference_period=ref_period,
+                            amount=sub.contracted_value,
+                            due_date=sub.next_due_date,
+                            status='PENDENTE',
+                            plan_name=getattr(sub, 'plan_name', ''),
+                            billing_cycle=sub.billing_cycle,
+                        )
 
             messages.success(request, "Assinatura atualizada com sucesso!")
         else:
