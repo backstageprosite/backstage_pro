@@ -17,8 +17,6 @@
                         <th class="ps-4 border-0 rounded-start">Logo</th>
                         <th class="border-0">Banda</th>
                         <th class="border-0">Slug</th>
-                        <th class="border-0">Plano</th>
-                        <th class="border-0">Vencimento</th>
                         <th class="border-0">Status</th>
                         <th class="text-end pe-4 border-0 rounded-end">Ações</th>
                     </tr>
@@ -37,14 +35,6 @@
                         </td>
                         <td class="fw-bold">{{ b.name }}</td>
                         <td class="text-muted">{{ b.slug }}</td>
-                        <td>{{ b.get_subscription_plan_display }}</td>
-                        <td>
-                            {% if b.subscription_due_date %}
-                                {{ b.subscription_due_date|date:"d/m/Y" }}
-                            {% else %}
-                                <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
                         <td>
                             {% if b.is_active %}
                                 <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
