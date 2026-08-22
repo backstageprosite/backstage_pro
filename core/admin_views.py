@@ -392,8 +392,22 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
                 'atrasado': atr
             })
 
+
+        # Compute KPIs for the template
+        kpi_recebido = recebido
+        kpi_pendente = billings.filter(status='PENDENTE', due_date__gte=today, due_date__lte=end_date).aggregate(total=Sum('amount'))['total'] or 0
+        kpi_futuro = billings.filter(status='PENDENTE', due_date__gt=end_date).aggregate(total=Sum('amount'))['total'] or 0
+        kpi_atrasado = cobrancas_vencidas
+
         # Context Update
         context.update({
+            'kpi_recebido': kpi_recebido,
+            'kpi_pendente': kpi_pendente,
+            'kpi_futuro': kpi_futuro,
+            'kpi_atrasado': kpi_atrasado,
+            'kpi_receita_prevista': despesa_paga, # using this for Despesas
+            'kpi_total_bandas': saldo_realizado, # using this for Valor em Caixa
+
             'start_date': start_date.strftime('%Y-%m-%d') if isinstance(start_date, datetime.date) else start_date,
             'end_date': end_date.strftime('%Y-%m-%d') if isinstance(end_date, datetime.date) else end_date,
             'band_id': band_id,
