@@ -556,11 +556,28 @@ def admin_assinatura_create(request):
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_assinatura_edit(request, pk):
+    from django.utils import timezone
+    import datetime
+    from core.models import BillingRecord
+    
     sub = get_object_or_404(BandSubscription, pk=pk)
     if request.method == 'POST':
         form = AdminSubscriptionForm(request.POST, instance=sub)
         if form.is_valid():
-            form.save()
+            sub = form.save()
+            
+            # Limpa faturas pendentes que não fazem mais sentido com a nova data
+            if sub.next_due_date:
+                today = timezone.localdate()
+                seven_days = today + datetime.timedelta(days=7)
+                
+                if sub.next_due_date > seven_days:
+                    # Nova data tá mais de 7 dias pra frente, exclui tudo pendente
+                    BillingRecord.objects.filter(subscription=sub, status='PENDENTE').delete()
+                else:
+                    # Dentro de 7 dias, exclui se a data não bate com a nova next_due_date
+                    BillingRecord.objects.filter(subscription=sub, status='PENDENTE').exclude(due_date=sub.next_due_date).delete()
+
             messages.success(request, "Assinatura atualizada com sucesso!")
         else:
             for field, errors in form.errors.items():

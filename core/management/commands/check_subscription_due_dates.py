@@ -29,18 +29,7 @@ class Command(BaseCommand):
             if not sub.next_due_date:
                 continue
 
-            # --- Atualizar status da assinatura ---
-            if sub.next_due_date < today and sub.status != "VENCIDO":
-                sub.status = "VENCIDO"
-                sub.save(update_fields=["status"])
-                updated_vencido += 1
-
-            elif today <= sub.next_due_date <= seven_days and sub.status not in ("VENCENDO", "VENCIDO"):
-                sub.status = "VENCENDO"
-                sub.save(update_fields=["status"])
-                updated_vencendo += 1
-
-            # --- Criar fatura automatica se nao existe ainda ---
+            # Apenas criar fatura automática se não existe ainda
             if sub.next_due_date <= seven_days:
                 exists = BillingRecord.objects.filter(
                     subscription=sub,
