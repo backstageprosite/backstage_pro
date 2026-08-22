@@ -50,10 +50,12 @@
                         {% csrf_token %}
                         <button class="btn btn-danger mb-md-2 btn-sm">Arquivar</button>
                     </form>
-                    <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
-                    {% if is_produtor %}
-                    <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-md-2 btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-sm-inline"> para</span> Hotel</a>
-                    {% endif %}
+                    <div class="d-flex gap-2 mt-2 mt-md-0">
+                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        {% if is_produtor %}
+                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-md-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
+                        {% endif %}
+                    </div>
                 {% elif room_list.status == 'PUBLICADA' %}
                     {% if is_produtor %}
                     <div class="d-flex gap-2 mb-2">
@@ -75,10 +77,12 @@
                         </form>
                     </div>
                     {% endif %}
-                    <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 btn-sm w-100"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
-                    {% if is_produtor %}
-                    <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-2 btn-sm w-100"><i class="fa-solid fa-file-pdf"></i> PDF Hotel</a>
-                    {% endif %}
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        {% if is_produtor %}
+                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF Hotel</a>
+                        {% endif %}
+                    </div>
                 {% elif room_list.status == 'ARQUIVADA' %}
                     {% if is_produtor %}
                         <form method="post" action="{% url 'room_list_reactivate' request.band.slug room_list.id %}" class="d-md-inline">
@@ -89,10 +93,12 @@
                             <i class="fa-solid fa-trash"></i> Excluir
                         </button>
                     {% endif %}
-                    <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
-                    {% if is_produtor %}
-                    <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-md-2 btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-sm-inline"> para</span> Hotel</a>
-                    {% endif %}
+                    <div class="d-flex gap-2 mt-2 mt-md-0">
+                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        {% if is_produtor %}
+                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-md-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
+                        {% endif %}
+                    </div>
                 {% endif %}
 
     <!-- Modal de Exclusão -->
