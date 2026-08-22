@@ -123,12 +123,33 @@ class AdminUserListView(AdminRequiredMixin, ListView):
     context_object_name = 'usuarios'
     
     def get_queryset(self):
-        from django.db.models import F
-        return User.objects.all().order_by(F('band__name').asc(nulls_last=True), 'first_name', 'username')
+        from django.db.models import F, Q
+        qs = User.objects.all().order_by(F('band__name').asc(nulls_last=True), 'first_name', 'username')
+        
+        q = self.request.GET.get('q', '')
+        band_id = self.request.GET.get('band', '')
+        
+        if q:
+            qs = qs.filter(
+                Q(first_name__icontains=q) | 
+                Q(last_name__icontains=q) | 
+                Q(username__icontains=q) | 
+                Q(email__icontains=q)
+            )
+        if band_id:
+            if band_id == 'none':
+                qs = qs.filter(band__isnull=True)
+            else:
+                qs = qs.filter(band_id=band_id)
+                
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form_create'] = AdminUserCreateForm()
+        context['bandas_list'] = Band.objects.all().order_by('name')
+        context['q'] = self.request.GET.get('q', '')
+        context['selected_band'] = self.request.GET.get('band', '')
         return context
 
 class AdminShowListView(AdminRequiredMixin, ListView):
