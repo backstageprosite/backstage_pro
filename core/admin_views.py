@@ -121,6 +121,10 @@ class AdminUserListView(AdminRequiredMixin, ListView):
     model = User
     template_name = 'core/admin/usuarios.html'
     context_object_name = 'usuarios'
+    
+    def get_queryset(self):
+        from django.db.models import F
+        return User.objects.all().order_by(F('band__name').asc(nulls_last=True), 'first_name', 'username')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
