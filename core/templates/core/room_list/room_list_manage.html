@@ -56,22 +56,28 @@
                     {% endif %}
                 {% elif room_list.status == 'PUBLICADA' %}
                     {% if is_produtor %}
-                        <form method="post" action="{% url 'room_list_reopen' request.band.slug room_list.id %}" class="d-md-inline">
+                    <div class="d-flex gap-2 mb-2">
+                        <form method="post" action="{% url 'room_list_reopen' request.band.slug room_list.id %}" class="flex-fill m-0">
                             {% csrf_token %}
-                            <button class="btn btn-warning mb-md-2 btn-sm">Reabrir<span class="d-none d-sm-inline"> Edição</span></button>
+                            <button class="btn btn-warning btn-sm w-100 px-1" title="Reabrir Edição">Reabrir</button>
                         </form>
-                        <form method="post" action="{% url 'room_list_mark_sent' request.band.slug room_list.id %}" class="d-md-inline">
+                        <form method="post" action="{% url 'room_list_mark_sent' request.band.slug room_list.id %}" class="flex-fill m-0">
                             {% csrf_token %}
-                            <button class="btn btn-info mb-md-2 btn-sm">Marcar como Enviado</button>
+                            {% if room_list.last_sent_to_hotel_at %}
+                                <button class="btn btn-success btn-sm w-100 px-1"><i class="fa-solid fa-check"></i> Enviado</button>
+                            {% else %}
+                                <button class="btn btn-info btn-sm w-100 px-1 text-white">Não Enviado</button>
+                            {% endif %}
                         </form>
-                        <form method="post" action="{% url 'room_list_archive' request.band.slug room_list.id %}" class="d-md-inline">
+                        <form method="post" action="{% url 'room_list_archive' request.band.slug room_list.id %}" class="flex-fill m-0">
                             {% csrf_token %}
-                            <button class="btn btn-danger mb-md-2 btn-sm">Arquivar</button>
+                            <button class="btn btn-danger btn-sm w-100 px-1">Arquivar</button>
                         </form>
+                    </div>
                     {% endif %}
-                    <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                    <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 btn-sm w-100"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
                     {% if is_produtor %}
-                    <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-md-2 btn-sm"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-sm-inline"> para</span> Hotel</a>
+                    <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-2 btn-sm w-100"><i class="fa-solid fa-file-pdf"></i> PDF Hotel</a>
                     {% endif %}
                 {% elif room_list.status == 'ARQUIVADA' %}
                     {% if is_produtor %}
