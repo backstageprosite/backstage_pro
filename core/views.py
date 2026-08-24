@@ -1732,8 +1732,9 @@ def show_edit_view(request, band_slug, pk):
                 messages.success(request, "Show atualizado com sucesso!")
 
                 if 'save_and_continue' in request.POST:
-
-                    return redirect('shows_edit', band_slug=band.slug, pk=show_to_edit.id)
+                    active_tab = request.POST.get('active_tab', '#geral')
+                    url = reverse('shows_edit', kwargs={'band_slug': band.slug, 'pk': show_to_edit.id})
+                    return redirect(f"{url}{active_tab}")
 
                 return redirect('calendario', band_slug=band.slug)
 

@@ -193,15 +193,21 @@
                                 {% if show.travel_time %}<strong>Tempo de Desloc.:</strong> {{ show.travel_time }}{% endif %}
                             </li>
                             {% endif %}
-                            {% if show.departure_time %}
-                            <li class="list-group-item"><strong>Saída:</strong> {{ show.departure_time|date:"H:i - d/m/Y" }}</li>
-                            {% endif %}
-                            {% if show.arrival_time %}
-                            <li class="list-group-item"><strong>Chegada:</strong> {{ show.arrival_time|date:"H:i - d/m/Y" }}</li>
-                            {% endif %}
-                            {% if show.soundcheck_time %}
-                            <li class="list-group-item text-warning"><strong>Passagem de Som:</strong> {{ show.soundcheck_time|time:"H:i" }}</li>
-                            {% endif %}
+                            {% if show.departure_time or show.arrival_time %}
+                        <li class="list-group-item">
+                            {% if show.departure_time %}<strong>Saída:</strong> {{ show.departure_time|date:"H:i - d/m/Y" }}{% endif %}
+                            {% if show.departure_time and show.arrival_time %} <span class="mx-1">|</span> {% endif %}
+                            {% if show.arrival_time %}<strong>Chegada:</strong> {{ show.arrival_time|date:"H:i - d/m/Y" }}{% endif %}
+                        </li>
+                        {% endif %}
+                        {% if show.soundcheck_time or show.soundcheck_end_time %}
+                        <li class="list-group-item text-warning">
+                            <strong>Passagem de Som:</strong>
+                            {% if show.soundcheck_time %} Início: {{ show.soundcheck_time|time:"H:i" }}{% endif %}
+                            {% if show.soundcheck_time and show.soundcheck_end_time %} <span class="mx-1">|</span> {% endif %}
+                            {% if show.soundcheck_end_time %} Final: {{ show.soundcheck_end_time|time:"H:i" }}{% endif %}
+                        </li>
+                        {% endif %}
                             {% if show.show_time or show.show_end_time %}
                             <li class="list-group-item">
                                 {% if show.show_time %}<span class="text-success"><strong>Início do Show:</strong> {{ show.show_time|time:"H:i" }}</span>{% endif %}

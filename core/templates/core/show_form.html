@@ -46,6 +46,7 @@
     </div>
     <div class="card-body p-4 p-md-5 pt-3 border-top">
         <form method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="active_tab" id="active_tab" value="#geral">
             {% csrf_token %}
             
             {% if form.errors %}
@@ -655,6 +656,75 @@
         document.querySelectorAll('input[type="file"]').forEach(function(el) {
             el.setAttribute('accept', '.pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx');
         });
+
+        // Track active tab for save and continue
+        document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(function(el) {
+            el.addEventListener('shown.bs.tab', function (e) {
+                var activeTabInput = document.getElementById('active_tab');
+                if (activeTabInput) {
+                    activeTabInput.value = e.target.dataset.bsTarget;
+                }
+            });
+        });
+
+        // Auto-calculate show_end_time based on show_time and duration
+        const showTimeField = document.getElementById('id_show_time');
+        const durationField = document.getElementById('id_duration');
+        const showEndTimeField = document.getElementById('id_show_end_time');
+
+        function updateShowEndTime() {
+            if (!showTimeField || !durationField || !showEndTimeField) return;
+            const startTimeStr = showTimeField.value;
+            const durationStr = durationField.value;
+            
+            if (!startTimeStr || !durationStr) return;
+            
+            // Parse start time
+            const parts = startTimeStr.split(':');
+            if (parts.length !== 2) return;
+            const startH = parseInt(parts[0], 10);
+            const startM = parseInt(parts[1], 10);
+            if (isNaN(startH) || isNaN(startM)) return;
+            
+            // Parse duration
+            let durationMins = 0;
+            let val = durationStr.toLowerCase().trim();
+            let match = val.match(/^(\d+):(\d+)$/);
+            if (match) {
+                durationMins = parseInt(match[1]) * 60 + parseInt(match[2]);
+            } else {
+                let hMatch = val.match(/(\d+)\s*(h|hora|horas)/);
+                if (hMatch) durationMins += parseInt(hMatch[1]) * 60;
+                
+                let mMatch = val.match(/(\d+)\s*(m|min|minuto|minutos)/);
+                if (mMatch) durationMins += parseInt(mMatch[1]);
+                
+                if (durationMins === 0) {
+                    let num = parseFloat(val.replace(',', '.'));
+                    if (!isNaN(num)) {
+                        if (num <= 10) durationMins = num * 60;
+                        else durationMins = num;
+                    }
+                }
+            }
+            
+            if (durationMins > 0) {
+                let totalMins = startH * 60 + startM + durationMins;
+                let endH = Math.floor(totalMins / 60) % 24;
+                let endM = Math.round(totalMins % 60);
+                
+                let endHStr = endH.toString().padStart(2, '0');
+                let endMStr = endM.toString().padStart(2, '0');
+                showEndTimeField.value = `${endHStr}:${endMStr}`;
+            }
+        }
+
+        if (showTimeField && durationField) {
+            showTimeField.addEventListener('change', updateShowEndTime);
+            durationField.addEventListener('input', updateShowEndTime);
+            durationField.addEventListener('change', updateShowEndTime);
+        }
+
     });
 </script>
 {% endblock %}
