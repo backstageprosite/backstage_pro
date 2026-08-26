@@ -361,3 +361,70 @@ class PublicAndPdfTests(TestCase):
         url = reverse('room_list_hotel_pdf', args=[self.band_basico.slug, 999])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
+
+
+class RelatoriosIndexTests(TestCase):
+    def setUp(self):
+        self.band_basico = Band.objects.create(name="Banda BAS", slug="banda-bas", plan_type=Band.PlanType.BASICO, is_active=True)
+        self.band_avancado = Band.objects.create(name="Banda AV", slug="banda-av", plan_type=Band.PlanType.AVANCADO, is_active=True)
+
+        self.user_basico = User.objects.create_user(username='ubas', email='ubas@t.com', password='123', role='PRODUTOR')
+        self.user_basico.band = self.band_basico
+        self.user_basico.save()
+
+        self.user_avancado = User.objects.create_user(username='uav', email='uav@t.com', password='123', role='PRODUTOR')
+        self.user_avancado.band = self.band_avancado
+        self.user_avancado.save()
+
+    def test_relatorios_index_basic_plan(self):
+        self.client.login(username='ubas', password='123')
+        url = reverse('relatorios_index', args=[self.band_basico.slug])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        # Allowed modules (3)
+        self.assertIn(reverse('usuarios_list', args=[self.band_basico.slug]), content)
+        self.assertIn(reverse('integrantes_list', args=[self.band_basico.slug]), content)
+        self.assertIn(reverse('support_list', args=[self.band_basico.slug]), content)
+
+        # Blocked modules (5)
+        self.assertNotIn(reverse('relatorio_financeiro', args=[self.band_basico.slug]), content)
+        self.assertNotIn(reverse('arquivos', args=[self.band_basico.slug]), content)
+        self.assertNotIn(reverse('rider_list', args=[self.band_basico.slug]), content)
+        self.assertNotIn(reverse('room_list_index', args=[self.band_basico.slug]), content)
+        self.assertNotIn(reverse('band_notices_index', args=[self.band_basico.slug]), content)
+
+        # Check for lock icon and modal target
+        # 5 from cards + 1 from sidebar/nav = 6 targets
+        self.assertEqual(content.count('data-bs-target="#modalAdvancedPlan"'), 6)
+
+        # Verify it's a button and NOT javascript:void(0)
+        self.assertEqual(content.count('javascript:void(0)'), 0)
+        self.assertEqual(content.count('type="button" class="border-0 bg-transparent p-0 w-100 text-decoration-none text-start d-block" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"'), 5)
+
+        self.assertEqual(content.count('aria-disabled="true"'), 5)
+
+        # Ensure no "BLOQUEAR" text is present
+        self.assertNotIn('BLOQUEAR', content.upper())
+
+    def test_relatorios_index_advanced_plan(self):
+        self.client.login(username='uav', password='123')
+        url = reverse('relatorios_index', args=[self.band_avancado.slug])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        # All 8 should have their operational URLs
+        self.assertIn(reverse('relatorio_financeiro', args=[self.band_avancado.slug]), content)
+        self.assertIn(reverse('arquivos', args=[self.band_avancado.slug]), content)
+        self.assertIn(reverse('rider_list', args=[self.band_avancado.slug]), content)
+        self.assertIn(reverse('room_list_index', args=[self.band_avancado.slug]), content)
+        self.assertIn(reverse('band_notices_index', args=[self.band_avancado.slug]), content)
+        self.assertIn(reverse('usuarios_list', args=[self.band_avancado.slug]), content)
+        self.assertIn(reverse('integrantes_list', args=[self.band_avancado.slug]), content)
+        self.assertIn(reverse('support_list', args=[self.band_avancado.slug]), content)
+
+        # Lock icons should not be present
+        self.assertEqual(content.count('fa-lock text-muted'), 0)
+        self.assertEqual(content.count('data-bs-target="#modalAdvancedPlan"'), 0)
