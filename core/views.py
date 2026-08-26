@@ -3500,7 +3500,7 @@ def room_list_room_create(request, band_slug, pk):
                     room_list_id=room_list.id,
                     room_type=room_type,
                     capacity=int(capacity),
-                    number_or_number_or_name=final_name,
+                    number_or_name=final_name,
                     user=request.user,
                     beds_config=beds_config,
                     has_ac=has_ac
@@ -3811,7 +3811,7 @@ def lodging_template_room_update(request, band_slug, pk, room_id):
                 room_number = 'Sem número'
                 
             # Allow same name if it's the current room
-            if TemplateRoom.objects.filter(template=template, name=room_number).exclude(pk=room.pk).exists():
+            if TemplateRoom.objects.filter(template=template, number_or_name=room_number).exclude(pk=room.pk).exists():
                 messages.error(request, f"Já existe um quarto '{room_number}' neste modelo.")
             else:
                 room.number_or_name = room_number
