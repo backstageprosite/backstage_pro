@@ -3456,12 +3456,23 @@ def room_list_room_create(request, band_slug, pk):
             beds_config = request.POST.get('beds_config', '')
             has_ac = request.POST.get('has_ac') == 'on'
             
-            for _ in range(quantity):
+            from core.models import Room
+            for i in range(1, quantity + 1):
+                final_name = room_number
+                if quantity > 1:
+                    final_name = f"{room_number}_{i:02d}"
+                
+                # Ensure uniqueness to avoid DuplicateRoomNumberError
+                counter = i if quantity > 1 else 1
+                while Room.objects.filter(room_list=room_list, number_or_name=final_name).exists():
+                    final_name = f"{room_number}_{counter:02d}"
+                    counter += 1
+                
                 room_list_services.create_room(
                     room_list_id=room_list.id,
                     room_type=room_type,
                     capacity=int(capacity),
-                    number_or_name=room_number,
+                    number_or_name=final_name,
                     user=request.user,
                     beds_config=beds_config,
                     has_ac=has_ac
