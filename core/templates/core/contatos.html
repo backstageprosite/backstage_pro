@@ -12,11 +12,11 @@
 <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
     <div class="card-body">
         <form method="get" class="row g-2 align-items-end">
-            <div class="col-md-4">
+            <div class="col-6 col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Nome</label>
                 <input type="text" name="nome" class="form-control form-control-sm" placeholder="Buscar por nome..." value="{{ search_name|default:'' }}">
             </div>
-            <div class="col-md-4">
+            <div class="col-6 col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Tipo</label>
                 <select name="tipo" class="form-select form-select-sm">
                     <option value="">Todos</option>
@@ -25,7 +25,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-6 col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Local</label>
                 <input type="text" name="local" class="form-control form-control-sm" placeholder="Buscar por local..." value="{{ search_local|default:'' }}">
             </div>
@@ -61,17 +61,17 @@
                         <td class="fw-medium text-dark phone-format">{{ contato.phone|default:"-" }}</td>
                         <td>
                             {% if contato.contact_type == 'FORNECEDOR' %}
-                                <span class="badge bg-secondary-subtle text-secondary px-3 py-2 border border-secondary border-opacity-25"><i class="fa-solid fa-truck-fast me-1"></i> Fornecedor</span>
+                                <span class="badge bg-secondary-subtle text-secondary px-3 py-2 border border-secondary border-opacity-25" style="min-width: 130px; display: inline-block; text-align: center;"><i class="fa-solid fa-truck-fast me-1"></i> Fornecedor</span>
                             {% elif contato.contact_type == 'CONTRATANTE' %}
-                                <span class="badge bg-primary-subtle text-primary px-3 py-2 border border-primary border-opacity-25"><i class="fa-solid fa-handshake me-1"></i> Contratante</span>
+                                <span class="badge bg-primary-subtle text-primary px-3 py-2 border border-primary border-opacity-25" style="min-width: 130px; display: inline-block; text-align: center;"><i class="fa-solid fa-handshake me-1"></i> Contratante</span>
                             {% elif contato.contact_type == 'ESTABELECIMENTO' %}
-                                <span class="badge bg-dark-subtle text-dark px-3 py-2 border border-dark border-opacity-25"><i class="fa-solid fa-building me-1"></i> Estabelecimento</span>
+                                <span class="badge bg-dark-subtle text-dark px-3 py-2 border border-dark border-opacity-25" style="min-width: 130px; display: inline-block; text-align: center;"><i class="fa-solid fa-building me-1"></i> Estabelecimento</span>
                             {% elif contato.contact_type == 'HOSPEDAGEM' %}
-                                <span class="badge bg-info-subtle text-info px-3 py-2 border border-info border-opacity-25"><i class="fa-solid fa-hotel me-1"></i> Hospedagem</span>
+                                <span class="badge bg-info-subtle text-info px-3 py-2 border border-info border-opacity-25" style="min-width: 130px; display: inline-block; text-align: center;"><i class="fa-solid fa-hotel me-1"></i> Hospedagem</span>
                             {% elif contato.contact_type == 'RESTAURANTE' %}
-                                <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-2 border border-warning border-opacity-25"><i class="fa-solid fa-utensils me-1"></i> Restaurante</span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-2 border border-warning border-opacity-25" style="min-width: 130px; display: inline-block; text-align: center;"><i class="fa-solid fa-utensils me-1"></i> Restaurante</span>
                             {% else %}
-                                <span class="badge bg-light text-dark border px-3 py-2">{{ contato.get_contact_type_display }}</span>
+                                <span class="badge bg-light text-dark border px-3 py-2" style="min-width: 130px; display: inline-block; text-align: center;">{{ contato.get_contact_type_display }}</span>
                             {% endif %}
                         </td>
                         <td class="fw-medium text-dark">{{ contato.location|default:"-" }}</td>

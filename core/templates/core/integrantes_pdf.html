@@ -138,10 +138,11 @@
         </tbody>
     </table>
 
-    <div class="footer">
-        <div>Publicado em: {% now "d/m/Y H:i" %}</div>
-        <div style="margin-top: 5px;">Desenvolvido por Backstage Pro<br>@backstagepro.site</div>
-    </div>
+    <div class="footer" style="border-top: 1px solid #ddd; padding-top: 5px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+<div style="flex: 1; text-align: left;"><strong>Publicado:</strong> {% now "d/m/Y H:i" %}</div>
+<div style="flex: 1; text-align: center;">Desenvolvido por Backstage Pro<br>@backstagepro.site</div>
+<div style="flex: 1; text-align: right;"></div>
+</div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {

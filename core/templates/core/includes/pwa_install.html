@@ -4,7 +4,7 @@
 <li class="nav-item">
     {% if request.resolver_match.namespace == 'admin_painel' %}
         <a href="#" id="pwa-install-btn" class="nav-link text-dark py-3 px-3 fw-medium" style="display: none; border-radius: 8px; background-color: rgba(15, 127, 177, 0.1);">
-            <i class="fas fa-download fa-fw me-2 text-primary"></i> Instalar Backstage Pro
+            <i class="fas fa-download fa-fw me-2 text-primary"></i> Instalar Aplicativo
         </a>
     {% elif band %}
         <a href="{% url 'instalar_aplicativo' band.slug %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'instalar_aplicativo' %}active-link{% endif %}" style="border-radius: 8px; background-color: rgba(15, 127, 177, 0.1);">
@@ -20,7 +20,7 @@
             <div class="modal-header border-0">
                 <h5 class="modal-title fw-bold" id="iosInstallModalLabel">
                     {% if request.resolver_match.namespace == 'admin_painel' %}
-                        Instalar Backstage Pro
+                        Instalar Aplicativo
                     {% else %}
                         Instalar aplicativo
                     {% endif %}

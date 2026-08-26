@@ -9,11 +9,11 @@
 <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
     <div class="card-body">
         <form method="get" class="row g-2 align-items-end">
-            <div class="col-md-2 col-lg-2">
+            <div class="col-6 col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Nome ou Contato</label>
                 <input type="text" name="q" class="form-control form-control-sm" placeholder="Buscar..." value="{{ search_query|default:'' }}">
             </div>
-            <div class="col-md-2 col-lg-2">
+            <div class="col-6 col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Tipo</label>
                 <select name="tipo" class="form-select form-select-sm">
                     <option value="">Todos</option>
@@ -22,11 +22,11 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2 col-lg-2">
+            <div class="col-6 col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Local</label>
                 <input type="text" name="local" class="form-control form-control-sm" placeholder="Buscar por local..." value="{{ search_location|default:'' }}">
             </div>
-            <div class="col-md-2 col-lg-2">
+            <div class="col-6 col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Banda</label>
                 <input type="text" name="banda" class="form-control form-control-sm" placeholder="Buscar por banda..." value="{{ search_band|default:'' }}">
             </div>

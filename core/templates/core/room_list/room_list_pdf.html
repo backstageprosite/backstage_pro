@@ -74,11 +74,11 @@
 <body>
 
 <div id="footer_content">
-    <table style="width: 100%;">
+    <table style="width: 100%; font-size: 8px;">
         <tr>
-            <td style="width: 33%; text-align: left;"><strong>Room List:</strong> [{{ room_list.show.date|date:"d-m-Y" }}] {{ room_list.show.title }}</td>
-            <td style="width: 33%; text-align: center;"><strong>Emissor:</strong> {{ request.user.first_name }} {{ request.user.last_name }}</td>
-            <td style="width: 33%; text-align: right;"><strong>Gerado em:</strong> {% now "d/m/Y \à\s H:i" %}</td>
+            <td style="width: 33%; text-align: left;"><strong>Documento:</strong> [{{ show_date|date:"d-m-Y"|default:room_list.title }}] Room List</td>
+            <td style="width: 34%; text-align: center;">Desenvolvido por Backstage Pro<br>@backstagepro.site</td>
+            <td style="width: 33%; text-align: right;"><strong>Gerado em:</strong> {% now "d/m/Y H:i" %}</td>
         </tr>
     </table>
 </div>
@@ -201,13 +201,7 @@
 </table>
 
 
-<table class="main-table" style="margin-top: 8px; border-top: 1px solid #ccc;">
-<tr>
-<td style="font-size: 10px; text-align: center; padding-top: 5px; color: #555;">
-Desenvolvido por Backstage Pro<br>@backstagepro.site
-</td>
-</tr>
-</table>
+
 
 </body>
 </html>
