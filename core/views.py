@@ -3472,7 +3472,7 @@ def room_list_room_create(request, band_slug, pk):
                     room_list_id=room_list.id,
                     room_type=room_type,
                     capacity=int(capacity),
-                    number_or_name=final_name,
+                    number_or_number_or_name=final_name,
                     user=request.user,
                     beds_config=beds_config,
                     has_ac=has_ac
@@ -3705,54 +3705,93 @@ def room_list_apply_template(request, band_slug, pk):
 
 @room_list_produtor_required
 def lodging_template_manage(request, band_slug):
-    band = request.band
     from core.models import LodgingTemplate
-    from core.forms import TemplateRoomFormSet
-
-    template = LodgingTemplate.objects.filter(band=band).first()
-
-    if request.method == 'POST':
-        if request.POST.get('action') == 'delete':
-            room_list_services.delete_lodging_template(band.id, request.user)
-            messages.success(request, "Modelo excluído.")
-            return redirect('lodging_template_manage', band_slug=band_slug)
-
-        formset = TemplateRoomFormSet(request.POST, instance=template, band=band)
-        if formset.is_valid():
-            rooms_payload = []
-            for form in formset:
-                if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
-                    room_type = form.cleaned_data.get('type')
-                    capacity = form.cleaned_data.get('capacity')
-                    beds_config = form.cleaned_data.get('beds_config', '')
-                    has_ac = form.cleaned_data.get('has_ac', True)
-                    order = form.cleaned_data.get('order', 0)
-                    participants = form.cleaned_data.get('participants', [])
-
-                    rooms_payload.append({
-                        'type': room_type,
-                        'capacity': capacity,
-                        'order': order,
-                        'beds_config': beds_config,
-                        'has_ac': has_ac,
-                        'participants': [p.id for p in participants]
-                    })
-            try:
-                room_list_services.create_or_replace_lodging_template(band.id, rooms_payload, request.user)
-                messages.success(request, 'Modelo salvo com sucesso.')
-                return redirect('lodging_template_manage', band_slug=band_slug)
-            except Exception as e:
-                messages.error(request, str(e))
-        else:
-            messages.error(request, "Erros no formulário. Verifique os campos.")
-    else:
-        formset = TemplateRoomFormSet(instance=template, band=band)
-
+    band = request.band
+    template, created = LodgingTemplate.objects.get_or_create(band=band)
+    
     return render(request, 'core/room_list/lodging_template_manage.html', {
-        'band': request.band,
+        'band': band,
         'template': template,
-        'formset': formset
     })
+
+def lodging_template_room_create(request, band_slug, pk):
+    from core.models import LodgingTemplate, TemplateRoom
+    template = get_object_or_404(LodgingTemplate, pk=pk, band=request.band)
+    if request.method == 'POST':
+        try:
+            quantity = int(request.POST.get('quantity', 1))
+            room_number = request.POST.get('number_or_name', '').strip()
+            if not room_number:
+                room_number = 'Sem número'
+                
+            room_type = request.POST.get('type')
+            capacity = request.POST.get('capacity', 1)
+            beds_config = request.POST.get('beds_config', '')
+            has_ac = request.POST.get('has_ac') == 'on'
+            
+            for i in range(1, quantity + 1):
+                final_name = room_number
+                if quantity > 1:
+                    final_name = f"{room_number}_{i:02d}"
+                
+                counter = i if quantity > 1 else 1
+                while TemplateRoom.objects.filter(template=template, number_or_name=final_name).exists():
+                    final_name = f"{room_number}_{counter:02d}"
+                    counter += 1
+                
+                TemplateRoom.objects.create(
+                    template=template,
+                    number_or_name=final_name,
+                    type=room_type,
+                    capacity=int(capacity),
+                    beds_config=beds_config,
+                    has_ac=has_ac
+                )
+            
+            msg = f"1 quarto adicionado com sucesso." if quantity == 1 else f"{quantity} quartos adicionados com sucesso."
+            messages.success(request, msg)
+        except Exception as e:
+            messages.error(request, f"Erro ao criar quartos: {str(e)}")
+    return redirect('lodging_template_manage', band_slug=band_slug)
+
+def lodging_template_room_update(request, band_slug, pk, room_id):
+    from core.models import LodgingTemplate, TemplateRoom
+    template = get_object_or_404(LodgingTemplate, pk=pk, band=request.band)
+    room = get_object_or_404(TemplateRoom, pk=room_id, template=template)
+    
+    if request.method == 'POST':
+        try:
+            room_number = request.POST.get('number_or_name', '').strip()
+            if not room_number:
+                room_number = 'Sem número'
+                
+            # Allow same name if it's the current room
+            if TemplateRoom.objects.filter(template=template, name=room_number).exclude(pk=room.pk).exists():
+                messages.error(request, f"Já existe um quarto '{room_number}' neste modelo.")
+            else:
+                room.number_or_name = room_number
+                room.type = request.POST.get('type')
+                room.capacity = int(request.POST.get('capacity', 1))
+                room.beds_config = request.POST.get('beds_config', '')
+                room.has_ac = request.POST.get('has_ac') == 'on'
+                room.save()
+                messages.success(request, "Quarto atualizado com sucesso.")
+        except Exception as e:
+            messages.error(request, f"Erro ao atualizar quarto: {str(e)}")
+            
+    return redirect('lodging_template_manage', band_slug=band_slug)
+
+def lodging_template_room_delete(request, band_slug, pk, room_id):
+    from core.models import LodgingTemplate, TemplateRoom
+    template = get_object_or_404(LodgingTemplate, pk=pk, band=request.band)
+    room = get_object_or_404(TemplateRoom, pk=room_id, template=template)
+    
+    if request.method == 'POST':
+        room.delete()
+        messages.success(request, "Quarto excluído com sucesso.")
+        
+    return redirect('lodging_template_manage', band_slug=band_slug)
+
 
 
 @login_required

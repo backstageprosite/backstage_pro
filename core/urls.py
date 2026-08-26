@@ -136,6 +136,9 @@ urlpatterns += [
 
     # Modelo Padrão
     path('configuracoes/hospedagem/modelo/', views.lodging_template_manage, name='lodging_template_manage'),
+    path('configuracoes/hospedagem/modelo/<int:pk>/quarto/criar/', views.lodging_template_room_create, name='lodging_template_room_create'),
+    path('configuracoes/hospedagem/modelo/<int:pk>/quarto/<int:room_id>/editar/', views.lodging_template_room_update, name='lodging_template_room_update'),
+    path('configuracoes/hospedagem/modelo/<int:pk>/quarto/<int:room_id>/excluir/', views.lodging_template_room_delete, name='lodging_template_room_delete'),
     
     # Room List
     path('hospedagem/<int:pk>/pdf/', views.room_list_pdf_view, name='room_list_pdf'),

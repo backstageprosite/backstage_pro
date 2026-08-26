@@ -1518,6 +1518,7 @@ class LodgingTemplate(models.Model):
 
 class TemplateRoom(models.Model):
     template = models.ForeignKey(LodgingTemplate, on_delete=models.CASCADE, related_name='rooms')
+    number_or_name = models.CharField(max_length=50, blank=True, null=True, verbose_name='Número ou Nome')
     type = models.CharField(max_length=20, choices=Room.RoomTypeChoices.choices)
     capacity = models.PositiveIntegerField()
     beds_config = models.CharField(max_length=255, blank=True, null=True)

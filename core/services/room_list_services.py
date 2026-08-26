@@ -1100,7 +1100,7 @@ def apply_template_to_room_list(room_list_id, user):
     room_mapping = {}
     for idx, t_room in enumerate(template_rooms, start=1):
         validate_room_capacity_for_type(t_room.type, t_room.capacity)
-        number_or_name = f"Quarto {idx}"
+        number_or_name = t_room.number_or_name if t_room.number_or_name else f"Quarto {idx}"
         room = Room(
             room_list=locked_rl,
             number_or_name=number_or_name,
