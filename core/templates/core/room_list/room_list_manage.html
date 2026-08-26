@@ -108,36 +108,36 @@
                         <button class="btn btn-danger mb-md-2 btn-sm">Arquivar</button>
                     </form>
                     <div class="d-flex gap-2 mt-2 mt-md-0">
-                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 "><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
                         {% if is_produtor %}
-                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-md-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
+                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-md-2 "><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
                         {% endif %}
                     </div>
                 {% elif room_list.status == 'PUBLICADA' %}
                     {% if is_produtor %}
                     <div class="d-flex gap-2 mb-2">
-                        <form method="post" action="{% url 'room_list_reopen' request.band.slug room_list.id %}" class="flex-fill m-0">
+                        <form method="post" action="{% url 'room_list_reopen' request.band.slug room_list.id %}" class=" m-0">
                             {% csrf_token %}
-                            <button class="btn btn-warning btn-sm w-100 px-1" title="Reabrir Edição">Reabrir</button>
+                            <button class="btn btn-warning btn-sm  px-1" title="Reabrir Edição">Reabrir</button>
                         </form>
-                        <form method="post" action="{% url 'room_list_mark_sent' request.band.slug room_list.id %}" class="flex-fill m-0">
+                        <form method="post" action="{% url 'room_list_mark_sent' request.band.slug room_list.id %}" class=" m-0">
                             {% csrf_token %}
                             {% if room_list.last_sent_to_hotel_at %}
-                                <button class="btn btn-success btn-sm w-100 px-1"><i class="fa-solid fa-check"></i> Enviado</button>
+                                <button class="btn btn-success btn-sm  px-1"><i class="fa-solid fa-check"></i> Enviado</button>
                             {% else %}
-                                <button class="btn btn-info btn-sm w-100 px-1 text-white">Não Enviado</button>
+                                <button class="btn btn-info btn-sm  px-1 text-white">Não Enviado</button>
                             {% endif %}
                         </form>
-                        <form method="post" action="{% url 'room_list_archive' request.band.slug room_list.id %}" class="flex-fill m-0">
+                        <form method="post" action="{% url 'room_list_archive' request.band.slug room_list.id %}" class=" m-0">
                             {% csrf_token %}
-                            <button class="btn btn-danger btn-sm w-100 px-1">Arquivar</button>
+                            <button class="btn btn-danger btn-sm  px-1">Arquivar</button>
                         </form>
                     </div>
                     {% endif %}
                     <div class="d-flex gap-2">
-                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 "><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
                         {% if is_produtor %}
-                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF Hotel</a>
+                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-2 "><i class="fa-solid fa-file-pdf"></i> PDF Hotel</a>
                         {% endif %}
                     </div>
                 {% elif room_list.status == 'ARQUIVADA' %}
@@ -151,9 +151,9 @@
                         </button>
                     {% endif %}
                     <div class="d-flex gap-2 mt-2 mt-md-0">
-                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 "><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
                         {% if is_produtor %}
-                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-md-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
+                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-md-2 "><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
                         {% endif %}
                     </div>
                 {% endif %}
@@ -229,13 +229,13 @@
                                 <p class="mb-1 text-muted"><small>Tipo: {{ room.get_type_display }} (Lotação: {{ room.participants.count }} / {{ room.capacity }})</small></p>
 
                                 {% for p in room.participants.all %}
-                                    <div class="badge bg-primary draggable-participant p-2 m-1 w-100 text-start"
+                                    <div class="badge bg-primary draggable-participant p-2 m-1  text-start"
                                          draggable="{% if room_list.status == 'RASCUNHO' %}true{% else %}false{% endif %}"
                                          data-participant-id="{{ p.id }}"
                                          data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
                                          data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
                                          style="cursor: move;">
-                                         <div class="d-flex justify-content-between align-items-center w-100">
+                                         <div class="d-flex justify-content-between align-items-center ">
                                               <span>{{ p.snapshot_name }}</span>
                                               {% if room_list.status == 'RASCUNHO' %}
                                               <form method="post" action="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" class="d-inline m-0 p-0">
@@ -252,7 +252,7 @@
                                         <div class="mt-2 d-md-none">
                                             <form method="post" action="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-light w-100 border">Remover Quarto</button>
+                                                <button type="submit" class="btn btn-sm btn-light  border">Remover Quarto</button>
                                             </form>
                                         </div>
                                         {% endif %}
@@ -274,13 +274,13 @@
                 {% if participants %}
                     {% for p in participants %}
                         {% if not p.room %}
-                            <div class="badge bg-warning text-dark draggable-participant p-2 m-1 w-100 text-start"
+                            <div class="badge bg-warning text-dark draggable-participant p-2 m-1  text-start"
                                  draggable="{% if room_list.status == 'RASCUNHO' %}true{% else %}false{% endif %}"
                                  data-participant-id="{{ p.id }}"
                                  data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
                                  data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
                                  style="cursor: move;">
-                                  <div class="d-flex justify-content-between align-items-center w-100">
+                                  <div class="d-flex justify-content-between align-items-center ">
                                       <span>{{ p.snapshot_name }}</span>
                                       {% if room_list.status == 'RASCUNHO' %}
                                       <form method="post" action="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" class="d-inline m-0 p-0">
@@ -352,7 +352,7 @@
                         {% for integrante in active_integrantes %}
                             <div class="form-check mb-md-2" data-integrante-id="{{ integrante.id }}">
                                 <input class="form-check-input integrante-checkbox" type="checkbox" name="integrantes" value="{{ integrante.id }}" id="integrante_{{ integrante.id }}">
-                                <label class="form-check-label d-flex justify-content-between align-items-center w-100" for="integrante_{{ integrante.id }}">
+                                <label class="form-check-label d-flex justify-content-between align-items-center " for="integrante_{{ integrante.id }}">
                                     <span>
                                         <strong>{{ integrante.name }}</strong>
                                         <small class="text-muted ms-1">({{ integrante.role }})</small>

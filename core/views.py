@@ -3445,39 +3445,35 @@ def room_list_room_create(request, band_slug, pk):
         raise Http404("Room List não encontrada.")
 
     if request.method == 'POST':
-        form = RoomForm(request.POST)
-        if form.is_valid():
-            try:
-                data = form.cleaned_data.copy()
-                quantity = int(request.POST.get('quantity', 1))
-                room_number = data.pop('number_or_name')
-                if not room_number:
-                    room_number = 'Sem número'
+        try:
+            quantity = int(request.POST.get('quantity', 1))
+            room_number = request.POST.get('number_or_name', '').strip()
+            if not room_number:
+                room_number = 'Sem número'
                 
-                for _ in range(quantity):
-                    room_list_services.create_room(
-                        room_list_id=room_list.id,
-                        room_type=data.get('type'),
-                        capacity=data.get('capacity'),
-                        number_or_name=room_number,
-                        user=request.user,
-                        beds_config=data.get('beds_config'),
-                        has_ac=data.get('has_ac', False)
-                    )
-                msg = f"1 quarto adicionado com sucesso." if quantity == 1 else f"{quantity} quartos adicionados com sucesso."
-                messages.success(request, msg)
-                return redirect('room_list_manage', band_slug=band_slug, pk=room_list.id)
-            except Exception as e:
-                messages.error(request, str(e))
-    else:
-        form = RoomForm()
+            room_type = request.POST.get('type')
+            capacity = request.POST.get('capacity', 1)
+            beds_config = request.POST.get('beds_config', '')
+            has_ac = request.POST.get('has_ac') == 'on'
+            
+            for _ in range(quantity):
+                room_list_services.create_room(
+                    room_list_id=room_list.id,
+                    room_type=room_type,
+                    capacity=int(capacity),
+                    number_or_name=room_number,
+                    user=request.user,
+                    beds_config=beds_config,
+                    has_ac=has_ac
+                )
+            msg = f"1 quarto adicionado com sucesso." if quantity == 1 else f"{quantity} quartos adicionados com sucesso."
+            messages.success(request, msg)
+        except Exception as e:
+            messages.error(request, str(e))
+        return redirect('room_list_manage', band_slug=band_slug, pk=room_list.id)
 
-    return render(request, 'core/room_list/room_form.html', {
-        'band': request.band,
-        'form': form,
-        'room_list': room_list,
-        'action': 'Adicionar'
-    })
+    # In case they GET this view directly, redirect them to manage.
+    return redirect('room_list_manage', band_slug=band_slug, pk=room_list.id)
 
 @room_list_produtor_required
 def room_list_room_edit(request, band_slug, pk, room_id):
