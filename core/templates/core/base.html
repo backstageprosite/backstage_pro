@@ -553,17 +553,17 @@ document.addEventListener("DOMContentLoaded", function() {
             <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
                 <div class="modal-header bg-light border-bottom-0">
                     <h5 class="modal-title fw-bold text-dark" id="modalAdvancedPlanLabel">
-                        <i class="fa-solid fa-lock text-warning me-2"></i> Recurso do plano Avançado
+                        <i class="fa-solid fa-lock text-warning me-2"></i> Recurso do Plano Avançado
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body py-4 text-center">
                     <i class="fa-solid fa-star fa-3x text-warning mb-3"></i>
-                    <p class="text-muted fw-medium px-3">Este recurso está disponível apenas no plano Avançado. Faça o upgrade para liberar esta funcionalidade e ter acesso à gestão completa da sua banda.</p>
+                    <p class="text-muted fw-medium px-3">Este recurso faz parte do plano Avançado. Atualize sua assinatura para continuar aproveitando os benefícios do Backstage Pro.</p>
                 </div>
                 <div class="modal-footer bg-light border-top-0 d-flex justify-content-between">
                     <button type="button" class="btn btn-outline-secondary rounded-pill fw-medium px-4" data-bs-dismiss="modal">Agora não</button>
-                    <a href="{% if band %}{% url 'support_list' band.slug %}{% else %}#{% endif %}" class="btn btn-warning rounded-pill fw-bold text-dark px-4">Conhecer o plano Avançado</a>
+                    <a href="https://backstagepro.site/" target="_blank" class="btn btn-primary rounded-pill fw-bold text-white px-4">Conhecer Planos</a>
                 </div>
             </div>
         </div>

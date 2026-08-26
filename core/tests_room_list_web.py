@@ -99,10 +99,10 @@ class RoomListWebTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
 
-        # Superusuário sem vínculo
+        # Superusuário sem vínculo agora deve ter acesso 200 (Gestão Administrativa)
         self.login(self.superusuario)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
     def test_room_list_index_isolation(self):
         self.login(self.produtor)

@@ -140,7 +140,7 @@ def validate_band_access(user, band):
     """
     if not user or not user.is_active:
         raise BandAccessDeniedError("Usuário inativo ou não informado.")
-    if user.band_id != band.id:
+    if user.band_id != band.id and not user.is_superuser:
         raise BandAccessDeniedError("Usuário não pertence a esta banda.")
     if not user.is_produtor():
         raise BandAccessDeniedError("Apenas produtores podem executar esta operação.")

@@ -412,9 +412,9 @@ def pending_list_view(request, band_slug):
 
 
 
-    user_is_band_producer = request.user.band == band and request.user.is_produtor()
+    user_can_manage_band = request.user.is_superuser or (request.user.band == band and request.user.is_produtor())
 
-    if not user_is_band_producer:
+    if not user_can_manage_band:
 
         from django.core.exceptions import PermissionDenied
 
@@ -444,7 +444,7 @@ def pending_list_view(request, band_slug):
 
     pending_item_form = None
 
-    user_is_band_producer = request.user.band == band and request.user.is_produtor()
+    user_is_band_producer = request.user.is_superuser or (request.user.band == band and request.user.is_produtor())
 
 
 
@@ -2785,7 +2785,7 @@ def add_dashboard_pending_item(request, band_slug):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    if request.user.band != band or not request.user.is_produtor():
+    if (request.user.band != band and not request.user.is_superuser) or not request.user.is_produtor():
 
         return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
 
@@ -2858,7 +2858,7 @@ def delete_dashboard_pending_item(request, band_slug, pending_id):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    if request.user.band != band or not request.user.is_produtor():
+    if (request.user.band != band and not request.user.is_superuser) or not request.user.is_produtor():
 
         return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
 
@@ -2901,7 +2901,7 @@ def edit_dashboard_pending_item(request, band_slug, pending_id):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    if request.user.band != band or not request.user.is_produtor():
+    if (request.user.band != band and not request.user.is_superuser) or not request.user.is_produtor():
 
         return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
 
@@ -3340,7 +3340,7 @@ def room_list_produtor_required(view_func):
 
         if not request.user.is_active:
             raise PermissionDenied("Usuário inativo.")
-        if getattr(request.user, 'band_id', None) != request.band.id:
+        if getattr(request.user, 'band_id', None) != request.band.id and not request.user.is_superuser:
             raise PermissionDenied("Acesso negado à banda.")
         if not request.user.is_produtor():
             raise PermissionDenied("Acesso restrito a produtores.")

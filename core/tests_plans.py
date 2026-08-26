@@ -239,8 +239,8 @@ class DashboardMenuTests(TestCase):
 
         self.assertNotIn(f'href="{reverse("pendencias", args=[self.band_basico.slug])}"', content)
         self.assertIn('data-bs-target="#modalAdvancedPlan"', content)
-        self.assertIn('Recurso do plano Avançado', content)
-        self.assertIn('Conhecer o plano Avançado', content)
+        self.assertIn('Recurso do Plano Avançado', content)
+        self.assertIn('Conhecer Planos', content)
         self.assertIn('Agora não', content)
 
 
