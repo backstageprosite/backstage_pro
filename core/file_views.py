@@ -137,12 +137,16 @@ def private_download_required(view_func):
 @private_download_required
 def download_contract(request, band_slug, pk):
     """Download protegido de ContractDocument"""
+    if not request.band.is_advanced:
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
     doc = get_object_or_404(ContractDocument, pk=pk, show__band=request.band)
     return serve_private_file(doc.file, as_attachment=True)
 
 @private_download_required
 def preview_contract(request, band_slug, pk):
     """Preview protegido de ContractDocument (as_attachment=False)"""
+    if not request.band.is_advanced:
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
     doc = get_object_or_404(ContractDocument, pk=pk, show__band=request.band)
     return serve_private_file(doc.file, as_attachment=False)
 
@@ -228,6 +232,8 @@ def internal_file_viewer(request, band_slug, file_type, pk):
         raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
 
     if file_type == 'contract':
+        if not band.is_advanced:
+            raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
         doc = get_object_or_404(ContractDocument, pk=pk, show__band=band)
         preview_url = reverse('preview_contract', args=[band.slug, pk])
         download_url = reverse('download_contract', args=[band.slug, pk])

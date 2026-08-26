@@ -365,7 +365,7 @@
     {% endif %}
 
     <!-- ÁREA RESTRITA: Apenas para Produtores -->
-    {% if user.is_produtor %}
+    {% if user.is_produtor and band.is_advanced %}
     <div class="col-12 mb-4">
         <div class="card border-danger">
             <div class="card-header bg-danger text-white fw-bold">

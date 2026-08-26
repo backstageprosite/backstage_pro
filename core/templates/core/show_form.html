@@ -37,10 +37,18 @@
                 <button class="nav-link fw-bold px-4 text-nowrap" id="tecnica-tab" data-bs-toggle="tab" data-bs-target="#tecnica" type="button" role="tab" aria-controls="tecnica" aria-selected="false">Técnica</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold px-4 text-nowrap" id="financeiro-tab" data-bs-toggle="tab" data-bs-target="#financeiro" type="button" role="tab" aria-controls="financeiro" aria-selected="false">Financeiro</button>
+                {% if band.is_advanced %}
+                    <button class="nav-link fw-bold px-4 text-nowrap" id="financeiro-tab" data-bs-toggle="tab" data-bs-target="#financeiro" type="button" role="tab" aria-controls="financeiro" aria-selected="false">Financeiro</button>
+                    {% else %}
+                    <button class="nav-link fw-bold px-4 text-nowrap text-muted bg-light opacity-75 grayscale" type="button" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"><i class="fa-solid fa-lock me-1"></i> Financeiro</button>
+                    {% endif %}
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold px-4 text-nowrap" id="anexos-tab" data-bs-toggle="tab" data-bs-target="#anexos" type="button" role="tab" aria-controls="anexos" aria-selected="false">Anexos</button>
+                {% if band.is_advanced %}
+                    <button class="nav-link fw-bold px-4 text-nowrap" id="anexos-tab" data-bs-toggle="tab" data-bs-target="#anexos" type="button" role="tab" aria-controls="anexos" aria-selected="false">Anexos</button>
+                    {% else %}
+                    <button class="nav-link fw-bold px-4 text-nowrap text-muted bg-light opacity-75 grayscale" type="button" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"><i class="fa-solid fa-lock me-1"></i> Anexos</button>
+                    {% endif %}
             </li>
         </ul>
     </div>
@@ -357,6 +365,7 @@
                     </div>
                 </div>
                 
+                {% if band.is_advanced %}
                 <!-- ABA FINANCEIRO -->
                 <div class="tab-pane fade" id="financeiro" role="tabpanel" aria-labelledby="financeiro-tab">
                     <div class="alert alert-warning mb-4" style="border-radius: 8px;">
@@ -389,6 +398,10 @@
                     </div>
                 </div>
 
+                {% endif %}
+
+
+                {% if band.is_advanced %}
                 <!-- ABA ANEXOS -->
                 <div class="tab-pane fade" id="anexos" role="tabpanel" aria-labelledby="anexos-tab">
                     <div class="alert alert-warning mb-4" style="border-radius: 8px;">
@@ -543,6 +556,7 @@
                         </div>
                     {% endif %}
                 </div>
+                {% endif %}
 
             </div>
 

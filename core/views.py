@@ -1529,6 +1529,10 @@ def show_create_view(request, band_slug):
 
         form = ShowForm(request.POST, request.FILES)
 
+        if not band.is_advanced:
+            for f in ['contractor_name', 'contractor_phone', 'contract_type', 'fee', 'payment_status']:
+                form.fields.pop(f, None)
+
         if form.is_valid():
 
             with transaction.atomic():
@@ -1562,9 +1566,9 @@ def show_create_view(request, band_slug):
     else:
 
         form = ShowForm()
-
-
-
+        if not band.is_advanced:
+            for f in ['contractor_name', 'contractor_phone', 'contract_type', 'fee', 'payment_status']:
+                form.fields.pop(f, None)
     context = {
 
         'band': band,
@@ -1618,12 +1622,16 @@ def show_edit_view(request, band_slug, pk):
 
 
             form = ShowForm(request.POST, request.FILES, instance=show_to_edit)
+            if not band.is_advanced:
+                for f in ['contractor_name', 'contractor_phone', 'contract_type', 'fee', 'payment_status']:
+                    form.fields.pop(f, None)
+                doc_formset = None
+            else:
+                doc_formset = ContractDocumentFormSet(request.POST, request.FILES, instance=show_to_edit)
 
-            doc_formset = ContractDocumentFormSet(request.POST, request.FILES, instance=show_to_edit)
+            is_doc_valid = doc_formset.is_valid() if doc_formset else True
 
-
-
-            if form.is_valid() and doc_formset.is_valid():
+            if form.is_valid() and is_doc_valid:
 
                 from core.file_policy import check_show_limits
                 from django.core.exceptions import ValidationError
@@ -1677,8 +1685,8 @@ def show_edit_view(request, band_slug, pk):
 
 
                 form.save()
-
-                doc_formset.save()
+                if doc_formset:
+                    doc_formset.save()
 
 
 
@@ -1734,8 +1742,13 @@ def show_edit_view(request, band_slug, pk):
     else:
 
         form = ShowForm(instance=show_to_edit)
-
-        doc_formset = ContractDocumentFormSet(instance=show_to_edit)
+        if not band.is_advanced:
+            for f in ['contractor_name', 'contractor_phone', 'contract_type', 'fee', 'payment_status']:
+                form.fields.pop(f, None)
+        if not band.is_advanced:
+            doc_formset = None
+        else:
+            doc_formset = ContractDocumentFormSet(instance=show_to_edit)
 
 
 
@@ -2415,6 +2428,9 @@ def document_delete_view(request, band_slug, pk):
 
     band = get_object_or_404(Band, slug=band_slug)
 
+    if not band.is_advanced:
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
+
     document = get_object_or_404(ContractDocument, pk=pk, show__band=band)
 
     show_id = document.show.id
@@ -2514,6 +2530,9 @@ def payment_delete_view(request, band_slug, pk):
 
 
     band = get_object_or_404(Band, slug=band_slug)
+
+    if not band.is_advanced:
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
 
     payment = get_object_or_404(ShowPayment, pk=pk, show__band=band)
 
@@ -2621,6 +2640,9 @@ def teamcost_delete_view(request, band_slug, pk):
 
     band = get_object_or_404(Band, slug=band_slug)
 
+    if not band.is_advanced:
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
+
     team_cost = get_object_or_404(ShowTeamCost, pk=pk, show__band=band)
 
     show_id = team_cost.show.id
@@ -2708,6 +2730,9 @@ def receipt_delete_view(request, band_slug, pk):
 
 
     band = get_object_or_404(Band, slug=band_slug)
+
+    if not band.is_advanced:
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
 
     receipt = get_object_or_404(FinancialReceipt, pk=pk, show__band=band)
 

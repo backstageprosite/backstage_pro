@@ -428,3 +428,217 @@ class RelatoriosIndexTests(TestCase):
         # Lock icons should not be present
         self.assertEqual(content.count('fa-lock text-muted'), 0)
         self.assertEqual(content.count('data-bs-target="#modalAdvancedPlan"'), 0)
+
+
+
+
+
+
+
+from .models import ContractDocument, FinancialReceipt, ShowPayment
+
+
+class ShowFormPlansTests(TestCase):
+    def setUp(self):
+        from core.models import BandSubscription, ShowTeamCost
+        self.user = User.objects.create_user(username='produtor6', password='123', role='PRODUTOR')
+        self.band_basic = Band.objects.create(name='Banda Basica Show 5', slug='banda-basica-show5', plan_type='BASICO')
+        self.band_advanced = Band.objects.create(name='Banda Avancada Show 5', slug='banda-avancada-show5', plan_type='AVANCADO')
+
+        BandSubscription.objects.create(band=self.band_basic, status='ACTIVE', plan_name='BÁSICO')
+        BandSubscription.objects.create(band=self.band_advanced, status='ACTIVE', plan_name='AVANÇADO')
+
+        self.user.band = self.band_basic
+        self.user.save()
+
+        self.show_basic = Show.objects.create(
+            band=self.band_basic, title='Show Basico', date='2025-01-01', status='CONFIRMADO', city='SP', fee=1000.00, contractor_name='Joao',
+            accommodation='Hotel ABC'
+        )
+        self.show_advanced = Show.objects.create(
+            band=self.band_advanced, title='Show Avancado', date='2025-01-01', status='CONFIRMADO', city='SP', fee=5000.00, payment_status='PENDENTE'
+        )
+
+        # Criar dados preexistentes
+        self.doc_basic = ContractDocument.objects.create(show=self.show_basic, description='Doc Basico')
+        self.receipt_basic = FinancialReceipt.objects.create(show=self.show_basic, description='Recibo Basico', value=100)
+        self.payment_basic = ShowPayment.objects.create(show=self.show_basic, description='Pag Basico', value=100)
+        self.cost_basic = ShowTeamCost.objects.create(show=self.show_basic, name='Cost 1', role='Roadie', value=50)
+
+        self.client.login(username='produtor6', password='123')
+
+    def test_basic_form_render(self):
+        self.user.band = self.band_basic
+        self.user.save()
+        url = reverse('shows_add', args=[self.band_basic.slug])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
+
+        # Abas
+        self.assertIn('Técnica', html)
+        self.assertIn('Logística', html)
+        self.assertIn('Cronograma', html)
+
+        # Cadeado
+        self.assertIn('data-bs-target="#modalAdvancedPlan"', html)
+        self.assertIn('aria-disabled="true"', html)
+
+    def test_basic_create_show(self):
+        self.user.band = self.band_basic
+        self.user.save()
+        url = reverse('shows_add', args=[self.band_basic.slug])
+        data = {
+            'title': 'Show Novo',
+            'date': '2025-02-02',
+            'status': 'CONFIRMADO',
+            'city': 'RJ',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Show.objects.filter(title='Show Novo').exists())
+
+    def test_basic_edit_preserves_financial_data(self):
+        from core.models import ShowTeamCost
+        self.user.band = self.band_basic
+        self.user.save()
+        url = reverse('shows_edit', args=[self.band_basic.slug, self.show_basic.id])
+        data = {
+            'title': 'Show Editado',
+            'date': '2025-01-01',
+            'status': 'CONFIRMADO',
+            'city': 'SP',
+            'fee': '500.00',
+            'accommodation': 'Hotel XYZ'
+        }
+        # Adicionar formset forjado de contratos
+        data['documents-TOTAL_FORMS'] = '1'
+        data['documents-INITIAL_FORMS'] = '0'
+        data['documents-MIN_NUM_FORMS'] = '0'
+        data['documents-MAX_NUM_FORMS'] = '1000'
+        data['documents-0-description'] = 'Doc Forjado'
+        data['active_tab'] = 'tecnica'
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+
+        self.show_basic.refresh_from_db()
+        self.assertEqual(self.show_basic.title, 'Show Editado')
+        self.assertEqual(self.show_basic.accommodation, 'Hotel XYZ')
+
+        # O POST financeiro forjado não altera fee ou contratante
+        self.assertEqual(float(self.show_basic.fee), 1000.00)
+        self.assertEqual(self.show_basic.contractor_name, 'Joao')
+
+        # Não foi criado novo contrato nem excluído o existente
+        self.assertFalse(ContractDocument.objects.filter(description='Doc Forjado').exists())
+        self.assertEqual(ContractDocument.objects.filter(show=self.show_basic).count(), 1)
+        self.assertTrue(ContractDocument.objects.filter(id=self.doc_basic.id).exists())
+
+        # Recibo/pagamento/custo preexistente permanece
+        self.assertEqual(FinancialReceipt.objects.filter(show=self.show_basic).count(), 1)
+        self.assertTrue(FinancialReceipt.objects.filter(id=self.receipt_basic.id).exists())
+        self.assertEqual(ShowPayment.objects.filter(show=self.show_basic).count(), 1)
+        self.assertTrue(ShowPayment.objects.filter(id=self.payment_basic.id).exists())
+        self.assertEqual(ShowTeamCost.objects.filter(show=self.show_basic).count(), 1)
+        self.assertTrue(ShowTeamCost.objects.filter(id=self.cost_basic.id).exists())
+
+    def test_advanced_edit_financials(self):
+        self.user.band = self.band_advanced
+        self.user.save()
+        url = reverse('shows_edit', args=[self.band_advanced.slug, self.show_advanced.id])
+        data = {
+            'title': 'Show Avancado Modificado',
+            'date': '2025-01-01',
+            'status': 'CONFIRMADO',
+            'city': 'SP',
+            'fee': '8000.00',
+            'payment_status': 'PAGO',
+            'documents-TOTAL_FORMS': '0',
+            'documents-INITIAL_FORMS': '0',
+            'documents-MIN_NUM_FORMS': '0',
+            'documents-MAX_NUM_FORMS': '1000',
+            'receipts-TOTAL_FORMS': '0',
+            'receipts-INITIAL_FORMS': '0',
+            'receipts-MIN_NUM_FORMS': '0',
+            'receipts-MAX_NUM_FORMS': '1000',
+            'payments-TOTAL_FORMS': '0',
+            'payments-INITIAL_FORMS': '0',
+            'payments-MIN_NUM_FORMS': '0',
+            'payments-MAX_NUM_FORMS': '1000',
+        }
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+
+        self.show_advanced.refresh_from_db()
+        self.assertEqual(float(self.show_advanced.fee), 8000.00)
+        self.assertEqual(self.show_advanced.payment_status, 'PAGO')
+        self.assertEqual(self.show_advanced.title, 'Show Avancado Modificado')
+
+    def test_basic_save_and_continue_tabs(self):
+        self.user.band = self.band_basic
+        self.user.save()
+        url = reverse('shows_add', args=[self.band_basic.slug])
+        response = self.client.get(url)
+        html = response.content.decode('utf-8')
+
+        self.assertNotIn('href="javascript:void(0)"', html)
+        self.assertIn('<button class="nav-link fw-bold px-4 text-nowrap text-muted bg-light opacity-75 grayscale" type="button" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"><i class="fa-solid fa-lock me-1"></i> Financeiro</button>', html)
+        self.assertIn('<button class="nav-link fw-bold px-4 text-nowrap text-muted bg-light opacity-75 grayscale" type="button" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"><i class="fa-solid fa-lock me-1"></i> Anexos</button>', html)
+
+    def test_advanced_form_render(self):
+        self.user.band = self.band_advanced
+        self.user.save()
+        url = reverse('shows_add', args=[self.band_advanced.slug])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_contract_blocked_for_basic(self):
+        self.user.band = self.band_basic
+        self.user.save()
+
+        url = reverse('download_contract', args=[self.band_basic.slug, self.doc_basic.id])
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+        url = reverse('preview_contract', args=[self.band_basic.slug, self.doc_basic.id])
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+        url = reverse('file_viewer', args=[self.band_basic.slug, 'contract', self.doc_basic.id])
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+        url = reverse('document_delete', args=[self.band_basic.slug, self.doc_basic.id])
+        self.assertEqual(self.client.post(url).status_code, 403)
+
+    def test_billing_and_support_allowed(self):
+        self.user.band = self.band_basic
+        self.user.save()
+        url_billing = reverse('minha_assinatura', args=[self.band_basic.slug])
+        self.assertIn(self.client.get(url_billing).status_code, [200, 302])
+        url_support = reverse('support_list', args=[self.band_basic.slug])
+        self.assertEqual(self.client.get(url_support).status_code, 200)
+
+    def test_pdfs_and_detail_basic(self):
+        self.user.band = self.band_basic
+        self.user.save()
+        url_pdf_show = reverse('show_pdf', args=[self.band_basic.slug, self.show_basic.id])
+        self.assertEqual(self.client.get(url_pdf_show).status_code, 200)
+        url_pdf_agenda = reverse('agenda_pdf', args=[self.band_basic.slug])
+        self.assertEqual(self.client.get(url_pdf_agenda).status_code, 200)
+
+        url_detail = reverse('show_detail', args=[self.band_basic.slug, self.show_basic.id])
+        response = self.client.get(url_detail)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
+
+        self.assertNotIn('Dados do Contrato', html)
+        self.assertNotIn('1000,00', html)
+        self.assertIn('Hotel ABC', html)
+
+    def test_downgrade_preserves_data(self):
+        self.show_advanced.fee = 9999.00
+        self.show_advanced.save()
+        self.band_advanced.plan_type = 'BASICO'
+        self.band_advanced.save()
+        self.show_advanced.refresh_from_db()
+        self.assertEqual(float(self.show_advanced.fee), 9999.00)
