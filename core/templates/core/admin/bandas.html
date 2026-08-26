@@ -18,6 +18,7 @@
                         <th class="border-0">Banda</th>
                         <th class="border-0">Slug</th>
                         <th class="border-0">Status</th>
+                        <th class="border-0">Plano</th>
                         <th class="text-end pe-4 border-0 rounded-end">Ações</th>
                     </tr>
                 </thead>
@@ -35,6 +36,17 @@
                         </td>
                         <td class="fw-bold">{{ b.name }}</td>
                         <td class="text-muted">{{ b.slug }}</td>
+                        <td>
+                            {% if b.plan_type == 'AVANCADO' %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
+                                    <i class="fa-solid fa-star me-1"></i> Avançado
+                                </span>
+                            {% else %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2">
+                                    <i class="fa-solid fa-cube me-1"></i> Básico
+                                </span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if b.is_active %}
                                 <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
@@ -96,6 +108,13 @@
                                             {% if b.logo %}
                                                 <small class="text-muted d-block mt-1">Logo atual: {{ b.logo.name }}</small>
                                             {% endif %}
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Plano da banda</label>
+                                            <select name="plan_type" class="form-select" required>
+                                                <option value="BASICO" {% if b.plan_type == 'BASICO' %}selected{% endif %}>Básico</option>
+                                                <option value="AVANCADO" {% if b.plan_type == 'AVANCADO' %}selected{% endif %}>Avançado</option>
+                                            </select>
                                         </div>
                                         <div class="form-check form-switch mt-4">
                                             <input class="form-check-input" type="checkbox" name="is_active" id="isActiveEdit{{ b.id }}" {% if b.is_active %}checked{% endif %}>
@@ -180,6 +199,14 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Logo (Opcional)</label>
                         <input type="file" name="logo" class="form-control" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Plano da banda</label>
+                        <select name="plan_type" class="form-select" required>
+                            <option value="" selected disabled>Selecione um plano</option>
+                            <option value="BASICO">Básico</option>
+                            <option value="AVANCADO">Avançado</option>
+                        </select>
                     </div>
                     <div class="form-check form-switch mt-4">
                         <input class="form-check-input" type="checkbox" name="is_active" id="isActiveCreate" checked>

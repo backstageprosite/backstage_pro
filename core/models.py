@@ -13,8 +13,13 @@ def validate_image_size(value):
         raise ValidationError("O tamanho máximo permitido para a imagem é 5MB.")
 
 class Band(models.Model):
+    class PlanType(models.TextChoices):
+        BASICO = 'BASICO', 'Básico'
+        AVANCADO = 'AVANCADO', 'Avançado'
+
     name = models.CharField(max_length=100, verbose_name="Nome da Banda")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="Slug (URL)")
+    plan_type = models.CharField(max_length=15, choices=PlanType.choices, default=PlanType.AVANCADO, verbose_name='Plano da banda')
     logo = models.ImageField(validators=[validate_file_size_and_type], upload_to='bands/logos/', blank=True, null=True, verbose_name="Logo da Banda")
 
     # Controle de Assinatura (SaaS)
@@ -37,6 +42,14 @@ class Band(models.Model):
         verbose_name = "Banda"
         verbose_name_plural = "Bandas"
 
+
+    @property
+    def is_advanced(self):
+        return self.plan_type == self.PlanType.AVANCADO
+
+    @property
+    def is_basic(self):
+        return self.plan_type == self.PlanType.BASICO
 
     @property
     def dynamic_status(self):
@@ -348,6 +361,14 @@ class Contact(models.Model):
         ]
 
     @property
+    def is_advanced(self):
+        return self.plan_type == self.PlanType.AVANCADO
+
+    @property
+    def is_basic(self):
+        return self.plan_type == self.PlanType.BASICO
+
+    @property
     def dynamic_status(self):
         if self.status == 'PAGO':
             return 'PAGO'
@@ -528,6 +549,14 @@ class BillingRecord(models.Model):
 
 
     @property
+    def is_advanced(self):
+        return self.plan_type == self.PlanType.AVANCADO
+
+    @property
+    def is_basic(self):
+        return self.plan_type == self.PlanType.BASICO
+
+    @property
     def dynamic_status(self):
         if self.status == 'PAGO':
             return 'PAGO'
@@ -657,6 +686,14 @@ class WebPushSubscription(models.Model):
             validate_unique=validate_unique,
             validate_constraints=validate_constraints,
         )
+
+    @property
+    def is_advanced(self):
+        return self.plan_type == self.PlanType.AVANCADO
+
+    @property
+    def is_basic(self):
+        return self.plan_type == self.PlanType.BASICO
 
     @property
     def dynamic_status(self):

@@ -5,10 +5,16 @@ from core.models import Band, User, BandSubscription, BillingRecord
 class AdminBandForm(forms.ModelForm):
     class Meta:
         model = Band
-        fields = ['name', 'slug', 'logo', 'is_active']
+        fields = ['name', 'slug', 'plan_type', 'logo', 'is_active']
         widgets = {
             'subscription_due_date': forms.DateInput(attrs={'type': 'date'}),
+            'plan_type': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['plan_type'].initial = None
 
 class AdminUserCreateForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Senha'}), label='Senha')
