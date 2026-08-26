@@ -1,6 +1,7 @@
 import os
 import mimetypes
 from django.http import FileResponse, Http404
+from .decorators import advanced_plan_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.core.exceptions import PermissionDenied
 from django.utils.text import get_valid_filename
@@ -23,25 +24,25 @@ def sanitize_filename(filename):
     """
     if not filename:
         return "documento.bin"
-        
+
     # Trocar contrabarras
     filename = filename.replace("\\", "/")
     # Extrair apenas o último componente (basename)
     basename = filename.split("/")[-1]
-    
+
     # Remover CR e LF agressivamente
     basename = basename.replace("\r", "").replace("\n", "")
-    
+
     # Passar pelo validador do Django
     from django.core.exceptions import SuspiciousFileOperation
     try:
         safe_name = get_valid_filename(basename)
     except SuspiciousFileOperation:
         return "documento.bin"
-    
+
     if not safe_name:
         return "documento.bin"
-        
+
     return safe_name
 
 def get_safe_mime_type(filename):
@@ -50,7 +51,7 @@ def get_safe_mime_type(filename):
     Tipos perigosos (HTML, SVG, JS, Executáveis) são rebaixados para octet-stream.
     """
     mime_type, _ = mimetypes.guess_type(filename)
-    
+
     # Lista de tipos explicitamente seguros e recomendados
     SAFE_MIMETYPES = [
         'application/pdf',
@@ -65,10 +66,10 @@ def get_safe_mime_type(filename):
         'text/plain',
         'text/csv',
     ]
-    
+
     if mime_type in SAFE_MIMETYPES:
         return mime_type
-        
+
     return 'application/octet-stream'
 
 def serve_private_file(file_field, as_attachment=True):
@@ -77,21 +78,21 @@ def serve_private_file(file_field, as_attachment=True):
     """
     if not file_field or not file_field.name:
         raise Http404("Arquivo não existe no registro.")
-        
+
     try:
         file_obj = file_field.open("rb")
     except (FileNotFoundError, OSError, ValueError):
         raise Http404("Arquivo não encontrado fisicamente no servidor.")
-        
+
     filename = sanitize_filename(file_field.name)
     mime_type = get_safe_mime_type(filename)
-    
+
     response = FileResponse(file_obj, as_attachment=as_attachment, filename=filename, content_type=mime_type)
-    
+
     # Headers de Segurança
     response['Cache-Control'] = 'private, no-store, no-cache, must-revalidate'
     response['X-Content-Type-Options'] = 'nosniff'
-    
+
     return response
 
 def private_download_required(view_func):
@@ -108,13 +109,13 @@ def private_download_required(view_func):
             next_url = request.path
             login_url = redirect('login', band_slug=band_slug).url
             return redirect(f"{login_url}?next={next_url}")
-            
+
         band = get_object_or_404(Band, slug=band_slug)
-        
+
         # Validar inatividade da banda
         if not band.is_active and not is_admin_geral(request.user):
             raise PermissionDenied("O acesso desta banda ao Backstage Pro está suspenso.")
-            
+
         # Admin master acessa tudo.
         if is_admin_geral(request.user):
             pass
@@ -123,11 +124,11 @@ def private_download_required(view_func):
             if request.user.band != band:
                 # 404 para não revelar existência do arquivo em acesso cruzado
                 raise Http404("Página não encontrada.")
-                
+
             # Verifica perfil (apenas Produtor pode baixar documentos financeiros/contratos)
             if hasattr(request.user, 'is_produtor') and not request.user.is_produtor():
                 raise PermissionDenied("Seu perfil de Integrante não tem permissão para baixar este documento.")
-                
+
         request.band = band
         return view_func(request, band_slug, *args, **kwargs)
     return _wrapped_view
@@ -147,12 +148,14 @@ def preview_contract(request, band_slug, pk):
 
 
 @private_download_required
+@advanced_plan_required
 def download_receipt(request, band_slug, pk):
     """Download protegido de FinancialReceipt"""
     doc = get_object_or_404(FinancialReceipt, pk=pk, show__band=request.band)
     return serve_private_file(doc.file, as_attachment=True)
 
 @private_download_required
+@advanced_plan_required
 def preview_receipt(request, band_slug, pk):
     """Preview protegido de FinancialReceipt (as_attachment=False)"""
     doc = get_object_or_404(FinancialReceipt, pk=pk, show__band=request.band)
@@ -160,12 +163,14 @@ def preview_receipt(request, band_slug, pk):
 
 
 @private_download_required
+@advanced_plan_required
 def download_payment(request, band_slug, pk):
     """Download protegido de ShowPayment"""
     doc = get_object_or_404(ShowPayment, pk=pk, show__band=request.band)
     return serve_private_file(doc.file, as_attachment=True)
 
 @private_download_required
+@advanced_plan_required
 def preview_payment(request, band_slug, pk):
     """Preview protegido de ShowPayment (as_attachment=False)"""
     doc = get_object_or_404(ShowPayment, pk=pk, show__band=request.band)
@@ -196,12 +201,14 @@ def preview_support_attachment(request, band_slug, pk):
     return serve_private_file(doc.file, as_attachment=False)
 
 @private_download_required
+@advanced_plan_required
 def download_rider(request, band_slug, pk):
     """Download protegido de RiderDocument"""
     doc = get_object_or_404(RiderDocument, pk=pk, band=request.band)
     return serve_private_file(doc.file, as_attachment=True)
 
 @private_download_required
+@advanced_plan_required
 def preview_rider(request, band_slug, pk):
     """Preview protegido de RiderDocument (as_attachment=False)"""
     doc = get_object_or_404(RiderDocument, pk=pk, band=request.band)
@@ -214,7 +221,12 @@ def internal_file_viewer(request, band_slug, file_type, pk):
     """
     from django.urls import reverse
     band = request.band
-    
+
+    # receipt, payment, rider are Advanced-only modules. Deny at the object level.
+    _advanced_only_types = {'receipt', 'payment', 'rider'}
+    if file_type in _advanced_only_types and not band.is_advanced:
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
+
     if file_type == 'contract':
         doc = get_object_or_404(ContractDocument, pk=pk, show__band=band)
         preview_url = reverse('preview_contract', args=[band.slug, pk])
@@ -259,7 +271,7 @@ def internal_file_viewer(request, band_slug, file_type, pk):
         'download_url': download_url,
         'filename': safe_filename,
     }
-    
+
     return render(request, 'core/file_viewer.html', context)
 
 
@@ -269,28 +281,28 @@ def public_band_logo(request, band_slug):
     Servido apenas para bandas ativas.
     """
     band = get_object_or_404(Band, slug=band_slug)
-    
+
     # Rota pública não serve logo inativa para ninguém.
     if not band.is_active:
         raise Http404("Logo não disponível.")
-        
+
     if not band.logo or not band.logo.name:
         raise Http404("Esta banda não possui logo.")
-        
+
     try:
         file_obj = band.logo.open("rb")
     except (FileNotFoundError, OSError, ValueError):
         raise Http404("Logo não encontrada fisicamente.")
-        
+
     mime_type = get_safe_mime_type(band.logo.name)
-    
+
     # Para visualização pública no navegador, as_attachment=False
     response = FileResponse(file_obj, as_attachment=False)
     response['Content-Type'] = mime_type
     response['X-Content-Type-Options'] = 'nosniff'
-    
+
     response['Cache-Control'] = 'public, max-age=86400'
-        
+
     return response
 
 
@@ -301,35 +313,40 @@ def admin_band_logo(request, band_slug):
     """
     if not request.user.is_authenticated or not is_admin_geral(request.user):
         raise PermissionDenied("Acesso exclusivo para Admin Geral.")
-        
+
     band = get_object_or_404(Band, slug=band_slug)
-    
+
     if not band.logo or not band.logo.name:
         raise Http404("Esta banda não possui logo.")
-        
+
     try:
         file_obj = band.logo.open("rb")
     except (FileNotFoundError, OSError, ValueError):
         raise Http404("Logo não encontrada fisicamente.")
-        
+
     mime_type = get_safe_mime_type(band.logo.name)
-    
+
     response = FileResponse(file_obj, as_attachment=False, content_type=mime_type)
     response['X-Content-Type-Options'] = 'nosniff'
     response['Cache-Control'] = 'private, no-store, must-revalidate'
     response['Vary'] = 'Cookie'
-        
+
     return response
 
 def public_rider_download(request, band_slug, uuid):
     """
     Download público seguro para Rider (sem login) através do UUID.
+    O plano é verificado via doc.band — não há confiança em dados enviados pelo cliente.
     """
     doc = get_object_or_404(RiderDocument, uuid=uuid)
-    
+
     # Valida inatividade da banda
     if not doc.band.is_active:
         raise Http404("Documento não disponível.")
+
+    # Proteção de plano: Rider é módulo exclusivo do plano Avançado.
+    if not doc.band.is_advanced:
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
 
     return serve_private_file(doc.file, as_attachment=True)
 

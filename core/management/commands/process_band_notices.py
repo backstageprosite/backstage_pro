@@ -13,7 +13,8 @@ class Command(BaseCommand):
         # Encontra avisos que já passaram do horário programado e ainda não foram enviados
         notices_to_process = BandNotice.objects.filter(
             scheduled_at__lte=now,
-            sent_at__isnull=True
+            sent_at__isnull=True,
+            band__plan_type='AVANCADO'
         ).select_for_update(skip_locked=True)
         
         count = 0

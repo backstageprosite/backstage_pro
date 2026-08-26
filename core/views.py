@@ -17,6 +17,7 @@ def get_image_base64(image_field):
         pass
     return ""
 
+from .decorators import advanced_plan_required
 from django.shortcuts import render, get_object_or_404, redirect
 
 from django.db import transaction
@@ -326,6 +327,7 @@ def dashboard_view(request, band_slug):
 
 
     if user_is_band_producer:
+        from django.db.models import Q, F
 
         total_users = User.objects.filter(band=band).count()
 
@@ -333,43 +335,30 @@ def dashboard_view(request, band_slug):
 
 
 
-        dashboard_pending_items = (
+        if band.is_advanced:
+            dashboard_pending_items = (
+                BandDashboardPendingItem.objects
+                .filter(band=band)
+                .select_related("show", "created_by")
+                .with_ordering()[:4]
+            )
 
-            BandDashboardPendingItem.objects
-
-            .filter(band=band)
-
-            .select_related("show", "created_by")
-
-            .with_ordering()[:4]
-
-        )
-
-
-
-        from django.db.models import Q, F
-
-        shows = Show.objects.filter(
-
-            Q(band=band) & (Q(date__gte=today) | Q(date__isnull=True))
-
-        ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
-
-        from .forms import BandDashboardPendingItemForm
-
-        pending_item_form = BandDashboardPendingItemForm(shows_qs=shows)
-
-
-
-        for item in dashboard_pending_items:
-
-            item_shows = Show.objects.filter(
-
-                Q(band=band) & (Q(date__gte=today) | Q(date__isnull=True) | Q(pk=item.show_id))
-
+            from django.db.models import Q, F
+            shows = Show.objects.filter(
+                Q(band=band) & (Q(date__gte=today) | Q(date__isnull=True))
             ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
 
-            item.edit_form = BandDashboardPendingItemForm(instance=item, shows_qs=item_shows, prefix=f"edit_{item.id}")
+            from .forms import BandDashboardPendingItemForm
+            pending_item_form = BandDashboardPendingItemForm(shows_qs=shows)
+
+            for item in dashboard_pending_items:
+                item_shows = Show.objects.filter(
+                    Q(band=band) & (Q(date__gte=today) | Q(date__isnull=True) | Q(pk=item.show_id))
+                ).order_by(F('date').asc(nulls_last=True), 'show_time', 'pk')
+                item.edit_form = BandDashboardPendingItemForm(instance=item, shows_qs=item_shows, prefix=f"edit_{item.id}")
+        else:
+            dashboard_pending_items = None
+            pending_item_form = None
 
 
 
@@ -405,6 +394,7 @@ def dashboard_view(request, band_slug):
         'user_is_band_producer': user_is_band_producer,
 
         'band_notices': band_notices,
+        'pendencias_bloqueadas': not band.is_advanced,
     }
 
     return render(request, 'core/dashboard.html', context)
@@ -415,6 +405,7 @@ def dashboard_view(request, band_slug):
 
 @band_required
 
+@advanced_plan_required
 def pending_list_view(request, band_slug):
 
     band = request.band
@@ -1204,6 +1195,7 @@ def minha_assinatura_view(request, band_slug):
 
 @band_required
 
+@advanced_plan_required
 def relatorios_view(request, band_slug):
 
     if not request.user.is_produtor():
@@ -1360,6 +1352,7 @@ def relatorios_view(request, band_slug):
 
 @band_required
 
+@advanced_plan_required
 def arquivos_view(request, band_slug):
 
     if not request.user.is_produtor():
@@ -2762,6 +2755,7 @@ def receipt_delete_view(request, band_slug, pk):
 
 @require_POST
 
+@advanced_plan_required
 def add_dashboard_pending_item(request, band_slug):
 
     band = get_object_or_404(Band, slug=band_slug)
@@ -2834,6 +2828,7 @@ def add_dashboard_pending_item(request, band_slug):
 
 @require_POST
 
+@advanced_plan_required
 def delete_dashboard_pending_item(request, band_slug, pending_id):
 
     band = get_object_or_404(Band, slug=band_slug)
@@ -2876,6 +2871,7 @@ def delete_dashboard_pending_item(request, band_slug, pending_id):
 
 @require_POST
 
+@advanced_plan_required
 def edit_dashboard_pending_item(request, band_slug, pending_id):
 
     band = get_object_or_404(Band, slug=band_slug)
@@ -2976,6 +2972,7 @@ def instalar_aplicativo_view(request, band_slug):
 
 @band_required
 
+@advanced_plan_required
 def rider_list_view(request, band_slug):
 
     band = request.band
@@ -3327,6 +3324,7 @@ def room_list_produtor_required(view_func):
     return _wrapped_view
 
 @room_list_produtor_required
+@advanced_plan_required
 def room_list_index(request, band_slug):
     room_lists = RoomList.objects.filter(band=request.band).select_related('show').order_by('show__date')
     return render(request, 'core/room_list/room_list_index.html', {
@@ -3335,6 +3333,7 @@ def room_list_index(request, band_slug):
     })
 
 @room_list_produtor_required
+@advanced_plan_required
 def room_list_select_show(request, band_slug):
     if request.method == 'POST':
         form = RoomListSelectShowForm(band=request.band, data=request.POST)
@@ -3350,6 +3349,7 @@ def room_list_select_show(request, band_slug):
     })
 
 @room_list_produtor_required
+@advanced_plan_required
 def room_list_create(request, band_slug, show_id):
     show = get_object_or_404(Show, id=show_id, band=request.band)
 
@@ -3379,6 +3379,7 @@ def room_list_create(request, band_slug, show_id):
     })
 
 @room_list_produtor_required
+@advanced_plan_required
 def room_list_edit(request, band_slug, pk):
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
@@ -3409,6 +3410,7 @@ def room_list_edit(request, band_slug, pk):
     })
 
 @band_required
+@advanced_plan_required
 def room_list_manage(request, band_slug, pk):
     is_produtor = request.user.is_produtor()
     try:
@@ -3438,6 +3440,7 @@ def room_list_manage(request, band_slug, pk):
     })
 
 @room_list_produtor_required
+@advanced_plan_required
 def room_list_room_create(request, band_slug, pk):
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
@@ -3487,6 +3490,7 @@ def room_list_room_create(request, band_slug, pk):
     return redirect('room_list_manage', band_slug=band_slug, pk=room_list.id)
 
 @room_list_produtor_required
+@advanced_plan_required
 def room_list_room_edit(request, band_slug, pk, room_id):
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
@@ -3520,6 +3524,7 @@ def room_list_room_edit(request, band_slug, pk, room_id):
     })
 
 @room_list_produtor_required
+@advanced_plan_required
 def room_list_room_delete(request, band_slug, pk, room_id):
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
@@ -3547,6 +3552,7 @@ def room_list_room_delete(request, band_slug, pk, room_id):
     })
 
 @room_list_produtor_required
+@advanced_plan_required
 def room_list_delete(request, band_slug, pk):
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
@@ -3572,6 +3578,7 @@ import json
 
 @room_list_produtor_required
 @require_POST
+@advanced_plan_required
 def room_list_sync(request, band_slug, pk):
     is_fetch = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Content-Type') == 'application/json' or request.headers.get('Accept') == 'application/json'
 
@@ -3600,6 +3607,7 @@ def room_list_sync(request, band_slug, pk):
 
 @room_list_produtor_required
 @require_POST
+@advanced_plan_required
 def room_list_allocate(request, band_slug, pk, participant_id):
     room_id = request.POST.get('room_id')
     if room_id:
@@ -3618,6 +3626,7 @@ def room_list_allocate(request, band_slug, pk, participant_id):
 
 @room_list_produtor_required
 @require_POST
+@advanced_plan_required
 def room_list_unassign(request, band_slug, pk, participant_id):
     is_fetch = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Content-Type') == 'application/json'
     try:
@@ -3633,6 +3642,7 @@ def room_list_unassign(request, band_slug, pk, participant_id):
 
 @room_list_produtor_required
 @require_POST
+@advanced_plan_required
 def room_list_publish(request, band_slug, pk):
     try:
         room_list_services.publish_room_list(pk, request.user)
@@ -3645,6 +3655,7 @@ def room_list_publish(request, band_slug, pk):
 
 @room_list_produtor_required
 @require_POST
+@advanced_plan_required
 def room_list_reopen(request, band_slug, pk):
     try:
         room_list_services.reopen_room_list(pk, request.user)
@@ -3657,6 +3668,7 @@ def room_list_reopen(request, band_slug, pk):
 
 @room_list_produtor_required
 @require_POST
+@advanced_plan_required
 def room_list_reactivate(request, band_slug, pk):
     try:
         room_list_services.reactivate_room_list(pk, request.user)
@@ -3669,6 +3681,7 @@ def room_list_reactivate(request, band_slug, pk):
 
 @room_list_produtor_required
 @require_POST
+@advanced_plan_required
 def room_list_archive(request, band_slug, pk):
     try:
         room_list_services.archive_room_list(pk, request.user)
@@ -3681,6 +3694,7 @@ def room_list_archive(request, band_slug, pk):
 
 @room_list_produtor_required
 @require_POST
+@advanced_plan_required
 def room_list_mark_sent(request, band_slug, pk):
     try:
         room_list_services.mark_room_list_as_sent(pk, request.user)
@@ -3693,6 +3707,7 @@ def room_list_mark_sent(request, band_slug, pk):
 
 @room_list_produtor_required
 @require_POST
+@advanced_plan_required
 def room_list_apply_template(request, band_slug, pk):
     try:
         room_list_services.apply_template_to_room_list(pk, request.user)
@@ -3704,6 +3719,7 @@ def room_list_apply_template(request, band_slug, pk):
     return redirect('room_list_manage', band_slug=band_slug, pk=pk)
 
 @room_list_produtor_required
+@advanced_plan_required
 def lodging_template_manage(request, band_slug):
     from core.models import LodgingTemplate
     band = request.band
@@ -3715,6 +3731,7 @@ def lodging_template_manage(request, band_slug):
     })
 
 @room_list_produtor_required
+@advanced_plan_required
 def lodging_template_room_create(request, band_slug, pk):
     from core.models import LodgingTemplate, TemplateRoom
     template = get_object_or_404(LodgingTemplate, pk=pk, band=request.band)
@@ -3756,6 +3773,7 @@ def lodging_template_room_create(request, band_slug, pk):
     return redirect('lodging_template_manage', band_slug=band_slug)
 
 @room_list_produtor_required
+@advanced_plan_required
 def lodging_template_room_update(request, band_slug, pk, room_id):
     from core.models import LodgingTemplate, TemplateRoom
     template = get_object_or_404(LodgingTemplate, pk=pk, band=request.band)
@@ -3784,6 +3802,7 @@ def lodging_template_room_update(request, band_slug, pk, room_id):
     return redirect('lodging_template_manage', band_slug=band_slug)
 
 @room_list_produtor_required
+@advanced_plan_required
 def lodging_template_room_delete(request, band_slug, pk, room_id):
     from core.models import LodgingTemplate, TemplateRoom
     template = get_object_or_404(LodgingTemplate, pk=pk, band=request.band)
@@ -3821,6 +3840,7 @@ def integrantes_pdf_view(request, band_slug):
 
 @login_required
 @band_required
+@advanced_plan_required
 def room_list_pdf_view(request, band_slug, pk):
     from core.models import RoomList
     from django.core.exceptions import PermissionDenied
@@ -3862,6 +3882,7 @@ def room_list_pdf_view(request, band_slug, pk):
 
 @login_required
 @band_required
+@advanced_plan_required
 def room_list_hotel_pdf_view(request, band_slug, pk):
     from core.models import RoomList
     from django.core.exceptions import PermissionDenied
@@ -3908,6 +3929,7 @@ def room_list_hotel_pdf_view(request, band_slug, pk):
 @login_required
 @band_required
 @require_POST
+@advanced_plan_required
 def delete_room_view(request, band_slug, room_pk):
     from core.models import Room, RoomList
     from django.core.exceptions import PermissionDenied
@@ -3927,6 +3949,7 @@ def delete_room_view(request, band_slug, room_pk):
     return redirect('room_list_manage', band_slug=band_slug, pk=room.room_list.pk)
 
 @room_list_produtor_required
+@advanced_plan_required
 def room_list_participant_delete(request, band_slug, pk, participant_id):
     if request.method != 'POST':
         from django.core.exceptions import PermissionDenied
@@ -3953,6 +3976,7 @@ from django.utils import timezone
 
 @login_required
 @band_required
+@advanced_plan_required
 def band_notices_index(request, band_slug):
     notices = request.band.notices.all()
     from core.forms import BandNoticeForm
@@ -3962,6 +3986,7 @@ def band_notices_index(request, band_slug):
 
 @login_required
 @band_required
+@advanced_plan_required
 def band_notices_create(request, band_slug):
     if not request.user.is_produtor():
         return redirect('dashboard', band_slug=band_slug)
@@ -4006,6 +4031,7 @@ def band_notices_create(request, band_slug):
 
 @login_required
 @band_required
+@advanced_plan_required
 def band_notices_edit(request, band_slug, pk):
     if not request.user.is_produtor():
         return redirect('dashboard', band_slug=band_slug)
@@ -4034,6 +4060,7 @@ def band_notices_edit(request, band_slug, pk):
 
 @login_required
 @band_required
+@advanced_plan_required
 def band_notices_delete(request, band_slug, pk):
     if not request.user.is_produtor():
         return redirect('dashboard', band_slug=band_slug)

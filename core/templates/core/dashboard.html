@@ -141,13 +141,19 @@
     {% if request.user.is_produtor %}
     <!-- Pendências -->
     <div class="col-lg-4">
-        <div class="card shadow-sm border-0 h-100 bg-white" style="border-radius: 12px; display: flex; flex-direction: column;">
+        <div class="card shadow-sm border-0 h-100 {% if pendencias_bloqueadas %}bg-light opacity-75{% else %}bg-white{% endif %}" style="border-radius: 12px; display: flex; flex-direction: column;">
             <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center" style="border-top-left-radius: 12px; border-top-right-radius: 12px; flex-shrink: 0;">
-                <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-clipboard-list text-muted me-2"></i> Pendências</h5>
+                <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-clipboard-list text-muted me-2"></i> Pendências {% if pendencias_bloqueadas %}<i class="fa-solid fa-lock text-muted ms-2"></i>{% endif %}</h5>
 
             </div>
 
             <div class="card-body p-0" style="overflow-y: auto; flex-grow: 1;">
+                {% if pendencias_bloqueadas %}
+                    <div class="text-center p-5 text-muted d-flex flex-column align-items-center justify-content-center h-100">
+                        <i class="fa-solid fa-lock fa-3x mb-3 text-secondary"></i>
+                        <p class="mb-0 fw-semibold text-uppercase small">FUNCIONALIDADE DISPONIVEL APENAS NO PLANO AVANÇADO</p>
+                    </div>
+                {% else %}
                 {% if dashboard_pending_items %}
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0" style="min-width: 300px;">
@@ -275,7 +281,13 @@
                         <span class="fw-medium">Nenhuma pendência no momento.</span>
                     </div>
                 {% endif %}
+                {% endif %}
             </div>
+            {% if not pendencias_bloqueadas %}
+            <div class="card-footer bg-transparent border-top-0 pt-0 text-center">
+                <a href="{% url 'pendencias' band.slug %}" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-medium">Ver Todas as Pendências</a>
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endif %}

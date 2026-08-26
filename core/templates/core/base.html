@@ -281,9 +281,18 @@
                     </li>
                     
                     <li class="nav-item">
+                        {% if band and not band.is_advanced %}
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" class="nav-link text-muted py-3 px-3 fw-medium" style="border-radius: 8px; opacity: 0.6;">
+                            <div class="d-flex justify-content-between align-items-center w-100">
+                                <span><i class="fa-solid fa-list-check fa-fw me-2 opacity-75"></i> Pendências</span>
+                                <i class="fa-solid fa-lock" style="font-size: 0.8rem;"></i>
+                            </div>
+                        </a>
+                        {% else %}
                         <a href="{% if band %}{% url 'pendencias' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'pendencias' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-list-check fa-fw me-2 {% if request.resolver_match.url_name != 'pendencias' %}opacity-75{% endif %}"></i> Pendências
                         </a>
+                        {% endif %}
                     </li>
                     
 
@@ -536,6 +545,29 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 </script>
+
+
+    <!-- Modal Plano Avancado -->
+    <div class="modal fade" id="modalAdvancedPlan" tabindex="-1" aria-labelledby="modalAdvancedPlanLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                <div class="modal-header bg-light border-bottom-0">
+                    <h5 class="modal-title fw-bold text-dark" id="modalAdvancedPlanLabel">
+                        <i class="fa-solid fa-lock text-warning me-2"></i> Recurso do plano Avançado
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4 text-center">
+                    <i class="fa-solid fa-star fa-3x text-warning mb-3"></i>
+                    <p class="text-muted fw-medium px-3">Este recurso está disponível apenas no plano Avançado. Faça o upgrade para liberar esta funcionalidade e ter acesso à gestão completa da sua banda.</p>
+                </div>
+                <div class="modal-footer bg-light border-top-0 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill fw-medium px-4" data-bs-dismiss="modal">Agora não</button>
+                    <a href="{% if band %}{% url 'support_list' band.slug %}{% else %}#{% endif %}" class="btn btn-warning rounded-pill fw-bold text-dark px-4">Conhecer o plano Avançado</a>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 </html>
