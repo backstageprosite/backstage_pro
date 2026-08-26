@@ -63,9 +63,14 @@
 
 {% block content %}
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <h4 class="fw-bold m-0 text-truncate" style="max-width: 100%;">Gerenciar Hospedagem: <span class="text-primary">{{ room_list.show.city }}</span></h4>
-        <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
+    <h4 class="fw-bold m-0 text-truncate" style="max-width: 100%;">Gerenciar Hospedagem: <span class="text-primary">{{ room_list.show.city }}</span></h4>
+    <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+        <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 d-flex align-items-center"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
+        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark rounded-pill shadow-sm px-4 fw-bold d-flex align-items-center transition-hover">
+            <i class="fa-solid fa-file-pdf me-2 fs-5"></i> PDF Room List
+        </a>
     </div>
+</div>
 
     {% if messages %}
         {% for message in messages %}
@@ -108,7 +113,7 @@
                         <button class="btn btn-danger mb-md-2 btn-sm">Arquivar</button>
                     </form>
                     <div class="d-flex gap-2 mt-2 mt-md-0">
-                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 "><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        
                         {% if is_produtor %}
                         <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-md-2 "><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
                         {% endif %}
@@ -135,7 +140,7 @@
                     </div>
                     {% endif %}
                     <div class="d-flex gap-2">
-                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 "><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        
                         {% if is_produtor %}
                         <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-2 "><i class="fa-solid fa-file-pdf"></i> PDF Hotel</a>
                         {% endif %}
@@ -151,7 +156,7 @@
                         </button>
                     {% endif %}
                     <div class="d-flex gap-2 mt-2 mt-md-0">
-                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 "><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        
                         {% if is_produtor %}
                         <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-md-2 "><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
                         {% endif %}

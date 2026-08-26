@@ -821,10 +821,7 @@ def create_room(room_list_id, room_type, capacity, number_or_name, user, **kwarg
 
     number_or_name = number_or_name.strip() if number_or_name else number_or_name
 
-    if Room.objects.filter(room_list=locked_rl, number_or_name=number_or_name).exists():
-        raise DuplicateRoomNumberError(
-            f"Já existe um quarto '{number_or_name}' nesta Room List."
-        )
+    
 
     allowed_kwargs = {k: v for k, v in kwargs.items() if k in {'beds_config', 'has_ac', 'order'}}
 
@@ -841,10 +838,6 @@ def create_room(room_list_id, room_type, capacity, number_or_name, user, **kwarg
         with transaction.atomic():
             room.save()
     except IntegrityError as exc:
-        if Room.objects.filter(room_list=locked_rl, number_or_name=number_or_name).exists():
-            raise DuplicateRoomNumberError(
-                f"Já existe um quarto '{number_or_name}' nesta Room List."
-            ) from exc
         raise
 
     locked_rl.content_revision += 1
