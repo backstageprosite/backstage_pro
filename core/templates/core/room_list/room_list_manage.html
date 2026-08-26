@@ -336,8 +336,7 @@
 <!-- Modal Sincronizar Integrantes -->
 <div class="modal fade" id="modalSincronizar" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content">
-            <form action="{% url 'room_list_sync' request.band.slug room_list.id %}" method="post" id="syncForm">
+        <form action="{% url 'room_list_sync' request.band.slug room_list.id %}" method="post" id="syncForm" class="modal-content">
                 {% csrf_token %}
                 <div class="modal-header bg-light">
                     <h5 class="modal-title fw-bold"><i class="fa-solid fa-users me-2 text-primary"></i> Sincronizar Integrantes</h5>
@@ -375,7 +374,6 @@
                     <button type="submit" class="btn btn-primary" id="btnSyncSubmit" onclick="this.disabled=true; this.form.submit();">Adicionar selecionados</button>
                 </div>
             </form>
-        </div>
     </div>
 </div>
 
