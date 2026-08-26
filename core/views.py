@@ -3714,6 +3714,7 @@ def lodging_template_manage(request, band_slug):
         'template': template,
     })
 
+@room_list_produtor_required
 def lodging_template_room_create(request, band_slug, pk):
     from core.models import LodgingTemplate, TemplateRoom
     template = get_object_or_404(LodgingTemplate, pk=pk, band=request.band)
@@ -3754,6 +3755,7 @@ def lodging_template_room_create(request, band_slug, pk):
             messages.error(request, f"Erro ao criar quartos: {str(e)}")
     return redirect('lodging_template_manage', band_slug=band_slug)
 
+@room_list_produtor_required
 def lodging_template_room_update(request, band_slug, pk, room_id):
     from core.models import LodgingTemplate, TemplateRoom
     template = get_object_or_404(LodgingTemplate, pk=pk, band=request.band)
@@ -3781,6 +3783,7 @@ def lodging_template_room_update(request, band_slug, pk, room_id):
             
     return redirect('lodging_template_manage', band_slug=band_slug)
 
+@room_list_produtor_required
 def lodging_template_room_delete(request, band_slug, pk, room_id):
     from core.models import LodgingTemplate, TemplateRoom
     template = get_object_or_404(LodgingTemplate, pk=pk, band=request.band)
