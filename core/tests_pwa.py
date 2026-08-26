@@ -235,7 +235,7 @@ class PWAManifestTestCase(TestCase):
         self.assertEqual(response['Cache-Control'], 'no-cache, no-store, must-revalidate')
         self.assertEqual(response['X-Content-Type-Options'], 'nosniff')
         self.assertEqual(response['Service-Worker-Allowed'], f'/{self.band_a.slug}/')
-        self.assertContains(response, f'"{self.band_a.slug}-v3"')
+        self.assertContains(response, f'"backstage-{self.band_a.slug}-v4"')
         self.assertContains(response, f'"/{self.band_a.slug}/"')
         self.assertNotContains(response, self.band_b.slug)
         self.assertContains(response, 'skipWaiting')
@@ -331,7 +331,7 @@ class PWAManifestTestCase(TestCase):
         response = self.client.get(f'/{self.band_a.slug}/calendario/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'href="/{self.band_a.slug}/instalar-aplicativo/"')
-        self.assertContains(response, 'Instalar aplicativo')
+        self.assertContains(response, 'Instalar Aplicativo')
         self.assertContains(response, 'pwa-install.js')
         self.assertContains(response, 'iosInstallModal')
         self.assertNotContains(response, 'Instalar Backstage Pro')
@@ -349,7 +349,7 @@ class PWAManifestTestCase(TestCase):
         self.assertContains(response, 'Instalar Backstage Pro')
         self.assertContains(response, 'pwa-install.js')
         self.assertContains(response, 'iosInstallModal')
-        self.assertNotContains(response, 'Instalar aplicativo')
+        self.assertNotContains(response, 'Instalar Aplicativo')
 
     def test_pwa_install_button_landing_and_admin_master(self):
         """Testa se a página inicial e admin-master não possuem o botão."""

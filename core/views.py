@@ -322,7 +322,7 @@ def dashboard_view(request, band_slug):
 
     administrative_notices = None
 
-    user_is_band_producer = request.user.band == band and request.user.is_produtor()
+    user_is_band_producer = request.user.band == band and request.user.role in ['PRODUTOR', 'EMPRESARIO']
 
 
 
