@@ -401,7 +401,7 @@ class RoomForm(forms.ModelForm):
         labels = {
             'type': 'Tipo',
             'capacity': 'Capacidade',
-            'number_or_name': 'Número ou nome do quarto',
+            'number_or_name': 'Número do quarto',
             'beds_config': 'Configuração das camas',
             'has_ac': 'Possui ar-condicionado',
         }
@@ -454,7 +454,7 @@ class TemplateRoomForm(forms.ModelForm):
         labels = {
             'type': 'Tipo',
             'capacity': 'Capacidade',
-            'number_or_name': 'Número ou nome do quarto',
+            'number_or_name': 'Número do quarto',
             'beds_config': 'Configuração das camas',
             'has_ac': 'Possui ar-condicionado',
         }

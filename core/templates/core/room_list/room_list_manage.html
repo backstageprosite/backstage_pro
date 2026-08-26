@@ -2,6 +2,62 @@
 {% load static %}
 
 {% block title %}Gerenciar Hospedagem - {{ request.band.name }}
+
+<!-- Modal Adicionar Quarto -->
+<div class="modal fade" id="modalAdicionarQuarto" tabindex="-1" aria-labelledby="modalAdicionarQuartoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'room_list_room_create' request.band.slug room_list.id %}">
+                {% csrf_token %}
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalAdicionarQuartoLabel">Adicionar Quarto</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Quantidade de quartos a adicionar</label>
+                        <select name="quantity" class="form-select">
+                            {% for i in '12345678901234567890'|make_list %}
+                                <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Número do quarto (opcional)</label>
+                        <input type="text" name="number_or_name" class="form-control" placeholder="Deixe em branco para 'Sem número'">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tipo</label>
+                        <select name="type" class="form-select" required>
+                            <option value="SGL">Single (SGL) - 1 pessoa</option>
+                            <option value="DBL">Double (DBL) - 2 pessoas</option>
+                            <option value="TPL">Triple (TPL) - 3 pessoas</option>
+                            <option value="QPL">Quadruple (QPL) - 4 pessoas</option>
+                            <option value="EXC">Executive/Suite (EXC)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Capacidade</label>
+                        <input type="number" name="capacity" class="form-control" value="1" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Configuração das camas (opcional)</label>
+                        <input type="text" name="beds_config" class="form-control" placeholder="Ex: 1 casal, 2 solteiro">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="has_ac" id="has_ac" checked>
+                        <label class="form-check-label" for="has_ac">Possui ar-condicionado</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block content %}
@@ -32,7 +88,7 @@
             <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0 d-flex flex-column d-md-block gap-2">
                 {% if room_list.status == 'RASCUNHO' %}
                     <a href="{% url 'room_list_edit' request.band.slug room_list.id %}" class="btn btn-warning mb-md-2">Editar Dados</a>
-                    <a href="{% url 'room_list_room_create' request.band.slug room_list.id %}" class="btn btn-primary mb-md-2">Adicionar Quarto</a>
+                    <button type="button" class="btn btn-primary mb-md-2" data-bs-toggle="modal" data-bs-target="#modalAdicionarQuarto">Adicionar Quarto</button>
 
                     <hr>
                     <button type="button" class="btn btn-outline-primary mb-md-2 btn-sm" data-bs-toggle="modal" data-bs-target="#modalSincronizar" {% if room_list.status != 'RASCUNHO' %}disabled{% endif %}>
@@ -51,9 +107,9 @@
                         <button class="btn btn-danger mb-md-2 btn-sm">Arquivar</button>
                     </form>
                     <div class="d-flex gap-2 mt-2 mt-md-0">
-                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
                         {% if is_produtor %}
-                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-md-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
+                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-md-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
                         {% endif %}
                     </div>
                 {% elif room_list.status == 'PUBLICADA' %}
@@ -78,9 +134,9 @@
                     </div>
                     {% endif %}
                     <div class="d-flex gap-2">
-                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
                         {% if is_produtor %}
-                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF Hotel</a>
+                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF Hotel</a>
                         {% endif %}
                     </div>
                 {% elif room_list.status == 'ARQUIVADA' %}
@@ -94,9 +150,9 @@
                         </button>
                     {% endif %}
                     <div class="d-flex gap-2 mt-2 mt-md-0">
-                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
+                        <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark mb-md-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF Room List</a>
                         {% if is_produtor %}
-                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-outline-dark mb-md-2 btn-sm flex-fill px-1"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
+                        <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-md-2 flex-fill"><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
                         {% endif %}
                     </div>
                 {% endif %}
@@ -343,5 +399,61 @@ function toggleAllIntegrantes(source) {
     }
 }
 </script>
+
+
+<!-- Modal Adicionar Quarto -->
+<div class="modal fade" id="modalAdicionarQuarto" tabindex="-1" aria-labelledby="modalAdicionarQuartoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'room_list_room_create' request.band.slug room_list.id %}">
+                {% csrf_token %}
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalAdicionarQuartoLabel">Adicionar Quarto</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Quantidade de quartos a adicionar</label>
+                        <select name="quantity" class="form-select">
+                            {% for i in '12345678901234567890'|make_list %}
+                                <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Número do quarto (opcional)</label>
+                        <input type="text" name="number_or_name" class="form-control" placeholder="Deixe em branco para 'Sem número'">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tipo</label>
+                        <select name="type" class="form-select" required>
+                            <option value="SGL">Single (SGL) - 1 pessoa</option>
+                            <option value="DBL">Double (DBL) - 2 pessoas</option>
+                            <option value="TPL">Triple (TPL) - 3 pessoas</option>
+                            <option value="QPL">Quadruple (QPL) - 4 pessoas</option>
+                            <option value="EXC">Executive/Suite (EXC)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Capacidade</label>
+                        <input type="number" name="capacity" class="form-control" value="1" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Configuração das camas (opcional)</label>
+                        <input type="text" name="beds_config" class="form-control" placeholder="Ex: 1 casal, 2 solteiro">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="has_ac" id="has_ac" checked>
+                        <label class="form-check-label" for="has_ac">Possui ar-condicionado</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

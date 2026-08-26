@@ -290,16 +290,25 @@
                         <p>{{ show.catering|linebreaksbr }}</p>
                     </div>
                     {% endif %}
-                    {% if show.wardrobe %}
-                    <div class="col-6 mb-2">
-                        <h6 class="text-muted"><i class="fa-solid fa-shirt me-1"></i> Figurino</h6>
-                        <p>{{ show.wardrobe|linebreaksbr }}</p>
-                    </div>
-                    {% endif %}
-                    {% if show.attractions %}
-                    <div class="col-12 mb-2 mt-1">
-                        <h6 class="text-muted"><i class="fa-solid fa-users me-1"></i> Outras Atrações no Evento</h6>
-                        <p class="mb-1">{{ show.attractions|linebreaksbr }}</p>
+                    {% if show.wardrobe or show.attractions %}
+                    <div class="col-12 mb-2">
+                        <div class="d-flex gap-4">
+                            {% if show.wardrobe %}
+                            <div class="flex-fill">
+                                <h6 class="text-muted"><i class="fa-solid fa-shirt me-1"></i> Figurino</h6>
+                                <p>{{ show.wardrobe|linebreaksbr }}</p>
+                            </div>
+                            {% endif %}
+                            {% if show.wardrobe and show.attractions %}
+                            <div style="border-left: 1px solid #dee2e6;"></div>
+                            {% endif %}
+                            {% if show.attractions %}
+                            <div class="flex-fill">
+                                <h6 class="text-muted"><i class="fa-solid fa-users me-1"></i> Outras Atrações no Evento</h6>
+                                <p class="mb-1">{{ show.attractions|linebreaksbr }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -419,7 +428,7 @@
     <div id="print-footer" class="print-only" style="border-top: 1px solid #ddd; padding-top: 5px; font-size: 11px;">
         <div class="d-flex w-100 justify-content-between align-items-center mb-1 px-1">
             <span style="flex: 1; text-align: left;"><strong>Documento:</strong> [{{ show.date|date:"d-m-Y" }}] {{ show.title }}</span>
-            <span style="flex: 1; text-align: center;">Desenvolvido por Backstage Pro - @backstagepro.site</span>
+            <span style="flex: 1; text-align: center;">Desenvolvido por Backstage Pro<br>@backstagepro.site</span>
             <span style="flex: 1; text-align: right;"><strong>Gerado em:</strong> <span id="current-datetime"></span></span>
         </div>
     </div>

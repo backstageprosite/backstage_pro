@@ -14,12 +14,12 @@
 <!-- Filtros -->
 <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
     <div class="card-body">
-        <form method="GET" class="row g-3 align-items-end">
-            <div class="col-md-3">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-2 col-lg-2">
                 <label class="form-label text-muted fw-bold" style="font-size: 0.85rem;">Data Inicial</label>
                 <input type="date" name="date_start" class="form-control rounded-3" value="{{ request.GET.date_start }}">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2 col-lg-2">
                 <label class="form-label text-muted fw-bold" style="font-size: 0.85rem;">Data Final</label>
                 <input type="date" name="date_end" class="form-control rounded-3" value="{{ request.GET.date_end }}">
             </div>

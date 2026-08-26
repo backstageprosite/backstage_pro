@@ -294,18 +294,19 @@
                             <i class="fa-solid fa-address-book fa-fw me-2 {% if request.resolver_match.url_name != 'contatos_list' %}opacity-75{% endif %}"></i> Contatos
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a href="{% if band %}{% url 'relatorios_index' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios_index' or request.resolver_match.url_name == 'relatorio_financeiro' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
-                            <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios_index' and request.resolver_match.url_name != 'relatorio_financeiro' %}opacity-75{% endif %}"></i> Relatórios
-                        </a>
-                    </li>
-                    {% endif %}
+
                     
                     <li class="nav-item">
                         <a href="{% url 'banco_de_dados_global' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'banco_de_dados_global' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-database fa-fw me-2 {% if request.resolver_match.url_name != 'banco_de_dados_global' %}opacity-75{% endif %}"></i> Banco de Dados
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{% if band %}{% url 'relatorios_index' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios_index' or request.resolver_match.url_name == 'relatorio_financeiro' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios_index' and request.resolver_match.url_name != 'relatorio_financeiro' %}opacity-75{% endif %}"></i> Relatórios
+                        </a>
+                    </li>
+                    {% endif %}
 
                     <li class="nav-item">
                         <a href="{% if band %}{% url 'parceiros' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'parceiros' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">

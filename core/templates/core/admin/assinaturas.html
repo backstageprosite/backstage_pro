@@ -12,15 +12,15 @@
 <!-- Filtros e Busca -->
 <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
     <div class="card-body">
-        <form method="GET" class="row g-3 align-items-end">
-            <div class="col-md-4">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-3">
                 <label class="form-label text-muted small fw-bold text-uppercase">Busca Livre</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-search text-muted"></i></span>
                     <input type="text" name="q" class="form-control border-start-0 ps-0 bg-light" placeholder="Banda ou Responsável..." value="{{ request.GET.q }}">
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2 col-lg-2">
                 <label class="form-label text-muted small fw-bold text-uppercase">Status</label>
                 <select name="status" class="form-select bg-light">
                     <option value="">Todos</option>
@@ -32,7 +32,7 @@
                     <option value="CANCELADO" {% if request.GET.status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2 col-lg-2">
                 <label class="form-label text-muted small fw-bold text-uppercase">Plano</label>
                 <select name="cycle" class="form-select bg-light">
                     <option value="">Todos</option>
@@ -175,7 +175,7 @@
 
                                         <div class="row">
                                             <input type="hidden" name="plan_name" value="{{ sub.plan_name }}">
-                                            <div class="col-md-4 mb-3">
+                                            <div class="col-md-3">
                                                 <label class="form-label fw-semibold">Plano</label>
                                                 <select name="billing_cycle" class="form-select">
                                                     {% for val, display in form_create.fields.billing_cycle.choices %}
@@ -183,22 +183,22 @@
                                                     {% endfor %}
                                                 </select>
                                             </div>
-                                            <div class="col-md-4 mb-3">
+                                            <div class="col-md-3">
                                                 <label class="form-label fw-semibold">Valor Contratado</label>
                                                 <input type="number" step="0.01" name="contracted_value" class="form-control" value="{{ sub.contracted_value|stringformat:'s' }}">
                                             </div>
                                         </div>
 
                                         <div class="row">
-                                            <div class="col-md-4 mb-3">
+                                            <div class="col-md-3">
                                                 <label class="form-label fw-semibold">Data Inicial</label>
                                                 <input type="date" name="start_date" class="form-control" value="{{ sub.start_date|date:'Y-m-d' }}">
                                             </div>
-                                            <div class="col-md-4 mb-3">
+                                            <div class="col-md-3">
                                                 <label class="form-label fw-semibold">Próximo Vencimento</label>
                                                 <input type="date" name="next_due_date" class="form-control" value="{{ sub.next_due_date|date:'Y-m-d' }}">
                                             </div>
-                                            <div class="col-md-4 mb-3">
+                                            <div class="col-md-3">
                                                 <label class="form-label fw-semibold">Status</label>
                                                 <select name="status" class="form-select">
                                                     {% for val, display in form_create.fields.status.choices %}
@@ -301,7 +301,7 @@
 
                     <div class="row">
                         <input type="hidden" name="plan_name" value="Mensal">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3">
                             <label class="form-label fw-semibold">Plano</label>
                             <select name="billing_cycle" class="form-select">
                                 {% for val, display in form_create.fields.billing_cycle.choices %}
@@ -309,22 +309,22 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3">
                             <label class="form-label fw-semibold">Valor Contratado</label>
                             <input type="number" step="0.01" name="contracted_value" class="form-control" value="300.00" required>
                         </div>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3">
                             <label class="form-label fw-semibold">Data Inicial</label>
                             <input type="date" name="start_date" class="form-control">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3">
                             <label class="form-label fw-semibold">Próximo Vencimento</label>
                             <input type="date" name="next_due_date" class="form-control">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3">
                             <label class="form-label fw-semibold">Status Inicial</label>
                             <select name="status" class="form-select">
                                 {% for val, display in form_create.fields.status.choices %}

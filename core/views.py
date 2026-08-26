@@ -3449,15 +3449,23 @@ def room_list_room_create(request, band_slug, pk):
         if form.is_valid():
             try:
                 data = form.cleaned_data.copy()
-                room_list_services.create_room(
-                    room_list_id=room_list.id,
-                    room_type=data.pop('type'),
-                    capacity=data.pop('capacity'),
-                    number_or_name=data.pop('number_or_name'),
-                    user=request.user,
-                    **data
-                )
-                messages.success(request, "Quarto adicionado com sucesso.")
+                quantity = int(request.POST.get('quantity', 1))
+                room_number = data.pop('number_or_name')
+                if not room_number:
+                    room_number = 'Sem número'
+                
+                for _ in range(quantity):
+                    room_list_services.create_room(
+                        room_list_id=room_list.id,
+                        room_type=data.get('type'),
+                        capacity=data.get('capacity'),
+                        number_or_name=room_number,
+                        user=request.user,
+                        beds_config=data.get('beds_config'),
+                        has_ac=data.get('has_ac', False)
+                    )
+                msg = f"1 quarto adicionado com sucesso." if quantity == 1 else f"{quantity} quartos adicionados com sucesso."
+                messages.success(request, msg)
                 return redirect('room_list_manage', band_slug=band_slug, pk=room_list.id)
             except Exception as e:
                 messages.error(request, str(e))

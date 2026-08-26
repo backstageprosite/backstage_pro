@@ -8,12 +8,12 @@
 <!-- Barra de Filtros -->
 <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
     <div class="card-body">
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Nome ou Contato</label>
                 <input type="text" name="q" class="form-control form-control-sm" placeholder="Buscar..." value="{{ search_query|default:'' }}">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Tipo</label>
                 <select name="tipo" class="form-select form-select-sm">
                     <option value="">Todos</option>
@@ -22,15 +22,15 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Local</label>
                 <input type="text" name="local" class="form-control form-control-sm" placeholder="Buscar por local..." value="{{ search_location|default:'' }}">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2 col-lg-2">
                 <label class="form-label small fw-bold text-muted">Banda</label>
                 <input type="text" name="banda" class="form-control form-control-sm" placeholder="Buscar por banda..." value="{{ search_band|default:'' }}">
             </div>
-            <div class="col-12 text-end mt-3">
+            <div class="col-12 text-end mt-2">
                 <a href="{% url 'banco_de_dados_global' %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
                 <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
             </div>
@@ -49,9 +49,8 @@
                         <th class="py-3">Tipo</th>
                         <th class="py-3">Local</th>
                         <th class="py-3 text-center">Link</th>
-                        <th class="py-3">Info Públicas</th>
                         <th class="py-3">Banda</th>
-                        <th class="pe-4 py-3 text-end">Ações</th>
+                        <th class="pe-4 py-3 text-end">Visualizar</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -63,19 +62,19 @@
                         <td class="fw-medium text-dark phone-format">{{ contato.phone|default:"-" }}</td>
                         <td>
                             {% if contato.contact_type == 'FORNECEDOR' %}
-                                <span class="badge bg-secondary-subtle text-secondary px-3 py-2 border border-secondary border-opacity-25"><i class="fa-solid fa-truck-fast me-1"></i> Fornecedor</span>
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-truck-fast me-1"></i> Fornecedor</span>
                             {% elif contato.contact_type == 'CONTRATANTE' %}
-                                <span class="badge bg-primary-subtle text-primary px-3 py-2 border border-primary border-opacity-25"><i class="fa-solid fa-handshake me-1"></i> Contratante</span>
+                                <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-handshake me-1"></i> Contratante</span>
                             {% elif contato.contact_type == 'ESTABELECIMENTO' %}
-                                <span class="badge bg-dark-subtle text-dark px-3 py-2 border border-dark border-opacity-25"><i class="fa-solid fa-building me-1"></i> Estabelecimento</span>
+                                <span class="badge bg-dark-subtle text-dark border border-dark border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-building me-1"></i> Estabelecimento</span>
                             {% elif contato.contact_type == 'HOSPEDAGEM' %}
-                                <span class="badge bg-info-subtle text-info px-3 py-2 border border-info border-opacity-25"><i class="fa-solid fa-hotel me-1"></i> Hospedagem</span>
+                                <span class="badge bg-info-subtle text-info border border-info border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-hotel me-1"></i> Hospedagem</span>
                             {% elif contato.contact_type == 'RESTAURANTE' %}
-                                <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-2 border border-warning border-opacity-25"><i class="fa-solid fa-utensils me-1"></i> Restaurante</span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-utensils me-1"></i> Restaurante</span>
                             {% elif contato.contact_type == 'PRODUTOR' %}
-                                <span class="badge bg-danger-subtle text-danger px-3 py-2 border border-danger border-opacity-25"><i class="fa-solid fa-user-tie me-1"></i> Produtor</span>
+                                <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-user-tie me-1"></i> Produtor</span>
                             {% else %}
-                                <span class="badge bg-light text-dark px-3 py-2 border">{{ contato.get_contact_type_display }}</span>
+                                <span class="badge bg-light text-dark border d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em">{{ contato.get_contact_type_display }}</span>
                             {% endif %}
                         </td>
                         <td class="text-muted">{{ contato.location|default:"-" }}</td>
@@ -84,13 +83,6 @@
                                 <a href="{{ contato.link }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-circle"><i class="fa-solid fa-link"></i></a>
                             {% else %}
                                 <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-muted">
-                            {% if contato.public_information %}
-                                <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="popover" data-bs-trigger="focus" title="Informações Públicas" data-bs-content="{{ contato.public_information }}">Ver info</button>
-                            {% else %}
-                                -
                             {% endif %}
                         </td>
                         <td>
@@ -104,7 +96,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
+                        <td colspan="7" class="text-center py-5 text-muted">
                             <i class="fa-solid fa-database fs-1 mb-3 opacity-50"></i>
                             <h5>Nenhum contato encontrado no Banco de Dados</h5>
                             <p class="mb-0">Tente buscar por outros termos ou verifique se as bandas compartilharam contatos.</p>

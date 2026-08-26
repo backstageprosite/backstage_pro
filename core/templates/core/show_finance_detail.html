@@ -437,25 +437,16 @@
                             </div>
                             <div class="text-end mt-2">
                                 <button type="submit" name="submit_receipt" class="btn btn-danger rounded-pill px-4 fw-bold">
-                                    {% include "core/includes/modal_editar_despesa.html" %}
-
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                    <i class="bi bi-plus-circle me-1"></i> Salvar Custo
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                {% else %}
-                <div class="text-center py-4 bg-light rounded border mb-4">
-                    <p class="text-muted mb-0">Nenhum custo cadastrado para este show.</p>
-                </div>
-                {% endif %}
-                
-                
             </div>
         </div>
 
-        <hr class="border-secondary opacity-25 my-4">
+    <hr class="border-secondary opacity-25 my-4">
 
         <!-- Custos com Equipe -->
         <div class="row">
