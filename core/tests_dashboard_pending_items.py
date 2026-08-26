@@ -11,7 +11,7 @@ User = get_user_model()
 class DashboardPendingItemsTests(TestCase):
     def setUp(self):
         # Create Band A
-        self.band_a = Band.objects.create(name="Band A", slug="band-a", is_active=True)
+        self.band_a = Band.objects.create(name="Band A", slug="band-a", is_active=True, plan_type="AVANCADO")
         self.produtor_a = User.objects.create_user(username="prod_a", password="pwd", email="pa@test.com", role="PRODUTOR", band=self.band_a)
         self.integrante_a = User.objects.create_user(username="int_a", password="pwd", email="ia@test.com", role="INTEGRANTE", band=self.band_a)
 
