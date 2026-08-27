@@ -1,4 +1,5 @@
-﻿from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST
 
 import datetime
 
@@ -110,7 +111,7 @@ def termos_de_uso_view(request):
 
     """
 
-    PÃ¡gina de Termos de Uso.
+    Página de Termos de Uso.
 
     """
 
@@ -122,7 +123,7 @@ def politica_de_privacidade_view(request):
 
     """
 
-    PÃ¡gina de PolÃ­tica de Privacidade.
+    Página de Política de Privacidade.
 
     """
 
@@ -144,13 +145,13 @@ def band_required(view_func):
 
         if request.user.band != band and not request.user.is_superuser:
 
-            raise PermissionDenied("VocÃª nÃ£o pertence a esta banda.")
+            raise PermissionDenied("Você não pertence a esta banda.")
 
 
 
         if not band.is_active and not request.user.is_superuser:
 
-            raise PermissionDenied("O acesso desta banda ao Backstage Pro estÃ¡ temporariamente suspenso. Entre em contato com a administraÃ§Ã£o.")
+            raise PermissionDenied("O acesso desta banda ao Backstage Pro está temporariamente suspenso. Entre em contato com a administração.")
 
 
 
@@ -206,13 +207,13 @@ class BandLoginView(LoginView):
 
                 if request.user.band != band:
 
-                    raise PermissionDenied("VocÃª nÃ£o pertence a esta banda.")
+                    raise PermissionDenied("Você não pertence a esta banda.")
 
                 return redirect('dashboard', band_slug=band.slug)
 
             else:
 
-                raise PermissionDenied("VocÃª nÃ£o pertence a esta banda.")
+                raise PermissionDenied("Você não pertence a esta banda.")
 
 
 
@@ -262,7 +263,7 @@ class BandLoginView(LoginView):
 
         if not band.is_active and not user.is_superuser:
 
-            messages.error(self.request, "O acesso desta banda estÃ¡ suspenso. Procure a administraÃ§Ã£o.")
+            messages.error(self.request, "O acesso desta banda está suspenso. Procure a administração.")
 
             return self.form_invalid(form)
 
@@ -270,7 +271,7 @@ class BandLoginView(LoginView):
 
         if user.band != band and not user.is_superuser:
 
-            messages.error(self.request, "UsuÃ¡rio nÃ£o pertence a esta banda.")
+            messages.error(self.request, "Usuário não pertence a esta banda.")
 
             return self.form_invalid(form)
 
@@ -418,7 +419,7 @@ def pending_list_view(request, band_slug):
 
         from django.core.exceptions import PermissionDenied
 
-        raise PermissionDenied("Apenas produtores podem visualizar ou gerenciar as pendÃªncias.")
+        raise PermissionDenied("Apenas produtores podem visualizar ou gerenciar as pendências.")
 
 
 
@@ -503,7 +504,7 @@ def calendario(request, band_slug):
 
     """
 
-    Tela principal que exibirÃ¡ o calendÃ¡rio e a lista de shows da banda.
+    Tela principal que exibirá o calendário e a lista de shows da banda.
 
     """
 
@@ -527,7 +528,7 @@ def show_detail(request, band_slug, pk):
 
     """
 
-    Detalhes de um show especÃ­fico.
+    Detalhes de um show específico.
 
     """
 
@@ -535,7 +536,7 @@ def show_detail(request, band_slug, pk):
 
 
 
-    # Processamento do formulÃ¡rio de comprovante (sÃ³ para produtor)
+    # Processamento do formulário de comprovante (só para produtor)
 
     form = None
 
@@ -647,7 +648,7 @@ def show_finance_detail_view(request, band_slug, pk):
 
             try:
 
-                # Se a string jÃ¡ contÃ©m um ponto e nÃ£o contÃ©m vÃ­rgula, e tem duas casas decimais, o JS jÃ¡ pode ter formatado
+                # Se a string já contém um ponto e não contém vírgula, e tem duas casas decimais, o JS já pode ter formatado
 
                 # Limpeza robusta:
 
@@ -661,13 +662,13 @@ def show_finance_detail_view(request, band_slug, pk):
 
                 elif ',' in fee_str:
 
-                    # SÃ³ tem vÃ­rgula, ex: 140000,00 -> 140000.00
+                    # Só tem vírgula, ex: 140000,00 -> 140000.00
 
                     fee_str = fee_str.replace(',', '.')
 
-                # Se sÃ³ tem ponto, ex: 140000.00, jÃ¡ estÃ¡ no formato correto para Decimal.
+                # Se só tem ponto, ex: 140000.00, já está no formato correto para Decimal.
 
-                # Se tiver mÃºltiplos pontos (ex: 140.000 sem vÃ­rgula)
+                # Se tiver múltiplos pontos (ex: 140.000 sem vírgula)
 
                 elif fee_str.count('.') > 1:
 
@@ -691,11 +692,11 @@ def show_finance_detail_view(request, band_slug, pk):
 
                 show.save()
 
-                messages.success(request, 'CachÃª atualizado com sucesso!')
+                messages.success(request, 'Cachê atualizado com sucesso!')
 
             except Exception as e:
 
-                messages.error(request, f'Valor de cachÃª invÃ¡lido: {str(e)}')
+                messages.error(request, f'Valor de cachê inválido: {str(e)}')
 
             return redirect('show_finance_detail', band_slug=band_slug, pk=show.id)
 
@@ -847,14 +848,14 @@ def show_finance_detail_view(request, band_slug, pk):
 
 def show_pdf_view(request, band_slug, pk):
     """
-    View especÃ­fica para o formato de impressÃ£o (PDF) para a banda.
-    Somente usuÃ¡rios com perfil de produtor (ou staff) devem acessar, mas
-    como o botÃ£o estÃ¡ no admin, basta verificar se Ã© produtor.
+    View específica para o formato de impressão (PDF) para a banda.
+    Somente usuários com perfil de produtor (ou staff) devem acessar, mas
+    como o botão está no admin, basta verificar se é produtor.
     """
     if not request.user.is_produtor():
         from django.contrib import messages
         from django.shortcuts import redirect
-        messages.error(request, 'VocÃª nÃ£o tem permissÃ£o para exportar PDFs.')
+        messages.error(request, 'Você não tem permissão para exportar PDFs.')
         return redirect('calendario', band_slug=band_slug)
 
     from django.shortcuts import get_object_or_404, render
@@ -880,7 +881,7 @@ def agenda_pdf_view(request, band_slug):
 
     """
 
-    View especÃ­fica para o formato de impressÃ£o (PDF) de toda a agenda.
+    View específica para o formato de impressão (PDF) de toda a agenda.
 
     Somente produtores/staff.
 
@@ -888,7 +889,7 @@ def agenda_pdf_view(request, band_slug):
 
     if not request.user.is_produtor():
 
-        messages.error(request, 'VocÃª nÃ£o tem permissÃ£o para exportar agendas.')
+        messages.error(request, 'Você não tem permissão para exportar agendas.')
 
         return redirect('calendario', band_slug=band_slug)
 
@@ -1127,7 +1128,7 @@ def relatorios_index_view(request, band_slug):
 
     if not request.user.is_produtor():
 
-        return HttpResponseForbidden("Apenas produtores tÃªm acesso aos relatÃ³rios.")
+        return HttpResponseForbidden("Apenas produtores têm acesso aos relatórios.")
 
 
 
@@ -1157,7 +1158,7 @@ def minha_assinatura_view(request, band_slug):
 
     if not request.user.is_produtor():
 
-        return HttpResponseForbidden("Apenas produtores tÃªm acesso aos relatÃ³rios.")
+        return HttpResponseForbidden("Apenas produtores têm acesso aos relatórios.")
 
 
 
@@ -1200,7 +1201,7 @@ def relatorios_view(request, band_slug):
 
     if not request.user.is_produtor():
 
-        return HttpResponseForbidden("Apenas produtores tÃªm acesso aos relatÃ³rios.")
+        return HttpResponseForbidden("Apenas produtores têm acesso aos relatórios.")
 
 
 
@@ -1357,7 +1358,7 @@ def arquivos_view(request, band_slug):
 
     if not request.user.is_produtor():
 
-        return HttpResponseForbidden("Apenas produtores tÃªm acesso aos arquivos.")
+        return HttpResponseForbidden("Apenas produtores têm acesso aos arquivos.")
 
 
 
@@ -1541,13 +1542,13 @@ def show_create_view(request, band_slug):
 
                 show.band = band
 
-                # CriaÃ§Ã£o mantÃ©m notification_revision=0
+                # Criação mantém notification_revision=0
 
                 show.save()
 
 
 
-                # Agenda notificaÃ§Ã£o de NEW_SHOW
+                # Agenda notificação de NEW_SHOW
 
                 from core.services.show_notifications import schedule_show_notifications
 
@@ -1700,9 +1701,9 @@ def show_edit_view(request, band_slug, pk):
 
                     # ou podemos passar um dict, mas a assinatura aceita "old_show" que pode
 
-                    # ser um objeto temporÃ¡rio simulado ou usamos uma dataclass mock.
+                    # ser um objeto temporário simulado ou usamos uma dataclass mock.
 
-                    # Como Python Ã© flexÃ­vel, criamos um dummy object para o old_show:
+                    # Como Python é flexível, criamos um dummy object para o old_show:
 
                     class OldShowMock:
 
@@ -1837,7 +1838,7 @@ def usuario_create_view(request, band_slug):
 
     if not request.user.is_produtor() and not request.user.is_superuser:
 
-        return HttpResponseForbidden("Apenas produtores podem adicionar usuÃ¡rios.")
+        return HttpResponseForbidden("Apenas produtores podem adicionar usuários.")
 
 
 
@@ -1855,11 +1856,11 @@ def usuario_create_view(request, band_slug):
 
             user.band = band
 
-            # A senha Ã© hasheada no mÃ©todo save do form
+            # A senha é hasheada no método save do form
 
             user.save()
 
-            messages.success(request, "UsuÃ¡rio criado com sucesso!")
+            messages.success(request, "Usuário criado com sucesso!")
 
             return redirect('usuarios_list', band_slug=band.slug)
 
@@ -1891,7 +1892,7 @@ def usuario_edit_view(request, band_slug, pk):
 
     if not request.user.is_produtor() and not request.user.is_superuser:
 
-        return HttpResponseForbidden("Apenas produtores podem editar usuÃ¡rios.")
+        return HttpResponseForbidden("Apenas produtores podem editar usuários.")
 
 
 
@@ -1909,7 +1910,7 @@ def usuario_edit_view(request, band_slug, pk):
 
             form.save()
 
-            messages.success(request, "UsuÃ¡rio atualizado com sucesso!")
+            messages.success(request, "Usuário atualizado com sucesso!")
 
             return redirect('usuarios_list', band_slug=band.slug)
 
@@ -1943,7 +1944,7 @@ def usuario_delete_view(request, band_slug, pk):
 
     if not request.user.is_produtor() and not request.user.is_superuser:
 
-        return HttpResponseForbidden("Apenas produtores podem excluir usuÃ¡rios.")
+        return HttpResponseForbidden("Apenas produtores podem excluir usuários.")
 
 
 
@@ -1957,7 +1958,7 @@ def usuario_delete_view(request, band_slug, pk):
 
         user_to_delete.delete()
 
-        messages.success(request, "UsuÃ¡rio excluÃ­do com sucesso!")
+        messages.success(request, "Usuário excluído com sucesso!")
 
 
 
@@ -1993,11 +1994,11 @@ def usuario_reset_password_view(request, band_slug, pk):
 
         if not new_password or not confirm_password:
 
-            messages.error(request, "As senhas nÃ£o podem ser vazias.")
+            messages.error(request, "As senhas não podem ser vazias.")
 
         elif new_password != confirm_password:
 
-            messages.error(request, "As senhas nÃ£o conferem. Tente novamente.")
+            messages.error(request, "As senhas não conferem. Tente novamente.")
 
         else:
 
@@ -2005,7 +2006,7 @@ def usuario_reset_password_view(request, band_slug, pk):
 
             user_to_edit.save()
 
-            messages.success(request, f"Senha do usuÃ¡rio {user_to_edit.username} redefinida com sucesso!")
+            messages.success(request, f"Senha do usuário {user_to_edit.username} redefinida com sucesso!")
 
 
 
@@ -2151,9 +2152,9 @@ def banco_de_dados_view(request):
     user_band = request.user.band
     if not request.user.is_superuser:
         if not user_band or not user_band.is_active:
-            return HttpResponseForbidden("Acesso negado: VÃ­nculo com banda ativa necessÃ¡rio.")
+            return HttpResponseForbidden("Acesso negado: Vínculo com banda ativa necessário.")
         if request.user.role not in ['PRODUTOR', 'EMPRESARIO', 'INTEGRANTE']:
-            return HttpResponseForbidden("Acesso negado: Perfil nÃ£o autorizado.")
+            return HttpResponseForbidden("Acesso negado: Perfil não autorizado.")
 
     contacts = Contact.objects.filter(
         is_shared_globally=True,
@@ -2214,7 +2215,7 @@ def contato_delete_view(request, band_slug, pk):
 
         contact.delete()
 
-        messages.success(request, "Contato excluÃ­do com sucesso!")
+        messages.success(request, "Contato excluído com sucesso!")
 
         return redirect('contatos_list', band_slug=band.slug)
 
@@ -2429,7 +2430,7 @@ def document_delete_view(request, band_slug, pk):
     band = get_object_or_404(Band, slug=band_slug)
 
     if not band.is_advanced:
-        raise PermissionDenied("Este recurso estÃ¡ disponÃ­vel apenas no plano AvanÃ§ado.")
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
 
     document = get_object_or_404(ContractDocument, pk=pk, show__band=band)
 
@@ -2441,7 +2442,7 @@ def document_delete_view(request, band_slug, pk):
 
         document.delete()
 
-        messages.success(request, "Documento excluÃ­do com sucesso!")
+        messages.success(request, "Documento excluído com sucesso!")
 
         next_url = request.GET.get('next')
 
@@ -2532,7 +2533,7 @@ def payment_delete_view(request, band_slug, pk):
     band = get_object_or_404(Band, slug=band_slug)
 
     if not band.is_advanced:
-        raise PermissionDenied("Este recurso estÃ¡ disponÃ­vel apenas no plano AvanÃ§ado.")
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
 
     payment = get_object_or_404(ShowPayment, pk=pk, show__band=band)
 
@@ -2641,7 +2642,7 @@ def teamcost_delete_view(request, band_slug, pk):
     band = get_object_or_404(Band, slug=band_slug)
 
     if not band.is_advanced:
-        raise PermissionDenied("Este recurso estÃ¡ disponÃ­vel apenas no plano AvanÃ§ado.")
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
 
     team_cost = get_object_or_404(ShowTeamCost, pk=pk, show__band=band)
 
@@ -2732,7 +2733,7 @@ def receipt_delete_view(request, band_slug, pk):
     band = get_object_or_404(Band, slug=band_slug)
 
     if not band.is_advanced:
-        raise PermissionDenied("Este recurso estÃ¡ disponÃ­vel apenas no plano AvanÃ§ado.")
+        raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
 
     receipt = get_object_or_404(FinancialReceipt, pk=pk, show__band=band)
 
@@ -2744,7 +2745,7 @@ def receipt_delete_view(request, band_slug, pk):
 
         receipt.delete()
 
-        messages.success(request, "Comprovante excluÃ­do com sucesso!")
+        messages.success(request, "Comprovante excluído com sucesso!")
 
         next_url = request.GET.get('next')
 
@@ -2787,7 +2788,7 @@ def add_dashboard_pending_item(request, band_slug):
 
     if (request.user.band != band and not request.user.is_superuser) or not request.user.is_produtor():
 
-        return HttpResponseForbidden("Apenas produtores vinculados Ã  banda podem gerenciar pendÃªncias.")
+        return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
 
 
 
@@ -2819,7 +2820,7 @@ def add_dashboard_pending_item(request, band_slug):
 
         pending_item.save()
 
-        messages.success(request, "PendÃªncia adicionada com sucesso.")
+        messages.success(request, "Pendência adicionada com sucesso.")
 
     else:
 
@@ -2860,7 +2861,7 @@ def delete_dashboard_pending_item(request, band_slug, pending_id):
 
     if (request.user.band != band and not request.user.is_superuser) or not request.user.is_produtor():
 
-        return HttpResponseForbidden("Apenas produtores vinculados Ã  banda podem gerenciar pendÃªncias.")
+        return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
 
     pending_item = get_object_or_404(BandDashboardPendingItem, id=pending_id, band=band)
 
@@ -2870,7 +2871,7 @@ def delete_dashboard_pending_item(request, band_slug, pending_id):
 
 
 
-    messages.success(request, "PendÃªncia excluÃ­da com sucesso.")
+    messages.success(request, "Pendência excluída com sucesso.")
 
 
 
@@ -2903,7 +2904,7 @@ def edit_dashboard_pending_item(request, band_slug, pending_id):
 
     if (request.user.band != band and not request.user.is_superuser) or not request.user.is_produtor():
 
-        return HttpResponseForbidden("Apenas produtores vinculados Ã  banda podem gerenciar pendÃªncias.")
+        return HttpResponseForbidden("Apenas produtores vinculados à banda podem gerenciar pendências.")
 
     pending_item = get_object_or_404(BandDashboardPendingItem, id=pending_id, band=band)
 
@@ -2937,7 +2938,7 @@ def edit_dashboard_pending_item(request, band_slug, pending_id):
 
         updated_item.save()
 
-        messages.success(request, "PendÃªncia atualizada com sucesso.")
+        messages.success(request, "Pendência atualizada com sucesso.")
 
     else:
 
@@ -3066,7 +3067,7 @@ def rider_list_view(request, band_slug):
 
             rider.delete()
 
-            messages.success(request, 'Rider excluÃ­do com sucesso!')
+            messages.success(request, 'Rider excluído com sucesso!')
 
             return redirect('rider_list', band_slug=band.slug)
 
@@ -3226,7 +3227,7 @@ def integrante_delete_view(request, band_slug, pk):
 
     integrante.delete()
 
-    messages.success(request, "Integrante excluÃ­do com sucesso.")
+    messages.success(request, "Integrante excluído com sucesso.")
 
     return redirect('integrantes_list', band_slug=band.slug)
 
@@ -3339,9 +3340,9 @@ def room_list_produtor_required(view_func):
         request.band = band
 
         if not request.user.is_active:
-            raise PermissionDenied("UsuÃ¡rio inativo.")
+            raise PermissionDenied("Usuário inativo.")
         if getattr(request.user, 'band_id', None) != request.band.id and not request.user.is_superuser:
-            raise PermissionDenied("Acesso negado Ã  banda.")
+            raise PermissionDenied("Acesso negado à banda.")
         if not request.user.is_produtor():
             raise PermissionDenied("Acesso restrito a produtores.")
 
@@ -3409,7 +3410,7 @@ def room_list_edit(request, band_slug, pk):
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
     except RoomListNotFoundError:
-        raise Http404("Room List nÃ£o encontrada.")
+        raise Http404("Room List não encontrada.")
 
     if request.method == 'POST':
         form = RoomListForm(request.POST, instance=room_list)
@@ -3441,14 +3442,14 @@ def room_list_manage(request, band_slug, pk):
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
     except RoomListNotFoundError:
-        raise Http404("Room List nÃ£o encontrada.")
+        raise Http404("Room List não encontrada.")
 
     if not is_produtor and room_list.status == "RASCUNHO":
         raise PermissionDenied("Acesso restrito.")
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
     except RoomListNotFoundError:
-        raise Http404("Room List nÃ£o encontrada.")
+        raise Http404("Room List não encontrada.")
 
     rooms = room_list.rooms.all().order_by('order', 'id')
     participants = room_list.participants.all()
@@ -3470,14 +3471,14 @@ def room_list_room_create(request, band_slug, pk):
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
     except RoomListNotFoundError:
-        raise Http404("Room List nÃ£o encontrada.")
+        raise Http404("Room List não encontrada.")
 
     if request.method == 'POST':
         try:
             quantity = int(request.POST.get('quantity', 1))
             room_number = request.POST.get('number_or_name', '').strip()
             if not room_number:
-                room_number = 'Sem nÃºmero'
+                room_number = 'Sem número'
                 
             room_type = request.POST.get('type')
             capacity = request.POST.get('capacity', 1)
@@ -3521,7 +3522,7 @@ def room_list_room_edit(request, band_slug, pk, room_id):
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
         room = room_list.rooms.get(id=room_id)
     except (RoomListNotFoundError, Room.DoesNotExist):
-        raise Http404("Quarto ou Room List nÃ£o encontrados.")
+        raise Http404("Quarto ou Room List não encontrados.")
 
     if request.method == 'POST':
         form = RoomForm(request.POST, instance=room)
@@ -3555,7 +3556,7 @@ def room_list_room_delete(request, band_slug, pk, room_id):
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
         room = room_list.rooms.get(id=room_id)
     except (RoomListNotFoundError, Room.DoesNotExist):
-        raise Http404("Quarto ou Room List nÃ£o encontrados.")
+        raise Http404("Quarto ou Room List não encontrados.")
 
     if request.method == 'POST':
         form = ActionConfirmForm(request.POST)
@@ -3582,14 +3583,14 @@ def room_list_delete(request, band_slug, pk):
     try:
         room_list = room_list_services.get_room_list_for_band(pk, request.band)
     except RoomListNotFoundError:
-        raise Http404("Room List nÃ£o encontrada.")
+        raise Http404("Room List não encontrada.")
 
     if request.method == 'POST':
         form = ActionConfirmForm(request.POST)
         if form.is_valid():
             try:
                 room_list_services.delete_room_list(room_list.id, request.user)
-                messages.success(request, "Room List excluÃ­da com sucesso.")
+                messages.success(request, "Room List excluída com sucesso.")
                 return redirect('room_list_index', band_slug=band_slug)
             except Exception as e:
                 messages.error(request, str(e))
@@ -3684,7 +3685,7 @@ def room_list_publish(request, band_slug, pk):
 def room_list_reopen(request, band_slug, pk):
     try:
         room_list_services.reopen_room_list(pk, request.user)
-        messages.success(request, 'Room List reaberta para ediÃ§Ã£o.')
+        messages.success(request, 'Room List reaberta para edição.')
     except (RoomListNotFoundError, BandAccessDeniedError) as e:
         raise Http404(str(e))
     except Exception as e:
@@ -3765,7 +3766,7 @@ def lodging_template_room_create(request, band_slug, pk):
             quantity = int(request.POST.get('quantity', 1))
             room_number = request.POST.get('number_or_name', '').strip()
             if not room_number:
-                room_number = 'Sem nÃºmero'
+                room_number = 'Sem número'
                 
             room_type = request.POST.get('type')
             capacity = request.POST.get('capacity', 1)
@@ -3808,11 +3809,11 @@ def lodging_template_room_update(request, band_slug, pk, room_id):
         try:
             room_number = request.POST.get('number_or_name', '').strip()
             if not room_number:
-                room_number = 'Sem nÃºmero'
+                room_number = 'Sem número'
                 
             # Allow same name if it's the current room
             if TemplateRoom.objects.filter(template=template, number_or_name=room_number).exclude(pk=room.pk).exists():
-                messages.error(request, f"JÃ¡ existe um quarto '{room_number}' neste modelo.")
+                messages.error(request, f"Já existe um quarto '{room_number}' neste modelo.")
             else:
                 room.number_or_name = room_number
                 room.type = request.POST.get('type')
@@ -3835,7 +3836,7 @@ def lodging_template_room_delete(request, band_slug, pk, room_id):
     
     if request.method == 'POST':
         room.delete()
-        messages.success(request, "Quarto excluÃ­do com sucesso.")
+        messages.success(request, "Quarto excluído com sucesso.")
         
     return redirect('lodging_template_manage', band_slug=band_slug)
 
@@ -3879,7 +3880,7 @@ def room_list_pdf_view(request, band_slug, pk):
             'rooms__participants__original_integrante'
         ).get(pk=pk, show__band=request.band)
     except RoomList.DoesNotExist:
-        raise Http404("Room List nÃ£o encontrada.")
+        raise Http404("Room List não encontrada.")
 
     is_produtor = request.user.is_produtor()
     if not is_produtor and room_list.status == RoomList.StatusChoices.RASCUNHO:
@@ -3888,7 +3889,7 @@ def room_list_pdf_view(request, band_slug, pk):
     context = {
         'band': request.band,
         'pdf_logo_base64': get_image_base64(request.band.logo),
-        'current_datetime': __import__('django.utils.timezone').utils.timezone.localtime().strftime('%d/%m/%Y Ã s %H:%M'),
+        'current_datetime': __import__('django.utils.timezone').utils.timezone.localtime().strftime('%d/%m/%Y às %H:%M'),
         'room_list': room_list,
         'rooms': room_list.rooms.all(),
         'participants': room_list.participants.filter(room__isnull=False),
@@ -3925,12 +3926,12 @@ def room_list_hotel_pdf_view(request, band_slug, pk):
             'rooms__participants__original_integrante'
         ).get(pk=pk, show__band=request.band)
     except RoomList.DoesNotExist:
-        raise Http404("Room List nÃ£o encontrada.")
+        raise Http404("Room List não encontrada.")
 
     context = {
         'band': request.band,
         'pdf_logo_base64': get_image_base64(request.band.logo),
-        'current_datetime': __import__('django.utils.timezone').utils.timezone.localtime().strftime('%d/%m/%Y Ã s %H:%M'),
+        'current_datetime': __import__('django.utils.timezone').utils.timezone.localtime().strftime('%d/%m/%Y às %H:%M'),
         'room_list': room_list,
         'rooms': room_list.rooms.all(),
         'participants': room_list.participants.filter(room__isnull=False),
@@ -3966,11 +3967,11 @@ def delete_room_view(request, band_slug, room_pk):
     room = get_object_or_404(Room, pk=room_pk, room_list__show__band=request.band)
 
     if room.room_list.status != RoomList.StatusChoices.RASCUNHO:
-        messages.error(request, "NÃ£o Ã© possÃ­vel excluir quartos de uma Room List que nÃ£o estÃ¡ em Rascunho.")
+        messages.error(request, "Não é possível excluir quartos de uma Room List que não está em Rascunho.")
         return redirect('room_list_manage', band_slug=band_slug, pk=room.room_list.pk)
 
     room.delete()
-    messages.success(request, "Quarto excluÃ­do com sucesso. Os ocupantes foram movidos para NÃ£o Alocados.")
+    messages.success(request, "Quarto excluído com sucesso. Os ocupantes foram movidos para Não Alocados.")
     return redirect('room_list_manage', band_slug=band_slug, pk=room.room_list.pk)
 
 @room_list_produtor_required
@@ -3978,7 +3979,7 @@ def delete_room_view(request, band_slug, room_pk):
 def room_list_participant_delete(request, band_slug, pk, participant_id):
     if request.method != 'POST':
         from django.core.exceptions import PermissionDenied
-        raise PermissionDenied('MÃ©todo nÃ£o permitido.')
+        raise PermissionDenied('Método não permitido.')
 
     from django.shortcuts import get_object_or_404, redirect
     from django.contrib import messages
@@ -3986,7 +3987,7 @@ def room_list_participant_delete(request, band_slug, pk, participant_id):
 
     room_list = get_object_or_404(RoomList, pk=pk, band__slug=band_slug)
     if room_list.status != 'RASCUNHO':
-        messages.error(request, 'NÃ£o Ã© possÃ­vel excluir integrantes de uma Room List que nÃ£o estÃ¡ em rascunho.')
+        messages.error(request, 'Não é possível excluir integrantes de uma Room List que não está em rascunho.')
         return redirect('room_list_manage', band_slug=band_slug, pk=pk)
 
     participant = get_object_or_404(RoomListParticipant, pk=participant_id, room_list=room_list)
@@ -4034,7 +4035,7 @@ def band_notices_create(request, band_slug):
                     notify_band_users(
                         band=notice.band,
                         event_type='AVISO',
-                        title='Aviso da ProduÃ§Ã£o',
+                        title='Aviso da Produção',
                         message=notice.message,
                         target_url=f'/{notice.band.slug}/painel/',
                         event_key_base=f'aviso_{notice.id}',
@@ -4092,14 +4093,14 @@ def band_notices_delete(request, band_slug, pk):
 
     if request.method != 'POST':
         from django.core.exceptions import PermissionDenied
-        raise PermissionDenied('MÃ©todo nÃ£o permitido.')
+        raise PermissionDenied('Método não permitido.')
 
     from core.models import BandNotice
     from django.shortcuts import get_object_or_404
 
     notice = get_object_or_404(BandNotice, pk=pk, band=request.band)
     notice.delete()
-    messages.success(request, 'Aviso excluÃ­do.')
+    messages.success(request, 'Aviso excluído.')
     return redirect('band_notices_index', band_slug=band_slug)
 
 @room_list_produtor_required
@@ -4144,5 +4145,4 @@ def room_list_observations_update(request, band_slug, pk):
             messages.error(request, str(e))
 
     return redirect('room_list_manage', band_slug=band_slug, pk=room_list.id)
-
 
