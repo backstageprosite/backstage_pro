@@ -450,11 +450,16 @@ def create_room_list(show_id, band_id, user, hotel_name, city, **kwargs):
     }
     filtered_kwargs = {k: v for k, v in kwargs.items() if k in allowed_fields}
 
+    default_obs = ""
+    if hasattr(band, 'lodging_template'):
+        default_obs = band.lodging_template.default_observations
+
     room_list = RoomList(
         band=band,
         show=locked_show,
         hotel_name=hotel_name,
         city=city,
+        observations=default_obs,
         **filtered_kwargs
     )
     room_list.full_clean()
@@ -555,7 +560,7 @@ def update_room_list(room_list_id, user, **kwargs):
 
     allowed_fields = {
         'hotel_name', 'city', 'address', 'contact', 'phone',
-        'reservation_code', 'check_in', 'check_out', 'notes'
+        'reservation_code', 'check_in', 'check_out', 'notes', 'observations'
     }
 
     changed = False
@@ -573,7 +578,7 @@ def update_room_list(room_list_id, user, **kwargs):
         return locked_rl
 
     locked_rl.content_revision += 1
-    locked_rl.save(update_fields=['hotel_name', 'city', 'address', 'contact', 'phone', 'reservation_code', 'check_in', 'check_out', 'notes', 'content_revision', 'updated_at'])
+    locked_rl.save(update_fields=['hotel_name', 'city', 'address', 'contact', 'phone', 'reservation_code', 'check_in', 'check_out', 'notes', 'observations', 'content_revision', 'updated_at'])
     return locked_rl
 
 

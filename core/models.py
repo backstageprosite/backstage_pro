@@ -1389,6 +1389,7 @@ class RoomList(models.Model):
     check_out = models.DateTimeField(blank=True, null=True)
 
     notes = models.TextField(blank=True, null=True)
+    observations = models.TextField(blank=True, default="", max_length=2000)
     status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.RASCUNHO)
 
     published_at = models.DateTimeField(blank=True, null=True)
@@ -1549,6 +1550,7 @@ class RoomListParticipant(models.Model):
 
 class LodgingTemplate(models.Model):
     band = models.OneToOneField('Band', on_delete=models.CASCADE, related_name='lodging_template')
+    default_observations = models.TextField(blank=True, default="", max_length=2000)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

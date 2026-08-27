@@ -22,7 +22,10 @@
         <div class="col-md-6">
             <p class="text-muted mb-0">Configure os quartos padrão que serão aplicados automaticamente ao criar uma nova hospedagem.</p>
         </div>
-        <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0 d-flex flex-column gap-2 d-md-block">
+        <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0 d-flex flex-column gap-2 flex-md-row justify-content-md-end">
+            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalObservacoesPadrao">
+                <i class="fa-solid fa-note-sticky me-1"></i> Observações
+            </button>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAdicionarQuarto">Adicionar Quarto</button>
         </div>
     </div>
@@ -185,4 +188,44 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Observações Padrão -->
+<div class="modal fade" id="modalObservacoesPadrao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{% url 'lodging_template_observations_update' band.slug %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Observações padrão do Room List</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Este texto será inserido automaticamente nas novas hospedagens e poderá ser editado individualmente.</p>
+                    <textarea name="default_observations" class="form-control" rows="5" maxlength="2000" id="defaultObsTextarea">{{ template.default_observations|default:'' }}</textarea>
+                    <div class="text-end text-muted small mt-1">
+                        <span id="defaultObsCounter">0</span>/2000 caracteres
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Observações Padrão</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('defaultObsTextarea');
+    const counter = document.getElementById('defaultObsCounter');
+    
+    if(textarea && counter) {
+        counter.textContent = textarea.value.length;
+        textarea.addEventListener('input', function() {
+            counter.textContent = this.value.length;
+        });
+    }
+});
+</script>
 {% endblock %}

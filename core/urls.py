@@ -113,6 +113,7 @@ urlpatterns += [
     path('relatorios/hospedagem/nova/', views.room_list_select_show, name='room_list_select_show'),
     path('shows/<int:show_id>/hospedagem/criar/', views.room_list_create, name='room_list_create'),
     path('hospedagem/<int:pk>/editar/', views.room_list_edit, name='room_list_edit'),
+    path('hospedagem/<int:pk>/observacoes/', views.room_list_observations_update, name='room_list_observations_update'),
 
 
     path('hospedagem/<int:pk>/', views.room_list_manage, name='room_list_manage'),
@@ -136,6 +137,7 @@ urlpatterns += [
 
     # Modelo Padrão
     path('configuracoes/hospedagem/modelo/', views.lodging_template_manage, name='lodging_template_manage'),
+    path('configuracoes/hospedagem/modelo/observacoes/', views.lodging_template_observations_update, name='lodging_template_observations_update'),
     path('configuracoes/hospedagem/modelo/<int:pk>/quarto/criar/', views.lodging_template_room_create, name='lodging_template_room_create'),
     path('configuracoes/hospedagem/modelo/<int:pk>/quarto/<int:room_id>/editar/', views.lodging_template_room_update, name='lodging_template_room_update'),
     path('configuracoes/hospedagem/modelo/<int:pk>/quarto/<int:room_id>/excluir/', views.lodging_template_room_delete, name='lodging_template_room_delete'),

@@ -94,6 +94,9 @@
             <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0 d-flex flex-column d-md-block gap-2">
                 {% if room_list.status == 'RASCUNHO' %}
                     <a href="{% url 'room_list_edit' request.band.slug room_list.id %}" class="btn btn-warning mb-md-2">Editar Dados</a>
+                    <button type="button" class="btn btn-secondary mb-md-2" data-bs-toggle="modal" data-bs-target="#modalObservacoes">
+                        <i class="fa-solid fa-note-sticky me-1"></i> Observações
+                    </button>
                     <button type="button" class="btn btn-primary mb-md-2" data-bs-toggle="modal" data-bs-target="#modalAdicionarQuarto">Adicionar Quarto</button>
 
                     <hr>
@@ -460,5 +463,66 @@ function toggleAllIntegrantes(source) {
         </div>
     </div>
 </div>
+</div>
+
+<!-- Modal Observações Individuais -->
+<div class="modal fade" id="modalObservacoes" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{% url 'room_list_observations_update' request.band.slug room_list.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Observações do PDF Room List</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea name="observations" class="form-control" rows="5" maxlength="2000" id="obsTextarea">{{ room_list.observations|default:'' }}</textarea>
+                    <div class="text-end text-muted small mt-1">
+                        <span id="obsCounter">0</span>/2000 caracteres
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnRestaurarPadrao">Restaurar Padrão da Banda</button>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Observações</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('obsTextarea');
+    const counter = document.getElementById('obsCounter');
+    const btnRestaurar = document.getElementById('btnRestaurarPadrao');
+    
+    const defaultObs = `{{ request.band.lodging_template.default_observations|default:''|escapejs }}`;
+    const hasDefault = {% if request.band.lodging_template and request.band.lodging_template.default_observations %}true{% else %}false{% endif %};
+    
+    if(textarea && counter) {
+        counter.textContent = textarea.value.length;
+        textarea.addEventListener('input', function() {
+            counter.textContent = this.value.length;
+        });
+        
+        if (btnRestaurar) {
+            btnRestaurar.addEventListener('click', function() {
+                if (!hasDefault || defaultObs.trim() === '') {
+                    alert("Nenhuma observação padrão foi cadastrada para esta banda.");
+                    return;
+                }
+                
+                if (confirm("Deseja substituir as observações atuais pelo padrão da banda?")) {
+                    textarea.value = defaultObs;
+                    counter.textContent = textarea.value.length;
+                }
+            });
+        }
+    }
+});
+</script>
 
 {% endblock %}
