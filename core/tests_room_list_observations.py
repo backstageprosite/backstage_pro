@@ -22,7 +22,7 @@ class RoomListObservationsTests(TestCase):
         self.client.login(username='produtor', password='123')
         url = reverse('lodging_template_observations_update', args=[self.band.slug])
         try:
-            response = self.client.post(url, {'default_observations': 'Obs PadrÇŸo'})
+            response = self.client.post(url, {'default_observations': 'Obs Padrao'})
         except PermissionDenied:
             pass
         else:
@@ -30,7 +30,7 @@ class RoomListObservationsTests(TestCase):
             else: self.assertEqual(response.status_code, 302) # or something
         self.assertEqual(response.status_code, 302)
         template = LodgingTemplate.objects.get(band=self.band)
-        self.assertEqual(template.default_observations, 'Obs PadrÃƒÆ’Ã‚Â£o')
+        self.assertEqual(template.default_observations, 'Obs Padrao')
 
     def test_default_observations_isolated_by_band(self):
         band2 = Band.objects.create(name='Banda 2', slug=band2.slug, plan_type='AVANCADO')
@@ -79,7 +79,7 @@ class RoomListObservationsTests(TestCase):
         print('REQUEST BAND:', self.band.slug)
         s = __import__('core.models', fromlist=['Show']).Show.objects.get(id=self.show.id)
         print('PLAN TYPE:', self.band.plan_type, self.band.is_advanced)
-        LodgingTemplate.objects.create(band=self.band, default_observations='PadrÃƒÆ’Ã‚Â£o da banda')
+        LodgingTemplate.objects.create(band=self.band, default_observations='Padrao da banda')
         self.client.login(username='produtor', password='123')
         url = reverse('room_list_create', args=[self.band.slug, self.show.id])
         try:
@@ -93,7 +93,7 @@ class RoomListObservationsTests(TestCase):
             print('RESPONSE:', response.content.decode())
         
         rl = RoomList.objects.first()
-        self.assertEqual(rl.observations, 'PadrÃƒÆ’Ã‚Â£o da banda')
+        self.assertEqual(rl.observations, 'Padrao da banda')
 
     def test_lodging_created_without_default_gets_empty_string(self):
         self.client.login(username='produtor', password='123')
@@ -113,8 +113,8 @@ class RoomListObservationsTests(TestCase):
         self.assertEqual(rl.observations, '')
 
     def test_editing_individual_observation_does_not_modify_default(self):
-        LodgingTemplate.objects.create(band=self.band, default_observations='PadrÃƒÆ’Ã‚Â£o da banda')
-        rl = RoomList.objects.create(band=self.band, show=self.show, hotel_name='H', city='C', observations='PadrÃƒÆ’Ã‚Â£o da banda')
+        LodgingTemplate.objects.create(band=self.band, default_observations='Padrao da banda')
+        rl = RoomList.objects.create(band=self.band, show=self.show, hotel_name='H', city='C', observations='Padrao da banda')
         
         self.client.login(username='produtor', password='123')
         url = reverse('room_list_observations_update', args=[self.band.slug, rl.id])
@@ -124,27 +124,27 @@ class RoomListObservationsTests(TestCase):
         self.assertEqual(rl.observations, 'Obs modificada')
         
         template = LodgingTemplate.objects.get(band=self.band)
-        self.assertEqual(template.default_observations, 'PadrÃƒÆ’Ã‚Â£o da banda')
+        self.assertEqual(template.default_observations, 'Padrao da banda')
 
     def test_altering_default_does_not_modify_old_lodgings(self):
         rl = RoomList.objects.create(band=self.band, show=self.show, hotel_name='H', city='C', observations='Antiga')
         
         self.client.login(username='produtor', password='123')
-        self.client.post(reverse('lodging_template_observations_update', args=[self.band.slug]), {'default_observations': 'Nova PadrÃƒÆ’Ã‚Â£o'})
+        self.client.post(reverse('lodging_template_observations_update', args=[self.band.slug]), {'default_observations': 'Nova Padrao'})
         
         rl.refresh_from_db()
         self.assertEqual(rl.observations, 'Antiga')
 
     def test_new_lodging_receives_updated_default(self):
         self.client.login(username='produtor', password='123')
-        self.client.post(reverse('lodging_template_observations_update', args=[self.band.slug]), {'default_observations': 'Nova PadrÃƒÆ’Ã‚Â£o'})
+        self.client.post(reverse('lodging_template_observations_update', args=[self.band.slug]), {'default_observations': 'Nova Padrao'})
         
         self.client.post(reverse('room_list_create', args=[self.band.slug, self.show.id]), {'hotel_name': 'Hotel A', 'city': 'Cidade A'})
         rl = RoomList.objects.first()
-        self.assertEqual(rl.observations, 'Nova PadrÃƒÆ’Ã‚Â£o')
+        self.assertEqual(rl.observations, 'Nova Padrao')
 
     def test_apply_template_does_not_overwrite_custom_observations(self):
-        template = LodgingTemplate.objects.create(band=self.band, default_observations='PadrÃƒÆ’Ã‚Â£o da banda')
+        template = LodgingTemplate.objects.create(band=self.band, default_observations='Padrao da banda')
         rl = RoomList.objects.create(band=self.band, show=self.show, hotel_name='H', city='C', observations='Custom')
         
         self.client.login(username='produtor', password='123')
@@ -184,7 +184,7 @@ class RoomListObservationsTests(TestCase):
         
 
     def test_downgrade_preserves_texts_and_upgrade_restores_access(self):
-        LodgingTemplate.objects.create(band=self.band, default_observations='PadrÃƒÆ’Ã‚Â£o')
+        LodgingTemplate.objects.create(band=self.band, default_observations='Padrao')
         rl = RoomList.objects.create(band=self.band, show=self.show, hotel_name='H', city='C', observations='Obs')
         
         self.band.plan_type = 'BASIC'
@@ -193,7 +193,7 @@ class RoomListObservationsTests(TestCase):
         rl.refresh_from_db()
         self.assertEqual(rl.observations, 'Obs')
         template = LodgingTemplate.objects.get(band=self.band)
-        self.assertEqual(template.default_observations, 'PadrÃƒÆ’Ã‚Â£o')
+        self.assertEqual(template.default_observations, 'Padrao')
         
         self.client.login(username='produtor', password='123')
         response = self.client.post(reverse('lodging_template_observations_update', args=[self.band.slug]), {'default_observations': 'New'})
@@ -230,15 +230,15 @@ class RoomListObservationsTests(TestCase):
         self.client.login(username='produtor', password='123')
         response = self.client.get(reverse('lodging_template_manage', args=[self.band.slug]))
         content = response.content.decode('utf-8')
-        self.assertIn('ObservaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes padrÃƒÆ’Ã‚Â£o do Room List', content)
-        self.assertIn('Este texto serÃƒÆ’Ã‚Â¡ inserido automaticamente', content)
-        self.assertIn('Salvar ObservaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes PadrÃƒÆ’Ã‚Â£o', content)
+        self.assertIn('Observações padrãontent)
+        self.asserá inserido automaticamente', content)
+        self.assertIn('Salvar Observações Padrãontent)
         
         rl = RoomList.objects.create(band=self.band, show=self.show, hotel_name='H', city='C', observations='Minha obs')
         response = self.client.get(reverse('room_list_manage', args=[self.band.slug, rl.id]))
         content = response.content.decode('utf-8')
         self.assertIn('Editar ObservaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes do PDF Room List', content)
-        self.assertIn('Restaurar PadrÃƒÆ’Ã‚Â£o da Banda', content)
+        self.assertIn('Restaurar Padrãontent)
         self.assertIn('Minha obs', content)
 
 
