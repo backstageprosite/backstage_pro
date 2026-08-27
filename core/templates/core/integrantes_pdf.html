@@ -53,7 +53,8 @@
             margin-bottom: 20px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            position: relative;
+            min-height: 80px;
         }
 
         .header-logo {
@@ -66,21 +67,34 @@
             font-weight: bold;
             font-size: 20px;
             margin: 0;
-            text-align: right;
+            text-align: center;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
         }
 
         .footer {
-            margin-top: 40px;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-            font-size: 9px;
-            color: #666;
-            text-align: center;
+            border-top: 1px solid #ddd;
+            padding-top: 5px;
+            font-size: 11px;
+            color: #000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            position: fixed;
+            bottom: 15mm;
+            left: 0;
+            background-color: white;
         }
 
         @media print {
-            body { padding: 0; margin: 0; }
+            body { padding: 0; margin: 0; padding-bottom: 40px; }
             .no-print { display: none !important; }
+            .footer {
+                bottom: 0;
+            }
         }
     </style>
 </head>
@@ -138,11 +152,11 @@
         </tbody>
     </table>
 
-    <div class="footer" style="border-top: 1px solid #ddd; padding-top: 5px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-<div style="flex: 1; text-align: left;"><strong>Publicado:</strong> {% now "d/m/Y H:i" %}</div>
-<div style="flex: 1; text-align: center;">Desenvolvido por Backstage Pro<br>@backstagepro.site</div>
-<div style="flex: 1; text-align: right;"></div>
-</div>
+    <div class="footer">
+        <div style="flex: 1; text-align: left;"><strong>Publicado:</strong> {% now "d/m/Y H:i" %}</div>
+        <div style="flex: 1; text-align: center;">Desenvolvido por Backstage Pro<br>@backstagepro.site</div>
+        <div style="flex: 1; text-align: right;"></div>
+    </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
