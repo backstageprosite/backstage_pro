@@ -37,7 +37,7 @@
                 <input type="text" name="contract_type" class="form-control rounded-3" placeholder="Ex: Prefeitura" value="{{ request.GET.contract_type }}">
             </div>
             <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 text-end">
-                <a href="{% url 'relatorios' band.slug %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
+                <a href="{% url 'relatorio_financeiro' band.slug %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
                 <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
             </div>
         </form>

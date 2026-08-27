@@ -3,14 +3,14 @@
         const dropZones = document.querySelectorAll('.drop-zone');
         dropZones.forEach(zone => {
             Sortable.create(zone, {
-                group: 'shared',
-                animation: 150,
-                filter: '[draggable="false"]',
-                handle: '.drag-handle',
-                delay: 150,
-                delayOnTouchOnly: true,
-                fallbackOnBody: true,
-                onEnd: function (evt) {
+    group: 'shared',
+    animation: 150,
+    delay: 150,
+    delayOnTouchOnly: true,
+    fallbackOnBody: true,
+    handle: '.drag-handle',
+    filter: '[draggable="false"]',
+    onEnd: function (evt) {
                     const draggable = evt.item;
                     const newZone = evt.to;
                     const oldZone = evt.from;
