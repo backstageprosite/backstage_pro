@@ -251,7 +251,16 @@
                     {% endif %}
                     {% if show.accommodation %}
                     <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-bed me-1"></i> Hospedagem</h6>
+                        <h6 class="text-muted">
+                            <i class="fa-solid fa-bed me-1"></i> Hospedagem
+                            {% if show.room_lists.exists %}
+                                {% with room_list=show.room_lists.first %}
+                                    {% if room_list.status == 'PUBLICADA' %}
+                                        - <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'room_list_pdf' request.band.slug room_list.id %}" style="color: #0d6efd; text-decoration: none;">Abrir PDF Room List</a>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endif %}
+                        </h6>
                         <p class="mb-1">
                             {{ show.accommodation|linebreaksbr }}
                             {% if show.accommodation_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.accommodation_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.accommodation_contact }}</a></span>{% endif %}
