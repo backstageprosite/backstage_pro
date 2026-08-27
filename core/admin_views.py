@@ -367,7 +367,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'data': status_data
         }
 
-        # GrÃ¡fico 3: Receita por Ciclo
+        # Gráfico 3: Receita por Ciclo
         cycle_revenue = subs.values('billing_cycle').annotate(total=Sum('contracted_value'))
         cycle_labels = []
         cycle_data = []
@@ -380,7 +380,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'data': cycle_data
         }
 
-        # GrÃ¡fico 4: Top Bandas
+        # Gráfico 4: Top Bandas
         top_bandas = billings.filter(status='PAGO', paid_date__gte=start_date, paid_date__lte=end_date).values('band__name').annotate(total=Sum('amount')).order_by('-total')[:5]
         top_bandas_labels = []
         top_bandas_data = []
@@ -534,7 +534,7 @@ def admin_user_create(request):
         form = AdminUserCreateForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "UsuÃ¡rio cadastrado com sucesso!")
+            messages.success(request, "Usuário cadastrado com sucesso!")
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -548,7 +548,7 @@ def admin_user_edit(request, pk):
         form = AdminUserEditForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
-            messages.success(request, "UsuÃ¡rio atualizado com sucesso!")
+            messages.success(request, "Usuário atualizado com sucesso!")
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -562,7 +562,7 @@ def admin_user_toggle_active(request, pk):
         user.is_active = not user.is_active
         user.save()
         status = "ativado" if user.is_active else "desativado"
-        messages.success(request, f"UsuÃ¡rio {status} com sucesso!")
+        messages.success(request, f"Usuário {status} com sucesso!")
     return redirect('admin_painel:usuarios')
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
@@ -579,7 +579,7 @@ def admin_user_reset_password(request, pk):
         else:
             user.set_password(new_password)
             user.save()
-            messages.success(request, f"Senha do usuÃ¡rio {user.username} redefinida com sucesso!")
+            messages.success(request, f"Senha do usuário {user.username} redefinida com sucesso!")
 
     return redirect('admin_painel:usuarios')
 
@@ -684,7 +684,7 @@ def admin_cobranca_create(request):
                     sub.status = 'ATIVO'
                     sub.save(update_fields=['status'])
 
-            messages.success(request, "CobranÃ§a gerada com sucesso!")
+            messages.success(request, "Cobrança gerada com sucesso!")
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -706,7 +706,7 @@ def admin_cobranca_edit(request, pk):
                     sub.status = 'ATIVO'
                     sub.save(update_fields=['status'])
 
-            messages.success(request, "CobranÃ§a atualizada com sucesso!")
+            messages.success(request, "Cobrança atualizada com sucesso!")
         else:
             for field, errors in form.errors.items():
                 for error in errors:

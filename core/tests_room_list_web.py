@@ -41,7 +41,7 @@ class RoomListWebTests(TestCase):
         self.show1 = Show.objects.create(
             band=self.band,
             date=datetime.date.today() + datetime.timedelta(days=1),
-            city='SÃ£o Paulo'
+            city='São Paulo'
         )
         self.show2 = Show.objects.create(
             band=self.band2,
@@ -50,7 +50,7 @@ class RoomListWebTests(TestCase):
         )
 
         self.room_list1 = RoomList.objects.create(
-            band=self.band, show=self.show1, hotel_name='Hotel SP', city='SÃ£o Paulo'
+            band=self.band, show=self.show1, hotel_name='Hotel SP', city='São Paulo'
         )
         self.room_list2 = RoomList.objects.create(
             band=self.band2, show=self.show2, hotel_name='Hotel RJ', city='Rio de Janeiro'
@@ -70,11 +70,11 @@ class RoomListWebTests(TestCase):
     def test_auth_and_permissions(self):
         url = reverse('room_list_index', kwargs={'band_slug': self.band.slug})
 
-        # NÃ£o autenticado
+        # Não autenticado
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
 
-        # Produtor da prÃ³pria banda
+        # Produtor da própria banda
         self.login(self.produtor)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -89,17 +89,17 @@ class RoomListWebTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
 
-        # UsuÃ¡rio sem vÃ­nculo
+        # Usuário sem vínculo
         self.login(self.usuario_sem_vinculo)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
 
-        # UsuÃ¡rio inativo
+        # Usuário inativo
         self.login(self.usuario_inativo)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
 
-        # SuperusuÃ¡rio sem vÃ­nculo agora deve ter acesso 200 (GestÃ£o Administrativa)
+        # Superusuário sem vínculo agora deve ter acesso 200 (Gestão Administrativa)
         self.login(self.superusuario)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -127,7 +127,7 @@ class RoomListWebTests(TestCase):
         form = RoomListSelectShowForm(band=self.band)
         qs = form.fields['show_id'].queryset
         self.assertIn(show_futuro, qs)
-        self.assertNotIn(self.show1, qs) # JÃ¡ tem room list
+        self.assertNotIn(self.show1, qs) # Já tem room list
         self.assertNotIn(show_passado, qs)
         self.assertNotIn(self.show2, qs) # Outra banda
 
@@ -145,12 +145,12 @@ class RoomListWebTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        # POST invÃ¡lido (sem nome do hotel)
+        # POST inválido (sem nome do hotel)
         response = self.client.post(url, {'city': 'Curitiba'})
         self.assertEqual(response.status_code, 200)
         self.assertIn('hotel_name', response.context['form'].errors)
 
-        # POST vÃ¡lido
+        # POST válido
         data = {
             'hotel_name': 'Hotel Top',
             'city': 'Curitiba',
@@ -169,7 +169,7 @@ class RoomListWebTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_room_list_manage_no_cpf(self):
-        integrante_pessoa = Integrante.objects.create(band=self.band, name='JoÃ£o', cpf='11122233344')
+        integrante_pessoa = Integrante.objects.create(band=self.band, name='João', cpf='11122233344')
         self.login(self.produtor)
         url = reverse('room_list_manage', kwargs={'band_slug': self.band.slug, 'pk': self.room_list1.id})
         response = self.client.get(url)
@@ -180,12 +180,12 @@ class RoomListWebTests(TestCase):
         self.login(self.produtor)
         url = reverse('room_list_delete', kwargs={'band_slug': self.band.slug, 'pk': self.room_list1.id})
 
-        # GET nÃ£o exclui (view redireciona sem deletar)
+        # GET não exclui (view redireciona sem deletar)
         response = self.client.get(url)
         self.assertIn(response.status_code, [200, 302])
         self.assertTrue(RoomList.objects.filter(id=self.room_list1.id).exists())
 
-        # POST exclui (com client nÃ£o-CSRF para simplificar o assert)
+        # POST exclui (com client não-CSRF para simplificar o assert)
         response = self.client.post(url)
         self.assertRedirects(response, reverse('room_list_index', kwargs={'band_slug': self.band.slug}))
         self.assertFalse(RoomList.objects.filter(id=self.room_list1.id).exists())
@@ -290,21 +290,21 @@ class RoomListWebTests(TestCase):
 
     def test_lodging_template_manage(self):
         from core.models import LodgingTemplate
-        # Garante explÃ­citamente o plano avanÃ§ado
+        # Garante explícitamente o plano avançado
         self.band.plan_type = 'AVANCADO'
         self.band.save()
 
         self.login(self.produtor)
         url = reverse('lodging_template_manage', kwargs={'band_slug': self.band.slug})
 
-        # 1. GET do produtor AvanÃ§ado retorna 200
+        # 1. GET do produtor Avançado retorna 200
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
         template = LodgingTemplate.objects.get(band=self.band)
         create_url = reverse('lodging_template_room_create', kwargs={'band_slug': self.band.slug, 'pk': template.id})
 
-        # 2. POST vÃ¡lido do produtor AvanÃ§ado retorna 302
+        # 2. POST válido do produtor Avançado retorna 302
         data = {
             'quantity': '1',
             'number_or_name': 'Quarto Template',
@@ -317,29 +317,29 @@ class RoomListWebTests(TestCase):
         # 3. redirecionamento aponta para a URL correta
         self.assertRedirects(response, url)
 
-        # 4. modelo Ã© realmente persistido
+        # 4. modelo é realmente persistido
         self.assertEqual(template.rooms.count(), 1)
         room = template.rooms.first()
         self.assertEqual(room.number_or_name, 'Quarto Template')
 
-        # 5. ediÃ§Ã£o atualiza o registro correto (nÃºmero novo)
+        # 5. edição atualiza o registro correto (número novo)
         edit_url = reverse('lodging_template_room_update', kwargs={'band_slug': self.band.slug, 'pk': template.id, 'room_id': room.id})
         response = self.client.post(edit_url, {'number_or_name': 'Quarto Editado', 'type': 'INDIVIDUAL', 'capacity': '1'})
         self.assertRedirects(response, url)
         room.refresh_from_db()
         self.assertEqual(room.number_or_name, 'Quarto Editado')
 
-        # 5a. editar outros campos mantendo o prÃ³prio nÃºmero
+        # 5a. editar outros campos mantendo o próprio número
         response = self.client.post(edit_url, {'number_or_name': 'Quarto Editado', 'type': 'DUPLO', 'capacity': '2'})
         self.assertRedirects(response, url)
         room.refresh_from_db()
         self.assertEqual(room.type, 'DUPLO')
         self.assertEqual(room.capacity, 2)
 
-        # 5b. tentar alterar para o nÃºmero de outro quarto (duplicidade)
+        # 5b. tentar alterar para o número de outro quarto (duplicidade)
         room2 = template.rooms.create(number_or_name='Quarto 2', type='INDIVIDUAL', capacity=1)
         response = self.client.post(edit_url, {'number_or_name': 'Quarto 2', 'type': 'DUPLO', 'capacity': '2'}, follow=True)
-        # 5c. confirmar que a duplicidade Ã© rejeitada e mostra erro
+        # 5c. confirmar que a duplicidade é rejeitada e mostra erro
         self.assertEqual(response.status_code, 200)
         messages = [str(m) for m in response.context['messages']]
         self.assertTrue(any("existe" in m for m in messages))
@@ -347,26 +347,26 @@ class RoomListWebTests(TestCase):
         room.refresh_from_db()
         self.assertEqual(room.number_or_name, 'Quarto Editado')
 
-        # 6. POST invÃ¡lido nÃ£o altera dados e apresenta erros (formato da view levanta erro via messages ou redireciona)
+        # 6. POST inválido não altera dados e apresenta erros (formato da view levanta erro via messages ou redireciona)
         invalid_data = {'quantity': 'abc', 'number_or_name': 'Erro'}
         response = self.client.post(create_url, invalid_data)
-        self.assertRedirects(response, url) # view de create redireciona em caso de erro tambÃ©m, mas com flash message
-        self.assertEqual(template.rooms.count(), 2) # sem alteraÃ§Ãµes, continua com os 2 quartos criados nos passos anteriores
+        self.assertRedirects(response, url) # view de create redireciona em caso de erro também, mas com flash message
+        self.assertEqual(template.rooms.count(), 2) # sem alterações, continua com os 2 quartos criados nos passos anteriores
 
         # Test applying template
         response = self.client.post(reverse('room_list_apply_template', kwargs={'band_slug': self.band.slug, 'pk': self.room_list1.id}))
         self.assertRedirects(response, reverse('room_list_manage', kwargs={'band_slug': self.band.slug, 'pk': self.room_list1.id}))
         self.assertEqual(self.room_list1.rooms.count(), 1)
 
-        # 7-9, 12-13. Testa rebaixamento (downgrade) para BÃSICO
+        # 7-9, 12-13. Testa rebaixamento (downgrade) para BÁSICO
         self.band.plan_type = 'BASICO'
         self.band.save()
 
-        # 7. produtor BÃ¡sico recebe 403 no GET
+        # 7. produtor Básico recebe 403 no GET
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
 
-        # 8. produtor BÃ¡sico recebe 403 no POST e 9. nÃ£o cria nem altera modelo
+        # 8. produtor Básico recebe 403 no POST e 9. não cria nem altera modelo
         response = self.client.post(create_url, data)
         self.assertEqual(response.status_code, 403)
 
@@ -379,12 +379,12 @@ class RoomListWebTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        # 10. acesso cruzado entre bandas Ã© negado
+        # 10. acesso cruzado entre bandas é negado
         self.login(self.produtor_outra_banda)
         response = self.client.post(create_url, data)
-        self.assertEqual(response.status_code, 403) # produtor2 nÃ£o tem acesso Ã  band1
+        self.assertEqual(response.status_code, 403) # produtor2 não tem acesso à band1
 
-        # 11. integrante sem permissÃ£o nÃ£o gerencia o modelo
+        # 11. integrante sem permissão não gerencia o modelo
         self.login(self.integrante)
         response = self.client.post(create_url, data)
         self.assertEqual(response.status_code, 403)

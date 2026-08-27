@@ -2176,11 +2176,7 @@ def banco_de_dados_view(request):
     search_band = request.GET.get('banda', '').strip()
 
     if search_query:
-        contacts = contacts.filter(
-            models.Q(name__icontains=search_query) |
-            models.Q(phone__icontains=search_query) |
-            models.Q(email__icontains=search_query)
-        )
+        contacts = contacts.filter(name__icontains=search_query)
     if search_type:
         contacts = contacts.filter(contact_type=search_type)
     if search_location:

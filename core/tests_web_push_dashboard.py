@@ -196,7 +196,7 @@ class WebPushDashboardTests(TestCase):
 
         content = res.content.decode("utf-8", errors="replace")
         self.assertIn("Filtro de banda", content)
-        # actually django escape might not escape Ã¡ if we write it directly or it might
+        # actually django escape might not escape á if we write it directly or it might
 
     def test_invalid_band_text(self):
         self.client.force_login(self.superuser)
@@ -229,7 +229,7 @@ class WebPushDashboardTests(TestCase):
         res = self.client.get(url + "?band_slug=band-999")
         content = res.content.decode("utf-8")
 
-        # format we expect: d/m/Y Ã s H:i (e.g. 17/07/2026 Ã s 12:34)
+        # format we expect: d/m/Y às H:i (e.g. 17/07/2026 às 12:34)
         from django.utils.timezone import localtime
         expected_date = localtime(d1.created_at).strftime("%d/%m/%Y")
         expected_time = localtime(d1.created_at).strftime("%H:%M")

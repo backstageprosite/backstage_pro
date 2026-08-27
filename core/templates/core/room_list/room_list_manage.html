@@ -1,530 +1,1055 @@
-﻿{% extends 'core/base.html' %}
+{% extends 'core/base.html' %}
+
 {% load static %}
+
+
 
 {% block title %}Gerenciar Hospedagem - {{ request.band.name }}
 
+
+
 <!-- Modal Adicionar Quarto -->
+
 <div class="modal fade" id="modalAdicionarQuarto" tabindex="-1" aria-labelledby="modalAdicionarQuartoLabel" aria-hidden="true">
+
     <div class="modal-dialog">
+
         <div class="modal-content">
+
             <form method="post" action="{% url 'room_list_room_create' request.band.slug room_list.id %}">
+
                 {% csrf_token %}
+
                 <div class="modal-header bg-primary text-white">
+
                     <h5 class="modal-title" id="modalAdicionarQuartoLabel">Adicionar Quarto</h5>
+
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+
                 </div>
+
                 <div class="modal-body">
+
                     <div class="mb-3">
+
                         <label class="form-label fw-bold">Quantidade de quartos a adicionar</label>
+
                         <select name="quantity" class="form-select">
+
                             {% for i in '12345678901234567890'|make_list %}
+
                                 <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+
                             {% endfor %}
+
                         </select>
+
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold">NÃºmero do quarto (opcional)</label>
-                        <input type="text" name="number_or_name" class="form-control" placeholder="Deixe em branco para 'Sem nÃºmero'">
+
+                        <label class="form-label fw-bold">Número do quarto (opcional)</label>
+
+                        <input type="text" name="number_or_name" class="form-control" placeholder="Deixe em branco para 'Sem número'">
+
                     </div>
+
                     <div class="mb-3">
+
                         <label class="form-label fw-bold">Tipo</label>
+
                         <select name="type" class="form-select" required>
+
                             <option value="INDIVIDUAL">Individual (1 pessoa)</option>
+
                             <option value="CASAL">Casal (2 pessoas)</option>
+
                             <option value="DUPLO">Duplo (2 pessoas)</option>
+
                             <option value="TRIPLO">Triplo (3 pessoas)</option>
-                            <option value="QUADRUPLO">QuÃ¡druplo (4 pessoas)</option>
+
+                            <option value="QUADRUPLO">Quádruplo (4 pessoas)</option>
+
                             <option value="PERSONALIZADO">Personalizado</option>
+
                         </select>
+
                     </div>
+
                     <div class="mb-3">
+
                         <label class="form-label fw-bold">Capacidade</label>
+
                         <input type="number" name="capacity" class="form-control" value="1" min="1" required>
+
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold">ConfiguraÃ§Ã£o das camas (opcional)</label>
+
+                        <label class="form-label fw-bold">Configuração das camas (opcional)</label>
+
                         <input type="text" name="beds_config" class="form-control" placeholder="Ex: 1 casal, 2 solteiro">
+
                     </div>
+
                     <div class="form-check mb-3">
+
                         <input class="form-check-input" type="checkbox" name="has_ac" id="has_ac" checked>
+
                         <label class="form-check-label" for="has_ac">Possui ar-condicionado</label>
+
                     </div>
+
                 </div>
+
                 <div class="modal-footer">
+
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
                     <button type="submit" class="btn btn-primary">Salvar</button>
+
                 </div>
+
             </form>
+
         </div>
+
     </div>
+
 </div>
+
+
 
 {% endblock %}
 
+
+
 {% block content %}
+
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+
     <h4 class="fw-bold m-0 text-truncate" style="max-width: 100%;">Gerenciar Hospedagem: <span class="text-primary">{{ room_list.show.city }}</span></h4>
+
     <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+
         <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 d-flex align-items-center"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
+
         <a href="{% url 'room_list_pdf' request.band.slug room_list.id %}" target="_blank" class="btn btn-dark rounded-pill shadow-sm px-4 fw-bold d-flex align-items-center transition-hover">
+
             <i class="fa-solid fa-file-pdf me-2 fs-5"></i> PDF Room List
+
         </a>
+
     </div>
+
 </div>
+
+
 
     {% if messages %}
+
         {% for message in messages %}
+
             <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+
         {% endfor %}
+
     {% endif %}
 
+
+
     <div class="card shadow-sm p-4 mb-4">
+
         <div class="row">
+
             <div class="col-md-6">
+
                 <p><strong>Show:</strong> {{ room_list.show.date|date:"d/m/Y" }} - {{ room_list.show.city }}</p>
+
                 <p><strong>Hotel:</strong> {{ room_list.hotel_name }}</p>
+
                 <p><strong>Status:</strong> <span class="badge bg-info">{{ room_list.get_status_display }}</span></p>
+
                 {% if room_list.status == 'PUBLICADA' %}
-                    <p><strong>Ãšltimo Envio:</strong> {{ room_list.last_sent_to_hotel_at|date:"d/m/Y H:i"|default:"NÃ£o enviado" }}</p>
+
+                    <p><strong>Último Envio:</strong> {{ room_list.last_sent_to_hotel_at|date:"d/m/Y H:i"|default:"Não enviado" }}</p>
+
                     {% if room_list.needs_resend %}
-                        <p><span class="badge bg-warning text-dark">Alterado apÃ³s envio (Reenvio recomendado)</span></p>
+
+                        <p><span class="badge bg-warning text-dark">Alterado após envio (Reenvio recomendado)</span></p>
+
                     {% endif %}
+
                 {% endif %}
+
             </div>
+
             <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0 d-flex flex-wrap gap-2 justify-content-md-end">
+
                 {% if room_list.status == 'RASCUNHO' %}
+
                     <a href="{% url 'room_list_edit' request.band.slug room_list.id %}" class="btn btn-sm btn-warning">Editar Dados</a>
+
                     <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#modalObservacoes">
-                        <i class="fa-solid fa-note-sticky me-1"></i> ObservaÃ§Ãµes
+
+                        <i class="fa-solid fa-note-sticky me-1"></i> Observações
+
                     </button>
+
                     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAdicionarQuarto">Adicionar Quarto</button>
 
+
+
                     <hr>
+
                     <button type="button" class="btn btn-outline-primary mb-md-2 btn-sm" data-bs-toggle="modal" data-bs-target="#modalSincronizar" {% if room_list.status != 'RASCUNHO' %}disabled{% endif %}>
+
                         <i class="fa-solid fa-rotate me-1"></i> Sincronizar Integrantes
+
                     </button>
+
                     <form method="post" action="{% url 'room_list_apply_template' request.band.slug room_list.id %}" class="d-md-inline">
+
                         {% csrf_token %}
+
                         <button class="btn btn-outline-secondary mb-md-2 btn-sm">Aplicar Modelo</button>
+
                     </form>
+
                     <form method="post" action="{% url 'room_list_publish' request.band.slug room_list.id %}" class="d-md-inline">
+
                         {% csrf_token %}
+
                         <button class="btn btn-success mb-md-2 btn-sm">Publicar</button>
+
                     </form>
+
                     <form method="post" action="{% url 'room_list_archive' request.band.slug room_list.id %}" class="d-md-inline">
+
                         {% csrf_token %}
+
                         <button class="btn btn-danger mb-md-2 btn-sm">Arquivar</button>
+
                     </form>
+
                     <div class="d-flex gap-2 mt-2 mt-md-0">
 
+
+
                         {% if is_produtor %}
+
                         <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-md-2 "><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
+
                         {% endif %}
+
                     </div>
+
                 {% elif room_list.status == 'PUBLICADA' %}
+
                     {% if is_produtor %}
+
                     <div class="d-flex gap-2 mb-2">
+
                         <form method="post" action="{% url 'room_list_reopen' request.band.slug room_list.id %}" class=" m-0">
+
                             {% csrf_token %}
-                            <button class="btn btn-warning btn-sm  px-1" title="Reabrir EdiÃ§Ã£o">Reabrir</button>
+
+                            <button class="btn btn-warning btn-sm  px-1" title="Reabrir Edição">Reabrir</button>
+
                         </form>
+
                         <form method="post" action="{% url 'room_list_mark_sent' request.band.slug room_list.id %}" class=" m-0">
+
                             {% csrf_token %}
+
                             {% if room_list.last_sent_to_hotel_at %}
+
                                 <button class="btn btn-success btn-sm  px-1"><i class="fa-solid fa-check"></i> Enviado</button>
+
                             {% else %}
-                                <button class="btn btn-info btn-sm  px-1 text-white">NÃ£o Enviado</button>
+
+                                <button class="btn btn-info btn-sm  px-1 text-white">Não Enviado</button>
+
                             {% endif %}
+
                         </form>
+
                         <form method="post" action="{% url 'room_list_archive' request.band.slug room_list.id %}" class=" m-0">
+
                             {% csrf_token %}
+
                             <button class="btn btn-danger btn-sm  px-1">Arquivar</button>
+
                         </form>
+
                     </div>
+
                     {% endif %}
+
                     <div class="d-flex gap-2">
 
+
+
                         {% if is_produtor %}
+
                         <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-2 "><i class="fa-solid fa-file-pdf"></i> PDF Hotel</a>
+
                         {% endif %}
+
                     </div>
+
                 {% elif room_list.status == 'ARQUIVADA' %}
+
                     {% if is_produtor %}
+
                         <form method="post" action="{% url 'room_list_reactivate' request.band.slug room_list.id %}" class="d-md-inline">
+
                             {% csrf_token %}
+
                             <button class="btn btn-success mb-md-2 btn-sm"><i class="fa-solid fa-rotate-left"></i> Reativar</button>
+
                         </form>
+
                         <button type="button" class="btn btn-danger mb-md-2 btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ room_list.id }}">
+
                             <i class="fa-solid fa-trash"></i> Excluir
+
                         </button>
+
                     {% endif %}
+
                     <div class="d-flex gap-2 mt-2 mt-md-0">
 
+
+
                         {% if is_produtor %}
+
                         <a href="{% url 'room_list_hotel_pdf' request.band.slug room_list.id %}" target="_blank" class="d-none btn btn-outline-dark mb-md-2 "><i class="fa-solid fa-file-pdf"></i> PDF<span class="d-none d-md-inline"> para</span> Hotel</a>
+
                         {% endif %}
+
                     </div>
+
                 {% endif %}
 
-    <!-- Modal de ExclusÃ£o -->
+
+
+    <!-- Modal de Exclusão -->
+
     <div class="modal fade" id="deleteModal{{ room_list.id }}" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+
         <div class="modal-dialog">
+
             <div class="modal-content">
+
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="deleteModalLabel"><i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar ExclusÃ£o</h5>
+
+                    <h5 class="modal-title" id="deleteModalLabel"><i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Exclusão</h5>
+
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+
                 </div>
+
                 <div class="modal-body text-start">
+
                     <p>Tem certeza que deseja excluir a lista de hospedagem do show <strong>{{ room_list.show.title }}</strong>?</p>
-                    <p class="text-danger small fw-bold">Esta aÃ§Ã£o nÃ£o poderÃ¡ ser desfeita.</p>
+
+                    <p class="text-danger small fw-bold">Esta ação não poderá ser desfeita.</p>
+
                 </div>
+
                 <div class="modal-footer">
+
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
                     <form method="post" action="{% url 'room_list_delete' request.band.slug room_list.id %}">
+
                         {% csrf_token %}
+
                         <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+
                     </form>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
             </div>
+
         </div>
+
     </div>
+
+
 
     <div class="row">
+
         <div class="col-md-8">
+
             <h4>Quartos</h4>
+
             {% if rooms %}
+
                 <div class="row">
+
                 {% for room in rooms %}
+
                     <div class="col-12 col-md-6 mb-3">
+
                         <div class="card shadow-sm h-100">
+
                                 <div class="card-header d-flex justify-content-between align-items-center">
+
                                 <strong>{{ room.number_or_name }}</strong>
+
                                 {% if room_list.status == 'RASCUNHO' %}
+
                                 <div>
+
                                     <a href="{% url 'room_list_room_edit' request.band.slug room_list.id room.id %}" class="btn btn-sm btn-outline-warning">Editar</a>
+
                                     {% if is_produtor %}
+
                                     <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalDeleteRoom{{ room.id }}">Excluir</button>
 
+
+
                                     <!-- Modal Delete Room -->
+
                                     <div class="modal fade" id="modalDeleteRoom{{ room.id }}" tabindex="-1" aria-hidden="true">
+
                                       <div class="modal-dialog">
+
                                         <div class="modal-content">
+
                                           <form method="post" action="{% url 'delete_room' request.band.slug room.id %}">
+
                                             {% csrf_token %}
+
                                             <div class="modal-header">
+
                                               <h5 class="modal-title">Excluir quarto {{ room.number_or_name }}?</h5>
+
                                               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
                                             </div>
+
                                             <div class="modal-body text-start">
-                                              <p class="mb-0 text-wrap text-break" style="white-space: normal;">Os integrantes deste quarto serÃ£o movidos para NÃ£o Alocados. Nenhum integrante serÃ¡ excluÃ­do.</p>
+
+                                              <p class="mb-0 text-wrap text-break" style="white-space: normal;">Os integrantes deste quarto serão movidos para Não Alocados. Nenhum integrante será excluído.</p>
+
                                             </div>
+
                                             <div class="modal-footer">
+
                                               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
                                               <button type="submit" class="btn btn-danger">Excluir quarto</button>
+
                                             </div>
+
                                           </form>
+
                                         </div>
+
                                       </div>
+
                                     </div>
+
                                     {% endif %}
+
                                 </div>
+
                                 {% endif %}
+
                             </div>
+
                             <div class="card-body drop-zone" data-room-id="{{ room.id }}" style="min-height: 100px; background-color: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 5px;">
-                                <p class="mb-1 text-muted"><small>Tipo: {{ room.get_type_display }} (LotaÃ§Ã£o: {{ room.participants.count }} / {{ room.capacity }})</small></p>
+
+                                <p class="mb-1 text-muted"><small>Tipo: {{ room.get_type_display }} (Lotação: {{ room.participants.count }} / {{ room.capacity }})</small></p>
+
+
 
                                 {% for p in room.participants.all %}
+
                                     <div class="badge bg-primary draggable-participant p-2 m-1  text-start"
-                                         draggable="{% if room_list.status == 'RASCUNHO' %}true{% else %}false{% endif %}"
+
+
+
                                          data-participant-id="{{ p.id }}"
+
                                          data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
+
                                          data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
+
                                          style="cursor: move;">
+
                                          <div class="d-flex justify-content-between align-items-center ">
-                                              <span>{{ p.snapshot_name }}</span>
+
+                                              {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-2" style="cursor: grab; touch-action: none; opacity: 0.6;"></i>{% endif %} <span>{{ p.snapshot_name }}</span>
+
                                               {% if room_list.status == 'RASCUNHO' %}
+
                                               <form method="post" action="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" class="d-inline m-0 p-0">
+
                                                   {% csrf_token %}
-                                                  <button type="submit" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover integrante" onclick="return confirm('Deseja realmente remover {{ p.snapshot_name }} desta lista? (Ele poderÃ¡ ser adicionado novamente em Sincronizar)');">
+
+                                                  <button type="submit" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover integrante" onclick="return confirm('Deseja realmente remover {{ p.snapshot_name }} desta lista? (Ele poderá ser adicionado novamente em Sincronizar)');">
+
                                                       <i class="fa-solid fa-xmark text-white"></i>
+
                                                   </button>
+
                                               </form>
+
                                               {% endif %}
+
                                           </div>
 
+
+
                                         <!-- Mobile select fallback (No JS required) -->
+
                                         {% if room_list.status == 'RASCUNHO' %}
+
                                         <div class="mt-2 d-md-none">
+
                                             <form method="post" action="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}">
+
                                                 {% csrf_token %}
+
                                                 <button type="submit" class="btn btn-sm btn-light  border">Remover Quarto</button>
+
                                             </form>
+
                                         </div>
+
                                         {% endif %}
+
                                     </div>
+
                                 {% endfor %}
+
                             </div>
+
                         </div>
+
                     </div>
+
                 {% endfor %}
+
                 </div>
+
             {% else %}
+
                 <div class="alert alert-secondary">Nenhum quarto adicionado.</div>
+
             {% endif %}
+
         </div>
+
+
 
         <div class="col-md-4">
-            <h4>NÃ£o Alocados</h4>
+
+            <h4>Não Alocados</h4>
+
             <div class="card shadow-sm p-3 drop-zone" data-room-id="" style="min-height: 200px; background-color: #fff3cd; border: 2px dashed #ffe69c;">
+
                 {% if participants %}
+
                     {% for p in participants %}
+
                         {% if not p.room %}
+
                             <div class="badge bg-warning text-dark draggable-participant p-2 m-1  text-start"
-                                 draggable="{% if room_list.status == 'RASCUNHO' %}true{% else %}false{% endif %}"
+
+
+
                                  data-participant-id="{{ p.id }}"
+
                                  data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
+
                                  data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
+
                                  style="cursor: move;">
+
                                   <div class="d-flex justify-content-between align-items-center ">
-                                      <span>{{ p.snapshot_name }}</span>
+
+                                      {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-2" style="cursor: grab; touch-action: none; opacity: 0.6;"></i>{% endif %} <span>{{ p.snapshot_name }}</span>
+
                                       {% if room_list.status == 'RASCUNHO' %}
+
                                       <form method="post" action="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" class="d-inline m-0 p-0">
+
                                           {% csrf_token %}
-                                          <button type="submit" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover integrante" onclick="return confirm('Deseja realmente remover {{ p.snapshot_name }} desta lista? (Ele poderÃ¡ ser adicionado novamente em Sincronizar)');">
+
+                                          <button type="submit" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover integrante" onclick="return confirm('Deseja realmente remover {{ p.snapshot_name }} desta lista? (Ele poderá ser adicionado novamente em Sincronizar)');">
+
                                               <i class="fa-solid fa-xmark text-dark"></i>
+
                                           </button>
+
                                       </form>
+
                                       {% endif %}
+
                                   </div>
 
+
+
                                 <!-- Mobile select fallback (No JS required) -->
+
                                 {% if room_list.status == 'RASCUNHO' %}
+
                                 <div class="mt-2 d-md-none">
+
                                     <form method="post" action="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}" class="d-flex">
+
                                         {% csrf_token %}
+
                                         <select name="room_id" class="form-select form-select-sm me-1" required>
+
                                             <option value="" disabled selected>Alocar em...</option>
+
                                             {% for r in rooms %}
+
                                                 <option value="{{ r.id }}">{{ r.number_or_name }}</option>
+
                                             {% endfor %}
+
                                         </select>
+
                                         <button type="submit" class="btn btn-sm btn-light border">Ok</button>
+
                                     </form>
+
                                 </div>
+
                                 {% endif %}
+
                             </div>
+
                         {% endif %}
+
                     {% endfor %}
+
                 {% else %}
+
                     <p class="text-muted mb-0">Nenhum integrante sincronizado.</p>
+
                 {% endif %}
+
             </div>
+
         </div>
+
     </div>
+
 </div>
+
+
 
 {% csrf_token %}
 
+
+
 <style>
+
     .draggable-participant.dragging { opacity: 0.5; }
+
     .drop-zone.drag-over { background-color: #e2e3e5 !important; }
+
 </style>
+
+
+
 
 
 <script src="{% static 'core/js/room_list.js' %}?v=20260813"></script>
 
+
+
 <!-- Modal Sincronizar Integrantes -->
+
 <div class="modal fade" id="modalSincronizar" tabindex="-1" aria-hidden="true">
+
     <div class="modal-dialog modal-dialog-scrollable">
+
         <form action="{% url 'room_list_sync' request.band.slug room_list.id %}" method="post" id="syncForm" class="modal-content">
+
                 {% csrf_token %}
+
                 <div class="modal-header bg-light">
+
                     <h5 class="modal-title fw-bold"><i class="fa-solid fa-users me-2 text-primary"></i> Sincronizar Integrantes</h5>
+
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
                 </div>
+
                 <div class="modal-body">
-                    <p class="text-muted small mb-3">Selecione os integrantes da banda para adicionar Ã  Room List. Integrantes jÃ¡ adicionados nÃ£o serÃ£o duplicados.</p>
+
+                    <p class="text-muted small mb-3">Selecione os integrantes da banda para adicionar à Room List. Integrantes já adicionados não serão duplicados.</p>
+
+
 
                     <div class="form-check mb-3 border-bottom pb-2">
+
                         <input class="form-check-input" type="checkbox" id="selectAllIntegrantes" onchange="toggleAllIntegrantes(this)">
+
                         <label class="form-check-label fw-bold" for="selectAllIntegrantes">
+
                             Selecionar todos
+
                         </label>
+
                     </div>
+
+
 
                     <div class="integrantes-list">
+
                         {% for integrante in active_integrantes %}
+
                             <div class="form-check mb-md-2" data-integrante-id="{{ integrante.id }}">
+
                                 <input class="form-check-input integrante-checkbox" type="checkbox" name="integrantes" value="{{ integrante.id }}" id="integrante_{{ integrante.id }}">
+
                                 <label class="form-check-label d-flex justify-content-between align-items-center " for="integrante_{{ integrante.id }}">
+
                                     <span>
+
                                         <strong>{{ integrante.name }}</strong>
+
                                         <small class="text-muted ms-1">({{ integrante.role }})</small>
+
                                     </span>
-                                    <span class="badge bg-secondary ja-incluido-badge" style="display: none;">JÃ¡ incluÃ­do</span>
+
+                                    <span class="badge bg-secondary ja-incluido-badge" style="display: none;">Já incluído</span>
+
                                 </label>
+
                             </div>
+
                         {% empty %}
+
                             <div class="alert alert-warning">Nenhum integrante ativo encontrado nesta banda.</div>
+
                         {% endfor %}
+
                     </div>
+
                 </div>
+
                 <div class="modal-footer bg-light">
+
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
                     <button type="submit" class="btn btn-primary" id="btnSyncSubmit" onclick="this.disabled=true; this.form.submit();">Adicionar selecionados</button>
+
                 </div>
+
             </form>
+
     </div>
+
 </div>
 
+
+
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
+
     const participantsIds = [
+
         {% for p in participants %}
+
             {% if p.original_integrante_id %}{{ p.original_integrante_id }},{% endif %}
+
         {% endfor %}
+
     ];
 
+
+
     document.querySelectorAll('.form-check[data-integrante-id]').forEach(function(div) {
+
         const id = parseInt(div.getAttribute('data-integrante-id'));
+
         if (participantsIds.includes(id)) {
+
             const checkbox = div.querySelector('input[type="checkbox"]');
+
             checkbox.disabled = true;
+
             checkbox.checked = false;
+
             div.querySelector('.ja-incluido-badge').style.display = 'inline-block';
+
         }
+
     });
+
 });
 
+
+
 function toggleAllIntegrantes(source) {
+
     checkboxes = document.querySelectorAll('.integrante-checkbox:not(:disabled)');
+
     for(var i=0, n=checkboxes.length;i<n;i++) {
+
         checkboxes[i].checked = source.checked;
+
     }
+
 }
+
 </script>
+
+
+
 
 
 <!-- Modal Adicionar Quarto -->
+
 <div class="modal fade" id="modalAdicionarQuarto" tabindex="-1" aria-labelledby="modalAdicionarQuartoLabel" aria-hidden="true">
+
     <div class="modal-dialog">
+
         <div class="modal-content">
+
             <form method="post" action="{% url 'room_list_room_create' request.band.slug room_list.id %}">
+
                 {% csrf_token %}
+
                 <div class="modal-header bg-primary text-white">
+
                     <h5 class="modal-title" id="modalAdicionarQuartoLabel">Adicionar Quarto</h5>
+
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+
                 </div>
+
                 <div class="modal-body">
+
                     <div class="mb-3">
+
                         <label class="form-label fw-bold">Quantidade de quartos a adicionar</label>
+
                         <select name="quantity" class="form-select">
+
                             {% for i in '12345678901234567890'|make_list %}
+
                                 <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+
                             {% endfor %}
+
                         </select>
+
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold">NÃºmero do quarto (opcional)</label>
-                        <input type="text" name="number_or_name" class="form-control" placeholder="Deixe em branco para 'Sem nÃºmero'">
+
+                        <label class="form-label fw-bold">Número do quarto (opcional)</label>
+
+                        <input type="text" name="number_or_name" class="form-control" placeholder="Deixe em branco para 'Sem número'">
+
                     </div>
+
                     <div class="mb-3">
+
                         <label class="form-label fw-bold">Tipo</label>
+
                         <select name="type" class="form-select" required>
+
                             <option value="INDIVIDUAL">Individual (1 pessoa)</option>
+
                             <option value="CASAL">Casal (2 pessoas)</option>
+
                             <option value="DUPLO">Duplo (2 pessoas)</option>
+
                             <option value="TRIPLO">Triplo (3 pessoas)</option>
-                            <option value="QUADRUPLO">QuÃ¡druplo (4 pessoas)</option>
+
+                            <option value="QUADRUPLO">Quádruplo (4 pessoas)</option>
+
                             <option value="PERSONALIZADO">Personalizado</option>
+
                         </select>
+
                     </div>
+
                     <div class="mb-3">
+
                         <label class="form-label fw-bold">Capacidade</label>
+
                         <input type="number" name="capacity" class="form-control" value="1" min="1" required>
+
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold">ConfiguraÃ§Ã£o das camas (opcional)</label>
+
+                        <label class="form-label fw-bold">Configuração das camas (opcional)</label>
+
                         <input type="text" name="beds_config" class="form-control" placeholder="Ex: 1 casal, 2 solteiro">
+
                     </div>
+
                     <div class="form-check mb-3">
+
                         <input class="form-check-input" type="checkbox" name="has_ac" id="has_ac" checked>
+
                         <label class="form-check-label" for="has_ac">Possui ar-condicionado</label>
+
                     </div>
+
                 </div>
+
                 <div class="modal-footer">
+
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
                     <button type="submit" class="btn btn-primary">Salvar</button>
+
                 </div>
+
             </form>
+
         </div>
+
     </div>
-</div>
+
 </div>
 
-<!-- Modal ObservaÃ§Ãµes Individuais -->
-<div class="modal fade" id="modalObservacoes" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{% url 'room_list_observations_update' request.band.slug room_list.id %}" method="POST">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Editar ObservaÃ§Ãµes do PDF Room List</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <textarea name="observations" class="form-control" rows="5" maxlength="2000" id="obsTextarea">{{ room_list.observations|default:'' }}</textarea>
-                    <div class="text-end text-muted small mt-1">
-                        <span id="obsCounter">0</span>/2000 caracteres
-                    </div>
-                </div>
-                <div class="modal-footer d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnRestaurarPadrao">Restaurar PadrÃ£o da Banda</button>
-                    <div>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar ObservaÃ§Ãµes</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
 </div>
+
+
+
+<!-- Modal Observações Individuais -->
+
+<div class="modal fade" id="modalObservacoes" tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <form action="{% url 'room_list_observations_update' request.band.slug room_list.id %}" method="POST">
+
+                {% csrf_token %}
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title">Editar Observações do PDF Room List</h5>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <textarea name="observations" class="form-control" rows="5" maxlength="2000" id="obsTextarea">{{ room_list.observations|default:'' }}</textarea>
+
+                    <div class="text-end text-muted small mt-1">
+
+                        <span id="obsCounter">0</span>/2000 caracteres
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer d-flex justify-content-between">
+
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnRestaurarPadrao">Restaurar Padrão da Banda</button>
+
+                    <div>
+
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+                        <button type="submit" class="btn btn-primary">Salvar Observações</button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
 
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
+
     const textarea = document.getElementById('obsTextarea');
+
     const counter = document.getElementById('obsCounter');
+
     const btnRestaurar = document.getElementById('btnRestaurarPadrao');
 
+
+
     const defaultObs = `{{ request.band.lodging_template.default_observations|default:''|escapejs }}`;
+
     const hasDefault = {% if request.band.lodging_template and request.band.lodging_template.default_observations %}true{% else %}false{% endif %};
 
+
+
     if(textarea && counter) {
+
         counter.textContent = textarea.value.length;
+
         textarea.addEventListener('input', function() {
+
             counter.textContent = this.value.length;
+
         });
 
+
+
         if (btnRestaurar) {
+
             btnRestaurar.addEventListener('click', function() {
+
                 if (!hasDefault || defaultObs.trim() === '') {
-                    alert("Nenhuma observaÃ§Ã£o padrÃ£o foi cadastrada para esta banda.");
+
+                    alert("Nenhuma observação padrão foi cadastrada para esta banda.");
+
                     return;
+
                 }
 
-                if (confirm("Deseja substituir as observaÃ§Ãµes atuais pelo padrÃ£o da banda?")) {
+
+
+                if (confirm("Deseja substituir as observações atuais pelo padrão da banda?")) {
+
                     textarea.value = defaultObs;
+
                     counter.textContent = textarea.value.length;
+
                 }
+
             });
+
         }
+
     }
+
 });
+
 </script>
 
+
+
 {% endblock %}
-
-
