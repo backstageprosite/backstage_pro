@@ -868,7 +868,13 @@ def show_pdf_view(request, band_slug, pk):
     except Exception:
         weather = None
 
+    public_room_list_token = None
+    if show.room_lists.exists():
+        from django.core.signing import Signer
+        public_room_list_token = Signer().sign(show.room_lists.first().id)
+
     context = {
+        'public_room_list_token': public_room_list_token,
         'show': show,
         'weather': weather,
         'request': request,

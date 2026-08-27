@@ -143,6 +143,7 @@ urlpatterns += [
     path('configuracoes/hospedagem/modelo/<int:pk>/quarto/<int:room_id>/excluir/', views.lodging_template_room_delete, name='lodging_template_room_delete'),
     
     # Room List
+        path('hospedagem/publico/<str:token>/', file_views.public_room_list_download, name='public_room_list_download'),
     path('hospedagem/<int:pk>/pdf/', views.room_list_pdf_view, name='room_list_pdf'),
     path('hospedagem/<int:pk>/pdf/hotel/', views.room_list_hotel_pdf_view, name='room_list_hotel_pdf'),
     path('hospedagem/quarto/<int:room_pk>/delete/', views.delete_room_view, name='delete_room'),

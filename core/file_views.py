@@ -356,3 +356,51 @@ def public_rider_download(request, band_slug, uuid):
 
     return serve_private_file(doc.file, as_attachment=True)
 
+def public_room_list_download(request, token):
+    from django.core.signing import Signer, BadSignature
+    from django.shortcuts import get_object_or_404, Http404
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from xhtml2pdf import pisa
+    import io
+    from core.models import RoomList
+    from core.views import get_image_base64
+    
+    signer = Signer()
+    try:
+        room_list_id = signer.unsign(token)
+    except BadSignature:
+        raise Http404("Link inválido ou expirado.")
+
+    room_list = get_object_or_404(RoomList.objects.select_related('show', 'band').prefetch_related(
+        'rooms__participants__original_integrante'
+    ), pk=room_list_id)
+
+    if room_list.status != 'PUBLICADA':
+        raise Http404("Room List não disponível.")
+
+    if not room_list.band.is_active:
+        raise Http404("Banda inativa.")
+
+    context = {
+        'band': room_list.band,
+        'pdf_logo_base64': get_image_base64(room_list.band.logo),
+        'current_datetime': __import__('django.utils.timezone').utils.timezone.localtime().strftime('%d/%m/%Y ààs %H:%M'),
+        'room_list': room_list,
+        'rooms': room_list.rooms.all(),
+        'participants': room_list.participants.filter(room__isnull=False),
+        'unassigned_participants': room_list.participants.filter(room__isnull=True, needs_lodging=True),
+        'not_needing_lodging': room_list.participants.filter(needs_lodging=False),
+        'request': request,
+    }
+
+    html_string = render_to_string('core/room_list/room_list_pdf.html', context)
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
+        response['Cache-Control'] = 'public, max-age=3600'
+        return response
+    return HttpResponse("Erro ao gerar o PDF.", status=500)
