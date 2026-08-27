@@ -870,8 +870,11 @@ def show_pdf_view(request, band_slug, pk):
 
     public_room_list_token = None
     if show.room_lists.exists():
-        from django.core.signing import Signer
-        public_room_list_token = Signer().sign(show.room_lists.first().id)
+        try:
+            from django.core.signing import Signer
+            public_room_list_token = Signer().sign(str(show.room_lists.first().id))
+        except Exception:
+            pass
 
     context = {
         'public_room_list_token': public_room_list_token,
