@@ -613,13 +613,13 @@
             <div class="row g-4 align-items-stretch">
                 <div class="col-md-6">
                     <div class="p-5 bg-white border border-color rounded-4 h-100 text-center">
-                        <h4 class="mb-4 text-muted">Ferramentas genéricas</h4>
+                        <h4 class="mb-4 text-muted">Ferramentas Genéricas</h4>
                         <ul class="list-unstyled text-start mx-auto" style="max-width: 300px;">
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> exigem configuração</li>
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> misturam informações</li>
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> não entendem a hierarquia da banda</li>
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> não separam produtor e integrante</li>
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> não foram criadas para shows</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> Exigem configuração</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> Misturam informações</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> Não entendem a hierarquia da banda</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> Não separam produtor e integrante</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-xmark text-danger me-2"></i> Não foram criadas para shows</li>
                         </ul>
                     </div>
                 </div>
@@ -627,12 +627,12 @@
                     <div class="p-5 bg-white border border-color rounded-4 h-100 text-center">
                         <h4 class="mb-4 text-dark fw-bold">Backstage Pro</h4>
                         <ul class="list-unstyled text-start mx-auto" style="max-width: 300px;">
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> pronto para a rotina musical</li>
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> organização por show</li>
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> permissões específicas</li>
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> agenda e logística integradas</li>
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> financeiro separado</li>
-                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> visão para produtor e integrantes</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> Pronto para a rotina musical</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> Organização por show</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> Permissões específicas</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> Agenda e logística integradas</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> Financeiro separado</li>
+                            <li class="mb-3 text-muted"><i class="fa-solid fa-check text-success me-2"></i> Visão para produtor e integrantes</li>
                         </ul>
                     </div>
                 </div>
@@ -809,12 +809,11 @@
             </div>
 
             <!-- Toggle Mensal/Anual -->
-            <div class="d-flex justify-content-center mb-5 align-items-center gap-3 flex-wrap">
-                <span class="fw-medium" id="label-mensal">Mensal</span>
-                <div class="form-check form-switch m-0" style="transform: scale(1.4); min-width: 50px;">
-                    <input class="form-check-input mt-0" type="checkbox" role="switch" id="toggleBilling" checked aria-label="Alternar entre mensal e anual">
+            <div class="d-flex justify-content-center mb-5">
+                <div class="d-inline-flex align-items-center rounded-pill border border-2 p-1" style="background: #f1f3f5; border-color: #dee2e6 !important; gap: 4px;">
+                    <button id="btn-mensal" type="button" onclick="setBilling(false)" class="btn btn-sm rounded-pill px-4 py-2 fw-bold" style="background-color: #fff; border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.12); min-width: 90px;">Mensal</button>
+                    <button id="btn-anual" type="button" onclick="setBilling(true)" class="btn btn-sm rounded-pill px-4 py-2 fw-medium" style="background: none; border: none; min-width: 90px;">Anual</button>
                 </div>
-                <span class="fw-bold" id="label-anual">Anual <span class="badge bg-success ms-1" style="font-size: 0.75rem;">2 meses grátis</span></span>
             </div>
 
             <!-- Cards dos planos -->
@@ -875,10 +874,12 @@
 
             <!-- Script toggle -->
             <script>
-                (function() {
-                    var toggle = document.getElementById('toggleBilling');
-                    var labelMensal = document.getElementById('label-mensal');
-                    var labelAnual = document.getElementById('label-anual');
+                var _isAnnual = false;
+
+                function setBilling(annual) {
+                    _isAnnual = annual;
+                    var btnMensal = document.getElementById('btn-mensal');
+                    var btnAnual = document.getElementById('btn-anual');
                     var priceBasic = document.getElementById('price-basic');
                     var periodBasic = document.getElementById('period-basic');
                     var savingsBasic = document.getElementById('savings-basic');
@@ -886,25 +887,32 @@
                     var periodAdv = document.getElementById('period-advanced');
                     var savingsAdv = document.getElementById('savings-advanced');
 
-                    function updatePrices() {
-                        var isAnnual = toggle.checked;
-                        labelMensal.className = isAnnual ? 'text-muted fw-medium' : 'fw-bold';
-                        labelAnual.className = isAnnual ? 'fw-bold' : 'text-muted fw-medium';
-                        if (isAnnual) {
-                            priceBasic.textContent = 'R$ 199,90'; periodBasic.textContent = '/ano';
-                            savingsBasic.textContent = 'Equivale a R$ 16,66/mês (economia de R$ 38,90)';
-                            priceAdv.textContent = 'R$ 499,90'; periodAdv.textContent = '/ano';
-                            savingsAdv.textContent = 'Equivale a R$ 41,66/mês (economia de R$ 98,90)';
-                        } else {
-                            priceBasic.textContent = 'R$ 19,90'; periodBasic.textContent = '/mês';
-                            savingsBasic.textContent = '\u00a0';
-                            priceAdv.textContent = 'R$ 49,90'; periodAdv.textContent = '/mês';
-                            savingsAdv.textContent = '\u00a0';
-                        }
+                    if (annual) {
+                        btnMensal.style.backgroundColor = 'transparent';
+                        btnMensal.style.boxShadow = 'none';
+                        btnMensal.style.fontWeight = '400';
+                        btnAnual.style.backgroundColor = '#fff';
+                        btnAnual.style.boxShadow = '0 1px 4px rgba(0,0,0,0.12)';
+                        btnAnual.style.fontWeight = '700';
+                        priceBasic.textContent = 'R$ 199,90'; periodBasic.textContent = '/ano';
+                        savingsBasic.textContent = 'Equivale a R$ 16,66/mês (economia de R$ 38,90)';
+                        priceAdv.textContent = 'R$ 499,90'; periodAdv.textContent = '/ano';
+                        savingsAdv.textContent = 'Equivale a R$ 41,66/mês (economia de R$ 98,90)';
+                    } else {
+                        btnMensal.style.backgroundColor = '#fff';
+                        btnMensal.style.boxShadow = '0 1px 4px rgba(0,0,0,0.12)';
+                        btnMensal.style.fontWeight = '700';
+                        btnAnual.style.backgroundColor = 'transparent';
+                        btnAnual.style.boxShadow = 'none';
+                        btnAnual.style.fontWeight = '400';
+                        priceBasic.textContent = 'R$ 19,90'; periodBasic.textContent = '/mês';
+                        savingsBasic.textContent = '\u00a0';
+                        priceAdv.textContent = 'R$ 49,90'; periodAdv.textContent = '/mês';
+                        savingsAdv.textContent = '\u00a0';
                     }
-                    toggle.addEventListener('change', updatePrices);
-                    updatePrices();
-                })();
+                }
+                // Inicia no modo mensal
+                setBilling(false);
             </script>
 
             <!-- Tabela comparativa -->
@@ -920,23 +928,23 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td>Dashboard</td><td class="text-center">Incluído</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Agenda e calendário</td><td class="text-center">Incluído</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Gestão de Shows</td><td class="text-center">Incluído</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Evento, cronograma, logística e técnica</td><td class="text-center">Incluído</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Informações básicas de hospedagem no Show</td><td class="text-center">Incluído</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>PDFs da Agenda e do Show</td><td class="text-center">Incluído</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Usuários, integrantes e parceiros</td><td class="text-center">Incluído</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Contatos e Banco de Dados Geral</td><td class="text-center">Incluído</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Pendências</td><td class="text-center text-muted">—</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Financeiro</td><td class="text-center text-muted">—</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Arquivos e documentos</td><td class="text-center text-muted">—</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Contratos e anexos no Show</td><td class="text-center text-muted">—</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Rider técnico</td><td class="text-center text-muted">—</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Room List e gestão completa de hospedagem</td><td class="text-center text-muted">—</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>PDFs de Room List e Hotel</td><td class="text-center text-muted">—</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Avisos da Banda</td><td class="text-center text-muted">—</td><td class="text-center">Incluído</td></tr>
-                            <tr><td>Relatórios avançados</td><td class="text-center text-muted">—</td><td class="text-center">Incluído</td></tr>
+                            <tr><td>Dashboard</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Agenda e calendário</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Gestão de Shows</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Evento, cronograma, logística e técnica</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Informações básicas de hospedagem no Show</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>PDFs da Agenda e do Show</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Usuários, integrantes e parceiros</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Contatos e Banco de Dados Geral</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Pendências</td><td class="text-center text-muted">—</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Financeiro</td><td class="text-center text-muted">—</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Arquivos e documentos</td><td class="text-center text-muted">—</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Contratos e anexos no Show</td><td class="text-center text-muted">—</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Rider técnico</td><td class="text-center text-muted">—</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Room List e gestão completa de hospedagem</td><td class="text-center text-muted">—</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>PDFs de Room List e Hotel</td><td class="text-center text-muted">—</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Avisos da Banda</td><td class="text-center text-muted">—</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
+                            <tr><td>Relatórios avançados</td><td class="text-center text-muted">—</td><td class="text-center text-success"><i class="fa-solid fa-check"></i></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1078,36 +1086,10 @@
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="headingTen">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTen" aria-expanded="false" aria-controls="collapseTen">
-                                    10. O sistema envia notificações?
+                                    10. Posso mudar de plano depois?
                                 </button>
                             </h2>
                             <div id="collapseTen" class="accordion-collapse collapse" aria-labelledby="headingTen" data-bs-parent="#accordionFAQ2">
-                                <div class="accordion-body text-muted">
-                                    Recursos adicionais de notificações estão em desenvolvimento. As funcionalidades atualmente disponíveis serão apresentadas durante o atendimento.
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Perguntas sobre planos -->
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="headingEleven">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEleven" aria-expanded="false" aria-controls="collapseEleven">
-                                    11. Qual é a diferença entre as informações de hospedagem e a Room List?
-                                </button>
-                            </h2>
-                            <div id="collapseEleven" class="accordion-collapse collapse" aria-labelledby="headingEleven" data-bs-parent="#accordionFAQ2">
-                                <div class="accordion-body text-muted">
-                                    No Plano Básico, você pode registrar informações essenciais de hotel e hospedagem dentro da logística do Show. No Plano Avançado, também conta com a gestão completa de hospedagem, distribuição dos integrantes por quartos, Room List e PDFs específicos.
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="headingTwelve">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwelve" aria-expanded="false" aria-controls="collapseTwelve">
-                                    12. Posso mudar de plano depois?
-                                </button>
-                            </h2>
-                            <div id="collapseTwelve" class="accordion-collapse collapse" aria-labelledby="headingTwelve" data-bs-parent="#accordionFAQ2">
                                 <div class="accordion-body text-muted">
                                     Sim. A alteração do plano atualiza os acessos sem apagar os dados que já foram cadastrados.
                                 </div>
