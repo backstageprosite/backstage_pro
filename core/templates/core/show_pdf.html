@@ -256,7 +256,7 @@
                             {% if show.room_lists.exists %}
                                 {% with room_list=show.room_lists.first %}
                                     {% if room_list.status == 'PUBLICADA' %}
-                                        - <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'public_room_list_download' public_room_list_token %}" style="color: #0d6efd; text-decoration: none;">Abrir PDF Room List</a>
+                                        - <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'public_room_list_download' request.band.slug public_room_list_token %}" style="color: #0d6efd; text-decoration: none;">Abrir PDF Room List</a>
                                     {% endif %}
                                 {% endwith %}
                             {% endif %}

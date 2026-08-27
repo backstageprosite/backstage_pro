@@ -356,7 +356,7 @@ def public_rider_download(request, band_slug, uuid):
 
     return serve_private_file(doc.file, as_attachment=True)
 
-def public_room_list_download(request, token):
+def public_room_list_download(request, band_slug, token):
     from django.core.signing import Signer, BadSignature
     from django.shortcuts import get_object_or_404, Http404
     from django.http import HttpResponse
