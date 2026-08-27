@@ -390,7 +390,37 @@
         </div>
         {% endif %}
 
-        <!-- Avisos para a Banda -->
+        
+        <!-- Escala -->
+        {% if show.participants.exists %}
+        <div class="card mb-2 border-dark">
+            <div class="card-header bg-dark text-white border-dark py-1" style="-webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #212529 !important; color: white !important;">
+                <i class="fa-solid fa-users me-1"></i> Escala / Integrantes
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-bordered mb-0" style="font-size: 11px;">
+                    <thead style="background-color: #f8f9fa;">
+                        <tr>
+                            <th style="width: 50%;">Nome</th>
+                            <th style="width: 25%;">Função</th>
+                            <th style="width: 25%;">CPF</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for part in show.participants.all %}
+                        <tr>
+                            <td>{{ part.integrante.name }}</td>
+                            <td>{{ part.integrante.role }}</td>
+                            <td>{{ part.integrante.cpf|default:'-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+<!-- Avisos para a Banda -->
         {% if show.band_notes %}
         <div class="card mb-2 border-danger">
             <div class="card-header bg-danger text-white border-danger py-1" style="-webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #dc3545 !important; color: white !important;">
