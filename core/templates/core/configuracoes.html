@@ -54,9 +54,15 @@
                             <h6 class="fw-bold mb-1">Modelo Padrão de Hospedagem</h6>
                             <small class="text-muted">Configure o modelo de quartos pré-definidos para a banda.</small>
                         </div>
+                        {% if band.is_advanced %}
                         <a href="{% url 'lodging_template_manage' band.slug %}" class="btn btn-sm btn-outline-dark rounded-pill fw-bold px-3">
                             Configurar
                         </a>
+                        {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan">
+                            <i class="fa-solid fa-lock me-1"></i> Configurar
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
 
