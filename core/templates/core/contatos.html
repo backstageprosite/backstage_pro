@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}
+﻿{% extends 'core/base.html' %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -29,7 +29,7 @@
                 <label class="form-label small fw-bold text-muted">Local</label>
                 <input type="text" name="local" class="form-control form-control-sm" placeholder="Buscar por local..." value="{{ search_local|default:'' }}">
             </div>
-            <div class="col-12 text-end mt-3">
+            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 text-end">
                 <a href="{% url 'contatos_list' band.slug %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
                 <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
             </div>
@@ -48,8 +48,8 @@
                         <th class="py-3">Tipo</th>
                         <th class="py-3">Local</th>
                         <th class="py-3 text-center">Link</th>
-                        <th class="py-3 text-center">Observações</th>
-                        <th class="pe-4 py-3 text-end">Ações</th>
+                        <th class="py-3 text-center">ObservaÃ§Ãµes</th>
+                        <th class="pe-4 py-3 text-end">AÃ§Ãµes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -86,7 +86,7 @@
                         </td>
                         <td class="text-center">
     {% if contato.notes %}
-    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalObsContato{{ contato.id }}" title="Ver Observações">
+    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalObsContato{{ contato.id }}" title="Ver ObservaÃ§Ãµes">
         <i class="fa-solid fa-eye"></i>
     </button>
     {% else %}
@@ -97,7 +97,7 @@
                             <!-- Actions Dropdown (Universal) -->
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
-                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> AÃ§Ãµes
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
                                     <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditarContato{{ contato.id }}"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar</button></li>
@@ -111,7 +111,7 @@
                         <td colspan="7" class="text-center py-5 text-muted">
                             <i class="fa-solid fa-address-book fs-1 mb-3 opacity-25"></i><br>
                             <h5 class="fw-bold">Nenhum contato cadastrado no banco.</h5>
-                            <p class="mb-0">Cadastre contratantes, hotéis e fornecedores clicando no botão acima.</p>
+                            <p class="mb-0">Cadastre contratantes, hotÃ©is e fornecedores clicando no botÃ£o acima.</p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -130,7 +130,7 @@
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content border-0 shadow-lg text-start" style="border-radius: 12px;">
                                         <div class="modal-header border-bottom-0 pb-0">
-                                            <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-file-lines me-2 text-primary"></i> Observações</h5>
+                                            <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-file-lines me-2 text-primary"></i> ObservaÃ§Ãµes</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body py-4">
@@ -205,11 +205,11 @@
                                                     <input type="url" name="link" class="form-control" value="{{ contato.link|default:'' }}">
                                                 </div>
                                                 <div class="mb-3">
-                                                    <label class="form-label fw-bold small">Observações</label>
+                                                    <label class="form-label fw-bold small">ObservaÃ§Ãµes</label>
                                                     <textarea name="notes" class="form-control" rows="3">{{ contato.notes|default:'' }}</textarea>
                                                 </div>
                                                 <div class="mb-3">
-                                                    <label class="form-label fw-bold small">Informações públicas</label>
+                                                    <label class="form-label fw-bold small">InformaÃ§Ãµes pÃºblicas</label>
                                                     <textarea name="public_information" class="form-control" rows="3">{{ contato.public_information|default:'' }}</textarea>
                                                 </div>
                                                 {% if request.user.is_produtor %}
@@ -220,7 +220,7 @@
                                                             Compartilhar contato com o Banco de Dados Geral
                                                         </label>
                                                         <div class="form-text mt-1" style="font-size: 0.8rem; color: #6c757d;">
-                                                            Os dados públicos deste contato ficarão visíveis para produtores e integrantes de todas as bandas cadastradas no Backstage Pro.
+                                                            Os dados pÃºblicos deste contato ficarÃ£o visÃ­veis para produtores e integrantes de todas as bandas cadastradas no Backstage Pro.
                                                         </div>
                                                     </div>
                                                 </div>
@@ -228,7 +228,7 @@
                                             </div>
                                             <div class="modal-footer border-top-0 pt-0">
                                                 <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancelar</button>
-                                                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Salvar Alterações</button>
+                                                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Salvar AlteraÃ§Ãµes</button>
                                             </div>
                                         </form>
                                     </div>
@@ -275,11 +275,11 @@
                         <input type="url" name="link" class="form-control">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold small">Observações</label>
+                        <label class="form-label fw-bold small">ObservaÃ§Ãµes</label>
                         <textarea name="notes" class="form-control" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold small">Informações públicas</label>
+                        <label class="form-label fw-bold small">InformaÃ§Ãµes pÃºblicas</label>
                         <textarea name="public_information" class="form-control" rows="3"></textarea>
                     </div>
                     {% if request.user.is_produtor %}
@@ -290,7 +290,7 @@
                                 Compartilhar contato com o Banco de Dados Geral
                             </label>
                             <div class="form-text mt-1" style="font-size: 0.8rem; color: #6c757d;">
-                                Os dados públicos deste contato ficarão visíveis para produtores e integrantes de todas as bandas cadastradas no Backstage Pro.
+                                Os dados pÃºblicos deste contato ficarÃ£o visÃ­veis para produtores e integrantes de todas as bandas cadastradas no Backstage Pro.
                             </div>
                         </div>
                     </div>

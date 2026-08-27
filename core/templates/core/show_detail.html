@@ -1,54 +1,29 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <div>
         <h4 class="mb-1"><i class="fa-solid fa-music text-primary me-2"></i> {{ show.title }}</h4>
         {% if show.event_name %}
         <h5 class="text-muted"><i class="fa-solid fa-calendar-check me-2 text-secondary"></i> {{ show.event_name }}</h5>
         {% endif %}
     </div>
-    <!-- Desktop Buttons -->
-    <div class="d-none d-md-flex gap-2">
+    <!-- Ações (Unificado para Mobile, Tablet e Desktop) -->
+    <div class="d-flex flex-wrap gap-2 justify-content-md-end">
         {% if user.is_produtor or user.is_superuser %}
-        <a href="{% url 'show_pdf' band.slug show.id %}" target="_blank" class="btn btn-dark border-dark rounded-pill fw-bold" style="color: white !important;"><i class="fa-solid fa-file-pdf me-1"></i> PDF Show</a>
+        <a href="{% url 'show_pdf' band.slug show.id %}" target="_blank" class="btn btn-sm btn-dark border-dark rounded-pill fw-bold" style="color: white !important;"><i class="fa-solid fa-file-pdf me-1"></i> PDF Show</a>
         {% if show.room_lists.exists %}
-            <a href="{% url 'room_list_manage' band.slug show.room_lists.first.id %}" class="btn btn-primary rounded-pill px-4 fw-bold"><i class="fa-solid fa-bed me-1"></i> Gerenciar Hospedagem (Ativa)</a>
+            <a href="{% url 'room_list_manage' band.slug show.room_lists.first.id %}" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold"><i class="fa-solid fa-bed me-1"></i> Gerenciar Hospedagem</a>
         {% else %}
-            <a href="{% url 'room_list_create' band.slug show.id %}" class="btn btn-outline-primary rounded-pill px-4 fw-bold"><i class="fa-solid fa-bed me-1"></i> Ir para hospedagem</a>
+            <a href="{% url 'room_list_create' band.slug show.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold"><i class="fa-solid fa-bed me-1"></i> Ir para Hospedagem</a>
         {% endif %}
-        <a href="{% url 'shows_edit' band.slug show.id %}" class="btn btn-outline-primary rounded-pill px-4 fw-bold">Editar</a>
+        <a href="{% url 'shows_edit' band.slug show.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">Editar</a>
         {% else %}
             {% if show.room_lists.exists and show.room_lists.first.status == 'PUBLICADA' %}
-                <a href="{% url 'room_list_pdf' band.slug show.room_lists.first.id %}" target="_blank" class="btn btn-primary rounded-pill px-4 fw-bold"><i class="fa-solid fa-file-pdf me-1"></i> Ver Hospedagem</a>
+                <a href="{% url 'room_list_pdf' band.slug show.room_lists.first.id %}" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold"><i class="fa-solid fa-file-pdf me-1"></i> Ver Hospedagem</a>
             {% endif %}
         {% endif %}
-        <a href="{% url 'calendario' band.slug %}" class="btn btn-outline-light rounded-pill fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
-    </div>
-
-    <!-- Mobile Actions Dropdown -->
-    <div class="d-md-none dropdown">
-        <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle fw-bold px-3 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
-            <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.95rem;">
-            {% if user.is_produtor or user.is_superuser %}
-            <li><a class="dropdown-item py-2 fw-medium" href="{% url 'show_pdf' band.slug show.id %}" target="_blank"><i class="fa-solid fa-file-pdf text-success me-2"></i> Gerar PDF</a></li>
-            {% if show.room_lists.exists %}
-                <li><a class="dropdown-item py-2 fw-medium" href="{% url 'room_list_manage' band.slug show.room_lists.first.id %}"><i class="fa-solid fa-bed text-primary me-2"></i> Gerenciar Hospedagem</a></li>
-            {% else %}
-                <li><a class="dropdown-item py-2 fw-medium" href="{% url 'room_list_create' band.slug show.id %}"><i class="fa-solid fa-bed text-primary me-2"></i> Criar Hospedagem</a></li>
-            {% endif %}
-            <li><a class="dropdown-item py-2 fw-medium" href="{% url 'shows_edit' band.slug show.id %}"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar</a></li>
-            <li><hr class="dropdown-divider"></li>
-            {% else %}
-                {% if show.room_lists.exists and show.room_lists.first.status == 'PUBLICADA' %}
-                    <li><a class="dropdown-item py-2 fw-medium" href="{% url 'room_list_pdf' band.slug show.room_lists.first.id %}" target="_blank"><i class="fa-solid fa-file-pdf text-primary me-2"></i> Ver Hospedagem</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                {% endif %}
-            {% endif %}
-            <li><a class="dropdown-item py-2 fw-medium" href="{% url 'calendario' band.slug %}"><i class="fa-solid fa-arrow-left text-secondary me-2"></i> Voltar</a></li>
-        </ul>
+        <a href="{% url 'calendario' band.slug %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
     </div>
 </div>
 
