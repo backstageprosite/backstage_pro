@@ -1,0 +1,228 @@
+﻿:root {
+  --bp-brand-green: #6BD443;
+  --bp-brand-green-hover: #58C634;
+  --bp-success: #198754;
+  --bp-success-hover: #157347;
+  --bp-primary: #0D6EFD;
+  --bp-primary-hover: #0B5ED7;
+  --bp-accent: #168AAD;
+  --bp-warning: #FFC107;
+  --bp-danger: #DC3545;
+  --bp-dark: #212529;
+  --bp-secondary: #6C757D;
+  --bp-border: #DEE2E6;
+  --bp-surface: #FFFFFF;
+  --bp-text: #212529;
+  --bp-text-muted: #6C757D;
+  --bp-whatsapp: #198754;
+}
+
+.bp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.bp-btn i, .bp-btn svg {
+  font-size: 14px;
+}
+
+.bp-btn-sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.bp-btn-sm i, .bp-btn-sm svg {
+  font-size: 13px;
+}
+
+.bp-btn-header {
+  height: 42px;
+  padding: 0 20px;
+  font-size: 14px;
+  border-radius: 50rem;
+}
+
+.bp-btn-header i, .bp-btn-header svg {
+  font-size: 16px;
+}
+
+/* Semantics */
+.bp-btn-create {
+  background-color: var(--bp-brand-green);
+  color: var(--bp-dark);
+}
+.bp-btn-create:hover {
+  background-color: var(--bp-brand-green-hover);
+  color: var(--bp-dark);
+}
+
+.bp-btn-confirm {
+  background-color: var(--bp-success);
+  color: var(--bp-surface);
+}
+.bp-btn-confirm:hover {
+  background-color: var(--bp-success-hover);
+  color: var(--bp-surface);
+}
+
+.bp-btn-primary {
+  background-color: var(--bp-primary);
+  color: var(--bp-surface);
+}
+.bp-btn-primary:hover {
+  background-color: var(--bp-primary-hover);
+  color: var(--bp-surface);
+}
+
+.bp-btn-primary-outline {
+  background-color: transparent;
+  color: var(--bp-primary);
+  border-color: var(--bp-primary);
+}
+.bp-btn-primary-outline:hover {
+  background-color: var(--bp-primary);
+  color: var(--bp-surface);
+}
+
+.bp-btn-edit {
+  background-color: var(--bp-warning);
+  color: var(--bp-dark);
+}
+.bp-btn-edit:hover {
+  background-color: #e0a800;
+  color: var(--bp-dark);
+}
+
+.bp-btn-danger {
+  background-color: var(--bp-danger);
+  color: var(--bp-surface);
+}
+.bp-btn-danger:hover {
+  background-color: #c82333;
+  color: var(--bp-surface);
+}
+
+.bp-btn-danger-outline {
+  background-color: transparent;
+  color: var(--bp-danger);
+  border-color: var(--bp-danger);
+}
+.bp-btn-danger-outline:hover {
+  background-color: var(--bp-danger);
+  color: var(--bp-surface);
+}
+
+.bp-btn-export {
+  background-color: var(--bp-dark);
+  color: var(--bp-surface);
+}
+.bp-btn-export:hover {
+  background-color: #121416;
+  color: var(--bp-surface);
+}
+
+.bp-btn-back {
+  background-color: var(--bp-surface);
+  color: var(--bp-dark);
+  border-color: var(--bp-dark);
+  border-radius: 50rem;
+}
+.bp-btn-back:hover {
+  background-color: var(--bp-border);
+  color: var(--bp-dark);
+}
+
+.bp-btn-neutral {
+  background-color: var(--bp-surface);
+  color: var(--bp-secondary);
+  border-color: var(--bp-border);
+}
+.bp-btn-neutral:hover {
+  background-color: #e2e6ea;
+  color: var(--bp-dark);
+}
+
+.bp-btn-clear {
+  background-color: var(--bp-surface);
+  color: var(--bp-secondary);
+  border-color: var(--bp-border);
+}
+.bp-btn-clear:hover {
+  background-color: #e2e6ea;
+  color: var(--bp-dark);
+}
+
+.bp-btn-filter {
+  background-color: var(--bp-dark);
+  color: var(--bp-surface);
+}
+.bp-btn-filter:hover {
+  background-color: #121416;
+  color: var(--bp-surface);
+}
+
+.bp-btn-actions {
+  background-color: var(--bp-surface);
+  color: var(--bp-dark);
+  border-color: var(--bp-border);
+  border-radius: 50rem;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.bp-btn-actions:hover {
+  background-color: #e2e6ea;
+  color: var(--bp-dark);
+}
+
+.bp-btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 8px;
+}
+.bp-btn-icon.bp-btn-sm {
+  width: 34px;
+  height: 34px;
+}
+.bp-btn-icon-primary {
+  color: var(--bp-primary);
+  border-color: var(--bp-primary);
+  background-color: transparent;
+}
+.bp-btn-icon-primary:hover {
+  background-color: var(--bp-primary);
+  color: var(--bp-surface);
+}
+
+.bp-btn-icon-whatsapp {
+  background-color: var(--bp-whatsapp);
+  color: var(--bp-surface);
+  border-radius: 50rem;
+}
+.bp-btn-icon-whatsapp:hover {
+  background-color: var(--bp-success-hover);
+  color: var(--bp-surface);
+}
+
+@media (max-width: 768px) {
+  .bp-btn-icon, .bp-btn-icon-whatsapp {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

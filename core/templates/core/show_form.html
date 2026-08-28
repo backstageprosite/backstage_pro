@@ -515,13 +515,13 @@
                                                                 </div>
                                                                 <div class="modal-footer bg-light border-0 justify-content-center">
                                                                     <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                                                                    <button type="button" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm" data-bs-dismiss="modal" onclick="document.getElementById('desc-text-{{ form.instance.pk }}').innerText = document.getElementById('{{ form.description.id_for_label }}').value;">Salvar Alterações</button>
+                                                                    <button type="button" class="bp-btn bp-btn-confirm" data-bs-dismiss="modal" onclick="document.getElementById('desc-text-{{ form.instance.pk }}').innerText = document.getElementById('{{ form.description.id_for_label }}').value;">Salvar Alterações</button>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     
-                                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#deleteDocModal{{ form.instance.pk }}">Excluir</button>
+                                                    <button type="button" class="bp-btn bp-btn-danger" data-bs-toggle="modal" data-bs-target="#deleteDocModal{{ form.instance.pk }}">Excluir</button>
                                                     <div class="d-none">
                                                         {{ form.DELETE }}
                                                     </div>
@@ -541,7 +541,7 @@
                                                                     <p class="text-muted mb-4">Tem certeza que deseja excluir este anexo?<br>Esta ação não poderá ser desfeita.</p>
                                                                     <div class="d-flex justify-content-center gap-2">
                                                                         <button type="button" class="btn btn-light border fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
-                                                                        <button type="button" class="btn btn-danger fw-bold px-4" onclick="document.getElementById('{{ form.DELETE.id_for_label }}').checked = true; this.closest('form').submit();">Sim, Excluir</button>
+                                                                        <button type="button" class="bp-btn bp-btn-danger" onclick="document.getElementById('{{ form.DELETE.id_for_label }}').checked = true; this.closest('form').submit();">Sim, Excluir</button>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -595,7 +595,7 @@
                 <button type="button" class="btn btn-light border fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
                 <form action="{% url 'shows_delete' band.slug form.instance.id %}" method="POST" class="d-inline">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger fw-bold px-4">Sim, Excluir</button>
+                    <button type="submit" class="bp-btn bp-btn-danger">Sim, Excluir</button>
                 </form>
             </div>
         </div>

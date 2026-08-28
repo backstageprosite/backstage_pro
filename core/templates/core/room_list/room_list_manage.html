@@ -106,7 +106,7 @@
 
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="submit" class="bp-btn bp-btn-confirm">Salvar</button>
 
                 </div>
 
@@ -190,7 +190,7 @@
 
                 {% if room_list.status == 'RASCUNHO' %}
 
-                    <a href="{% url 'room_list_edit' request.band.slug room_list.id %}" class="btn btn-sm btn-warning">Editar Dados</a>
+                    <a href="{% url 'room_list_edit' request.band.slug room_list.id %}" class="bp-btn bp-btn-edit">Editar Dados</a>
 
                     <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#modalObservacoes">
 
@@ -198,7 +198,7 @@
 
                     </button>
 
-                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAdicionarQuarto">Adicionar Quarto</button>
+                    <button type="button" class="bp-btn bp-btn-create" data-bs-toggle="modal" data-bs-target="#modalAdicionarQuarto">Adicionar Quarto</button>
 
 
 
@@ -222,7 +222,7 @@
 
                         {% csrf_token %}
 
-                        <button class="btn btn-success mb-md-2 btn-sm">Publicar</button>
+                        <button class="bp-btn bp-btn-confirm">Publicar</button>
 
                     </form>
 
@@ -230,7 +230,7 @@
 
                         {% csrf_token %}
 
-                        <button class="btn btn-danger mb-md-2 btn-sm">Arquivar</button>
+                        <button class="bp-btn bp-btn-danger">Arquivar</button>
 
                     </form>
 
@@ -280,7 +280,7 @@
 
                             {% csrf_token %}
 
-                            <button class="btn btn-danger btn-sm  px-1">Arquivar</button>
+                            <button class="bp-btn bp-btn-danger">Arquivar</button>
 
                         </form>
 
@@ -368,7 +368,7 @@
 
                         {% csrf_token %}
 
-                        <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+                        <button type="submit" class="bp-btn bp-btn-danger">Sim, Excluir</button>
 
                     </form>
 
@@ -412,11 +412,11 @@
 
                                 <div>
 
-                                    <a href="{% url 'room_list_room_edit' request.band.slug room_list.id room.id %}" class="btn btn-sm btn-outline-warning">Editar</a>
+                                    <a href="{% url 'room_list_room_edit' request.band.slug room_list.id room.id %}" class="bp-btn bp-btn-edit">Editar</a>
 
                                     {% if is_produtor %}
 
-                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalDeleteRoom{{ room.id }}">Excluir</button>
+                                    <button type="button" class="bp-btn bp-btn-danger" data-bs-toggle="modal" data-bs-target="#modalDeleteRoom{{ room.id }}">Excluir</button>
 
 
 
@@ -450,7 +450,7 @@
 
                                               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-                                              <button type="submit" class="btn btn-danger">Excluir quarto</button>
+                                              <button type="submit" class="bp-btn bp-btn-danger">Excluir quarto</button>
 
                                             </div>
 
@@ -524,7 +524,7 @@
 
                                                 {% csrf_token %}
 
-                                                <button type="submit" class="btn btn-sm btn-light  border">Remover Quarto</button>
+                                                <button type="submit" class="bp-btn bp-btn-danger">Remover Quarto</button>
 
                                             </form>
 
@@ -753,7 +753,7 @@
 
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-                    <button type="submit" class="btn btn-primary" id="btnSyncSubmit" onclick="this.disabled=true; this.form.submit();">Adicionar selecionados</button>
+                    <button type="submit" class="bp-btn bp-btn-create" id="btnSyncSubmit" onclick="this.disabled=true; this.form.submit();">Adicionar selecionados</button>
 
                 </div>
 
@@ -919,7 +919,7 @@ function toggleAllIntegrantes(source) {
 
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="submit" class="bp-btn bp-btn-confirm">Salvar</button>
 
                 </div>
 
@@ -975,7 +975,7 @@ function toggleAllIntegrantes(source) {
 
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
 
-                        <button type="submit" class="btn btn-primary">Salvar Observações</button>
+                        <button type="submit" class="bp-btn bp-btn-confirm">Salvar Observações</button>
 
                     </div>
 
