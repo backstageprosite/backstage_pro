@@ -25,28 +25,37 @@
                     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
                     let url = roomId ? draggable.dataset.allocateUrl : draggable.dataset.unassignUrl;
 
-                    let formData = new FormData();
+                    let formData = new URLSearchParams();
                     if (roomId) formData.append('room_id', roomId);
 
                     fetch(url, {
                         method: 'POST',
                         headers: {
                             'X-CSRFToken': csrfToken,
-                            'X-Requested-With': 'XMLHttpRequest'
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/x-www-form-urlencoded'
                         },
-                        body: formData
+                        body: formData.toString()
                     })
                     .then(res => {
-                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        if (!res.ok) {
+                            return res.text().then(text => {
+                                try {
+                                    const json = JSON.parse(text);
+                                    throw new Error(json.message || 'HTTP ' + res.status);
+                                } catch(e) {
+                                    if (e.message.startsWith('HTTP')) throw e;
+                                    throw new Error('HTTP ' + res.status + ': ' + text.substring(0, 50));
+                                }
+                            });
+                        }
                         return res.json();
                     })
                     .then(data => {
                         if(data.status !== 'success') {
                             alert('Erro: ' + data.message);
-                            window.location.reload();
-                        } else {
-                            window.location.reload();
                         }
+                        window.location.reload();
                     })
                     .catch(err => {
                         console.error(err);
