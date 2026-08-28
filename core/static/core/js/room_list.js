@@ -5,9 +5,11 @@
             Sortable.create(zone, {
     group: 'shared',
     animation: 150,
-    delay: 150,
-    delayOnTouchOnly: true,
+    delay: 0,
     fallbackOnBody: true,
+    scroll: true,
+    scrollSensitivity: 80,
+    scrollSpeed: 15,
     handle: '.drag-handle',
     filter: '[draggable="false"]',
     onEnd: function (evt) {
