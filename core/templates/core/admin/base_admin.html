@@ -252,7 +252,7 @@
 
                     <li class="nav-item">
                         <a href="{% url 'admin_painel:usuarios' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'usuarios' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
-                            <i class="fa-solid fa-users fa-fw me-2 {% if request.resolver_match.url_name != 'usuarios' %}opacity-75{% endif %}"></i> UsuÃ¡rios
+                            <i class="fa-solid fa-users fa-fw me-2 {% if request.resolver_match.url_name != 'usuarios' %}opacity-75{% endif %}"></i> Usuários
                         </a>
                     </li>
 
@@ -278,7 +278,7 @@
                     
                     <li class="nav-item">
                         <a href="{% url 'admin_painel:relatorios' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
-                            <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios' %}opacity-75{% endif %}"></i> RelatÃ³rios
+                            <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios' %}opacity-75{% endif %}"></i> Relatórios
                         </a>
                     </li>
                     {% endif %}
@@ -292,7 +292,7 @@
                 <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
                         <a href="{% url 'admin_painel:configuracoes' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'configuracoes' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
-                            <i class="fa-solid fa-gear fa-fw me-2 {% if request.resolver_match.url_name != 'configuracoes' %}opacity-75{% endif %}"></i> ConfiguraÃ§Ãµes
+                            <i class="fa-solid fa-gear fa-fw me-2 {% if request.resolver_match.url_name != 'configuracoes' %}opacity-75{% endif %}"></i> Configurações
                         </a>
                     </li>
                 </ul>
@@ -315,7 +315,7 @@
 
                     <div class="d-flex align-items-center ms-auto flex-nowrap" style="min-width: 0;">
                         <span class="text-dark me-2 me-md-3 fw-medium text-truncate" style="max-width: 150px;">
-                            <i class="fa-regular fa-circle-user text-primary me-1"></i> <span class="d-none d-md-inline">OlÃ¡, </span>{{ user.first_name|default:user.username|title }} 
+                            <i class="fa-regular fa-circle-user text-primary me-1"></i> <span class="d-none d-md-inline">Olá, </span>{{ user.first_name|default:user.username|title }}
                             <span class="badge bg-dark ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-shield"></i><span class="d-none d-md-inline ms-1">Admin Geral</span></span>
                         </span>
                         <!-- Logout do admin direciona para o login do admin-master -->
