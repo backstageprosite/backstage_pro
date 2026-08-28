@@ -343,6 +343,8 @@ class Contact(models.Model):
     normalized_phone = models.CharField(max_length=50, blank=True, null=True, db_index=True)
     normalized_email = models.EmailField(max_length=254, blank=True, null=True, db_index=True)
 
+    is_hidden = models.BooleanField(default=False, db_index=True, verbose_name='Oculto pelo Administrador')
+
     class Meta:
         verbose_name = 'Contato (Banco de Dados)'
         verbose_name_plural = 'Banco de Dados'

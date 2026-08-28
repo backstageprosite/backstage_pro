@@ -1,5 +1,5 @@
 from django.urls import path
-from . import admin_views, pwa_views, admin_views_support, admin_views_expenses
+from . import admin_views, pwa_views, admin_views_support, admin_views_expenses, admin_views_database
 
 app_name = 'admin_painel'
 
@@ -68,5 +68,12 @@ urlpatterns = [
 
     path('web-push/', admin_views.AdminWebPushDashboardView.as_view(), name='admin_web_push_dashboard'),
     
+
+    path('banco-de-dados/', admin_views_database.AdminDatabaseListView.as_view(), name='database_list'),
+    path('banco-de-dados/<int:pk>/editar/', admin_views_database.admin_database_edit, name='database_edit'),
+    path('banco-de-dados/<int:pk>/ocultar/', admin_views_database.admin_database_hide, name='database_hide'),
+    path('banco-de-dados/<int:pk>/desocultar/', admin_views_database.admin_database_unhide, name='database_unhide'),
+    path('banco-de-dados/<int:pk>/excluir/', admin_views_database.admin_database_delete, name='database_delete'),
+
     path('configuracoes/', admin_views.AdminConfiguracoesView.as_view(), name='configuracoes'),
 ]

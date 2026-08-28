@@ -332,7 +332,7 @@ def dashboard_view(request, band_slug):
 
         total_users = User.objects.filter(band=band).count()
 
-        total_contacts = Contact.objects.filter(band=band).count()
+        total_contacts = Contact.objects.filter(band=band, is_hidden=False).count()
 
 
 
@@ -2039,7 +2039,7 @@ def contatos_list_view(request, band_slug):
 
     # Base QuerySet
 
-    contatos = Contact.objects.filter(band=band).order_by('name')
+    contatos = Contact.objects.filter(band=band, is_hidden=False).order_by('name')
 
 
 
@@ -2126,7 +2126,7 @@ def contato_edit_view(request, band_slug, pk):
         return HttpResponseForbidden("Apenas produtores podem editar contatos.")
 
     band = get_object_or_404(Band, slug=band_slug)
-    contact_to_edit = get_object_or_404(Contact, pk=pk, band=band)
+    contact_to_edit = get_object_or_404(Contact, pk=pk, band=band, is_hidden=False)
     was_shared = contact_to_edit.is_shared_globally
 
     if request.method == 'POST':
@@ -2167,7 +2167,8 @@ def banco_de_dados_view(request):
 
     contacts = Contact.objects.filter(
         is_shared_globally=True,
-        band__is_active=True
+        band__is_active=True,
+        is_hidden=False
     ).select_related('band', 'shared_by').order_by('name')
 
     search_query = request.GET.get('q', '').strip()
@@ -2212,7 +2213,7 @@ def contato_delete_view(request, band_slug, pk):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    contact = get_object_or_404(Contact, pk=pk, band=band)
+    contact = get_object_or_404(Contact, pk=pk, band=band, is_hidden=False)
 
 
 

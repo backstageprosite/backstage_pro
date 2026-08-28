@@ -1,14 +1,18 @@
-{% extends 'core/base.html' %}
+{% extends 'core/admin/base_admin.html' %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="fw-bold m-0">
-        <i class="fa-solid {% if is_edit %}fa-pen-to-square{% else %}fa-plus-circle{% endif %} text-primary me-2"></i>
-        {% if is_edit %}Editar Contato{% else %}Adicionar Contato{% endif %}
+        <i class="fa-solid fa-pen text-primary me-2"></i>
+        Editar Contato
     </h4>
-    <a href="{% url 'contatos_list' band.slug %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
+
+    <a href="{% url 'admin_painel:database_list' %}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
         <i class="fa-solid fa-arrow-left me-1"></i> Voltar
     </a>
+</div>
+<div class="mb-4 text-center text-md-start">
+    <p class="text-muted mt-1">Banda de Origem: <strong class="badge bg-secondary">{{ contact.band.name }}</strong></p>
 </div>
 
 <div class="card shadow-sm border-0" style="border-radius: 12px; max-width: 800px; margin: 0 auto;">
@@ -91,7 +95,6 @@
                     {% endif %}
                 </div>
 
-                {% if request.user.is_produtor %}
                 <div class="col-12 mt-3">
                     <div class="form-check">
                         {{ form.is_shared_globally }}
@@ -108,13 +111,12 @@
                         {% endif %}
                     </div>
                 </div>
-                {% endif %}
             </div>
 
             <hr class="my-4">
 
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                <a href="{% url 'contatos_list' band.slug %}" class="btn btn-light border px-4 fw-bold rounded-pill">Cancelar</a>
+                <a href="{% url 'admin_painel:database_list' %}" class="btn btn-light border px-4 fw-bold rounded-pill">Cancelar</a>
                 <button type="submit" class="btn btn-success px-4 fw-bold rounded-pill shadow-sm">
                     <i class="fa-solid fa-check me-1"></i> Salvar Contato
                 </button>

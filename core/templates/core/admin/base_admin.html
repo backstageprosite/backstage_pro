@@ -250,7 +250,13 @@
                         </a>
                     </li>
 
-                    <li class="nav-item">
+                                        <li class="nav-item">
+                        <a href="{% url 'admin_painel:database_list' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'database_list' or request.resolver_match.url_name == 'database_edit' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-database fa-fw me-2 {% if request.resolver_match.url_name != 'database_list' and request.resolver_match.url_name != 'database_edit' %}opacity-75{% endif %}"></i> Banco de Dados
+                        </a>
+                    </li>
+
+<li class="nav-item">
                         <a href="{% url 'admin_painel:usuarios' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'usuarios' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-users fa-fw me-2 {% if request.resolver_match.url_name != 'usuarios' %}opacity-75{% endif %}"></i> Usuários
                         </a>

@@ -1,0 +1,251 @@
+{% extends 'core/admin/base_admin.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold m-0"><i class="fa-solid fa-database text-primary me-2"></i> Banco de Dados (Geral)</h4>
+</div>
+
+<!-- Barra de Filtros -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold text-muted">Nome</label>
+                <input type="text" name="nome" class="form-control form-control-sm" placeholder="Buscar por nome..." value="{{ search_nome|default:'' }}">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold text-muted">Tipo</label>
+                <select name="tipo" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    {% for db_val, display_val in contact_types %}
+                    <option value="{{ db_val }}" {% if search_tipo == db_val %}selected{% endif %}>{{ display_val }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold text-muted">Local</label>
+                <input type="text" name="local" class="form-control form-control-sm" placeholder="Buscar por local..." value="{{ search_local|default:'' }}">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold text-muted">Banda</label>
+                <input type="text" name="banda" class="form-control form-control-sm" placeholder="Nome da banda..." value="{{ search_banda|default:'' }}">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold text-muted">Situação</label>
+                <select name="situacao" class="form-select form-select-sm">
+                    <option value="todos" {% if search_situacao == 'todos' %}selected{% endif %}>Todos</option>
+                    <option value="visiveis" {% if search_situacao == 'visiveis' %}selected{% endif %}>Visíveis</option>
+                    <option value="ocultos" {% if search_situacao == 'ocultos' %}selected{% endif %}>Ocultos</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 text-end d-flex gap-2 justify-content-end">
+                <a href="{% url 'admin_painel:database_list' %}" class="btn btn-sm btn-outline-secondary px-3 rounded-pill d-inline-flex align-items-center" style="height: 32px;"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
+                <button type="submit" class="btn btn-sm btn-dark px-4 rounded-pill d-inline-flex align-items-center" style="height: 32px;"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 12px;">
+    <div class="card-body p-0">
+        <div class="table-responsive" style="-webkit-overflow-scrolling: touch; overflow: visible;">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
+                    <tr>
+                        <th class="ps-4 py-3">Nome</th>
+                        <th class="py-3">Contato</th>
+                        <th class="py-3">Tipo</th>
+                        <th class="py-3">Local</th>
+                        <th class="py-3 text-center">Link</th>
+                        <th class="py-3">Banda de Origem</th>
+                        <th class="py-3">Autor</th>
+                        <th class="py-3 text-center">Situação</th>
+                        <th class="pe-4 py-3 text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for contato in contacts %}
+                    <tr {% if contato.is_hidden %}style="background-color: #f8f9fa; opacity: 0.85;"{% endif %}>
+                        <td class="ps-4 fw-medium">{{ contato.name }}</td>
+                        <td>
+                            {% if contato.phone %}
+                            <a href="https://wa.me/55{{ contato.normalized_phone|default:contato.phone|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener noreferrer" class="text-success fs-5">
+                                <i class="fa-brands fa-whatsapp"></i>
+                            </a>
+                            {% else %}
+                            <span class="text-muted small">---</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ contato.get_contact_type_display }}</span></td>
+                        <td class="text-muted">{{ contato.location|default:"---" }}</td>
+                        <td class="text-center">
+                            {% if contato.link %}
+                            <a href="{{ contato.link }}" target="_blank" rel="noopener noreferrer" class="text-primary fs-5">
+                                <i class="fa-solid fa-link"></i>
+                            </a>
+                            {% else %}
+                            <span class="text-muted small">---</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-secondary">{{ contato.band.name }}</span></td>
+                        <td class="text-muted small">
+                            {% if contato.shared_by %}
+                                {{ contato.shared_by.get_full_name|default:contato.shared_by.username }}
+                                <br><small>{{ contato.shared_at|date:"d/m/Y" }}</small>
+                            {% else %}
+                                ---
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if contato.is_hidden %}
+                            <span class="badge bg-secondary"><i class="fa-solid fa-eye-slash"></i> Oculto</span>
+                            {% else %}
+                            <span class="badge bg-success"><i class="fa-solid fa-eye"></i> Visível</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="dropdown">
+                                <button class="bp-btn bp-btn-actions bp-btn-sm rounded-pill dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-cog"></i> Ações
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                    <li>
+                                        <a class="dropdown-item fw-medium py-2" href="{% url 'admin_painel:database_edit' contato.id %}">
+                                            <i class="fa-solid fa-pen text-muted me-2"></i>Editar
+                                        </a>
+                                    </li>
+                                    {% if contato.is_hidden %}
+                                    <li>
+                                        <button class="dropdown-item text-primary fw-medium py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalDesocultarContato{{ contato.id }}">
+                                            <i class="fa-solid fa-eye me-2"></i>Desocultar
+                                        </button>
+                                    </li>
+                                    {% else %}
+                                    <li>
+                                        <button class="dropdown-item text-warning fw-medium py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalOcultarContato{{ contato.id }}">
+                                            <i class="fa-solid fa-eye-slash me-2"></i>Ocultar
+                                        </button>
+                                    </li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item text-danger fw-medium py-2" type="button" data-bs-toggle="modal" data-bs-target="#modalExcluirContato{{ contato.id }}">
+                                            <i class="fa-solid fa-trash me-2"></i>Excluir
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-inbox fa-3x mb-3 text-light"></i>
+                            <p class="mb-0">Nenhum contato encontrado.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modais -->
+{% for contato in contacts %}
+<!-- Modal Ocultar -->
+{% if not contato.is_hidden %}
+<div class="modal fade" id="modalOcultarContato{{ contato.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'admin_painel:database_hide' contato.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Ocultar Contato?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-start">
+                    <p>Tem certeza que deseja ocultar o contato <strong>{{ contato.name }}</strong> da banda <strong>{{ contato.band.name }}</strong>?</p>
+                    <p class="text-muted small">Ao ocultar, o contato desaparecerá imediatamente dos painéis das bandas, mas continuará salvo no Banco de Dados Geral e poderá ser desocultado no futuro.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning rounded-pill text-dark fw-bold">Sim, Ocultar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Desocultar -->
+{% if contato.is_hidden %}
+<div class="modal fade" id="modalDesocultarContato{{ contato.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'admin_painel:database_unhide' contato.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Desocultar Contato?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-start">
+                    <p>Tem certeza que deseja desocultar o contato <strong>{{ contato.name }}</strong> da banda <strong>{{ contato.band.name }}</strong>?</p>
+                    <p class="text-muted small">O contato voltará a aparecer normalmente nos painéis das bandas e nas buscas do sistema.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary rounded-pill fw-bold">Sim, Desocultar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Excluir -->
+<div class="modal fade" id="modalExcluirContato{{ contato.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'admin_painel:database_delete' contato.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Excluir Contato?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-start">
+                    <p>Tem certeza que deseja excluir <strong>definitivamente</strong> o contato <strong>{{ contato.name }}</strong> da banda <strong>{{ contato.band.name }}</strong>?</p>
+                    <div class="alert alert-danger">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Esta ação não poderá ser desfeita. Se o contato possuir vínculos (ex: fornecedor em algum show), a exclusão será bloqueada.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger rounded-pill fw-bold">Sim, Excluir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% if is_paginated %}
+<div class="d-flex justify-content-center mt-4">
+    <nav>
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1{% if request.GET.nome %}&nome={{ request.GET.nome }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.local %}&local={{ request.GET.local }}{% endif %}{% if request.GET.banda %}&banda={{ request.GET.banda }}{% endif %}{% if request.GET.situacao %}&situacao={{ request.GET.situacao }}{% endif %}">&laquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.nome %}&nome={{ request.GET.nome }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.local %}&local={{ request.GET.local }}{% endif %}{% if request.GET.banda %}&banda={{ request.GET.banda }}{% endif %}{% if request.GET.situacao %}&situacao={{ request.GET.situacao }}{% endif %}">Anterior</a></li>
+            {% endif %}
+
+            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.nome %}&nome={{ request.GET.nome }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.local %}&local={{ request.GET.local }}{% endif %}{% if request.GET.banda %}&banda={{ request.GET.banda }}{% endif %}{% if request.GET.situacao %}&situacao={{ request.GET.situacao }}{% endif %}">Próxima</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.nome %}&nome={{ request.GET.nome }}{% endif %}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.local %}&local={{ request.GET.local }}{% endif %}{% if request.GET.banda %}&banda={{ request.GET.banda }}{% endif %}{% if request.GET.situacao %}&situacao={{ request.GET.situacao }}{% endif %}">&raquo;</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+{% endblock %}
