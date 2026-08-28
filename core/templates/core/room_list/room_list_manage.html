@@ -390,7 +390,7 @@
 
     <div class="row">
 
-        <div class="col-md-8">
+        <div class="col-md-8 col-xl-9">
 
             <h4>Quartos</h4>
 
@@ -400,7 +400,7 @@
 
                 {% for room in rooms %}
 
-                    <div class="col-12 col-md-6 mb-3">
+                    <div class="col-12 col-md-6 col-xl-4 mb-3">
 
                         <div class="card shadow-sm h-100">
 
@@ -556,11 +556,11 @@
 
 
 
-        <div class="col-md-4">
+        <div class="col-md-4 col-xl-3">
 
             <h4>Não Alocados</h4>
 
-            <div class="card shadow-sm p-3 drop-zone" data-room-id="" style="min-height: 200px; background-color: #fff3cd; border: 2px dashed #ffe69c;">
+            <div class="card shadow-sm p-3 drop-zone sticky-md-top" data-room-id="" style="min-height: 200px; background-color: #fff3cd; border: 2px dashed #ffe69c; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto;">
 
                 {% if participants %}
 
