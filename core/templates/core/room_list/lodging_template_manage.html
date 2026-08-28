@@ -26,7 +26,7 @@
             <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalObservacoesPadrao">
                 <i class="fa-solid fa-note-sticky me-1"></i> Observações
             </button>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAdicionarQuarto">Adicionar Quarto</button>
+            <button type="button" class="bp-btn bp-btn-create" data-bs-toggle="modal" data-bs-target="#modalAdicionarQuarto">Adicionar Quarto</button>
         </div>
     </div>
 </div>
@@ -45,8 +45,8 @@
                     <div class="card-header bg-white border-bottom-dashed d-flex justify-content-between align-items-center py-2">
                         <strong class="text-dark fs-5">{{ room.number_or_name|default:"Sem número" }}</strong>
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalEditarQuarto{{ room.id }}">Editar</button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluirQuarto{{ room.id }}">Excluir</button>
+                            <button type="button" class="bp-btn bp-btn-edit" data-bs-toggle="modal" data-bs-target="#modalEditarQuarto{{ room.id }}">Editar</button>
+                            <button type="button" class="bp-btn bp-btn-danger" data-bs-toggle="modal" data-bs-target="#modalExcluirQuarto{{ room.id }}">Excluir</button>
                         </div>
                     </div>
                     <div class="card-body p-3 bg-light rounded-bottom">
@@ -98,8 +98,8 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="submit" class="btn btn-warning text-dark fw-bold">Salvar Alterações</button>
+                                    <button type="button" class="bp-btn bp-btn-neutral" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="bp-btn bp-btn-confirm">Salvar Alterações</button>
                                 </div>
                             </form>
                         </div>
@@ -118,10 +118,10 @@
                                 <p>Tem certeza que deseja excluir o quarto <strong>{{ room.number_or_name|default:"Sem número" }}</strong> do modelo padrão?</p>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="button" class="bp-btn bp-btn-neutral" data-bs-dismiss="modal">Cancelar</button>
                                 <form method="post" action="{% url 'lodging_template_room_delete' request.band.slug template.id room.id %}">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+                                    <button type="submit" class="bp-btn bp-btn-danger">Sim, Excluir</button>
                                 </form>
                             </div>
                         </div>
@@ -181,8 +181,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="bp-btn bp-btn-neutral" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="bp-btn bp-btn-confirm">Salvar</button>
                 </div>
             </form>
         </div>
@@ -207,8 +207,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Observações Padrão</button>
+                    <button type="button" class="bp-btn bp-btn-neutral" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="bp-btn bp-btn-confirm">Salvar Observações Padrão</button>
                 </div>
             </form>
         </div>
