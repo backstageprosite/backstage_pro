@@ -3650,9 +3650,9 @@ def room_list_allocate(request, band_slug, pk, participant_id):
             return JsonResponse({'status': 'success'})
         messages.success(request, 'Participante alocado.')
     except Exception as e:
+        messages.error(request, str(e))
         if is_fetch:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-        messages.error(request, str(e))
     return redirect('room_list_manage', band_slug=band_slug, pk=pk)
 
 @room_list_produtor_required
@@ -3666,9 +3666,9 @@ def room_list_unassign(request, band_slug, pk, participant_id):
             return JsonResponse({'status': 'success'})
         messages.success(request, 'Participante desalocado.')
     except Exception as e:
+        messages.error(request, str(e))
         if is_fetch:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-        messages.error(request, str(e))
     return redirect('room_list_manage', band_slug=band_slug, pk=pk)
 
 @room_list_produtor_required

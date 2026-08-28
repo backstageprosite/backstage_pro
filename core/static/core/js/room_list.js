@@ -38,28 +38,10 @@
                         body: formData.toString()
                     })
                     .then(res => {
-                        if (!res.ok) {
-                            return res.text().then(text => {
-                                try {
-                                    const json = JSON.parse(text);
-                                    throw new Error(json.message || 'HTTP ' + res.status);
-                                } catch(e) {
-                                    if (e.message.startsWith('HTTP')) throw e;
-                                    throw new Error('HTTP ' + res.status + ': ' + text.substring(0, 50));
-                                }
-                            });
-                        }
-                        return res.json();
-                    })
-                    .then(data => {
-                        if(data.status !== 'success') {
-                            alert('Erro: ' + data.message);
-                        }
                         window.location.reload();
                     })
                     .catch(err => {
                         console.error(err);
-                        alert('Erro na requisição: ' + err.message);
                         window.location.reload();
                     });
                 }
