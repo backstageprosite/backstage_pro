@@ -48,7 +48,7 @@
                     <option value="PAGO" {% if current_payment_status == 'PAGO' %}selected{% endif %}>Pago Totalmente</option>
                 </select>
             </div>
-            <div class="col-12 text-end mt-3">
+            <div class="col-12 col-xl-2 col-lg-auto ms-lg-auto d-flex gap-2 justify-content-end mt-3 mt-lg-0">
                 <a href="{% url 'shows_list' band.slug %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
                 <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
             </div>
