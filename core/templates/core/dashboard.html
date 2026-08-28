@@ -152,7 +152,7 @@
 
             </div>
 
-            <div class="card-body p-0" style="overflow-y: auto; flex-grow: 1;">
+            <div class="card-body p-0">
                 {% if pendencias_bloqueadas %}
                     <div class="text-center p-5 text-muted d-flex flex-column align-items-center justify-content-center h-100">
                         <i class="fa-solid fa-lock fa-3x mb-3 text-secondary"></i>
@@ -160,8 +160,7 @@
                     </div>
                 {% else %}
                 {% if dashboard_pending_items %}
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="min-width: 300px;">
+                    <table class="table table-hover align-middle mb-0" style="min-width: 300px;">
                             <thead class="table-light">
                                 <tr>
                                     <th class="py-3 px-4 text-muted fw-semibold small text-uppercase" style="width: 35%;">Pendência</th>
@@ -279,7 +278,6 @@
                                 {% endfor %}
                             </tbody>
                         </table>
-                    </div>
                 {% else %}
                     <div class="d-flex flex-column align-items-center justify-content-center text-center p-4 text-muted h-100" style="min-height: 200px;">
                         <i class="fa-regular fa-circle-check fs-3 mb-2 opacity-50"></i>

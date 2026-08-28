@@ -233,7 +233,7 @@
                     waDigits = '55' + waDigits;
                 }
                 if (waDigits.length >= 10) {
-                    cell.innerHTML = <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" class="text-success fs-5" aria-label="Abrir conversa no WhatsApp" title="Abrir conversa no WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>;
+                    cell.innerHTML = `<a href="https://wa.me/${waDigits}" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Falar no WhatsApp (${formatted})"><i class="fa-brands fa-whatsapp fs-5"></i></a>`;
                 } else {
                     cell.innerHTML = '<span class="text-muted">-</span>';
                 }
@@ -264,7 +264,7 @@
                     waDigits = '55' + waDigits;
                 }
 
-                cell.innerHTML = `<a href="https://wa.me/${waDigits}" target="_blank" class="text-success text-decoration-none fw-bold"><i class="fa-brands fa-whatsapp me-1"></i>${formatted}</a>`;
+                cell.innerHTML = `<a href="https://wa.me/${waDigits}" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Falar no WhatsApp (${formatted})"><i class="fa-brands fa-whatsapp fs-5"></i></a>`;
             }
         });
 

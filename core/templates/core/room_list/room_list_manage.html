@@ -120,7 +120,40 @@
 
 
 
+
+<!-- Modais de Movimentação Mobile -->
+{% if room_list.status == "RASCUNHO" %}
+    {% for p in participants %}
+    <div class="modal fade" id="moveModal{{ p.id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+          <div class="modal-header bg-warning">
+            <h6 class="modal-title text-dark fw-bold"><i class="fa-solid fa-arrows-up-down-left-right me-1"></i> Mover Integrante</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form method="post" id="formMove{{ p.id }}" action="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}">
+            {% csrf_token %}
+            <div class="modal-body pb-2">
+                <p class="mb-2 text-muted small">Mover <strong>{{ p.snapshot_name }}</strong> para:</p>
+                <select name="room_id" class="form-select mb-3" onchange="document.getElementById('formMove{{ p.id }}').action = this.value ? '{% url \'room_list_allocate\' request.band.slug room_list.id p.id %}' : '{% url \'room_list_unassign\' request.band.slug room_list.id p.id %}';">
+                    <option value="" {% if not p.room_id %}selected{% endif %}>-- Não Alocados --</option>
+                    {% for r in rooms %}
+                    <option value="{{ r.id }}" {% if p.room_id == r.id %}selected{% endif %}>Quarto {{ r.number_or_name|default:r.id }} ({{ r.get_type_display }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="modal-footer pt-1">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary btn-sm fw-bold">Confirmar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+{% endif %}
 {% endblock %}
+
 
 
 
@@ -490,7 +523,7 @@
 
                                          <div class="d-flex justify-content-between align-items-center ">
 
-                                              {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-2" style="cursor: grab; touch-action: none; opacity: 0.6;"></i>{% endif %} <span>{{ p.snapshot_name }}</span>
+                                              {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-2" style="cursor: grab; touch-action: none; opacity: 0.6;"></i>{% endif %} <span>{{ p.snapshot_name }}</span> {% if room_list.status == "RASCUNHO" %}<button type="button" class="btn btn-light btn-sm ms-2 py-0 px-2 d-md-none text-secondary border border-secondary" data-bs-toggle="modal" data-bs-target="#moveModal{{ p.id }}" style="font-size: 0.75rem;"><i class="fa-solid fa-arrows-up-down-left-right"></i> Mover</button>{% endif %}
 
                                               {% if room_list.status == 'RASCUNHO' %}
 
@@ -580,7 +613,7 @@
 
                                   <div class="d-flex justify-content-between align-items-center ">
 
-                                      {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-2" style="cursor: grab; touch-action: none; opacity: 0.6;"></i>{% endif %} <span>{{ p.snapshot_name }}</span>
+                                      {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-2" style="cursor: grab; touch-action: none; opacity: 0.6;"></i>{% endif %} <span>{{ p.snapshot_name }}</span> {% if room_list.status == "RASCUNHO" %}<button type="button" class="btn btn-light btn-sm ms-2 py-0 px-2 d-md-none text-secondary border border-secondary" data-bs-toggle="modal" data-bs-target="#moveModal{{ p.id }}" style="font-size: 0.75rem;"><i class="fa-solid fa-arrows-up-down-left-right"></i> Mover</button>{% endif %}
 
                                       {% if room_list.status == 'RASCUNHO' %}
 
@@ -1053,4 +1086,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+
+<!-- Modais de Movimentação Mobile -->
+{% if room_list.status == "RASCUNHO" %}
+    {% for p in participants %}
+    <div class="modal fade" id="moveModal{{ p.id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+          <div class="modal-header bg-warning">
+            <h6 class="modal-title text-dark fw-bold"><i class="fa-solid fa-arrows-up-down-left-right me-1"></i> Mover Integrante</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <form method="post" id="formMove{{ p.id }}" action="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}">
+            {% csrf_token %}
+            <div class="modal-body pb-2">
+                <p class="mb-2 text-muted small">Mover <strong>{{ p.snapshot_name }}</strong> para:</p>
+                <select name="room_id" class="form-select mb-3" onchange="document.getElementById('formMove{{ p.id }}').action = this.value ? '{% url \'room_list_allocate\' request.band.slug room_list.id p.id %}' : '{% url \'room_list_unassign\' request.band.slug room_list.id p.id %}';">
+                    <option value="" {% if not p.room_id %}selected{% endif %}>-- Não Alocados --</option>
+                    {% for r in rooms %}
+                    <option value="{{ r.id }}" {% if p.room_id == r.id %}selected{% endif %}>Quarto {{ r.number_or_name|default:r.id }} ({{ r.get_type_display }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="modal-footer pt-1">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary btn-sm fw-bold">Confirmar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+{% endif %}
 {% endblock %}
+
