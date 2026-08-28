@@ -232,6 +232,13 @@
                 if (waDigits.length >= 10 && !waDigits.startsWith('55')) {
                     waDigits = '55' + waDigits;
                 }
+                let formatted = rawText;
+                if (digits.length === 11) {
+                    formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+                } else if (digits.length === 10) {
+                    formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6, 10)}`;
+                }
+                
                 if (waDigits.length >= 10) {
                     cell.innerHTML = `<a href="https://wa.me/${waDigits}" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Falar no WhatsApp (${formatted})"><i class="fa-brands fa-whatsapp fs-5"></i></a>`;
                 } else {
