@@ -64,6 +64,10 @@ class CommercialModuleTests(TestCase):
         # 5. Renderiza a linha com botão e dropdown
         self.assertIn('Test Dropdown', html)
         self.assertIn('fa-gear', html)
+        self.assertIn('Ações', html)
+        self.assertIn('dropdown-toggle', html)
+        self.assertIn('rounded-pill', html)
+        self.assertNotIn('rounded-circle d-inline-flex', html)  # Botão circular apenas com engrenagem não existe
         self.assertIn('dropdown-menu dropdown-menu-end shadow-sm border-0', html)
 
         idx_editar = html.find('Editar')
@@ -75,6 +79,15 @@ class CommercialModuleTests(TestCase):
         dropdown_html = html[html.find('dropdown-menu dropdown-menu-end shadow-sm border-0'):html.find('</ul>', html.find('dropdown-menu dropdown-menu-end shadow-sm border-0'))]
         self.assertNotIn('<hr', dropdown_html)
         self.assertNotIn('dropdown-divider', dropdown_html)
+
+        # 6. Filtros Layout
+        self.assertIn('col-xl', html)
+        self.assertIn('col-xl-auto', html)
+        self.assertIn('btn-outline-secondary', html)
+        self.assertIn('fa-eraser', html)
+        self.assertIn('btn-dark', html)
+        self.assertIn('fa-filter', html)
+
 
 
         # 5. Dropdown Editar e Excluir sem hr
