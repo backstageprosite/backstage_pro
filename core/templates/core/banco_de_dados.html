@@ -169,7 +169,7 @@
                 <div class="row mb-3">
                     <div class="col-6">
                         <label class="form-label fw-bold small text-muted mb-0">Contato</label>
-                        <p class="mb-1">{{ contato.phone|default:"-" }}</p>
+                        <p class="mb-1 modal-phone-cell" data-phone="{{ contato.phone|default:'' }}">{{ contato.phone|default:"-" }}</p>
                     </div>
                     <div class="col-6">
                         <label class="form-label fw-bold small text-muted mb-0">E-mail</label>
@@ -264,6 +264,21 @@
             return new bootstrap.Popover(popoverTriggerEl)
         });
 
+        // Converte o número de contato no modal em link clicável para o WhatsApp
+        document.querySelectorAll('.modal-phone-cell').forEach(cell => {
+            const raw = cell.dataset.phone || '';
+            if (!raw) return;
+            const digits = raw.replace(/\D/g, '');
+            if (digits.length < 10) return;
+            let formatted = raw;
+            if (digits.length === 11) {
+                formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+            } else if (digits.length === 10) {
+                formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6, 10)}`;
+            }
+            const waDigits = digits.startsWith('55') ? digits : '55' + digits;
+            cell.innerHTML = `<a href="https://wa.me/${waDigits}" target="_blank" class="text-success fw-medium text-decoration-none"><i class="fa-brands fa-whatsapp me-1"></i>${formatted}</a>`;
+        });
 
 
         // Helper para obter CSRF cookie
