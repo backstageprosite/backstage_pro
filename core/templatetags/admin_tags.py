@@ -47,9 +47,10 @@ def whatsapp_clean(phone):
 def brl_currency(value):
     """
     Formata um valor numérico no padrão monetário brasileiro: R$ 8.000,00
-    Funciona com Decimal, float e int. Retorna "R$ 0,00" para valores ausentes.
-    Não depende de django.contrib.humanize nem de configurações de locale globais.
+    Funciona com Decimal, float e int.
     """
+    if value is None:
+        return ""
     from decimal import Decimal, InvalidOperation
     try:
         d = Decimal(str(value))

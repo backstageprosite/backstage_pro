@@ -561,6 +561,7 @@ class BandNoticeForm(forms.ModelForm):
 class CommercialProposalForm(forms.ModelForm):
     fee = forms.CharField(
         label='Valor do Cachê',
+        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control money-mask', 'placeholder': 'R$ 0,00'})
     )
 
@@ -586,23 +587,25 @@ class CommercialProposalForm(forms.ModelForm):
     def clean_contact(self):
         contact = self.cleaned_data.get('contact')
         if not contact or not contact.strip():
-            raise forms.ValidationError('O contato é obrigatório.')
+            return None
         return contact.strip()
 
     def clean_origin(self):
         origin = self.cleaned_data.get('origin')
         if not origin or not origin.strip():
-            raise forms.ValidationError('A origem é obrigatória.')
+            return None
         return origin.strip()
 
     def clean_fee(self):
         fee_val = self.cleaned_data.get('fee')
         if not fee_val:
-            raise forms.ValidationError('O valor do cachê é obrigatório.')
+            return None
         from decimal import Decimal
         import re
         if isinstance(fee_val, str):
             clean_str = re.sub(r'[^\d,.-]', '', fee_val).strip()
+            if not clean_str:
+                return None
             if ',' in clean_str:
                 clean_str = clean_str.replace('.', '').replace(',', '.')
             try:

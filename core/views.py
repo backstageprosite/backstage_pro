@@ -1365,36 +1365,51 @@ def commercial_index_view(request, band_slug):
     band = request.band
     from core.models import CommercialProposal, CommercialProposalDocument
     from core.forms import CommercialProposalForm
-    from django.db.models import Count
+    from django.db.models import F
 
-    # Agrupamentos de propostas com ordenação cronológica crescente: date, time, id
-    reservas_qs = CommercialProposal.objects.filter(
-        band=band, phase=CommercialProposal.Phase.RESERVA
-    ).select_related('show').prefetch_related('documents').order_by('date', 'time', 'id')
+    # Filtros da URL
+    q_name = request.GET.get('name', '').strip()
+    q_start_date = request.GET.get('start_date', '').strip()
+    q_end_date = request.GET.get('end_date', '').strip()
+    q_phase = request.GET.get('phase', '').strip()
+    q_origin = request.GET.get('origin', '').strip()
 
-    fechados_qs = CommercialProposal.objects.filter(
-        band=band, phase=CommercialProposal.Phase.FECHADO
-    ).select_related('show').prefetch_related('documents').order_by('date', 'time', 'id')
+    qs = CommercialProposal.objects.filter(band=band).select_related('show').prefetch_related('documents')
 
-    desistencias_qs = CommercialProposal.objects.filter(
-        band=band, phase=CommercialProposal.Phase.DESISTENCIA
-    ).select_related('show').prefetch_related('documents').order_by('date', 'time', 'id')
+    if q_name:
+        qs = qs.filter(name__icontains=q_name)
+    if q_start_date:
+        try:
+            qs = qs.filter(date__gte=q_start_date)
+        except ValueError:
+            pass
+    if q_end_date:
+        try:
+            qs = qs.filter(date__lte=q_end_date)
+        except ValueError:
+            pass
+    if q_phase and q_phase != 'TODAS':
+        qs = qs.filter(phase=q_phase)
+    if q_origin:
+        qs = qs.filter(origin__icontains=q_origin)
 
-    # Contagens eficientes para os badges
+    # Ordenação cronológica com horário nulo no final
+    qs = qs.order_by('date', F('time').asc(nulls_last=True), 'id')
+
+    reservas_qs = qs.filter(phase=CommercialProposal.Phase.RESERVA)
+    fd_qs = qs.filter(phase__in=[CommercialProposal.Phase.FECHADO, CommercialProposal.Phase.DESISTENCIA])
+
     count_reservas = reservas_qs.count()
-    count_fechados = fechados_qs.count()
-    count_desistencias = desistencias_qs.count()
+    count_fd = fd_qs.count()
 
     form = CommercialProposalForm()
 
     context = {
         'band': band,
         'reservas': reservas_qs,
-        'fechados': fechados_qs,
-        'desistencias': desistencias_qs,
+        'fechados_desistencias': fd_qs,
         'count_reservas': count_reservas,
-        'count_fechados': count_fechados,
-        'count_desistencias': count_desistencias,
+        'count_fd': count_fd,
         'form': form,
     }
     return render(request, 'core/comercial/comercial_index.html', context)

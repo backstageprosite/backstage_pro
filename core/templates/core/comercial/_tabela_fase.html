@@ -6,7 +6,7 @@
                 <th class="ps-4 py-3">Nome</th>
                 <th class="py-3">Data</th>
                 <th class="py-3">Horário</th>
-                <th class="py-3 text-center">Contato</th>
+                <th class="py-3 text-center">Fase</th>
                 <th class="py-3">Valor</th>
                 <th class="py-3">Origem</th>
                 <th class="pe-4 py-3 text-end">Ações</th>
@@ -22,32 +22,31 @@
                     {% endif %}
                 </td>
                 <td>{{ prop.date|date:"d/m/Y" }}</td>
-                <td>{{ prop.time|time:"H:i" }}</td>
+                <td>{% if prop.time %}{{ prop.time|time:"H:i" }}{% else %}—{% endif %}</td>
                 <td class="text-center">
-                    {% if prop.normalized_contact %}
-                        <a href="https://wa.me/55{{ prop.normalized_contact }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: #198754;" title="Falar no WhatsApp ({{ prop.contact }})" aria-label="Falar no WhatsApp">
-                            <i class="fa-brands fa-whatsapp fs-5 text-white"></i>
-                        </a>
-                    {% else %}
-                        <span class="text-muted">-</span>
+                    {% if prop.phase == 'RESERVA' %}
+                        <span class="badge rounded-pill" style="background-color: #ffc107; color: #000;">Reserva</span>
+                    {% elif prop.phase == 'FECHADO' %}
+                        <span class="badge rounded-pill" style="background-color: #198754; color: #fff;">Fechado</span>
+                    {% elif prop.phase == 'DESISTENCIA' %}
+                        <span class="badge rounded-pill" style="background-color: #dc3545; color: #fff;">Desistência</span>
                     {% endif %}
                 </td>
-                <td class="fw-semibold text-dark">{{ prop.fee|brl_currency }}</td>
-                <td><span class="badge bg-light text-dark border">{{ prop.origin }}</span></td>
+                <td class="fw-semibold text-dark">{% if prop.fee != None %}{{ prop.fee|brl_currency }}{% else %}—{% endif %}</td>
+                <td>{% if prop.origin %}<span class="badge bg-light text-dark border">{{ prop.origin }}</span>{% else %}—{% endif %}</td>
                 <td class="pe-4 text-end">
                     <div class="dropdown">
                         <button class="btn btn-sm btn-light border-0 rounded-circle d-inline-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px;" title="Ações">
                             <i class="fa-solid fa-gear text-secondary"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width: 160px; padding: 8px 0; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,.075);">
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width: 160px; padding: 8px 0; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,.075); z-index: 1000;">
                             <li>
                                 <button type="button" class="dropdown-item d-flex align-items-center py-2 px-3 text-primary js-btn-edit-proposal" 
                                     data-edit-url="{% url 'commercial_edit' band.slug prop.id %}"
-                                    data-proposal='{"id": {{ prop.id }}, "name": "{{ prop.name|escapejs }}", "date": "{{ prop.date|date:"Y-m-d" }}", "time": "{{ prop.time|time:"H:i" }}", "contact": "{{ prop.contact|escapejs }}", "origin": "{{ prop.origin|escapejs }}", "fee": "{{ prop.fee }}", "phase": "{{ prop.phase }}", "documents": [{% for doc in prop.documents.all %}{"id": {{ doc.id }}, "name": "{{ doc.original_name|escapejs }}", "download_url": "{% url "download_commercial_document" band.slug doc.id %}", "delete_url": "{% url "commercial_delete_document" band.slug prop.id doc.id %}"}{% if not forloop.last %},{% endif %}{% endfor %}]}'>
+                                    data-proposal='{"id": {{ prop.id }}, "name": "{{ prop.name|escapejs }}", "date": "{{ prop.date|date:"Y-m-d" }}", "time": "{% if prop.time %}{{ prop.time|time:"H:i" }}{% endif %}", "contact": "{% if prop.contact %}{{ prop.contact|escapejs }}{% endif %}", "origin": "{% if prop.origin %}{{ prop.origin|escapejs }}{% endif %}", "fee": "{% if prop.fee != None %}{{ prop.fee }}{% endif %}", "phase": "{{ prop.phase }}", "documents": [{% for doc in prop.documents.all %}{"id": {{ doc.id }}, "name": "{{ doc.original_name|escapejs }}", "download_url": "{% url "download_commercial_document" band.slug doc.id %}", "delete_url": "{% url "commercial_delete_document" band.slug prop.id doc.id %}"}{% if not forloop.last %},{% endif %}{% endfor %}]}'>
                                     <i class="fa-solid fa-file-pen me-2"></i> Editar
                                 </button>
                             </li>
-                            <li><hr class="dropdown-divider my-1"></li>
                             <li>
                                 <button type="button" class="dropdown-item d-flex align-items-center py-2 px-3 text-danger js-btn-delete-proposal"
                                     data-delete-url="{% url 'commercial_delete' band.slug prop.id %}"

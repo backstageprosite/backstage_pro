@@ -468,11 +468,11 @@ class CommercialProposal(models.Model):
     )
     name = models.CharField(max_length=200, verbose_name='Nome da Solicitação')
     date = models.DateField(verbose_name='Data do Show')
-    time = models.TimeField(verbose_name='Horário do Show')
-    contact = models.CharField(max_length=200, verbose_name='Contato')
+    time = models.TimeField(blank=True, null=True, verbose_name='Horário do Show')
+    contact = models.CharField(max_length=200, blank=True, null=True, verbose_name='Contato')
     normalized_contact = models.CharField(max_length=50, blank=True, null=True, verbose_name='Contato Normalizado')
-    origin = models.CharField(max_length=200, verbose_name='Origem')
-    fee = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor do Cachê (R$)')
+    origin = models.CharField(max_length=200, blank=True, null=True, verbose_name='Origem')
+    fee = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name='Valor do Cachê (R$)')
     phase = models.CharField(
         max_length=20,
         choices=Phase.choices,
