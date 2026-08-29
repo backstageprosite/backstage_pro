@@ -18,7 +18,7 @@ class AdminDatabaseListView(AdminRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        qs = Contact.objects.select_related('band', 'shared_by').order_by('-id')
+        qs = Contact.objects.filter(is_shared_globally=True).select_related('band', 'shared_by').order_by('-id')
 
         # Filters
         nome = self.request.GET.get('nome', '').strip()
@@ -58,7 +58,7 @@ class AdminDatabaseListView(AdminRequiredMixin, ListView):
 
 @user_passes_test(is_admin_geral, login_url='/painel/login/')
 def admin_database_edit(request, pk):
-    contact = get_object_or_404(Contact, pk=pk)
+    contact = get_object_or_404(Contact, pk=pk, is_shared_globally=True)
     original_band = contact.band
     original_shared_by = contact.shared_by
     original_shared_at = contact.shared_at
@@ -87,7 +87,7 @@ def admin_database_edit(request, pk):
 @user_passes_test(is_admin_geral, login_url='/painel/login/')
 def admin_database_hide(request, pk):
     if request.method == 'POST':
-        contact = get_object_or_404(Contact, pk=pk)
+        contact = get_object_or_404(Contact, pk=pk, is_shared_globally=True)
         contact.is_hidden = True
         contact.save(update_fields=['is_hidden'])
         messages.success(request, f"Contato '{contact.name}' ocultado com sucesso.")
@@ -97,7 +97,7 @@ def admin_database_hide(request, pk):
 @user_passes_test(is_admin_geral, login_url='/painel/login/')
 def admin_database_unhide(request, pk):
     if request.method == 'POST':
-        contact = get_object_or_404(Contact, pk=pk)
+        contact = get_object_or_404(Contact, pk=pk, is_shared_globally=True)
         contact.is_hidden = False
         contact.save(update_fields=['is_hidden'])
         messages.success(request, f"Contato '{contact.name}' desocultado com sucesso.")
@@ -107,7 +107,7 @@ def admin_database_unhide(request, pk):
 @user_passes_test(is_admin_geral, login_url='/painel/login/')
 def admin_database_delete(request, pk):
     if request.method == 'POST':
-        contact = get_object_or_404(Contact, pk=pk)
+        contact = get_object_or_404(Contact, pk=pk, is_shared_globally=True)
         try:
             contact.delete()
             messages.success(request, "Contato excluído definitivamente com sucesso!")

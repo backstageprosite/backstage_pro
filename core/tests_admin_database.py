@@ -43,6 +43,16 @@ class AdminDatabaseTests(TestCase):
             is_shared_globally=True,
             is_hidden=True
         )
+        self.contact_particular = Contact.objects.create(
+            band=self.banda1,
+            name='Contato Particular Secreto',
+            phone='(31) 99999-0000',
+            normalized_phone='31999990000',
+            email='particular@teste.com',
+            normalized_email='particular@teste.com',
+            is_shared_globally=False,
+            is_hidden=False
+        )
 
         # Clientes regulares para testes funcionais
         self.client_admin = Client()
@@ -316,3 +326,123 @@ class AdminDatabaseTests(TestCase):
             'is_shared_globally': True
         })
         self.assertEqual(response.status_code, 302)
+
+    # Testes da Missao 17C: Contatos particulares nao aparecem nem podem ser manipulados no admin
+    def test_27_private_contact_not_in_admin_list(self):
+        response = self.client_admin.get(reverse('admin_painel:database_list'))
+        self.assertNotContains(response, 'Contato Particular Secreto')
+
+    def test_28_private_contact_not_found_by_name_search(self):
+        response = self.client_admin.get(reverse('admin_painel:database_list') + '?nome=Particular')
+        self.assertNotContains(response, 'Contato Particular Secreto')
+
+    def test_29_private_contact_not_found_by_band_filter(self):
+        response = self.client_admin.get(reverse('admin_painel:database_list') + '?banda=Banda 1')
+        self.assertContains(response, 'Contato Um')
+        self.assertNotContains(response, 'Contato Particular Secreto')
+
+    def test_30_private_contact_edit_returns_404(self):
+        # Tentativa de acessar ou editar contato particular direto pela URL administrativa
+        response_get = self.client_admin.get(reverse('admin_painel:database_edit', args=[self.contact_particular.id]))
+        self.assertEqual(response_get.status_code, 404)
+
+        response_post = self.client_admin.post(reverse('admin_painel:database_edit', args=[self.contact_particular.id]), {
+            'name': 'Tentativa Invasiva',
+            'contact_type': 'FORNECEDOR'
+        })
+        self.assertEqual(response_post.status_code, 404)
+        self.contact_particular.refresh_from_db()
+        self.assertEqual(self.contact_particular.name, 'Contato Particular Secreto')
+
+    def test_31_private_contact_hide_returns_404(self):
+        response = self.client_admin.post(reverse('admin_painel:database_hide', args=[self.contact_particular.id]))
+        self.assertEqual(response.status_code, 404)
+        self.contact_particular.refresh_from_db()
+        self.assertFalse(self.contact_particular.is_hidden)
+
+    def test_32_private_contact_unhide_returns_404(self):
+        self.contact_particular.is_hidden = True
+        self.contact_particular.save()
+        response = self.client_admin.post(reverse('admin_painel:database_unhide', args=[self.contact_particular.id]))
+        self.assertEqual(response.status_code, 404)
+        self.contact_particular.refresh_from_db()
+        self.assertTrue(self.contact_particular.is_hidden)
+
+    def test_33_private_contact_delete_returns_404(self):
+        response_page = self.csrf_client_admin.get(reverse('admin_painel:database_list'))
+        csrf_token = response_page.cookies['csrftoken'].value
+        response = self.csrf_client_admin.post(
+            reverse('admin_painel:database_delete', args=[self.contact_particular.id]),
+            HTTP_X_CSRFTOKEN=csrf_token
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Contact.objects.filter(id=self.contact_particular.id).exists())
+
+    def test_34_private_contact_not_counted_or_present_in_pagination(self):
+        # A view utiliza paginate_by = 25. Já existem contact1 e contact2 (compartilhados = 2) e contact_particular (particular = 1).
+        # Vamos criar mais 28 contatos compartilhados (totalizando 30 compartilhados -> 2 páginas: 25 na pág 1 e 5 na pág 2).
+        novos_compartilhados = [
+            Contact(
+                band=self.banda1,
+                name=f'Contato Compartilhado Extra {i:02d}',
+                is_shared_globally=True,
+                is_hidden=False
+            )
+            for i in range(1, 29)
+        ]
+        Contact.objects.bulk_create(novos_compartilhados)
+
+        # Criamos mais 5 contatos particulares adicionais
+        novos_particulares = [
+            Contact(
+                band=self.banda2,
+                name=f'Contato Particular Extra {i:02d}',
+                is_shared_globally=False,
+                is_hidden=False
+            )
+            for i in range(1, 6)
+        ]
+        Contact.objects.bulk_create(novos_particulares)
+
+        # Total no banco de dados geral: 30 compartilhados + 6 particulares = 36 contatos
+        self.assertEqual(Contact.objects.count(), 36)
+        self.assertEqual(Contact.objects.filter(is_shared_globally=True).count(), 30)
+        self.assertEqual(Contact.objects.filter(is_shared_globally=False).count(), 6)
+
+        # 1. Acessa a primeira página administrativa
+        response_p1 = self.client_admin.get(reverse('admin_painel:database_list'))
+        self.assertEqual(response_p1.status_code, 200)
+
+        # 2. Confirma que o paginator considera exclusivamente os 30 contatos compartilhados
+        paginator = response_p1.context['page_obj'].paginator
+        self.assertEqual(paginator.count, 30)
+        self.assertEqual(paginator.num_pages, 2)
+
+        # 3. Itera por todas as páginas disponíveis e verifica conteúdo
+        nomes_encontrados = []
+        for page_num in range(1, paginator.num_pages + 1):
+            response_page = self.client_admin.get(reverse('admin_painel:database_list') + f'?page={page_num}')
+            self.assertEqual(response_page.status_code, 200)
+            page_contacts = response_page.context['contacts']
+            for c in page_contacts:
+                # Cada contato listado deve obrigatoriamente ser compartilhado
+                self.assertTrue(c.is_shared_globally)
+                nomes_encontrados.append(c.name)
+
+            # Nenhum dos 6 contatos particulares pode aparecer no HTML de nenhuma página
+            self.assertNotContains(response_page, 'Contato Particular Secreto')
+            for i in range(1, 6):
+                self.assertNotContains(response_page, f'Contato Particular Extra {i:02d}')
+
+        # 4. Confirma que todos os 30 contatos compartilhados foram percorridos na paginação
+        self.assertEqual(len(nomes_encontrados), 30)
+        self.assertIn('Contato Um', nomes_encontrados)
+        self.assertIn('Contato Dois', nomes_encontrados)
+        self.assertIn('Contato Compartilhado Extra 01', nomes_encontrados)
+        self.assertIn('Contato Compartilhado Extra 28', nomes_encontrados)
+
+        # 5. Confirma que os contatos particulares permanecem salvos e intactos no banco
+        self.contact_particular.refresh_from_db()
+        self.assertEqual(self.contact_particular.name, 'Contato Particular Secreto')
+        self.assertFalse(self.contact_particular.is_shared_globally)
+        self.assertEqual(Contact.objects.filter(is_shared_globally=False).count(), 6)
