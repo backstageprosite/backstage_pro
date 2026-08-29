@@ -668,3 +668,221 @@ class ContatosMultiBandaTests(TestCase):
         response_forge = self.client.post(forge_url, data_forge)
         self.assertEqual(response_forge.status_code, 403)
         self.assertFalse(Contact.objects.filter(name='Contato Invasor').exists())
+
+
+class ContactLikesTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.band_a = Band.objects.create(name="Banda A", slug="banda-a", is_active=True)
+        self.band_b = Band.objects.create(name="Banda B", slug="banda-b", is_active=True)
+        self.band_c = Band.objects.create(name="Banda C", slug="banda-c", is_active=True)
+
+        self.produtor_a = User.objects.create_user(
+            username="produtor_a", first_name="Carlos", last_name="Silva",
+            email="prod_a@teste.com", password="senha", role="PRODUTOR", band=self.band_a
+        )
+        self.produtor_b = User.objects.create_user(
+            username="produtor_b", first_name="Ana", last_name="Souza",
+            email="prod_b@teste.com", password="senha", role="PRODUTOR", band=self.band_b
+        )
+        self.produtor_c = User.objects.create_user(
+            username="produtor_c", first_name="Marcos", last_name="Lima",
+            email="prod_c@teste.com", password="senha", role="PRODUTOR", band=self.band_c
+        )
+        self.integrante_b = User.objects.create_user(
+            username="integrante_b", email="int_b@teste.com", password="senha",
+            role="INTEGRANTE", band=self.band_b
+        )
+
+        self.contact_a = Contact.objects.create(
+            band=self.band_a,
+            name="Fornecedor Som Global",
+            phone="11999990001",
+            contact_type="FORNECEDOR",
+            location="São Paulo - SP",
+            is_shared_globally=True,
+            is_hidden=False,
+            shared_by=self.produtor_a
+        )
+
+    # 1. Renderização da contagem, lista e estado do coração
+    def test_1_renderizacao_contagem_lista_e_coracao(self):
+        from core.models import ContactLike
+        # Inicialmente sem curtidas
+        self.client.login(username="produtor_b", password="senha")
+        response = self.client.get(reverse('banco_de_dados_global'))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
+
+        # Coluna Curtidas presente
+        self.assertIn('Curtidas', html)
+        # Pill com contagem 0
+        self.assertIn('class="js-likes-count-text">0</span>', html)
+        # Modal de lista com mensagem de vazio
+        self.assertIn('Nenhum produtor curtiu este contato ainda.', html)
+        # Coração descurtido (fa-regular fa-heart) para produtor de outra banda
+        self.assertIn('fa-regular fa-heart', html)
+
+        # Adiciona uma curtida
+        ContactLike.objects.create(contact=self.contact_a, user=self.produtor_b, band=self.band_b)
+        response2 = self.client.get(reverse('banco_de_dados_global'))
+        html2 = response2.content.decode('utf-8')
+        # Pill com contagem 1
+        self.assertIn('class="js-likes-count-text">1</span>', html2)
+        # Produtor e banda no modal
+        self.assertIn('Ana Souza', html2)
+        self.assertIn('Banda B', html2)
+        # Coração curtido (fa-solid fa-heart)
+        self.assertIn('fa-solid fa-heart', html2)
+
+    # 2. Produtor curtindo o contato
+    def test_2_produtor_curtindo_contato(self):
+        from core.models import ContactLike
+        self.client.login(username="produtor_b", password="senha")
+        like_url = reverse('contact_toggle_like', args=[self.band_b.slug, self.contact_a.id])
+
+        response = self.client.post(like_url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+        self.assertTrue(data['is_liked'])
+        self.assertEqual(data['likes_count'], 1)
+        self.assertEqual(len(data['likes_list']), 1)
+        self.assertEqual(data['likes_list'][0]['producer_name'], 'Ana Souza')
+        self.assertEqual(data['likes_list'][0]['band_name'], 'Banda B')
+        self.assertTrue(ContactLike.objects.filter(contact=self.contact_a, user=self.produtor_b).exists())
+
+    # 3. Produtor descurtindo sem gerar duplicidade
+    def test_3_produtor_descurtindo_sem_duplicidade(self):
+        from core.models import ContactLike
+        ContactLike.objects.create(contact=self.contact_a, user=self.produtor_b, band=self.band_b)
+        self.assertEqual(ContactLike.objects.filter(contact=self.contact_a).count(), 1)
+
+        self.client.login(username="produtor_b", password="senha")
+        like_url = reverse('contact_toggle_like', args=[self.band_b.slug, self.contact_a.id])
+
+        response = self.client.post(like_url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+        self.assertFalse(data['is_liked'])
+        self.assertEqual(data['likes_count'], 0)
+        self.assertEqual(len(data['likes_list']), 0)
+        self.assertFalse(ContactLike.objects.filter(contact=self.contact_a, user=self.produtor_b).exists())
+
+    # 4. Permissões de produtor, integrante e anônimo
+    def test_4_permissoes_produtor_integrante_e_anonimo(self):
+        like_url_b = reverse('contact_toggle_like', args=[self.band_b.slug, self.contact_a.id])
+
+        # Anônimo é redirecionado para login
+        response_anon = self.client.post(like_url_b)
+        self.assertEqual(response_anon.status_code, 302)
+
+        # Integrante recebe 403 Forbidden
+        self.client.login(username="integrante_b", password="senha")
+        response_int = self.client.post(like_url_b)
+        self.assertEqual(response_int.status_code, 403)
+
+        # Integrante visualizando banco de dados geral não vê o botão HTML de coração
+        # (a classe também aparece no bloco <script> do listener, portanto checamos o data-like-url)
+        response_view = self.client.get(reverse('banco_de_dados_global'))
+        self.assertNotIn('data-like-url=', response_view.content.decode('utf-8'))
+
+    # 5. Bloqueio de contato próprio, particular, oculto ou inválido
+    def test_5_bloqueio_proprio_particular_oculto_ou_invalido(self):
+        # 5.1 Produtor tentando curtir contato da própria banda -> 400 Bad Request
+        self.client.login(username="produtor_a", password="senha")
+        like_url_a = reverse('contact_toggle_like', args=[self.band_a.slug, self.contact_a.id])
+        response_self = self.client.post(like_url_a)
+        self.assertEqual(response_self.status_code, 400)
+
+        # Produtor da própria banda não vê o botão de coração no modal
+        # (verificamos a presença do data-like-url que só aparece no botão HTML, não no script)
+        response_self_view = self.client.get(reverse('banco_de_dados_global'))
+        self.assertNotIn('data-like-url=', response_self_view.content.decode('utf-8'))
+
+        # 5.2 Contato não compartilhado globalmente (particular) -> 404
+        contact_private = Contact.objects.create(
+            band=self.band_a, name="Privado", phone="11999990002",
+            is_shared_globally=False, is_hidden=False
+        )
+        self.client.login(username="produtor_b", password="senha")
+        like_private_url = reverse('contact_toggle_like', args=[self.band_b.slug, contact_private.id])
+        self.assertEqual(self.client.post(like_private_url).status_code, 404)
+
+        # 5.3 Contato oculto pelo admin -> 404
+        contact_hidden = Contact.objects.create(
+            band=self.band_a, name="Oculto", phone="11999990003",
+            is_shared_globally=True, is_hidden=True
+        )
+        like_hidden_url = reverse('contact_toggle_like', args=[self.band_b.slug, contact_hidden.id])
+        self.assertEqual(self.client.post(like_hidden_url).status_code, 404)
+
+        # 5.4 Contato com ID inexistente -> 404
+        like_invalid_url = reverse('contact_toggle_like', args=[self.band_b.slug, 999999])
+        self.assertEqual(self.client.post(like_invalid_url).status_code, 404)
+
+    # 6. Produtores diferentes curtindo o mesmo contato
+    def test_6_produtores_diferentes_curtindo_mesmo_contato(self):
+        from core.models import ContactLike
+        # Produtor B curte
+        self.client.login(username="produtor_b", password="senha")
+        like_url_b = reverse('contact_toggle_like', args=[self.band_b.slug, self.contact_a.id])
+        res_b = self.client.post(like_url_b)
+        self.assertEqual(res_b.json()['likes_count'], 1)
+
+        # Produtor C curte o mesmo contato
+        self.client.login(username="produtor_c", password="senha")
+        like_url_c = reverse('contact_toggle_like', args=[self.band_c.slug, self.contact_a.id])
+        res_c = self.client.post(like_url_c)
+        self.assertEqual(res_c.json()['likes_count'], 2)
+        self.assertEqual(len(res_c.json()['likes_list']), 2)
+
+        self.assertEqual(ContactLike.objects.filter(contact=self.contact_a).count(), 2)
+
+    # 7. Funcionamento multibanda, cópia limpa e ausência de N+1 relevante
+    def test_7_multibanda_copia_limpa_e_sem_n_plus_1(self):
+        from core.models import ContactLike
+        # Curtidas no contato original
+        ContactLike.objects.create(contact=self.contact_a, user=self.produtor_b, band=self.band_b)
+        ContactLike.objects.create(contact=self.contact_a, user=self.produtor_c, band=self.band_c)
+
+        # Produtor B copia o contato para a Banda B
+        self.client.login(username="produtor_b", password="senha")
+        copy_url = reverse('contact_copy_from_global', args=[self.band_b.slug, self.contact_a.id])
+        res_copy = self.client.post(copy_url)
+        self.assertTrue(res_copy.json()['ok'])
+
+        # O contato copiado não possui nenhuma curtida associada
+        copied_contact = Contact.objects.get(band=self.band_b, copied_from=self.contact_a)
+        self.assertEqual(copied_contact.likes.count(), 0)
+        # O contato original preserva suas 2 curtidas intactas
+        self.assertEqual(self.contact_a.likes.count(), 2)
+
+        # Teste de ausência de N+1: com 1 contato, mede o baseline de queries da view
+        from django.test.utils import CaptureQueriesContext
+        from django.db import connection as db_conn
+        self.client.login(username="produtor_b", password="senha")
+        with CaptureQueriesContext(db_conn) as ctx_1contact:
+            r1 = self.client.get(reverse('banco_de_dados_global'))
+            self.assertEqual(r1.status_code, 200)
+        queries_1 = len(ctx_1contact.captured_queries)
+
+        # Adiciona mais 4 contatos globais de outras bandas
+        for i in range(4):
+            Contact.objects.create(
+                band=self.band_c, name=f"Extra {i}", phone=f"1199999{9000+i}",
+                contact_type="FORNECEDOR", is_shared_globally=True, is_hidden=False,
+                shared_by=self.produtor_c
+            )
+
+        with CaptureQueriesContext(db_conn) as ctx_5contacts:
+            r5 = self.client.get(reverse('banco_de_dados_global'))
+            self.assertEqual(r5.status_code, 200)
+        queries_5 = len(ctx_5contacts.captured_queries)
+
+        # Sem N+1: o número de queries NÃO deve crescer ao adicionar mais contatos.
+        # Na 1ª requisição o Django faz warm-up (SystemSettings INSERT, cache de permissões etc.)
+        # que ficam em cache nas requisições seguintes, então queries_5 <= queries_1 é correto.
+        self.assertLessEqual(queries_5, queries_1,
+            f"N+1 detectado: {queries_5} queries para 5 contatos > {queries_1} queries para 1 contato")

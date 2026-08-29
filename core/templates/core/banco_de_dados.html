@@ -50,6 +50,7 @@
                         <th class="py-3">Local</th>
                         <th class="py-3 text-center">Link</th>
                         <th class="py-3">Banda</th>
+                        <th class="py-3 text-center">Curtidas</th>
                         <th class="pe-4 py-3 text-end">Visualizar</th>
                     </tr>
                 </thead>
@@ -88,6 +89,11 @@
                         <td>
                             <span class="badge bg-light text-dark border">{{ contato.band.name }}</span>
                         </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm rounded-pill fw-bold text-center px-3 py-1 js-likes-pill" data-bs-toggle="modal" data-bs-target="#modalCurtidasContato{{ contato.id }}" style="background-color: rgba(220, 53, 69, 0.10); color: #DC3545; border: 1px solid #DC3545; min-width: 42px; font-size: 0.85rem;" data-contact-id="{{ contato.id }}">
+                                <span class="js-likes-count-text">{{ contato.likes_count|default:0 }}</span>
+                            </button>
+                        </td>
                         <td class="pe-4 text-end">
                             <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalVisContato{{ contato.id }}" title="Visualizar">
                                 <i class="fa-solid fa-eye"></i>
@@ -96,7 +102,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="8" class="text-center py-5 text-muted">
                             <i class="fa-solid fa-database fs-1 mb-3 opacity-50"></i>
                             <h5>Nenhum contato encontrado no Banco de Dados</h5>
                             <p class="mb-0">Tente buscar por outros termos ou verifique se as bandas compartilharam contatos.</p>
@@ -109,9 +115,9 @@
     </div>
 </div>
 
-<!-- PaginaÃ§Ã£o -->
+<!-- Paginação -->
 {% if page_obj.has_other_pages %}
-<nav aria-label="NavegaÃ§Ã£o de pÃ¡ginas" class="mt-4">
+<nav aria-label="Navegação de páginas" class="mt-4">
     <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
             <li class="page-item">
@@ -136,14 +142,21 @@
 </nav>
 {% endif %}
 
-<!-- Modais de Visualização -->
+<!-- Modais de Visualização e Curtidas -->
 {% for contato in page_obj %}
+<!-- Modal Detalhes do Contato -->
 <div class="modal fade" id="modalVisContato{{ contato.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow" style="border-radius: 16px;">
             <div class="modal-header border-bottom-0 pb-0 d-flex align-items-center justify-content-between">
                 <h5 class="modal-title fw-bold mb-0">Detalhes do Contato</h5>
                 <div class="d-flex align-items-center gap-2 ms-auto">
+                    {% if request.user.is_produtor and band and contato.band != band %}
+                    <button type="button" class="btn p-0 border-0 bg-transparent js-btn-toggle-like d-inline-flex align-items-center justify-content-center" data-like-url="{% url 'contact_toggle_like' band.slug contato.id %}" data-contact-id="{{ contato.id }}" style="width: 32px; height: 32px; color: #DC3545; font-size: 1.25rem;" title="{% if contato.is_liked_by_user %}Descurtir contato{% else %}Curtir contato{% endif %}" aria-label="{% if contato.is_liked_by_user %}Descurtir contato{% else %}Curtir contato{% endif %}">
+                        <i class="{% if contato.is_liked_by_user %}fa-solid fa-heart{% else %}fa-regular fa-heart{% endif %}"></i>
+                    </button>
+                    {% endif %}
+
                     {% if request.user.is_produtor and band %}
                         {% if contato.band == band or contato.is_already_copied %}
                             <button type="button" class="bp-btn bp-btn-sm bp-btn-copy-contact is-copied rounded-pill" disabled aria-pressed="true">
@@ -223,6 +236,42 @@
                 </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Lista de Produtores que Curtiram -->
+<div class="modal fade" id="modalCurtidasContato{{ contato.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+            <div class="modal-header border-bottom py-3 d-flex align-items-center justify-content-between">
+                <h5 class="modal-title fw-bold mb-0">
+                    <i class="fa-solid fa-heart text-danger me-2"></i> Produtores que Curtiram
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="max-height: 380px; overflow-y: auto;">
+                <div class="js-likes-list-container" data-contact-id="{{ contato.id }}">
+                    {% if contato.prefetched_likes %}
+                        <ul class="list-group list-group-flush mb-0">
+                            {% for like in contato.prefetched_likes %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                                <span class="fw-bold text-dark">{{ like.user.get_full_name|default:like.user.username }}</span>
+                                <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">{{ like.band.name }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fa-regular fa-heart fs-2 mb-2 text-danger opacity-50"></i>
+                            <p class="mb-0">Nenhum produtor curtiu este contato ainda.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-2 pb-3">
                 <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Fechar</button>
             </div>
         </div>
@@ -344,6 +393,88 @@
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
                 alert('Erro ao processar a cópia do contato. Tente novamente.');
+            });
+        });
+
+        // Delegação de evento para os botões de Curtir / Descurtir Contato
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.js-btn-toggle-like');
+            if (!btn || btn.disabled) return;
+
+            const likeUrl = btn.getAttribute('data-like-url');
+            const contactId = btn.getAttribute('data-contact-id');
+            if (!likeUrl || !contactId) return;
+
+            // Desabilita temporariamente para evitar cliques múltiplos
+            btn.disabled = true;
+            const csrftoken = getCookie('csrftoken');
+
+            fetch(likeUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Falha na requisição (' + response.status + ')');
+                }
+                return response.json();
+            })
+            .then(data => {
+                btn.disabled = false;
+                if (data.ok) {
+                    // Atualiza ícone e acessibilidade do coração
+                    const icon = btn.querySelector('i');
+                    if (data.is_liked) {
+                        icon.className = 'fa-solid fa-heart';
+                        btn.setAttribute('title', 'Descurtir contato');
+                        btn.setAttribute('aria-label', 'Descurtir contato');
+                    } else {
+                        icon.className = 'fa-regular fa-heart';
+                        btn.setAttribute('title', 'Curtir contato');
+                        btn.setAttribute('aria-label', 'Curtir contato');
+                    }
+
+                    // Atualiza contagem na pill da tabela
+                    const pill = document.querySelector(`.js-likes-pill[data-contact-id="${contactId}"]`);
+                    if (pill) {
+                        const countSpan = pill.querySelector('.js-likes-count-text');
+                        if (countSpan) {
+                            countSpan.textContent = data.likes_count;
+                        }
+                    }
+
+                    // Atualiza a lista de produtores no modal de curtidas
+                    const listContainer = document.querySelector(`.js-likes-list-container[data-contact-id="${contactId}"]`);
+                    if (listContainer) {
+                        if (data.likes_list && data.likes_list.length > 0) {
+                            let html = '<ul class="list-group list-group-flush mb-0">';
+                            data.likes_list.forEach(item => {
+                                html += `<li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                                    <span class="fw-bold text-dark">${item.producer_name}</span>
+                                    <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">${item.band_name}</span>
+                                </li>`;
+                            });
+                            html += '</ul>';
+                            listContainer.innerHTML = html;
+                        } else {
+                            listContainer.innerHTML = `<div class="p-4 text-center text-muted">
+                                <i class="fa-regular fa-heart fs-2 mb-2 text-danger opacity-50"></i>
+                                <p class="mb-0">Nenhum produtor curtiu este contato ainda.</p>
+                            </div>`;
+                        }
+                    }
+                } else {
+                    alert(data.message || 'Não foi possível registrar a curtida.');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao curtir/descurtir contato:', error);
+                btn.disabled = false;
+                alert('Erro ao processar a ação. Tente novamente.');
             });
         });
     });

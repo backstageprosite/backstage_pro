@@ -425,6 +425,26 @@ class Contact(models.Model):
     def __str__(self):
         return f"{self.name} - {self.get_contact_type_display()}"
 
+class ContactLike(models.Model):
+    contact = models.ForeignKey(Contact, on_delete=models.CASCADE, related_name='likes', verbose_name='Contato')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='contact_likes', verbose_name='Produtor')
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='contact_likes', verbose_name='Banda do Produtor')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Data da Curtida')
+
+    class Meta:
+        verbose_name = 'Curtida de Contato'
+        verbose_name_plural = 'Curtidas de Contatos'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['contact', 'user'],
+                name='unique_contact_like_per_user'
+            )
+        ]
+
+    def __str__(self):
+        return f"Curtida de {self.user.username} em {self.contact.name}"
+
 class BandSubscription(models.Model):
     CYCLE_CHOICES = (
         ('MENSAL', 'Mensal'),

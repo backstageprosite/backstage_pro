@@ -2134,13 +2134,32 @@ def banco_de_dados_view(request):
         if request.user.role not in ['PRODUTOR', 'EMPRESARIO', 'INTEGRANTE']:
             return HttpResponseForbidden("Acesso negado: Perfil não autorizado.")
 
-    from django.db.models import Exists, OuterRef, Q
+    from django.db.models import Count, Exists, OuterRef, Prefetch, Q
+    from .models import ContactLike
 
     contacts = Contact.objects.filter(
         is_shared_globally=True,
         band__is_active=True,
         is_hidden=False
-    ).select_related('band', 'shared_by').order_by('name')
+    ).select_related('band', 'shared_by').annotate(
+        likes_count=Count('likes', distinct=True)
+    ).prefetch_related(
+        Prefetch(
+            'likes',
+            queryset=ContactLike.objects.select_related('user', 'band').order_by('-created_at'),
+            to_attr='prefetched_likes'
+        )
+    ).order_by('name')
+
+    if request.user.is_authenticated:
+        contacts = contacts.annotate(
+            is_liked_by_user=Exists(
+                ContactLike.objects.filter(
+                    contact_id=OuterRef('pk'),
+                    user=request.user
+                )
+            )
+        )
 
     if user_band:
         contacts = contacts.annotate(
@@ -2256,6 +2275,71 @@ def contact_copy_from_global_view(request, band_slug, pk):
             'contact_id': existing_copy.id if existing_copy else original_contact.id,
             'message': 'Este contato já foi copiado.'
         })
+
+
+@login_required
+@band_required
+def contact_toggle_like_view(request, band_slug, pk):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem curtir ou descurtir contatos.")
+
+    band = getattr(request, 'band', None)
+    if not band or not band.is_active:
+        return HttpResponseForbidden("Banda ativa não identificada no contexto.")
+
+    from .models import ContactLike
+    from django.db import transaction
+    from django.http import JsonResponse
+
+    # O contato deve estar compartilhado globalmente, visível e pertencer a uma banda ativa
+    contact = get_object_or_404(
+        Contact,
+        pk=pk,
+        is_shared_globally=True,
+        is_hidden=False,
+        band__is_active=True
+    )
+
+    # Como a curtida representa validação por terceiros, o produtor não pode curtir um contato pertencente à própria banda
+    if contact.band == band:
+        return JsonResponse({
+            'ok': False,
+            'message': 'Você não pode curtir um contato pertencente à sua própria banda.'
+        }, status=400)
+
+    with transaction.atomic():
+        existing_like = ContactLike.objects.filter(contact=contact, user=request.user).first()
+        if existing_like:
+            existing_like.delete()
+            is_liked = False
+        else:
+            ContactLike.objects.create(
+                contact=contact,
+                user=request.user,
+                band=band
+            )
+            is_liked = True
+
+        likes_count = ContactLike.objects.filter(contact=contact).count()
+        likes_qs = ContactLike.objects.filter(contact=contact).select_related('user', 'band').order_by('-created_at')
+        likes_list = [
+            {
+                'producer_name': like.user.get_full_name() or like.user.username,
+                'band_name': like.band.name
+            }
+            for like in likes_qs
+        ]
+
+    return JsonResponse({
+        'ok': True,
+        'is_liked': is_liked,
+        'likes_count': likes_count,
+        'likes_list': likes_list,
+        'contact_id': contact.id
+    })
 
 
 @login_required
