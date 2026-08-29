@@ -557,3 +557,61 @@ class BandNoticeForm(forms.ModelForm):
             cleaned_data['scheduled_at'] = aware_datetime
             
         return cleaned_data
+
+class CommercialProposalForm(forms.ModelForm):
+    fee = forms.CharField(
+        label='Valor do Cachê',
+        widget=forms.TextInput(attrs={'class': 'form-control money-mask', 'placeholder': 'R$ 0,00'})
+    )
+
+    class Meta:
+        from core.models import CommercialProposal
+        model = CommercialProposal
+        fields = ['name', 'date', 'time', 'contact', 'origin', 'fee', 'phase']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Show de Réveillon, Aniversário de Cidade'}),
+            'date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'time': forms.TimeInput(format='%H:%M', attrs={'class': 'form-control', 'type': 'time'}),
+            'contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: (11) 99999-9999'}),
+            'origin': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Indicação, Instagram, Produtor Fulano'}),
+            'phase': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if not name or not name.strip():
+            raise forms.ValidationError('O nome da solicitação é obrigatório.')
+        return name.strip()
+
+    def clean_contact(self):
+        contact = self.cleaned_data.get('contact')
+        if not contact or not contact.strip():
+            raise forms.ValidationError('O contato é obrigatório.')
+        return contact.strip()
+
+    def clean_origin(self):
+        origin = self.cleaned_data.get('origin')
+        if not origin or not origin.strip():
+            raise forms.ValidationError('A origem é obrigatória.')
+        return origin.strip()
+
+    def clean_fee(self):
+        fee_val = self.cleaned_data.get('fee')
+        if not fee_val:
+            raise forms.ValidationError('O valor do cachê é obrigatório.')
+        from decimal import Decimal
+        import re
+        if isinstance(fee_val, str):
+            clean_str = re.sub(r'[^\d,.-]', '', fee_val).strip()
+            if ',' in clean_str:
+                clean_str = clean_str.replace('.', '').replace(',', '.')
+            try:
+                decimal_val = Decimal(clean_str)
+            except Exception:
+                raise forms.ValidationError('Informe um valor válido.')
+        else:
+            decimal_val = Decimal(fee_val)
+
+        if decimal_val < 0:
+            raise forms.ValidationError('O valor do cachê não pode ser negativo.')
+        return decimal_val

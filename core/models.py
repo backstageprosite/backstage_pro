@@ -445,6 +445,105 @@ class ContactLike(models.Model):
     def __str__(self):
         return f"Curtida de {self.user.username} em {self.contact.name}"
 
+def commercial_proposal_document_upload_path(instance, filename):
+    import uuid
+    import os
+    ext = os.path.splitext(filename)[1].lower()
+    return f'commercial/{instance.proposal.band.id}/{instance.proposal.id}/{uuid.uuid4().hex}{ext}'
+
+class CommercialProposal(models.Model):
+    class Phase(models.TextChoices):
+        RESERVA = 'RESERVA', 'Reserva'
+        FECHADO = 'FECHADO', 'Fechado'
+        DESISTENCIA = 'DESISTENCIA', 'Desistência'
+
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='commercial_proposals', verbose_name='Banda')
+    show = models.OneToOneField(
+        Show,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='commercial_proposal',
+        verbose_name='Show Vinculado'
+    )
+    name = models.CharField(max_length=200, verbose_name='Nome da Solicitação')
+    date = models.DateField(verbose_name='Data do Show')
+    time = models.TimeField(verbose_name='Horário do Show')
+    contact = models.CharField(max_length=200, verbose_name='Contato')
+    normalized_contact = models.CharField(max_length=50, blank=True, null=True, verbose_name='Contato Normalizado')
+    origin = models.CharField(max_length=200, verbose_name='Origem')
+    fee = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor do Cachê (R$)')
+    phase = models.CharField(
+        max_length=20,
+        choices=Phase.choices,
+        default=Phase.RESERVA,
+        db_index=True,
+        verbose_name='Fase do Orçamento'
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_commercial_proposals',
+        verbose_name='Criado por'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
+
+    class Meta:
+        verbose_name = 'Solicitação Comercial'
+        verbose_name_plural = 'Solicitações Comerciais'
+        ordering = ['date', 'time', 'id']
+        indexes = [
+            models.Index(fields=['band', 'phase', 'date'], name='idx_commercial_band_phase_date'),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.contact:
+            import re
+            digits = re.sub(r'\D', '', self.contact)
+            if digits.startswith('55') and len(digits) > 11:
+                digits = digits[2:]
+            self.normalized_contact = digits
+        else:
+            self.normalized_contact = ""
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name} - {self.get_phase_display()} ({self.date.strftime('%d/%m/%Y') if self.date else 'Sem data'})"
+
+class CommercialProposalDocument(models.Model):
+    proposal = models.ForeignKey(
+        CommercialProposal,
+        on_delete=models.CASCADE,
+        related_name='documents',
+        verbose_name='Solicitação'
+    )
+    file = models.FileField(
+        validators=[validate_file_size_and_type],
+        upload_to=commercial_proposal_document_upload_path,
+        verbose_name='Arquivo'
+    )
+    original_name = models.CharField(max_length=255, verbose_name='Nome Original')
+    uploaded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='uploaded_commercial_documents',
+        verbose_name='Enviado por'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name='Data de Envio')
+
+    class Meta:
+        verbose_name = 'Documento Comercial'
+        verbose_name_plural = 'Documentos Comerciais'
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.original_name} ({self.proposal.name})"
+
 class BandSubscription(models.Model):
     CYCLE_CHOICES = (
         ('MENSAL', 'Mensal'),

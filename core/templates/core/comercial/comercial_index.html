@@ -1,0 +1,395 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 d-inline-flex align-items-center" style="font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 700; height: 38px; padding: 6px 16px; border: 1px solid #212529;">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+        </a>
+        <h4 class="fw-bold m-0"><i class="fa-solid fa-handshake text-primary me-2"></i> Comercial</h4>
+    </div>
+    
+    <div>
+        <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark d-inline-flex align-items-center" style="background-color: #6BD443; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 700; height: 40px; padding: 6px 24px; box-shadow: 0 2px 4px rgba(0,0,0,.075);" data-bs-toggle="modal" data-bs-target="#modalProposal">
+            <i class="fa-solid fa-plus me-1"></i> Novo Orçamento
+        </button>
+    </div>
+</div>
+
+<!-- Abas de Fases Comerciais -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+    <div class="card-body p-3">
+        <ul class="nav nav-pills gap-2" id="commercialTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active rounded-pill fw-bold px-3 py-2" id="reservas-tab" data-bs-toggle="pill" data-bs-target="#reservas-pane" type="button" role="tab" aria-controls="reservas-pane" aria-selected="true">
+                    <i class="fa-regular fa-clock me-1 text-warning"></i> Reservas
+                    <span class="badge bg-warning text-dark rounded-pill ms-1">{{ count_reservas }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill fw-bold px-3 py-2" id="fechados-tab" data-bs-toggle="pill" data-bs-target="#fechados-pane" type="button" role="tab" aria-controls="fechados-pane" aria-selected="false">
+                    <i class="fa-solid fa-check-circle me-1 text-success"></i> Fechados
+                    <span class="badge bg-success text-white rounded-pill ms-1">{{ count_fechados }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill fw-bold px-3 py-2" id="desistencias-tab" data-bs-toggle="pill" data-bs-target="#desistencias-pane" type="button" role="tab" aria-controls="desistencias-pane" aria-selected="false">
+                    <i class="fa-solid fa-ban me-1 text-danger"></i> Desistências
+                    <span class="badge bg-secondary text-white rounded-pill ms-1">{{ count_desistencias }}</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="tab-content" id="commercialTabContent">
+    <!-- ABA RESERVAS -->
+    <div class="tab-pane fade show active" id="reservas-pane" role="tabpanel" aria-labelledby="reservas-tab" tabindex="0">
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-body p-0">
+                {% include 'core/comercial/_tabela_fase.html' with proposals=reservas empty_message="Nenhuma solicitação em Reserva encontrada." phase_type="RESERVA" %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA FECHADOS -->
+    <div class="tab-pane fade" id="fechados-pane" role="tabpanel" aria-labelledby="fechados-tab" tabindex="0">
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-body p-0">
+                {% include 'core/comercial/_tabela_fase.html' with proposals=fechados empty_message="Nenhuma solicitação Fechada encontrada." phase_type="FECHADO" %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA DESISTÊNCIAS -->
+    <div class="tab-pane fade" id="desistencias-pane" role="tabpanel" aria-labelledby="desistencias-tab" tabindex="0">
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-body p-0">
+                {% include 'core/comercial/_tabela_fase.html' with proposals=desistencias empty_message="Nenhuma solicitação com Desistência encontrada." phase_type="DESISTENCIA" %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Criação / Edição de Orçamento -->
+<div class="modal fade" id="modalProposal" tabindex="-1" aria-labelledby="modalProposalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="modalProposalLabel">Informações da Solicitação de Show</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formProposal" method="post" enctype="multipart/form-data" action="{% url 'commercial_create' band.slug %}">
+                {% csrf_token %}
+                <input type="hidden" id="proposal_id" name="proposal_id" value="">
+                
+                <div class="modal-body py-3">
+                    <!-- Alerta de Conflito de Data -->
+                    <div id="conflictAlert" class="alert alert-warning d-none align-items-center mb-3" role="alert">
+                        <i class="fa-solid fa-triangle-exclamation me-2 fs-5"></i>
+                        <div>
+                            <strong>Atenção: Já existe um show para essa data, confira os horários.</strong>
+                            <div id="conflictDetails" class="small mt-1 text-muted"></div>
+                        </div>
+                    </div>
+
+                    <div id="formErrorsAlert" class="alert alert-danger d-none mb-3" role="alert"></div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="id_name" class="form-label fw-bold small text-muted">Nome <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="id_name" class="form-control" placeholder="Ex: Show de Réveillon" required>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="id_date" class="form-label fw-bold small text-muted">Data <span class="text-danger">*</span></label>
+                            <input type="date" name="date" id="id_date" class="form-control" required>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="id_time" class="form-label fw-bold small text-muted">Horário <span class="text-danger">*</span></label>
+                            <input type="time" name="time" id="id_time" class="form-control" required>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="id_contact" class="form-label fw-bold small text-muted">Contato (Telefone) <span class="text-danger">*</span></label>
+                            <input type="text" name="contact" id="id_contact" class="form-control" placeholder="Ex: (11) 99999-9999" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="id_origin" class="form-label fw-bold small text-muted">Origem <span class="text-danger">*</span></label>
+                            <input type="text" name="origin" id="id_origin" class="form-control" placeholder="Ex: Indicação, Instagram, Produtor Fulano" required>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="id_fee" class="form-label fw-bold small text-muted">Valor do Cachê <span class="text-danger">*</span></label>
+                            <input type="text" name="fee" id="id_fee" class="form-control money-mask" placeholder="R$ 0,00" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="id_phase" class="form-label fw-bold small text-muted">Fase do Orçamento <span class="text-danger">*</span></label>
+                            <select name="phase" id="id_phase" class="form-select" required>
+                                <option value="RESERVA">Reserva</option>
+                                <option value="FECHADO">Fechado</option>
+                                <option value="DESISTENCIA">Desistência</option>
+                            </select>
+                        </div>
+
+                        <!-- Seção de Anexos -->
+                        <div class="col-12 border-top pt-3 mt-3">
+                            <label class="form-label fw-bold small text-muted">Documentos Anexados</label>
+                            
+                            <!-- Lista de Documentos já anexados (no modo edição) -->
+                            <div id="existingDocumentsContainer" class="mb-2 d-none">
+                                <ul class="list-group list-group-flush border rounded mb-2" id="existingDocumentsList"></ul>
+                            </div>
+
+                            <input type="file" name="documents" id="id_documents" class="form-control" multiple>
+                            <div class="form-text small text-muted">Extensões permitidas: PDF, Imagens, DOCX, XLSX (máx. 10MB por arquivo).</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-medium" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" id="btnSubmitProposal" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">Salvar Solicitação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmação de Exclusão -->
+<div class="modal fade" id="modalDeleteProposal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="mb-2 text-dark">Tem certeza de que deseja excluir a solicitação <strong id="deleteProposalName"></strong>?</p>
+                <div class="alert alert-danger py-2 small mb-0">
+                    <i class="fa-solid fa-info-circle me-1"></i> A exclusão removerá permanentemente a solicitação, seus anexos e também <strong>retirará da Agenda o show vinculado</strong> criado por esta solicitação.
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <form id="formDeleteProposal" method="post" action="">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-medium" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">Sim, Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modalProposalEl = document.getElementById('modalProposal');
+    const formProposal = document.getElementById('formProposal');
+    const inputDate = document.getElementById('id_date');
+    const proposalIdInput = document.getElementById('proposal_id');
+    const conflictAlert = document.getElementById('conflictAlert');
+    const conflictDetails = document.getElementById('conflictDetails');
+    const formErrorsAlert = document.getElementById('formErrorsAlert');
+    const existingDocsContainer = document.getElementById('existingDocumentsContainer');
+    const existingDocsList = document.getElementById('existingDocumentsList');
+
+    const checkConflictUrl = "{% url 'commercial_check_conflict' band.slug %}";
+    const createUrl = "{% url 'commercial_create' band.slug %}";
+
+    // Checagem assíncrona de conflito de agenda
+    function checkDateConflict() {
+        const dateVal = inputDate.value;
+        const currentPropId = proposalIdInput.value;
+        if (!dateVal) {
+            conflictAlert.classList.add('d-none');
+            return;
+        }
+
+        fetch(`${checkConflictUrl}?date=${encodeURIComponent(dateVal)}&proposal_id=${encodeURIComponent(currentPropId)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.has_conflict) {
+                    conflictAlert.classList.remove('d-none');
+                    conflictAlert.classList.add('d-flex');
+                    if (data.conflicts && data.conflicts.length > 0) {
+                        conflictDetails.innerHTML = data.conflicts.map(c => `• ${c.title} às ${c.time} (${c.status})`).join('<br>');
+                    } else {
+                        conflictDetails.innerHTML = '';
+                    }
+                } else {
+                    conflictAlert.classList.add('d-none');
+                    conflictAlert.classList.remove('d-flex');
+                }
+            })
+            .catch(err => console.error('Erro ao verificar conflito:', err));
+    }
+
+    inputDate.addEventListener('change', checkDateConflict);
+
+    // Reset do modal ao abrir para "Novo Orçamento"
+    modalProposalEl.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        formErrorsAlert.classList.add('d-none');
+        formErrorsAlert.innerHTML = '';
+        conflictAlert.classList.add('d-none');
+
+        // Se clicou no botão "Novo Orçamento"
+        if (!button || !button.classList.contains('js-btn-edit-proposal')) {
+            document.getElementById('modalProposalLabel').textContent = 'Informações da Solicitação de Show';
+            formProposal.action = createUrl;
+            proposalIdInput.value = '';
+            formProposal.reset();
+            existingDocsContainer.classList.add('d-none');
+            existingDocsList.innerHTML = '';
+        }
+    });
+
+    // Submissão assíncrona do formulário com tratamento de erros sem perder dados
+    formProposal.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('btnSubmitProposal');
+        submitBtn.disabled = true;
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Salvando...';
+
+        const formData = new FormData(formProposal);
+
+        fetch(formProposal.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            return response.json().then(data => ({ status: response.status, body: data }));
+        })
+        .then(({ status, body }) => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+
+            if (body.ok) {
+                window.location.href = body.redirect_url;
+            } else {
+                formErrorsAlert.classList.remove('d-none');
+                let errHtml = '<ul class="mb-0 ps-3">';
+                if (body.errors) {
+                    for (const field in body.errors) {
+                        body.errors[field].forEach(msg => {
+                            errHtml += `<li><strong>${field}:</strong> ${msg}</li>`;
+                        });
+                    }
+                } else if (body.message) {
+                    errHtml += `<li>${body.message}</li>`;
+                } else {
+                    errHtml += '<li>Ocorreu um erro ao salvar a solicitação.</li>';
+                }
+                errHtml += '</ul>';
+                formErrorsAlert.innerHTML = errHtml;
+            }
+        })
+        .catch(err => {
+            console.error('Erro na requisição:', err);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+            alert('Erro de comunicação ao salvar a solicitação. Tente novamente.');
+        });
+    });
+
+    // Delegação para abertura de Edição
+    document.addEventListener('click', function(e) {
+        const btnEdit = e.target.closest('.js-btn-edit-proposal');
+        if (!btnEdit) return;
+
+        const propData = JSON.parse(btnEdit.getAttribute('data-proposal'));
+        const editUrl = btnEdit.getAttribute('data-edit-url');
+
+        document.getElementById('modalProposalLabel').textContent = 'Informações da Solicitação de Show';
+        formProposal.action = editUrl;
+        proposalIdInput.value = propData.id;
+
+        document.getElementById('id_name').value = propData.name;
+        document.getElementById('id_date').value = propData.date;
+        document.getElementById('id_time').value = propData.time;
+        document.getElementById('id_contact').value = propData.contact;
+        document.getElementById('id_origin').value = propData.origin;
+        document.getElementById('id_fee').value = propData.fee;
+        document.getElementById('id_phase').value = propData.phase;
+
+        // Renderiza lista de documentos existentes
+        existingDocsList.innerHTML = '';
+        if (propData.documents && propData.documents.length > 0) {
+            existingDocsContainer.classList.remove('d-none');
+            propData.documents.forEach(doc => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-3';
+                li.id = `doc-row-${doc.id}`;
+                li.innerHTML = `
+                    <div class="d-flex align-items-center text-truncate me-2">
+                        <i class="fa-regular fa-file-lines me-2 text-primary"></i>
+                        <span class="text-truncate">${doc.name}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-1">
+                        <a href="${doc.download_url}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-circle" title="Download"><i class="fa-solid fa-download"></i></a>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle js-btn-delete-doc" data-delete-url="${doc.delete_url}" data-doc-id="${doc.id}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+                existingDocsList.appendChild(li);
+            });
+        } else {
+            existingDocsContainer.classList.add('d-none');
+        }
+
+        const modal = new bootstrap.Modal(modalProposalEl);
+        modal.show();
+        checkDateConflict();
+    });
+
+    // Delegação para exclusão de anexo individual
+    document.addEventListener('click', function(e) {
+        const btnDeleteDoc = e.target.closest('.js-btn-delete-doc');
+        if (!btnDeleteDoc) return;
+
+        if (!confirm('Deseja realmente excluir este anexo?')) return;
+
+        const deleteUrl = btnDeleteDoc.getAttribute('data-delete-url');
+        const docId = btnDeleteDoc.getAttribute('data-doc-id');
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch(deleteUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) {
+                const row = document.getElementById(`doc-row-${docId}`);
+                if (row) row.remove();
+                if (existingDocsList.children.length === 0) {
+                    existingDocsContainer.classList.add('d-none');
+                }
+            } else {
+                alert(data.message || 'Erro ao excluir anexo.');
+            }
+        })
+        .catch(err => console.error('Erro ao excluir anexo:', err));
+    });
+
+    // Delegação para modal de Exclusão de Solicitação
+    document.addEventListener('click', function(e) {
+        const btnDelete = e.target.closest('.js-btn-delete-proposal');
+        if (!btnDelete) return;
+
+        const deleteUrl = btnDelete.getAttribute('data-delete-url');
+        const proposalName = btnDelete.getAttribute('data-proposal-name');
+
+        document.getElementById('deleteProposalName').textContent = proposalName;
+        document.getElementById('formDeleteProposal').action = deleteUrl;
+
+        const modalDelete = new bootstrap.Modal(document.getElementById('modalDeleteProposal'));
+        modalDelete.show();
+    });
+});
+</script>
+{% endblock %}

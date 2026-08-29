@@ -1355,6 +1355,295 @@ def relatorios_view(request, band_slug):
     return render(request, 'core/relatorios.html', context)
 
 
+@login_required
+@band_required
+@advanced_plan_required
+def commercial_index_view(request, band_slug):
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores têm acesso ao módulo Comercial.")
+
+    band = request.band
+    from core.models import CommercialProposal, CommercialProposalDocument
+    from core.forms import CommercialProposalForm
+    from django.db.models import Count
+
+    # Agrupamentos de propostas com ordenação cronológica crescente: date, time, id
+    reservas_qs = CommercialProposal.objects.filter(
+        band=band, phase=CommercialProposal.Phase.RESERVA
+    ).select_related('show').prefetch_related('documents').order_by('date', 'time', 'id')
+
+    fechados_qs = CommercialProposal.objects.filter(
+        band=band, phase=CommercialProposal.Phase.FECHADO
+    ).select_related('show').prefetch_related('documents').order_by('date', 'time', 'id')
+
+    desistencias_qs = CommercialProposal.objects.filter(
+        band=band, phase=CommercialProposal.Phase.DESISTENCIA
+    ).select_related('show').prefetch_related('documents').order_by('date', 'time', 'id')
+
+    # Contagens eficientes para os badges
+    count_reservas = reservas_qs.count()
+    count_fechados = fechados_qs.count()
+    count_desistencias = desistencias_qs.count()
+
+    form = CommercialProposalForm()
+
+    context = {
+        'band': band,
+        'reservas': reservas_qs,
+        'fechados': fechados_qs,
+        'desistencias': desistencias_qs,
+        'count_reservas': count_reservas,
+        'count_fechados': count_fechados,
+        'count_desistencias': count_desistencias,
+        'form': form,
+    }
+    return render(request, 'core/comercial/comercial_index.html', context)
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def commercial_save_view(request, band_slug, pk=None):
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem cadastrar ou editar orçamentos.")
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    band = request.band
+    from core.models import CommercialProposal, CommercialProposalDocument, Show
+    from core.forms import CommercialProposalForm
+    from core.file_policy import validate_file_size_and_type
+    from core.services.show_notifications import schedule_show_notifications
+    from django.db import transaction
+    from django.core.exceptions import ValidationError
+
+    proposal = None
+    if pk:
+        proposal = get_object_or_404(CommercialProposal, pk=pk, band=band)
+
+    form = CommercialProposalForm(request.POST, instance=proposal)
+    if not form.is_valid():
+        from django.http import JsonResponse
+        errors = {field: [str(e) for e in errs] for field, errs in form.errors.items()}
+        return JsonResponse({'ok': False, 'errors': errors}, status=400)
+
+    # Validação de anexos antes de salvar
+    uploaded_files = request.FILES.getlist('documents')
+    for f in uploaded_files:
+        try:
+            validate_file_size_and_type(f)
+        except ValidationError as ve:
+            from django.http import JsonResponse
+            return JsonResponse({'ok': False, 'errors': {'documents': [str(ve.message)]}}, status=400)
+
+    with transaction.atomic():
+        is_new_proposal = proposal is None
+        proposal = form.save(commit=False)
+        proposal.band = band
+        if is_new_proposal:
+            proposal.created_by = request.user
+        proposal.save()
+
+        # Sincronização atômica com o model Show vinculado
+        old_show = None
+        new_show = None
+        is_show_creation = False
+
+        if proposal.phase in [CommercialProposal.Phase.RESERVA, CommercialProposal.Phase.FECHADO]:
+            target_status = 'CONFIRMADO' if proposal.phase == CommercialProposal.Phase.FECHADO else 'PRE_RESERVADO'
+            if proposal.show:
+                old_show = Show.objects.select_for_update().get(pk=proposal.show.id)
+                old_show_snapshot = Show(
+                    id=old_show.id,
+                    band=old_show.band,
+                    title=old_show.title,
+                    date=old_show.date,
+                    show_time=old_show.show_time,
+                    status=old_show.status,
+                    fee=old_show.fee,
+                    notification_revision=old_show.notification_revision
+                )
+                new_show = old_show
+                new_show.title = proposal.name
+                new_show.date = proposal.date
+                new_show.show_time = proposal.time
+                new_show.status = target_status
+                new_show.fee = proposal.fee
+                new_show.contractor_phone = proposal.contact
+                new_show.save()
+                schedule_show_notifications(old_show=old_show_snapshot, new_show=new_show, actor=request.user, is_creation=False)
+            else:
+                is_show_creation = True
+                new_show = Show.objects.create(
+                    band=band,
+                    title=proposal.name,
+                    date=proposal.date,
+                    show_time=proposal.time,
+                    status=target_status,
+                    fee=proposal.fee,
+                    contractor_phone=proposal.contact
+                )
+                proposal.show = new_show
+                proposal.save(update_fields=['show'])
+                schedule_show_notifications(old_show=None, new_show=new_show, actor=request.user, is_creation=True)
+
+        elif proposal.phase == CommercialProposal.Phase.DESISTENCIA:
+            if proposal.show:
+                old_show = Show.objects.select_for_update().get(pk=proposal.show.id)
+                if old_show.status != 'CANCELADO':
+                    old_show_snapshot = Show(
+                        id=old_show.id,
+                        band=old_show.band,
+                        title=old_show.title,
+                        date=old_show.date,
+                        show_time=old_show.show_time,
+                        status=old_show.status,
+                        fee=old_show.fee,
+                        notification_revision=old_show.notification_revision
+                    )
+                    old_show.status = 'CANCELADO'
+                    old_show.title = proposal.name
+                    old_show.date = proposal.date
+                    old_show.show_time = proposal.time
+                    old_show.fee = proposal.fee
+                    old_show.save()
+                    schedule_show_notifications(old_show=old_show_snapshot, new_show=old_show, actor=request.user, is_creation=False)
+
+        # Salva os arquivos anexados
+        for f in uploaded_files:
+            CommercialProposalDocument.objects.create(
+                proposal=proposal,
+                file=f,
+                original_name=f.name,
+                uploaded_by=request.user
+            )
+
+    from django.http import JsonResponse
+    msg = "Solicitação atualizada com sucesso!" if not is_new_proposal else "Solicitação cadastrada com sucesso!"
+    messages.success(request, msg)
+    return JsonResponse({'ok': True, 'redirect_url': reverse('commercial_index', args=[band.slug])})
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def commercial_delete_view(request, band_slug, pk):
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem excluir solicitações.")
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    band = request.band
+    from core.models import CommercialProposal
+    from django.db import transaction
+
+    proposal = get_object_or_404(CommercialProposal, pk=pk, band=band)
+
+    with transaction.atomic():
+        # Exclui arquivos físicos dos anexos
+        for doc in proposal.documents.all():
+            if doc.file:
+                try:
+                    doc.file.delete(save=False)
+                except Exception:
+                    pass
+
+        # Exclui show vinculado se criado por esta solicitação
+        if proposal.show:
+            linked_show = proposal.show
+            proposal.show = None
+            proposal.save(update_fields=['show'])
+            linked_show.delete()
+
+        proposal.delete()
+
+    messages.success(request, "Solicitação e show vinculado excluídos com sucesso.")
+    return redirect('commercial_index', band_slug=band.slug)
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def commercial_delete_document_view(request, band_slug, pk, doc_pk):
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem excluir anexos.")
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    band = request.band
+    from core.models import CommercialProposalDocument
+    doc = get_object_or_404(CommercialProposalDocument, pk=doc_pk, proposal__pk=pk, proposal__band=band)
+
+    if doc.file:
+        try:
+            doc.file.delete(save=False)
+        except Exception:
+            pass
+    doc.delete()
+
+    from django.http import JsonResponse
+    return JsonResponse({'ok': True, 'message': 'Anexo excluído com sucesso.'})
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def commercial_check_conflict_view(request, band_slug):
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Acesso restrito.")
+
+    band = request.band
+    date_str = request.GET.get('date', '').strip()
+    proposal_id = request.GET.get('proposal_id', '').strip()
+
+    if not date_str:
+        from django.http import JsonResponse
+        return JsonResponse({'has_conflict': False})
+
+    from core.models import Show, CommercialProposal
+    from datetime import datetime
+    try:
+        query_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        from django.http import JsonResponse
+        return JsonResponse({'has_conflict': False})
+
+    excluded_show_id = None
+    if proposal_id and proposal_id.isdigit():
+        prop = CommercialProposal.objects.filter(pk=int(proposal_id), band=band).first()
+        if prop and prop.show_id:
+            excluded_show_id = prop.show_id
+
+    # Busca shows ativos (CONFIRMADO ou PRE_RESERVADO) na mesma data para a mesma banda
+    active_shows = Show.objects.filter(
+        band=band,
+        date=query_date,
+        status__in=['CONFIRMADO', 'PRE_RESERVADO']
+    )
+    if excluded_show_id:
+        active_shows = active_shows.exclude(id=excluded_show_id)
+
+    conflict_list = [
+        {
+            'title': s.title or s.event_name or 'Show',
+            'time': s.show_time.strftime('%H:%M') if s.show_time else 'Sem horário definido',
+            'status': s.get_status_display()
+        }
+        for s in active_shows
+    ]
+
+    from django.http import JsonResponse
+    return JsonResponse({
+        'has_conflict': len(conflict_list) > 0,
+        'conflicts': conflict_list,
+        'message': 'Atenção: Já existe um show para essa data, confira os horários.' if conflict_list else ''
+    })
+
+
+
 
 
 

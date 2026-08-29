@@ -1,0 +1,71 @@
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
+            <tr>
+                <th class="ps-4 py-3">Nome</th>
+                <th class="py-3">Data</th>
+                <th class="py-3">Horário</th>
+                <th class="py-3 text-center">Contato</th>
+                <th class="py-3">Valor</th>
+                <th class="py-3">Origem</th>
+                <th class="pe-4 py-3 text-end">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prop in proposals %}
+            <tr>
+                <td class="ps-4">
+                    <h6 class="mb-0 text-dark fw-bold">{{ prop.name }}</h6>
+                    {% if prop.documents.all %}
+                        <small class="text-muted"><i class="fa-solid fa-paperclip me-1"></i>{{ prop.documents.all|length }} anexo(s)</small>
+                    {% endif %}
+                </td>
+                <td>{{ prop.date|date:"d/m/Y" }}</td>
+                <td>{{ prop.time|time:"H:i" }}</td>
+                <td class="text-center">
+                    {% if prop.normalized_contact %}
+                        <a href="https://wa.me/55{{ prop.normalized_contact }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: #198754;" title="Falar no WhatsApp ({{ prop.contact }})" aria-label="Falar no WhatsApp">
+                            <i class="fa-brands fa-whatsapp fs-5 text-white"></i>
+                        </a>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td class="fw-semibold text-dark">R$ {{ prop.fee|floatformat:2 }}</td>
+                <td><span class="badge bg-light text-dark border">{{ prop.origin }}</span></td>
+                <td class="pe-4 text-end">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light border-0 rounded-circle d-inline-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px;" title="Ações">
+                            <i class="fa-solid fa-gear text-secondary"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width: 160px; padding: 8px 0; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,.075);">
+                            <li>
+                                <button type="button" class="dropdown-item d-flex align-items-center py-2 px-3 text-primary js-btn-edit-proposal" 
+                                    data-edit-url="{% url 'commercial_edit' band.slug prop.id %}"
+                                    data-proposal='{"id": {{ prop.id }}, "name": "{{ prop.name|escapejs }}", "date": "{{ prop.date|date:"Y-m-d" }}", "time": "{{ prop.time|time:"H:i" }}", "contact": "{{ prop.contact|escapejs }}", "origin": "{{ prop.origin|escapejs }}", "fee": "{{ prop.fee }}", "phase": "{{ prop.phase }}", "documents": [{% for doc in prop.documents.all %}{"id": {{ doc.id }}, "name": "{{ doc.original_name|escapejs }}", "download_url": "{% url "download_commercial_document" band.slug doc.id %}", "delete_url": "{% url "commercial_delete_document" band.slug prop.id doc.id %}"}{% if not forloop.last %},{% endif %}{% endfor %}]}'>
+                                    <i class="fa-solid fa-file-pen me-2"></i> Editar
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li>
+                                <button type="button" class="dropdown-item d-flex align-items-center py-2 px-3 text-danger js-btn-delete-proposal"
+                                    data-delete-url="{% url 'commercial_delete' band.slug prop.id %}"
+                                    data-proposal-name="{{ prop.name }}">
+                                    <i class="fa-solid fa-trash me-2"></i> Excluir
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-handshake fs-1 mb-3 opacity-50"></i>
+                    <p class="mb-0">{{ empty_message }}</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -48,6 +48,16 @@ urlpatterns = [
     path('parceiros/', views.partners_list_view, name='parceiros'),
     path('relatorios/assinatura/', views.minha_assinatura_view, name='minha_assinatura'),
     path('relatorios/relatorio-financeiro/', views.relatorios_view, name='relatorio_financeiro'),
+
+    # Comercial
+    path('relatorios/comercial/', views.commercial_index_view, name='commercial_index'),
+    path('relatorios/comercial/novo/', views.commercial_save_view, name='commercial_create'),
+    path('relatorios/comercial/<int:pk>/editar/', views.commercial_save_view, name='commercial_edit'),
+    path('relatorios/comercial/<int:pk>/excluir/', views.commercial_delete_view, name='commercial_delete'),
+    path('relatorios/comercial/<int:pk>/documentos/<int:doc_pk>/excluir/', views.commercial_delete_document_view, name='commercial_delete_document'),
+    path('relatorios/comercial/checar-conflito/', views.commercial_check_conflict_view, name='commercial_check_conflict'),
+    path('relatorios/comercial/documentos/<int:pk>/download/', file_views.download_commercial_document, name='download_commercial_document'),
+    path('relatorios/comercial/documentos/<int:pk>/preview/', file_views.preview_commercial_document, name='preview_commercial_document'),
     
     # Rider
     path('relatorios/rider/', views.rider_list_view, name='rider_list'),

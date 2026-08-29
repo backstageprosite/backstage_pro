@@ -219,6 +219,22 @@ def preview_rider(request, band_slug, pk):
     return serve_private_file(doc.file, as_attachment=False)
 
 @private_download_required
+@advanced_plan_required
+def download_commercial_document(request, band_slug, pk):
+    """Download protegido de CommercialProposalDocument"""
+    from core.models import CommercialProposalDocument
+    doc = get_object_or_404(CommercialProposalDocument, pk=pk, proposal__band=request.band)
+    return serve_private_file(doc.file, as_attachment=True)
+
+@private_download_required
+@advanced_plan_required
+def preview_commercial_document(request, band_slug, pk):
+    """Preview protegido de CommercialProposalDocument (as_attachment=False)"""
+    from core.models import CommercialProposalDocument
+    doc = get_object_or_404(CommercialProposalDocument, pk=pk, proposal__band=request.band)
+    return serve_private_file(doc.file, as_attachment=False)
+
+@private_download_required
 def internal_file_viewer(request, band_slug, file_type, pk):
     """
     Página HTML interna do visualizador PWA controlada pelo Django.
