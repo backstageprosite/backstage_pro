@@ -31,6 +31,7 @@ urlpatterns = [
     path('contatos/add/', views.contato_create_view, name='contatos_add'),
     path('contatos/<int:pk>/change/', views.contato_edit_view, name='contatos_edit'),
     path('contatos/<int:pk>/delete/', views.contato_delete_view, name='contatos_delete'),
+    path('contatos/<int:pk>/copiar-global/', views.contact_copy_from_global_view, name='contact_copy_from_global'),
 
     path('login/', views.BandLoginView.as_view(), name='login'),
     path('logout/', views.band_logout, name='logout'),

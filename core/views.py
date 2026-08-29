@@ -39,7 +39,7 @@ from django.urls import reverse
 
 from functools import wraps
 
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseNotAllowed, JsonResponse
 
 from django.db.models import Sum
 
@@ -2165,11 +2165,23 @@ def banco_de_dados_view(request):
         if request.user.role not in ['PRODUTOR', 'EMPRESARIO', 'INTEGRANTE']:
             return HttpResponseForbidden("Acesso negado: Perfil não autorizado.")
 
+    from django.db.models import Exists, OuterRef, Q
+
     contacts = Contact.objects.filter(
         is_shared_globally=True,
         band__is_active=True,
         is_hidden=False
     ).select_related('band', 'shared_by').order_by('name')
+
+    if user_band:
+        contacts = contacts.annotate(
+            is_already_copied=Exists(
+                Contact.objects.filter(
+                    band=user_band,
+                    copied_from_id=OuterRef('pk')
+                )
+            )
+        )
 
     search_query = request.GET.get('q', '').strip()
     search_type = request.GET.get('tipo', '').strip()
@@ -2200,6 +2212,82 @@ def banco_de_dados_view(request):
         'contact_types': Contact.CONTACT_TYPE_CHOICES
     }
     return render(request, 'core/banco_de_dados.html', context)
+
+
+@login_required
+@band_required
+def contact_copy_from_global_view(request, band_slug, pk):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem copiar contatos.")
+
+    band = getattr(request, 'band', None)
+    if not band:
+        return HttpResponseForbidden("Banda não identificada no contexto.")
+
+    original_contact = get_object_or_404(
+        Contact,
+        pk=pk,
+        is_shared_globally=True,
+        is_hidden=False,
+        band__is_active=True
+    )
+
+    from django.db import transaction, IntegrityError
+    from django.http import JsonResponse
+
+    # Se o contato já pertence à própria banda atual
+    if original_contact.band == band:
+        return JsonResponse({
+            'ok': True,
+            'status': 'already_copied',
+            'contact_id': original_contact.id,
+            'message': 'Este contato já pertence à sua banda.'
+        })
+
+    # Verifica se já foi copiado
+    existing_copy = Contact.objects.filter(band=band, copied_from=original_contact).first()
+    if existing_copy:
+        return JsonResponse({
+            'ok': True,
+            'status': 'already_copied',
+            'contact_id': existing_copy.id,
+            'message': 'Este contato já foi copiado.'
+        })
+
+    try:
+        with transaction.atomic():
+            copy_contact = Contact.objects.create(
+                band=band,
+                name=original_contact.name,
+                contact_type=original_contact.contact_type,
+                phone=original_contact.phone,
+                email=original_contact.email,
+                location=original_contact.location,
+                link=original_contact.link,
+                notes=original_contact.notes,
+                public_information=original_contact.public_information,
+                is_shared_globally=False,
+                is_hidden=False,
+                copied_from=original_contact
+            )
+            return JsonResponse({
+                'ok': True,
+                'status': 'copied',
+                'contact_id': copy_contact.id,
+                'message': 'Contato copiado para a página Contatos.'
+            })
+    except IntegrityError:
+        existing_copy = Contact.objects.filter(band=band, copied_from=original_contact).first()
+        return JsonResponse({
+            'ok': True,
+            'status': 'already_copied',
+            'contact_id': existing_copy.id if existing_copy else original_contact.id,
+            'message': 'Este contato já foi copiado.'
+        })
+
 
 @login_required
 @band_required

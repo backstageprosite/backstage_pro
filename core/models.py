@@ -344,6 +344,7 @@ class Contact(models.Model):
     normalized_email = models.EmailField(max_length=254, blank=True, null=True, db_index=True)
 
     is_hidden = models.BooleanField(default=False, db_index=True, verbose_name='Oculto pelo Administrador')
+    copied_from = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='copied_contacts', verbose_name='Copiado de')
 
     class Meta:
         verbose_name = 'Contato (Banco de Dados)'
@@ -359,6 +360,11 @@ class Contact(models.Model):
                 fields=['normalized_email'],
                 condition=models.Q(is_shared_globally=True, normalized_email__isnull=False) & ~models.Q(normalized_email=''),
                 name='unique_global_email'
+            ),
+            models.UniqueConstraint(
+                fields=['band', 'copied_from'],
+                condition=models.Q(copied_from__isnull=False),
+                name='unique_contact_copy_per_band'
             )
         ]
 

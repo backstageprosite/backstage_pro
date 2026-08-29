@@ -1,4 +1,4 @@
-﻿{% extends 'core/base.html' %}
+{% extends 'core/base.html' %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -136,14 +136,29 @@
 </nav>
 {% endif %}
 
-<!-- Modais de VisualizaÃ§Ã£o -->
+<!-- Modais de Visualização -->
 {% for contato in page_obj %}
 <div class="modal fade" id="modalVisContato{{ contato.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow" style="border-radius: 16px;">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold">Detalhes do Contato</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header border-bottom-0 pb-0 d-flex align-items-center justify-content-between">
+                <h5 class="modal-title fw-bold mb-0">Detalhes do Contato</h5>
+                <div class="d-flex align-items-center gap-2 ms-auto">
+                    {% if request.user.is_produtor and band %}
+                        {% if contato.band == band or contato.is_already_copied %}
+                            <button type="button" class="bp-btn bp-btn-sm bp-btn-copy-contact is-copied rounded-pill" disabled aria-pressed="true">
+                                <i class="fa-solid fa-copy"></i>
+                                <span>Copiado</span>
+                            </button>
+                        {% else %}
+                            <button type="button" class="bp-btn bp-btn-sm bp-btn-copy-contact rounded-pill js-btn-copy-contact" data-copy-url="{% url 'contact_copy_from_global' band.slug contato.id %}" aria-pressed="false">
+                                <i class="fa-solid fa-copy"></i>
+                                <span>Copiar</span>
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                    <button type="button" class="btn-close ms-0" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
             </div>
             <div class="modal-body py-4">
                 <div class="mb-3">
@@ -173,7 +188,7 @@
                         <p class="mb-1">{{ contato.get_contact_type_display }}</p>
                     </div>
                     <div class="col-6">
-                        <label class="form-label fw-bold small text-muted mb-0">Banda ResponsÃ¡vel</label>
+                        <label class="form-label fw-bold small text-muted mb-0">Banda Responsável</label>
                         <p class="mb-1">{{ contato.band.name }}</p>
                     </div>
                 </div>
@@ -192,7 +207,7 @@
 
                 {% if contato.public_information %}
                 <div class="mb-3">
-                    <label class="form-label fw-bold small text-muted mb-0">InformaÃ§Ãµes PÃºblicas</label>
+                    <label class="form-label fw-bold small text-muted mb-0">Informações Públicas</label>
                     <div class="p-3 bg-light rounded text-dark">
                         {{ contato.public_information|linebreaks }}
                     </div>
@@ -287,6 +302,73 @@
                 });
             });
         });
+
+        // Helper para obter CSRF cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Delegação de evento para os botões de Copiar Contato para a Banda
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.js-btn-copy-contact');
+            if (!btn || btn.disabled) return;
+
+            const copyUrl = btn.getAttribute('data-copy-url');
+            if (!copyUrl) return;
+
+            // Estado de carregamento
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span>Copiando...</span>';
+
+            const csrftoken = getCookie('csrftoken');
+
+            fetch(copyUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Falha na requisição (' + response.status + ')');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.ok) {
+                    btn.classList.add('is-copied');
+                    btn.classList.remove('js-btn-copy-contact');
+                    btn.setAttribute('aria-pressed', 'true');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-copy"></i> <span>Copiado</span>';
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    alert(data.message || 'Não foi possível copiar o contato.');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao copiar contato:', error);
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                alert('Erro ao processar a cópia do contato. Tente novamente.');
+            });
+        });
     });
 </script>
+
 {% endblock %}

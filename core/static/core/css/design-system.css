@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bp-brand-green: #6BD443;
   --bp-brand-green-hover: #58C634;
   --bp-success: #198754;
@@ -228,6 +228,40 @@
 .bp-btn-icon-whatsapp:hover {
   background-color: var(--bp-success-hover);
   color: var(--bp-surface);
+}
+
+.bp-btn-copy-contact {
+  background-color: transparent;
+  color: var(--bp-primary);
+  border-color: var(--bp-primary);
+  border-radius: 50rem;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  gap: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+.bp-btn-copy-contact:hover:not(:disabled) {
+  background-color: rgba(13, 110, 253, 0.08);
+  color: var(--bp-primary);
+  border-color: var(--bp-primary);
+}
+
+.bp-btn-copy-contact.is-copied,
+.bp-btn-copy-contact.is-copied:disabled,
+.bp-btn-copy-contact:disabled {
+  background-color: var(--bp-primary) !important;
+  border-color: var(--bp-primary) !important;
+  color: var(--bp-surface) !important;
+  opacity: 1 !important;
+  cursor: default !important;
+}
+
+.bp-btn-copy-contact.is-copied i,
+.bp-btn-copy-contact.is-copied svg {
+  color: var(--bp-surface) !important;
 }
 
 @media (max-width: 768px) {
