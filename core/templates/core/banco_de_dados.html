@@ -169,12 +169,7 @@
                 <div class="row mb-3">
                     <div class="col-6">
                         <label class="form-label fw-bold small text-muted mb-0">Contato</label>
-                        <p class="mb-1">
-                            <span class="phone-format">{{ contato.phone|default:"-" }}</span>
-                            {% if contato.phone %}
-                                <button class="btn btn-sm btn-light border ms-2 copy-btn" data-clipboard-text="{{ contato.phone }}" title="Copiar"><i class="fa-regular fa-copy"></i></button>
-                            {% endif %}
-                        </p>
+                        <p class="mb-1">{{ contato.phone|default:"-" }}</p>
                     </div>
                     <div class="col-6">
                         <label class="form-label fw-bold small text-muted mb-0">E-mail</label>
@@ -269,39 +264,7 @@
             return new bootstrap.Popover(popoverTriggerEl)
         });
 
-        const phoneCells = document.querySelectorAll(".phone-format");
-        phoneCells.forEach(cell => {
-            let text = cell.innerText.trim();
-            if (text && text !== "-") {
-                let digits = text.replace(/\D/g, '');
-                let formatted = text;
-                if (digits.length === 11) {
-                    formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-                } else if (digits.length === 10) {
-                    formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6, 10)}`;
-                }
 
-                let waDigits = digits;
-                if (!waDigits.startsWith('55')) {
-                    waDigits = '55' + waDigits;
-                }
-
-                cell.innerHTML = `<a href="https://wa.me/${waDigits}" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Falar no WhatsApp (${formatted})"><i class="fa-brands fa-whatsapp fs-5"></i></a>`;
-            }
-        });
-
-        document.querySelectorAll('.copy-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const textToCopy = this.getAttribute('data-clipboard-text');
-                navigator.clipboard.writeText(textToCopy).then(() => {
-                    const icon = this.querySelector('i');
-                    icon.className = 'fa-solid fa-check text-success';
-                    setTimeout(() => {
-                        icon.className = 'fa-regular fa-copy';
-                    }, 2000);
-                });
-            });
-        });
 
         // Helper para obter CSRF cookie
         function getCookie(name) {
