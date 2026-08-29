@@ -2024,78 +2024,46 @@ def usuario_reset_password_view(request, band_slug, pk):
 
 
 @login_required
-
 @band_required
-
 def contatos_list_view(request, band_slug):
-
     if not request.user.is_produtor():
-
         return HttpResponseForbidden("Apenas produtores.")
 
-    band = get_object_or_404(Band, slug=band_slug)
-
-
+    band = getattr(request, 'band', None) or get_object_or_404(Band, slug=band_slug)
 
     # Base QuerySet
-
     contatos = Contact.objects.filter(band=band, is_hidden=False).order_by('name')
 
-
-
     # Get Filter Params
-
     search_name = request.GET.get('nome', '').strip()
-
     search_tipo = request.GET.get('tipo', '').strip()
-
     search_local = request.GET.get('local', '').strip()
 
-
-
     if search_name:
-
         contatos = contatos.filter(name__icontains=search_name)
-
     if search_tipo:
-
         contatos = contatos.filter(contact_type=search_tipo)
-
     if search_local:
-
         contatos = contatos.filter(location__icontains=search_local)
 
-
-
     context = {
-
         'band': band,
-
         'contatos': contatos,
-
         'search_name': search_name,
-
         'search_tipo': search_tipo,
-
         'search_local': search_local,
-
         'contact_types': Contact.CONTACT_TYPE_CHOICES,
-
     }
-
     return render(request, 'core/contatos.html', context)
 
 
-
 @login_required
-
 @band_required
-
 def contato_create_view(request, band_slug):
     if not request.user.is_produtor():
         return HttpResponseForbidden("Apenas produtores podem adicionar contatos.")
 
-    band = get_object_or_404(Band, slug=band_slug)
+    band = getattr(request, 'band', None) or get_object_or_404(Band, slug=band_slug)
 
     if request.method == 'POST':
         form = ContactForm(request.POST)
@@ -2125,7 +2093,7 @@ def contato_edit_view(request, band_slug, pk):
     if not request.user.is_produtor():
         return HttpResponseForbidden("Apenas produtores podem editar contatos.")
 
-    band = get_object_or_404(Band, slug=band_slug)
+    band = getattr(request, 'band', None) or get_object_or_404(Band, slug=band_slug)
     contact_to_edit = get_object_or_404(Contact, pk=pk, band=band, is_hidden=False)
     was_shared = contact_to_edit.is_shared_globally
 
@@ -2155,6 +2123,7 @@ def contato_edit_view(request, band_slug, pk):
         'contact_to_edit': contact_to_edit
     }
     return render(request, 'core/contato_form.html', context)
+
 
 @login_required
 def banco_de_dados_view(request):
@@ -2292,30 +2261,19 @@ def contact_copy_from_global_view(request, band_slug, pk):
 @login_required
 @band_required
 def contato_delete_view(request, band_slug, pk):
-
     if not request.user.is_produtor():
-
         return HttpResponseForbidden("Apenas produtores podem excluir contatos.")
 
-
-
-    band = get_object_or_404(Band, slug=band_slug)
-
+    band = getattr(request, 'band', None) or get_object_or_404(Band, slug=band_slug)
     contact = get_object_or_404(Contact, pk=pk, band=band, is_hidden=False)
 
-
-
     if request.method == 'POST':
-
         contact.delete()
-
         messages.success(request, "Contato excluído com sucesso!")
-
         return redirect('contatos_list', band_slug=band.slug)
 
-
-
     return redirect('contatos_list', band_slug=band.slug)
+
 
 
 

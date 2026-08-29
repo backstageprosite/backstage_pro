@@ -572,3 +572,99 @@ class ContactCopyFromGlobalTests(TestCase):
         copy = Contact.objects.get(id=copy_id)
         self.assertEqual(copy.band, self.banda2)
         self.assertIsNone(copy.copied_from)  # SET_NULL conforme especificado
+
+
+class ContatosMultiBandaTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        # Banda 1 (com contatos)
+        self.banda1 = Band.objects.create(name="Danniel Vieira", slug="dannielvieira", is_active=True)
+        self.produtor1 = User.objects.create_user(
+            username="produtor_dv", email="dv@teste.com", password="senha", role="PRODUTOR", band=self.banda1
+        )
+        self.contato1 = Contact.objects.create(
+            band=self.banda1,
+            name="Contato Existente DV",
+            phone="71999990001",
+            contact_type="FORNECEDOR"
+        )
+
+        # Banda 2 (sem nenhum contato inicial)
+        self.banda2 = Band.objects.create(name="Matheus Kennedy", slug="matheuskennedy", is_active=True)
+        self.produtor2 = User.objects.create_user(
+            username="produtor_mk", email="mk@teste.com", password="senha", role="PRODUTOR", band=self.banda2
+        )
+
+    def test_1_banda_com_contatos_consegue_adicionar(self):
+        self.client.login(username="produtor_dv", password="senha")
+        data = {
+            'name': 'Novo Fornecedor DV',
+            'phone': '71999990002',
+            'contact_type': 'FORNECEDOR',
+            'location': 'Salvador - BA'
+        }
+        url = reverse('contatos_add', args=[self.banda1.slug])
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Contact.objects.filter(band=self.banda1, name='Novo Fornecedor DV').exists())
+
+    def test_2_banda_nova_sem_contatos_consegue_abrir_modal_e_adicionar(self):
+        self.client.login(username="produtor_mk", password="senha")
+
+        # Verifica abertura da página vazia e presença do modal de adição
+        page_url = reverse('contatos_list', args=[self.banda2.slug])
+        response_get = self.client.get(page_url)
+        self.assertEqual(response_get.status_code, 200)
+        html = response_get.content.decode('utf-8')
+
+        # Modal deve existir mesmo sem nenhum contato cadastrado
+        self.assertIn('id="modalNovoContato"', html)
+        self.assertIn(f'action="{reverse("contatos_add", args=[self.banda2.slug])}"', html)
+
+        # Efetua adição
+        add_url = reverse('contatos_add', args=[self.banda2.slug])
+        data = {
+            'name': 'Primeiro Contato MK',
+            'phone': '71988880001',
+            'contact_type': 'CONTRATANTE',
+            'location': 'Feira de Santana - BA'
+        }
+        response_post = self.client.post(add_url, data)
+        self.assertEqual(response_post.status_code, 302)
+        self.assertTrue(Contact.objects.filter(band=self.banda2, name='Primeiro Contato MK').exists())
+
+    def test_3_contato_salvo_na_banda_correta(self):
+        self.client.login(username="produtor_mk", password="senha")
+        add_url = reverse('contatos_add', args=[self.banda2.slug])
+        data = {
+            'name': 'Hotel MK',
+            'phone': '71977770001',
+            'contact_type': 'HOSPEDAGEM',
+            'location': 'Salvador - BA'
+        }
+        self.client.post(add_url, data)
+
+        created = Contact.objects.get(name='Hotel MK')
+        self.assertEqual(created.band, self.banda2)
+        self.assertNotEqual(created.band, self.banda1)
+
+    def test_4_outra_banda_nao_acessa_nem_recebe_o_contato(self):
+        # Banda 1 acessa listagem e não vê contatos da Banda 2
+        self.client.login(username="produtor_dv", password="senha")
+        response = self.client.get(reverse('contatos_list', args=[self.banda1.slug]))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode('utf-8')
+        self.assertIn('Contato Existente DV', html)
+        self.assertNotIn('Primeiro Contato MK', html)
+
+        # Produtor da Banda 1 tenta forjar adição no slug da Banda 2 -> 403 Forbidden
+        forge_url = reverse('contatos_add', args=[self.banda2.slug])
+        data_forge = {
+            'name': 'Contato Invasor',
+            'phone': '71966660001',
+            'contact_type': 'FORNECEDOR'
+        }
+        response_forge = self.client.post(forge_url, data_forge)
+        self.assertEqual(response_forge.status_code, 403)
+        self.assertFalse(Contact.objects.filter(name='Contato Invasor').exists())
