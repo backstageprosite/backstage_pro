@@ -82,7 +82,8 @@
             </div>
         </div>
     </div>
-    {% endif %}    <!-- Próximos Shows -->
+    {% endif %}
+    <!-- Próximos Shows -->
     <div class="{% if request.user.is_produtor %}col-lg-8{% else %}col-12{% endif %} mb-4 mb-lg-0">
         <div class="card shadow-sm border-0 h-100" style="border-radius: 12px;">
             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
@@ -252,7 +253,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 12px; border: none;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" id="addPendingModalLabel">Pendência</h5>
+                <h5 class="modal-title fw-bold text-dark" id="addPendingModalLabel">Adicionar Pendência</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" action="{% url 'add_dashboard_pending_item' band.slug %}">
@@ -273,7 +274,7 @@
                 </div>
                 <div class="modal-footer border-top-0 pt-2">
                     <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                    <button type="submit" class="bp-btn bp-btn-create" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Adicionar</button>
+                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Adicionar Pendência</button>
                 </div>
             </form>
         </div>
