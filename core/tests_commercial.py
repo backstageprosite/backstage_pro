@@ -153,6 +153,38 @@ class CommercialModuleTests(TestCase):
         self.assertTrue(idx_prox != -1 and idx_dist != -1)
         self.assertTrue(idx_prox < idx_dist, "O show mais próximo deve aparecer antes do mais distante.")
 
+        # Verifica formatação monetária brasileira na coluna Valor (R$ 8.000,00 e R$ 12.500,50)
+        data_fee8k = {
+            'name': 'Show Fee 8k',
+            'date': '2026-10-25',
+            'time': '20:00',
+            'contact': '(11) 98888-0010',
+            'origin': 'Teste Formatação',
+            'fee': '8.000,00',
+            'phase': 'RESERVA'
+        }
+        data_fee12k5 = {
+            'name': 'Show Fee 12k5',
+            'date': '2026-10-26',
+            'time': '20:00',
+            'contact': '(11) 98888-0011',
+            'origin': 'Teste Formatação',
+            'fee': '12500,50',
+            'phase': 'RESERVA'
+        }
+        self.client.post(create_url, data_fee8k, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.client.post(create_url, data_fee12k5, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        res_fmt = self.client.get(reverse('commercial_index', args=[self.band_adv.slug]))
+        html_fmt = res_fmt.content.decode('utf-8')
+
+        # Formato correto com separador de milhar DEVE estar presente
+        self.assertIn('R$ 8.000,00', html_fmt, "Fee 8000 deve ser exibida como 'R$ 8.000,00'")
+        self.assertIn('R$ 12.500,50', html_fmt, "Fee 12500.50 deve ser exibida como 'R$ 12.500,50'")
+
+        # Formato incorreto sem separador de milhar NÃO deve estar presente
+        self.assertNotIn('R$ 8000,00', html_fmt, "Formato 'R$ 8000,00' (sem separador) não deve aparecer")
+
     # 4. Criação de Fechado mapeada para Show Confirmado
     def test_4_criacao_fechado_mapeada_para_confirmado(self):
         self.client.login(username="produtor_adv", password="senha")

@@ -1,3 +1,4 @@
+{% load admin_tags %}
 <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
         <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
@@ -31,7 +32,7 @@
                         <span class="text-muted">-</span>
                     {% endif %}
                 </td>
-                <td class="fw-semibold text-dark">R$ {{ prop.fee|floatformat:2 }}</td>
+                <td class="fw-semibold text-dark">{{ prop.fee|brl_currency }}</td>
                 <td><span class="badge bg-light text-dark border">{{ prop.origin }}</span></td>
                 <td class="pe-4 text-end">
                     <div class="dropdown">
