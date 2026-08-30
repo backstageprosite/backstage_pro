@@ -35,8 +35,13 @@
                     <option value="ISENTO" {% if request.GET.status == 'ISENTO' %}selected{% endif %}>Isentas</option>
                 </select>
             </div>
-            <div class="col-md-2 d-grid">
-                <button type="submit" class="btn btn-dark fw-bold rounded-pill">Filtrar</button>
+            <div class="col-md-3 d-flex align-items-center gap-2">
+                <a href="{% url 'admin_painel:cobrancas' %}" class="btn btn-sm btn-outline-secondary px-3" style="border-radius: 4px; font-family: Inter; font-size: 14px; font-weight: 400; padding: 4px 16px; height: 30px; display: inline-flex; align-items: center; border: 1px solid #6C757D;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';">
+                    <i class="fa-solid fa-eraser me-1" style="font-size: 14px;"></i> Limpar
+                </a>
+                <button type="submit" class="btn btn-sm btn-dark px-4" style="background-color: #212529; border-radius: 4px; font-family: Inter; font-size: 14px; font-weight: 400; padding: 4px 24px; height: 30px; display: inline-flex; align-items: center;" onmouseover="this.style.backgroundColor='#1C1F23';" onmouseout="this.style.backgroundColor='#212529';">
+                    <i class="fa-solid fa-filter me-1" style="font-size: 14px;"></i> Filtrar
+                </button>
             </div>
         </form>
     </div>
@@ -53,7 +58,7 @@
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Vencimento</th>
                         <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Data Pagamento</th>
                         <th class="text-muted text-uppercase text-center" style="font-size: 0.8rem; letter-spacing: 0.5px;">Status</th>
-                        <th class="text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Cobrança</th>
+                        <th class="text-center align-middle text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Cobrança</th>
                         <th class="text-end pe-4 text-muted text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Ações</th>
                     </tr>
                 </thead>
@@ -100,34 +105,17 @@
                                 <span class="badge bg-info text-dark px-3 py-2 rounded-pill">{{ rec.get_status_display }}</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="text-center align-middle">
                             {% with phone=rec.subscription.billing_phone|whatsapp_clean %}
-                            {% if phone %}
-                                <div class="d-flex align-items-center gap-1" id="msgContainer{{ rec.id }}">
-                                    <textarea id="msgText{{ rec.id }}" class="d-none">Olá, {{ rec.subscription.financial_responsible_name|default:"responsável" }}. Tudo bem?
-
-Estou passando para lembrar sobre a assinatura do Backstage Pro da banda {{ rec.band.name }}.
-
-Plano: {{ rec.subscription.plan_name }}
-Período: {{ rec.reference_period }}
-Valor: R$ {{ rec.amount }}
-Vencimento: {{ rec.due_date|date:"d/m/Y" }}
-
-O pagamento pode ser regularizado conforme combinado.
-
-Qualquer dúvida, fico à disposição.
-
-Atenciosamente,
-Vinicius Lopes
-Backstage Pro</textarea>
-                                    <a href="https://wa.me/{{ phone }}?text=Ol%C3%A1%2C%20{{ rec.subscription.financial_responsible_name|default:'respons%C3%A1vel'|urlencode }}%2E%20Tudo%20bem%3F%0A%0AEstou%20passando%20para%20lembrar%20sobre%20a%20assinatura%20do%20Backstage%20Pro%20da%20banda%20{{ rec.band.name|urlencode }}%2E%0A%0APlano%3A%20{{ rec.subscription.plan_name|urlencode }}%0APer%C3%ADodo%3A%20{{ rec.reference_period|urlencode }}%0AValor%3A%20R%24%20{{ rec.amount }}%0AVencimento%3A%20{{ rec.due_date|date:'d/m/Y' }}%0A%0AO%20pagamento%20pode%20ser%20regularizado%20conforme%20combinado%2E%0A%0AQualquer%20d%C3%BAvida%2C%20fico%20%C3%A0%20disposi%C3%A7%C3%A3o%2E%0A%0AAtenciosamente%2C%0AVinicius%20Lopes%0ABackstage%20Pro" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Enviar WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
-                                    <button class="btn btn-sm btn-secondary rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" onclick="copyToClipboard('msgText{{ rec.id }}')" title="Copiar Mensagem">
-                                        <i class="fa-solid fa-copy"></i>
-                                    </button>
-                                </div>
-                            {% else %}
-                                <button class="btn btn-sm btn-secondary rounded-circle shadow-sm opacity-50" disabled title="Sem telefone cadastrado" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;"><i class="fa-brands fa-whatsapp"></i></button>
-                            {% endif %}
+                            <div class="contact-cell-content">
+                                {% if phone %}
+                                <a href="https://wa.me/{{ phone }}" target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp" class="btn btn-sm btn-success rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="{{ rec.subscription.billing_phone }}">
+                                    <i class="fa-brands fa-whatsapp" style="font-size: 20px;"></i>
+                                </a>
+                                {% else %}
+                                <span class="contact-cell-placeholder">-</span>
+                                {% endif %}
+                            </div>
                             {% endwith %}
                         </td>
                         <td class="text-end pe-4">
@@ -351,18 +339,4 @@ Backstage Pro</textarea>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    function copyToClipboard(elementId) {
-        var copyText = document.getElementById(elementId);
-
-        // Usa a API moderna do clipboard
-        navigator.clipboard.writeText(copyText.value).then(function() {
-            // Feedback visual (Toast)
-            alert("Mensagem copiada para a área de transferência!");
-        }, function(err) {
-            console.error('Falha ao copiar: ', err);
-            alert("Não foi possível copiar a mensagem automaticamente. Você pode selecionar e copiar.");
-        });
-    }
-</script>
 {% endblock %}

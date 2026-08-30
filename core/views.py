@@ -332,7 +332,7 @@ def dashboard_view(request, band_slug):
 
         total_users = User.objects.filter(band=band).count()
 
-        total_contacts = Contact.objects.filter(band=band, is_hidden=False).count()
+        total_contacts = Contact.objects.filter(band=band).count()
 
 
 
@@ -2336,7 +2336,7 @@ def contatos_list_view(request, band_slug):
     band = getattr(request, 'band', None) or get_object_or_404(Band, slug=band_slug)
 
     # Base QuerySet
-    contatos = Contact.objects.filter(band=band, is_hidden=False).order_by('name')
+    contatos = Contact.objects.filter(band=band).order_by('name')
 
     # Get Filter Params
     search_name = request.GET.get('nome', '').strip()
@@ -2398,7 +2398,7 @@ def contato_edit_view(request, band_slug, pk):
         return HttpResponseForbidden("Apenas produtores podem editar contatos.")
 
     band = getattr(request, 'band', None) or get_object_or_404(Band, slug=band_slug)
-    contact_to_edit = get_object_or_404(Contact, pk=pk, band=band, is_hidden=False)
+    contact_to_edit = get_object_or_404(Contact, pk=pk, band=band)
     was_shared = contact_to_edit.is_shared_globally
 
     if request.method == 'POST':
@@ -2653,7 +2653,7 @@ def contato_delete_view(request, band_slug, pk):
         return HttpResponseForbidden("Apenas produtores podem excluir contatos.")
 
     band = getattr(request, 'band', None) or get_object_or_404(Band, slug=band_slug)
-    contact = get_object_or_404(Contact, pk=pk, band=band, is_hidden=False)
+    contact = get_object_or_404(Contact, pk=pk, band=band)
 
     if request.method == 'POST':
         contact.delete()

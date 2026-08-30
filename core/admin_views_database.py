@@ -108,10 +108,8 @@ def admin_database_unhide(request, pk):
 def admin_database_delete(request, pk):
     if request.method == 'POST':
         contact = get_object_or_404(Contact, pk=pk, is_shared_globally=True)
-        try:
-            contact.delete()
-            messages.success(request, "Contato excluído definitivamente com sucesso!")
-        except ProtectedError:
-            messages.error(request, "Este contato não pode ser excluído pois possui vínculos no sistema.")
+        contact.is_hidden = True
+        contact.save(update_fields=['is_hidden'])
+        messages.success(request, "Contato removido do Banco de Dados Geral. O cadastro particular da banda foi preservado.")
         return redirect(request.META.get('HTTP_REFERER', 'admin_painel:database_list'))
     return HttpResponseForbidden("Método não permitido.")
