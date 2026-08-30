@@ -16,29 +16,29 @@
     <div class="card-body">
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-6 col-md-2 col-lg-2">
-                <label class="form-label text-muted fw-bold" style="font-size: 0.85rem;">Data Inicial</label>
-                <input type="date" name="date_start" class="form-control rounded-3" value="{{ request.GET.date_start }}">
+                <label class="form-label small fw-bold text-muted">Data Inicial</label>
+                <input type="date" name="date_start" class="form-control form-control-sm" value="{{ request.GET.date_start }}">
             </div>
             <div class="col-6 col-md-2 col-lg-2">
-                <label class="form-label text-muted fw-bold" style="font-size: 0.85rem;">Data Final</label>
-                <input type="date" name="date_end" class="form-control rounded-3" value="{{ request.GET.date_end }}">
+                <label class="form-label small fw-bold text-muted">Data Final</label>
+                <input type="date" name="date_end" class="form-control form-control-sm" value="{{ request.GET.date_end }}">
             </div>
             <div class="col-md-2">
-                <label class="form-label text-muted fw-bold" style="font-size: 0.85rem;">Status</label>
-                <select name="payment_status" class="form-select rounded-3">
+                <label class="form-label small fw-bold text-muted">Status</label>
+                <select name="payment_status" class="form-select form-select-sm">
                     <option value="">Todos</option>
-                    <option value="PAGO" {% if request.GET.payment_status == 'PAGO' %}selected{% endif %}>Pago Totalmente</option>
-                    <option value="PARCIAL" {% if request.GET.payment_status == 'PARCIAL' %}selected{% endif %}>Pago Parcialmente</option>
+                    <option value="PAGO" {% if request.GET.payment_status == 'PAGO' %}selected{% endif %}>Pago</option>
+                    <option value="PARCIAL" {% if request.GET.payment_status == 'PARCIAL' %}selected{% endif %}>Pgt. Parcial</option>
                     <option value="PENDENTE" {% if request.GET.payment_status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label text-muted fw-bold" style="font-size: 0.85rem;">Contratação</label>
-                <input type="text" name="contract_type" class="form-control rounded-3" placeholder="Ex: Prefeitura" value="{{ request.GET.contract_type }}">
+                <label class="form-label small fw-bold text-muted">Contratação</label>
+                <input type="text" name="contract_type" class="form-control form-control-sm" placeholder="Ex: Prefeitura" value="{{ request.GET.contract_type }}">
             </div>
             <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 text-end">
-                <a href="{% url 'relatorio_financeiro' band.slug %}" class="bp-btn bp-btn-clear"><i class="fa-solid fa-eraser"></i> Limpar</a>
-                <button type="submit" class="bp-btn bp-btn-filter"><i class="fa-solid fa-filter"></i> Filtrar</button>
+                <a href="{% url 'relatorio_financeiro' band.slug %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
+                <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
             </div>
         </form>
     </div>
