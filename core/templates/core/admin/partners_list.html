@@ -66,9 +66,13 @@
                         </td>
                         <td>
                             {% if partner.is_active %}
-                                <span class="badge bg-success rounded-pill px-3 py-2" style="width: 90px; display: inline-flex; align-items: center; justify-content: center;">Ativo</span>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Ativo
+                                </span>
                             {% else %}
-                                <span class="badge bg-secondary rounded-pill px-3 py-2" style="width: 90px; display: inline-flex; align-items: center; justify-content: center;">Inativo</span>
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-ban me-1"></i> Inativo
+                                </span>
                             {% endif %}
                         </td>
                         <td class="text-end pe-4">
