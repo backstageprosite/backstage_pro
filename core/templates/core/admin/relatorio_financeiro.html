@@ -121,25 +121,26 @@
 <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
     <div class="card-body">
         <form method="GET" class="row g-2 align-items-end">
-            <!-- Botões Rápidos -->
-            <div class="col-12 mb-2">
+            <!-- Botões Rápidos de Período -->
+            <div class="col-auto">
+                <label class="form-label small fw-bold text-muted d-block">Período</label>
                 <div class="btn-group" role="group">
                     <button type="submit" name="period" value="this_month" class="btn btn-sm btn-outline-primary {% if period == 'this_month' %}active{% endif %}">Este mês</button>
                     <button type="submit" name="period" value="last_month" class="btn btn-sm btn-outline-primary {% if period == 'last_month' %}active{% endif %}">Mês passado</button>
-                    <button type="submit" name="period" value="next_30" class="btn btn-sm btn-outline-primary {% if period == 'next_30' %}active{% endif %}">Próximos 30 dias</button>
+                    <button type="submit" name="period" value="next_30" class="btn btn-sm btn-outline-primary {% if period == 'next_30' %}active{% endif %}">Próx. 30 dias</button>
                     <button type="submit" name="period" value="this_year" class="btn btn-sm btn-outline-primary {% if period == 'this_year' %}active{% endif %}">Este ano</button>
                 </div>
             </div>
 
-            <div class="col-6 col-md-2" style="max-width: 150px;">
+            <div class="col-6 col-md-auto" style="min-width: 135px;">
                 <label class="form-label small fw-bold text-muted">Data Inicial</label>
                 <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date }}">
             </div>
-            <div class="col-6 col-md-2" style="max-width: 150px;">
+            <div class="col-6 col-md-auto" style="min-width: 135px;">
                 <label class="form-label small fw-bold text-muted">Data Final</label>
                 <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date }}">
             </div>
-            <div class="col-6 col-md-2" style="max-width: 125px;">
+            <div class="col-6 col-md-auto" style="min-width: 110px;">
                 <label class="form-label small fw-bold text-muted">Status</label>
                 <select name="status" class="form-select form-select-sm">
                     <option value="">Todos</option>
@@ -150,7 +151,7 @@
                     <option value="ISENTO" {% if status == 'ISENTO' %}selected{% endif %}>Isento</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2" style="max-width: 135px;">
+            <div class="col-6 col-md-auto" style="min-width: 115px;">
                 <label class="form-label small fw-bold text-muted">Plano</label>
                 <select name="plan" class="form-select form-select-sm">
                     <option value="">Todos</option>
@@ -163,7 +164,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-6 col-md-2" style="max-width: 125px;">
+            <div class="col-6 col-md-auto" style="min-width: 110px;">
                 <label class="form-label small fw-bold text-muted">Ciclo</label>
                 <select name="cycle" class="form-select form-select-sm">
                     <option value="">Todos</option>
@@ -172,7 +173,7 @@
                     <option value="ANUAL" {% if cycle == 'ANUAL' %}selected{% endif %}>Anual</option>
                 </select>
             </div>
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 text-end d-flex gap-2 justify-content-end">
+            <div class="col-12 col-md-auto ms-md-auto mt-2 mt-md-0 text-end d-flex gap-2 justify-content-end">
                 <a href="{% url 'admin_painel:relatorio_financeiro' %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
                 <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
             </div>
