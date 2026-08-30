@@ -68,13 +68,6 @@
                         </td>
                         <td>
                             <div class="small text-muted"><i class="fa-solid fa-user-tie me-1"></i>{{ sub.financial_responsible_name|default:"Não informado" }}</div>
-                            {% if sub.billing_phone %}
-                            <div class="small mt-1">
-                                <a href="https://wa.me/{{ sub.billing_phone|whatsapp_clean }}" target="_blank" class="text-decoration-none text-success fw-semibold">
-                                    <i class="fa-brands fa-whatsapp me-1"></i>{{ sub.billing_phone }}
-                                </a>
-                            </div>
-                            {% endif %}
                         </td>
                         <td>
                             {% if sub.billing_cycle == 'MENSAL' %}
