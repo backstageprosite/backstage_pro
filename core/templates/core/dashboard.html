@@ -101,7 +101,7 @@
                             <tr>
                                 <th class="ps-4 py-3">Data</th>
                                 <th class="py-3">Show e Local</th>
-                                <th class="py-3 pe-4">Status</th>
+                                <th class="py-3 pe-4 text-center">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -114,13 +114,13 @@
                                 </td>
                                 <td class="pe-4 text-center">
                                     {% if show.status == 'CANCELADO' %}
-                                        <span class="badge bg-danger px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Cancelado</span>
+                                        <span class="badge rounded-pill bg-danger px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Cancelado</span>
                                     {% elif show.is_past %}
-                                        <span class="badge bg-secondary px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Concluído</span>
+                                        <span class="badge rounded-pill bg-secondary px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Concluído</span>
                                     {% elif show.status == 'CONFIRMADO' %}
-                                        <span class="badge bg-success px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Confirmado</span>
+                                        <span class="badge rounded-pill bg-success px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Confirmado</span>
                                     {% elif show.status == 'PRE_RESERVADO' %}
-                                        <span class="badge bg-warning text-dark px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Reserva</span>
+                                        <span class="badge rounded-pill bg-warning text-dark px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Reserva</span>
                                     {% endif %}
                                 </td>
                             </tr>

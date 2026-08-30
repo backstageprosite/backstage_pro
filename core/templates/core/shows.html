@@ -69,8 +69,8 @@
                         <th class="ps-4 py-3">Data</th>
                         <th class="py-3">Evento / Local</th>
                         <th class="py-3 d-none d-md-table-cell">Tipo de Contratação</th>
-                        <th class="py-3">Status</th>
-                        <th class="py-3 d-none d-md-table-cell">Pagamento</th>
+                        <th class="py-3 text-center">Status</th>
+                        <th class="py-3 d-none d-md-table-cell text-center">Pagamento</th>
                         <th class="pe-4 py-3 text-end">Ações</th>
                     </tr>
                 </thead>
@@ -85,24 +85,24 @@
                             <small class="text-muted"><i class="fa-solid fa-location-dot me-1"></i> {{ show.city|default:"Cidade não informada" }}</small>
                         </td>
                         <td class="d-none d-md-table-cell">{{ show.contract_type|default:"-" }}</td>
-                        <td>
+                        <td class="text-center">
                             {% if show.status == 'CANCELADO' %}
-                                <span class="badge bg-danger px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Cancelado</span>
+                                <span class="badge rounded-pill bg-danger px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Cancelado</span>
                             {% elif show.is_past %}
-                                <span class="badge bg-secondary px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Concluído</span>
+                                <span class="badge rounded-pill bg-secondary px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Concluído</span>
                             {% elif show.status == 'CONFIRMADO' %}
-                                <span class="badge bg-success px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Confirmado</span>
+                                <span class="badge rounded-pill bg-success px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Confirmado</span>
                             {% elif show.status == 'PRE_RESERVADO' %}
-                                <span class="badge bg-warning text-dark px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Reserva</span>
+                                <span class="badge rounded-pill bg-warning text-dark px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Reserva</span>
                             {% endif %}
                         </td>
-                        <td class="d-none d-md-table-cell">
+                        <td class="d-none d-md-table-cell text-center">
                             {% if show.payment_status == 'PAGO' %}
-                                <span class="badge bg-success px-3 py-2" style="min-width: 95px; display: inline-block; text-align: center;">Pago</span>
+                                <span class="badge rounded-pill bg-success px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Pago</span>
                             {% elif show.payment_status == 'PARCIAL' %}
-                                <span class="badge bg-warning text-dark px-3 py-2" style="min-width: 95px; display: inline-block; text-align: center;">Pgt. Parcial</span>
+                                <span class="badge rounded-pill bg-warning text-dark px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Pgt. Parcial</span>
                             {% else %}
-                                <span class="badge bg-danger px-3 py-2" style="min-width: 95px; display: inline-block; text-align: center;">Pendente</span>
+                                <span class="badge rounded-pill bg-danger px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Pendente</span>
                             {% endif %}
                         </td>
                         <td class="pe-4 text-end text-nowrap">
