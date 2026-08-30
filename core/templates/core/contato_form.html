@@ -17,12 +17,18 @@
             {% csrf_token %}
 
             {% if form.errors %}
-                <div class="alert alert-danger" style="border-radius: 8px;">
-                    <i class="fa-solid fa-triangle-exclamation me-2"></i> Verifique os erros no formulário abaixo.
-                    {% if form.non_field_errors %}
-                        <div class="mt-2 fw-bold">{{ form.non_field_errors }}</div>
-                    {% endif %}
-                </div>
+                {% if not has_duplicate_error or other_errors_exist %}
+                    <div class="alert alert-danger" style="border-radius: 8px;">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Verifique os erros no formulário abaixo.
+                        {% if form.non_field_errors %}
+                            {% for error in form.non_field_errors.as_data %}
+                                {% if error.code != 'duplicate_shared_contact' %}
+                                    <div class="mt-2 fw-bold">{{ error.message }}</div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                {% endif %}
             {% endif %}
 
             <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">Informações do Contato</h5>
@@ -122,4 +128,41 @@
         </form>
     </div>
 </div>
+
+<!-- Modal Contato Já Cadastrado -->
+<div class="modal fade" id="modalDuplicateContact" tabindex="-1" aria-labelledby="modalDuplicateContactLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold text-dark" id="modalDuplicateContactLabel">
+                    <i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> Contato já cadastrado
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4 text-center">
+                <i class="fa-solid fa-triangle-exclamation fa-3x text-warning mb-3"></i>
+                <p class="text-muted fw-medium px-3 mb-0">
+                    Este contato já está cadastrado no Banco de Dados Geral e não pode ser compartilhado novamente.
+                </p>
+            </div>
+            <div class="modal-footer bg-light border-top-0 justify-content-center">
+                <button type="button" class="btn btn-primary rounded-pill fw-bold text-white px-4" data-bs-dismiss="modal">
+                    Entendi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if has_duplicate_error %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var duplicateModalEl = document.getElementById('modalDuplicateContact');
+    if (duplicateModalEl) {
+        var duplicateModal = new bootstrap.Modal(duplicateModalEl);
+        duplicateModal.show();
+    }
+});
+</script>
+{% endif %}
 {% endblock %}

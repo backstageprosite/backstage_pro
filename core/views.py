@@ -2381,13 +2381,22 @@ def contato_create_view(request, band_slug):
             contact.save()
             messages.success(request, "Contato criado com sucesso!")
             return redirect('contatos_list', band_slug=band.slug)
-    else:
-        form = ContactForm()
+    has_duplicate_error = False
+    other_errors_exist = False
+    if form.errors:
+        for field_name, err_list in form.errors.as_data().items():
+            for err in err_list:
+                if getattr(err, 'code', None) == 'duplicate_shared_contact':
+                    has_duplicate_error = True
+                else:
+                    other_errors_exist = True
 
     context = {
         'band': band,
         'form': form,
-        'is_edit': False
+        'is_edit': False,
+        'has_duplicate_error': has_duplicate_error,
+        'other_errors_exist': other_errors_exist
     }
     return render(request, 'core/contato_form.html', context)
 
@@ -2420,11 +2429,23 @@ def contato_edit_view(request, band_slug, pk):
     else:
         form = ContactForm(instance=contact_to_edit)
 
+    has_duplicate_error = False
+    other_errors_exist = False
+    if form.errors:
+        for field_name, err_list in form.errors.as_data().items():
+            for err in err_list:
+                if getattr(err, 'code', None) == 'duplicate_shared_contact':
+                    has_duplicate_error = True
+                else:
+                    other_errors_exist = True
+
     context = {
         'band': band,
         'form': form,
         'is_edit': True,
-        'contact_to_edit': contact_to_edit
+        'contact_to_edit': contact_to_edit,
+        'has_duplicate_error': has_duplicate_error,
+        'other_errors_exist': other_errors_exist
     }
     return render(request, 'core/contato_form.html', context)
 

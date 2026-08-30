@@ -175,7 +175,10 @@ class ContactForm(forms.ModelForm):
                 dup_found = True
 
             if dup_found:
-                raise forms.ValidationError("Este contato já está cadastrado no Banco de Dados.")
+                raise forms.ValidationError(
+                    "Este contato já está cadastrado no Banco de Dados Geral e não pode ser compartilhado novamente.",
+                    code='duplicate_shared_contact'
+                )
 
         return cleaned_data
 
