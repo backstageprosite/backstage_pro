@@ -1313,10 +1313,10 @@ class TestLodgingTemplateServices(RoomListServiceTestBase):
         self.user.is_active = True
         self.user.save()
         
-        # superusuário sem vínculo
+        # superusuário sem vínculo tem permissão global
         su = User.objects.create(username="superuser", is_active=True, is_superuser=True)
-        with self.assertRaises(BandAccessDeniedError):
-            create_or_replace_lodging_template(self.band.pk, payload, su)
+        template_su = create_or_replace_lodging_template(self.band.pk, payload, su)
+        self.assertIsNotNone(template_su)
 
     def test_invalid_participants(self):
         # integrante pertencente a outra banda, integrante inexistente, integrante repetido
