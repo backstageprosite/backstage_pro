@@ -221,6 +221,10 @@
                         </div>
                     </div>
 
+                    <!-- Modal Delete Record -->
+                    {% url 'admin_painel:cobrancas_excluir' rec.id as cobranca_del_url %}
+                    {% include 'core/includes/modal_confirm_delete.html' with modal_id="modalDeleteCobranca"|add:rec.id|stringformat:"s" form_action=cobranca_del_url item_type="a fatura da banda" item_name=rec.band.name %}
+
                     {% empty %}
                     <tr>
                         <td colspan="7" class="text-center py-5 text-muted">

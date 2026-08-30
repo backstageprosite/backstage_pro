@@ -152,28 +152,8 @@
                     </div>
 
                     <!-- Delete Partner Modal -->
-                    <div class="modal fade" id="deletePartnerModal{{ partner.id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow">
-                                <div class="modal-header bg-danger text-white border-0">
-                                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Excluir Parceiro</h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body p-4 text-center">
-                                    <i class="fa-solid fa-trash-can text-danger mb-3" style="font-size: 3rem;"></i>
-                                    <p class="fs-5 mb-1">Tem certeza de que deseja excluir o parceiro <strong>{{ partner.name }}</strong>?</p>
-                                    <p class="text-muted small">Esta ação não pode ser desfeita.</p>
-                                </div>
-                                <div class="modal-footer bg-light border-0 justify-content-center">
-                                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                                    <form action="{% url 'admin_painel:parceiros_excluir' partner.id %}" method="POST">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Sim, Excluir</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {% url 'admin_painel:parceiros_excluir' partner.id as partner_del_url %}
+                    {% include 'core/includes/modal_confirm_delete.html' with modal_id="deletePartnerModal"|add:partner.id|stringformat:"s" form_action=partner_del_url item_type="o parceiro" item_name=partner.name %}
                     {% empty %}
                     <tr>
                         <td colspan="7" class="text-center py-5 text-muted">

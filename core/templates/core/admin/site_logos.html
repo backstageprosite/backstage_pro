@@ -85,29 +85,8 @@
                         </tr>
 
                         <!-- Modal de Exclusão -->
-                        <div class="modal fade" id="deleteLogoModal{{ logo.pk }}" tabindex="-1" aria-labelledby="deleteLogoModalLabel{{ logo.pk }}" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content" style="border-radius: 12px; border: none;">
-                                    <div class="modal-header border-bottom-0 pb-0">
-                                        <h5 class="modal-title fw-bold text-dark" id="deleteLogoModalLabel{{ logo.pk }}">Excluir Logomarca</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body pt-3 pb-2 text-start">
-                                        <p class="mb-0 text-muted">Tem certeza de que deseja excluir a logo de <strong>{{ logo.name }}</strong> da landing page?</p>
-                                        <div class="alert alert-warning mt-3 mb-0 py-2 small" style="border-radius: 8px;">
-                                            <i class="fa-solid fa-triangle-exclamation me-1"></i> A logo deixará de aparecer na landing page imediatamente. Esta ação afeta somente a exibição pública no site e não exclui a banda do Backstage Pro.
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer border-top-0 pt-2">
-                                        <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                                        <form method="post" action="{% url 'admin_painel:site_logos_delete' logo.pk %}" class="d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">Excluir</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        {% url 'admin_painel:site_logos_delete' logo.pk as logo_del_url %}
+                        {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteLogoModal"|add:logo.pk|stringformat:"s" form_action=logo_del_url item_type="a logomarca de" item_name=logo.name %}
 
                         <!-- Modal de Edição -->
                         <div class="modal fade" id="editLogoModal{{ logo.pk }}" tabindex="-1" aria-labelledby="editLogoModalLabel{{ logo.pk }}" aria-hidden="true">

@@ -102,26 +102,8 @@
                 </div>
 
                 <!-- Modal Excluir Quarto -->
-                <div class="modal fade" id="modalExcluirQuarto{{ room.id }}" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header bg-danger text-white">
-                                <h5 class="modal-title">Confirmar Exclusão</h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p>Tem certeza que deseja excluir o quarto <strong>{{ room.number_or_name|default:"Sem número" }}</strong> do modelo padrão?</p>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="bp-btn bp-btn-neutral" data-bs-dismiss="modal">Cancelar</button>
-                                <form method="post" action="{% url 'lodging_template_room_delete' request.band.slug template.id room.id %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="bp-btn bp-btn-danger">Sim, Excluir</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% url 'lodging_template_room_delete' request.band.slug template.id room.id as lodg_del_url %}
+                {% include 'core/includes/modal_confirm_delete.html' with modal_id="modalExcluirQuarto"|add:room.id|stringformat:"s" form_action=lodg_del_url item_type="o quarto" item_name=room.number_or_name|default:"Sem número" custom_warning="O quarto será removido do modelo padrão." %}
                 {% endfor %}
             </div>
         {% endif %}

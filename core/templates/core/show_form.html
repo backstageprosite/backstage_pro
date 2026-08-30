@@ -527,22 +527,20 @@
                                                     </div>
 
                                                     <!-- Modal Excluir Anexo -->
-                                                    <div class="modal fade" id="deleteDocModal{{ form.instance.pk }}" tabindex="-1" aria-hidden="true">
+                                                    <div class="modal fade" id="deleteDocModal{{ form.instance.pk }}" tabindex="-1" aria-labelledby="deleteDocModal{{ form.instance.pk }}Label" aria-hidden="true">
                                                         <div class="modal-dialog modal-dialog-centered">
-                                                            <div class="modal-content border-0 shadow">
-                                                                <div class="modal-header border-0 pb-0">
+                                                            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                                                                <div class="modal-header border-bottom-0 pb-0">
+                                                                    <h5 class="modal-title fw-bold text-danger" id="deleteDocModal{{ form.instance.pk }}Label">Confirmar Exclusão</h5>
                                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                                 </div>
-                                                                <div class="modal-body text-center pb-5 px-4">
-                                                                    <div class="mb-4">
-                                                                        <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 4rem;"></i>
-                                                                    </div>
-                                                                    <h4 class="fw-bold text-dark mb-3">Excluir Anexo?</h4>
-                                                                    <p class="text-muted mb-4">Tem certeza que deseja excluir este anexo?<br>Esta ação não poderá ser desfeita.</p>
-                                                                    <div class="d-flex justify-content-center gap-2">
-                                                                        <button type="button" class="btn btn-light border fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
-                                                                        <button type="button" class="bp-btn bp-btn-danger" onclick="document.getElementById('{{ form.DELETE.id_for_label }}').checked = true; this.closest('form').submit();">Sim, Excluir</button>
-                                                                    </div>
+                                                                <div class="modal-body pt-3 pb-2 text-dark" style="white-space: normal; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; min-width: 0;">
+                                                                    Tem certeza que deseja excluir o anexo <strong>{{ form.instance.description|default:"este arquivo" }}</strong>?<br>
+                                                                    <small class="text-muted">Esta ação não pode ser desfeita.</small>
+                                                                </div>
+                                                                <div class="modal-footer border-top-0 pt-2 d-flex justify-content-end gap-2">
+                                                                    <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                                                                    <button type="button" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;" onclick="document.getElementById('{{ form.DELETE.id_for_label }}').checked = true; this.closest('form').submit();">Excluir</button>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -577,30 +575,8 @@
 
 <!-- Modal Excluir Show -->
 {% if is_edit %}
-<div class="modal fade" id="modalDeleteShow" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-danger text-white border-0">
-                <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i> Excluir Show</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center p-4">
-                <div class="mb-3">
-                    <i class="fa-solid fa-trash text-danger" style="font-size: 3rem;"></i>
-                </div>
-                <h5 class="fw-bold mb-3">Tem certeza que deseja excluir<br>este show?</h5>
-                <p class="text-muted mb-0">Essa ação não pode ser desfeita. Todos os dados associados a este show serão perdidos.</p>
-            </div>
-            <div class="modal-footer bg-light border-0 justify-content-center">
-                <button type="button" class="btn btn-light border fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
-                <form action="{% url 'shows_delete' band.slug form.instance.id %}" method="POST" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="bp-btn bp-btn-danger">Sim, Excluir</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+{% url 'shows_delete' band.slug form.instance.id as show_form_del_url %}
+{% include 'core/includes/modal_confirm_delete.html' with modal_id="modalDeleteShow" form_action=show_form_del_url item_type="o show" item_name=form.instance.title|default:"Sem Título" %}
 {% endif %}
 
 {% endblock %}

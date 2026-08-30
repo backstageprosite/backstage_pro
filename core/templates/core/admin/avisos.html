@@ -93,26 +93,8 @@
                     </div>
 
                     <!-- Delete Modal -->
-                    <div class="modal fade" id="deleteAvisoModal{{ aviso.pk }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content rounded-4 border-0 shadow">
-                                <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
-                                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Deseja excluir este aviso?</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <form action="{% url 'admin_painel:avisos_excluir' aviso.pk %}" method="post">
-                                    {% csrf_token %}
-                                    <div class="modal-body px-4 py-3 text-muted">
-                                        Esta ação não pode ser desfeita.
-                                    </div>
-                                    <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
-                                        <button type="button" class="btn btn-light fw-medium rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" class="btn btn-danger fw-bold rounded-pill px-4 text-white">Excluir</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
+                    {% url 'admin_painel:avisos_excluir' aviso.pk as aviso_del_url %}
+                    {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteAvisoModal"|add:aviso.pk|stringformat:"s" form_action=aviso_del_url item_type="o aviso" item_name=aviso.message|truncatechars:60 %}
                     {% empty %}
                     <tr>
                         <td colspan="4" class="text-center py-5 text-muted">

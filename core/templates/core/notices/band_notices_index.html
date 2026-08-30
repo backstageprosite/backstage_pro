@@ -75,27 +75,8 @@
                             </div>
 
                             <!-- Modal Excluir -->
-                            <div class="modal fade text-start" id="deleteNoticeModal{{ notice.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content" style="border-radius: 12px; border: none;">
-                                        <div class="modal-header border-bottom-0 pb-0">
-                                            <h5 class="modal-title fw-bold text-dark">Excluir Aviso</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body pt-3 pb-2 text-wrap" style="white-space: normal;">
-                                            Tem certeza que deseja excluir este aviso?
-                                            <div class="mt-2 text-muted small">Esta ação não pode ser desfeita e, caso o aviso esteja agendado, ele será cancelado.</div>
-                                        </div>
-                                        <div class="modal-footer border-top-0 pt-2">
-                                            <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                                            <form action="{% url 'band_notices_delete' band.slug notice.id %}" method="post" class="m-0">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">Excluir Aviso</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            {% url 'band_notices_delete' band.slug notice.id as notice_del_url %}
+                            {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteNoticeModal"|add:notice.id|stringformat:"s" form_action=notice_del_url item_type="o aviso" item_name=notice.message|truncatechars:60 %}
                             {% endif %}
                         </td>
                     </tr>

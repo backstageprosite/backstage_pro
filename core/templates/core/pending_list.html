@@ -115,28 +115,9 @@
                                 </div>
 
                                 <!-- Delete Modal -->
-                                <div class="modal fade text-start" id="deletePendingModal{{ item.id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content" style="border-radius: 12px; border: none;">
-                                            <div class="modal-header border-bottom-0 pb-0">
-                                                <h5 class="modal-title fw-bold text-dark">Excluir Pendência</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body pt-2 pb-4">
-                                                <p class="text-muted mb-3">Deseja excluir esta pendência?</p>
-                                                <div class="bg-light p-3 rounded text-muted small mb-0" style="white-space: pre-wrap; word-break: break-word;">{{ item.description|truncatechars:100 }}</div>
-                                            </div>
-                                            <div class="modal-footer border-top-0 pt-0">
-                                                <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                                                <form method="post" action="{% url 'delete_dashboard_pending_item' band.slug item.id %}">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="next" value="{% url 'pendencias' band.slug %}">
-                                                    <button type="submit" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">Excluir</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                {% url 'delete_dashboard_pending_item' band.slug item.id as pend_del_url %}
+                                {% url 'pendencias' band.slug as pend_next_url %}
+                                {% include 'core/includes/modal_confirm_delete.html' with modal_id="deletePendingModal"|add:item.id|stringformat:"s" form_action=pend_del_url item_type="a pendência" item_name=item.description|truncatechars:80 extra_hidden_fields='<input type="hidden" name="next" value="'|add:pend_next_url|add:'">' %}
                             </td>
                             {% endif %}
                         </tr>

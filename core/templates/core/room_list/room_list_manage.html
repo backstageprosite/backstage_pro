@@ -297,49 +297,9 @@
 
 
 
-    <!-- Modal de Exclusão -->
-
-    <div class="modal fade" id="deleteModal{{ room_list.id }}" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-
-        <div class="modal-dialog">
-
-            <div class="modal-content">
-
-                <div class="modal-header bg-danger text-white">
-
-                    <h5 class="modal-title" id="deleteModalLabel"><i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Exclusão</h5>
-
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-
-                </div>
-
-                <div class="modal-body text-start">
-
-                    <p>Tem certeza que deseja excluir a lista de hospedagem do show <strong>{{ room_list.show.title }}</strong>?</p>
-
-                    <p class="text-danger small fw-bold">Esta ação não poderá ser desfeita.</p>
-
-                </div>
-
-                <div class="modal-footer">
-
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-
-                    <form method="post" action="{% url 'room_list_delete' request.band.slug room_list.id %}">
-
-                        {% csrf_token %}
-
-                        <button type="submit" class="bp-btn bp-btn-danger">Sim, Excluir</button>
-
-                    </form>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
+    <!-- Modal de Exclusão da Lista de Hospedagem -->
+    {% url 'room_list_delete' request.band.slug room_list.id as rl_del_url %}
+    {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteModal"|add:room_list.id|stringformat:"s" form_action=rl_del_url item_type="a lista de hospedagem do show" item_name=room_list.show.title %}
 
             </div>
 
@@ -393,45 +353,8 @@
                                 {% if is_produtor %}
                                 <!-- Modal Delete Room -->
 
-                                    <div class="modal fade" id="modalDeleteRoom{{ room.id }}" tabindex="-1" aria-hidden="true">
-
-                                      <div class="modal-dialog">
-
-                                        <div class="modal-content">
-
-                                          <form method="post" action="{% url 'delete_room' request.band.slug room.id %}">
-
-                                            {% csrf_token %}
-
-                                            <div class="modal-header">
-
-                                              <h5 class="modal-title">Excluir quarto {{ room.number_or_name }}?</h5>
-
-                                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-
-                                            </div>
-
-                                            <div class="modal-body text-start">
-
-                                              <p class="mb-0 text-wrap text-break" style="white-space: normal;">Os integrantes deste quarto serão movidos para Não Alocados. Nenhum integrante será excluído.</p>
-
-                                            </div>
-
-                                            <div class="modal-footer">
-
-                                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-
-                                              <button type="submit" class="bp-btn bp-btn-danger">Excluir quarto</button>
-
-                                            </div>
-
-                                          </form>
-
-                                        </div>
-
-                                      </div>
-
-                                    </div>
+                                    {% url 'delete_room' request.band.slug room.id as room_del_url %}
+                                    {% include 'core/includes/modal_confirm_delete.html' with modal_id="modalDeleteRoom"|add:room.id|stringformat:"s" form_action=room_del_url item_type="o quarto" item_name=room.number_or_name custom_warning="Os integrantes deste quarto serão movidos para Não Alocados." %}
                                 {% endif %}
 
                                 {% endif %}

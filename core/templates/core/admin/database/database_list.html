@@ -185,27 +185,9 @@
 </div>
 {% endif %}
 
-<!-- Modal Excluir -->
-<div class="modal fade" id="modalExcluirContato{{ contato.id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post" action="{% url 'admin_painel:database_delete' contato.id %}">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Remover contato do Banco de Dados Geral?</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-start">
-                    <p>Este contato deixará de aparecer no Banco de Dados Geral, mas continuará salvo na página Contatos da banda responsável.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger rounded-pill fw-bold">Remover do Banco Geral</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<!-- Modal Excluir do Banco de Dados Geral -->
+{% url 'admin_painel:database_delete' contato.id as db_del_url %}
+{% include 'core/includes/modal_confirm_delete.html' with modal_id="modalExcluirContato"|add:contato.id|stringformat:"s" form_action=db_del_url custom_message="Este contato deixará de aparecer no Banco de Dados Geral, mas continuará salvo na página Contatos da banda responsável." custom_warning="Deseja prosseguir com a remoção?" delete_button_text="Remover do Banco Geral" %}
 {% endfor %}
 
 {% if is_paginated %}

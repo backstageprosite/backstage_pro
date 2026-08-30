@@ -143,35 +143,11 @@
             </div>
         </div>
     </div>
-
-    <!-- Modal Excluir Documento -->
-    <div class="modal fade" id="deleteDocModal{{ doc.id }}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header border-0 pb-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center pb-5 px-4" style="white-space: normal;">
-                    <div class="mb-4">
-                        <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 4rem;"></i>
-                    </div>
-                    <h4 class="fw-bold text-dark mb-3">Excluir Arquivo?</h4>
-                    <p class="text-muted mb-4">Tem certeza que deseja excluir o documento <strong>{{ doc.description }}</strong>?<br>Esta ação não poderá ser desfeita.</p>
-                    <div class="d-flex justify-content-center gap-2">
-                        <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                        <form action="{% url 'document_delete' band.slug doc.id %}?next=arquivos" method="POST" class="m-0">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-danger fw-bold px-4 rounded-pill">Sim, Excluir</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% url 'document_delete' band.slug doc.id as doc_del_url %}
+    {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteDocModal"|add:doc.id|stringformat:"s" form_action=doc_del_url|add:"?next=arquivos" item_type="o documento" item_name=doc.description %}
     {% endfor %}
     
     {% for receipt in show.receipts.all %}
-    <!-- Modal Editar Comprovante -->
     <div class="modal fade text-start" id="editReceiptModal{{ receipt.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -214,31 +190,8 @@
             </div>
         </div>
     </div>
-
-    <!-- Modal Excluir Comprovante -->
-    <div class="modal fade" id="deleteReceiptModal{{ receipt.id }}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header border-0 pb-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center pb-5 px-4" style="white-space: normal;">
-                    <div class="mb-4">
-                        <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 4rem;"></i>
-                    </div>
-                    <h4 class="fw-bold text-dark mb-3">Excluir Arquivo?</h4>
-                    <p class="text-muted mb-4">Tem certeza que deseja excluir o comprovante <strong>{{ receipt.description }}</strong>?<br>Esta ação não poderá ser desfeita.</p>
-                    <div class="d-flex justify-content-center gap-2">
-                        <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                        <form action="{% url 'receipt_delete' band.slug receipt.id %}?next=arquivos" method="POST" class="m-0">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-danger fw-bold px-4 rounded-pill">Sim, Excluir</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% url 'receipt_delete' band.slug receipt.id as receipt_del_url %}
+    {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteReceiptModal"|add:receipt.id|stringformat:"s" form_action=receipt_del_url|add:"?next=arquivos" item_type="o comprovante" item_name=receipt.description %}
     {% endfor %}
 {% endfor %}
 

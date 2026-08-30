@@ -96,35 +96,7 @@
                             </div>
 
                             <!-- Modal Excluir Rider -->
-                            <div class="modal fade text-start" id="modalExcluirRider-{{ rider.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-                                        <div class="modal-header border-0 pb-0">
-                                            <h5 class="modal-title fw-bold text-danger">
-                                                <i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Exclusão
-                                            </h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body pt-3 pb-4">
-                                            <h5 class="fw-bold mb-3">Excluir Rider?</h5>
-                                            <p class="text-muted mb-0">
-                                                Deseja excluir o documento <strong>"{{ rider.name }}"</strong>?<br>
-                                                <small class="text-danger">Esta ação não poderá ser desfeita.</small>
-                                            </p>
-                                        </div>
-                                        <div class="modal-footer border-0 pt-0 flex-column flex-md-row w-100">
-                                            <button type="button" class="btn btn-light rounded-pill px-4 w-100 mb-2 mb-md-0" data-bs-dismiss="modal">Cancelar</button>
-                                            <form method="post" class="d-inline w-100">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="rider_id" value="{{ rider.id }}">
-                                                <button type="submit" name="delete_rider" class="btn btn-danger btn-loading rounded-pill px-4 fw-bold w-100">
-                                                    <i class="fa-solid fa-trash me-1"></i> Sim, Excluir
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            {% include 'core/includes/modal_confirm_delete.html' with modal_id="modalExcluirRider-"|add:rider.id|stringformat:"s" form_action="" item_type="o rider" item_name=rider.name extra_hidden_fields='<input type="hidden" name="rider_id" value="'|add:rider.id|stringformat:"s"|add:'"><input type="hidden" name="delete_rider" value="1">' %}
                             {% endif %}
                         </td>
                     </tr>

@@ -157,29 +157,8 @@
 
 
                             <!-- Modal Excluir Usuário -->
-                            <div class="modal fade" id="deleteUserModal{{ usuario.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content border-0 shadow">
-                                        <div class="modal-header border-0 pb-0">
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body text-center pb-5 px-4" style="white-space: normal;">
-                                            <div class="mb-4">
-                                                <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 4rem;"></i>
-                                            </div>
-                                            <h4 class="fw-bold text-dark mb-3">Excluir Usuário?</h4>
-                                            <p class="text-muted mb-4">Tem certeza que deseja excluir o usuário <strong>{{ usuario.first_name }}</strong>?<br>Esta ação não poderá ser desfeita.</p>
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                                                <form action="{% url 'usuarios_delete' band.slug usuario.id %}" method="POST" class="m-0">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-danger fw-bold px-4 rounded-pill">Sim, Excluir</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            {% url 'usuarios_delete' band.slug usuario.id as usuario_del_url %}
+                            {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteUserModal"|add:usuario.id|stringformat:"s" form_action=usuario_del_url item_type="o usuário" item_name=usuario.first_name|default:usuario.username %}
 {% endfor %}
 
 

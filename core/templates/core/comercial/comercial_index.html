@@ -174,26 +174,24 @@
     </div>
 </div>
 
-<!-- Modal Confirmação de Exclusão -->
-<div class="modal fade" id="modalDeleteProposal" tabindex="-1" aria-hidden="true">
+<!-- Modal Confirmação de Exclusão de Solicitação -->
+{% include 'core/includes/modal_confirm_delete.html' with modal_id="modalDeleteProposal" form_action="" is_dynamic=True dynamic_name_id="deleteProposalName" dynamic_form_id="formDeleteProposal" item_type="a solicitação" %}
+
+<!-- Modal Confirmação de Exclusão de Anexo Comercial -->
+<div class="modal fade" id="modalDeleteCommercialDoc" tabindex="-1" aria-labelledby="modalDeleteCommercialDocLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i> Confirmar Exclusão</h5>
+                <h5 class="modal-title fw-bold text-danger" id="modalDeleteCommercialDocLabel">Confirmar Exclusão</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body py-3">
-                <p class="mb-2 text-dark">Tem certeza de que deseja excluir a solicitação <strong id="deleteProposalName"></strong>?</p>
-                <div class="alert alert-danger py-2 small mb-0">
-                    <i class="fa-solid fa-info-circle me-1"></i> A exclusão removerá permanentemente a solicitação, seus anexos e também <strong>retirará da Agenda o show vinculado</strong> criado por esta solicitação.
-                </div>
+            <div class="modal-body pt-3 pb-2 text-dark" style="white-space: normal; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; min-width: 0;">
+                Tem certeza que deseja excluir este anexo?<br>
+                <small class="text-muted">Esta ação não pode ser desfeita.</small>
             </div>
-            <div class="modal-footer border-top-0 pt-0">
-                <form id="formDeleteProposal" method="post" action="">
-                    {% csrf_token %}
-                    <button type="button" class="btn btn-light rounded-pill px-4 fw-medium" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">Sim, Excluir</button>
-                </form>
+            <div class="modal-footer border-top-0 pt-2 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                <button type="button" id="btnConfirmDeleteDoc" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">Excluir</button>
             </div>
         </div>
     </div>
@@ -368,33 +366,42 @@ document.addEventListener('DOMContentLoaded', function() {
         const btnDeleteDoc = e.target.closest('.js-btn-delete-doc');
         if (!btnDeleteDoc) return;
 
-        if (!confirm('Deseja realmente excluir este anexo?')) return;
-
-        const deleteUrl = btnDeleteDoc.getAttribute('data-delete-url');
-        const docId = btnDeleteDoc.getAttribute('data-doc-id');
-        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        fetch(deleteUrl, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrftoken,
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.ok) {
-                const row = document.getElementById(`doc-row-${docId}`);
-                if (row) row.remove();
-                if (existingDocsList.children.length === 0) {
-                    existingDocsContainer.classList.add('d-none');
-                }
-            } else {
-                alert(data.message || 'Erro ao excluir anexo.');
-            }
-        })
-        .catch(err => console.error('Erro ao excluir anexo:', err));
+        pendingDocDeleteUrl = btnDeleteDoc.getAttribute('data-delete-url');
+        pendingDocId = btnDeleteDoc.getAttribute('data-doc-id');
+        if (bsModalDeleteDoc) {
+            bsModalDeleteDoc.show();
+        }
     });
+
+    const btnConfirmDeleteDoc = document.getElementById('btnConfirmDeleteDoc');
+    if (btnConfirmDeleteDoc) {
+        btnConfirmDeleteDoc.addEventListener('click', function() {
+            if (!pendingDocDeleteUrl) return;
+
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch(pendingDocDeleteUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok) {
+                    const row = document.getElementById(`doc-row-${pendingDocId}`);
+                    if (row) row.remove();
+                    if (existingDocsList && existingDocsList.children.length === 0) {
+                        existingDocsContainer.classList.add('d-none');
+                    }
+                    if (bsModalDeleteDoc) bsModalDeleteDoc.hide();
+                } else {
+                    alert(data.message || 'Erro ao excluir anexo.');
+                }
+            })
+            .catch(err => console.error('Erro ao excluir anexo:', err));
+        });
+    }
 
     // Delegação para modal de Exclusão de Solicitação
     document.addEventListener('click', function(e) {

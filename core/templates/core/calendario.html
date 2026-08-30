@@ -285,31 +285,7 @@
 
 <!-- Modal Excluir Show do Calendário -->
 {% if request.user.is_produtor or request.user.is_superuser %}
-<div class="modal fade" id="modalDeleteShowCalendar" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-danger text-white border-0">
-                <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i> Excluir Show</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center p-4">
-                <div class="mb-3">
-                    <i class="fa-solid fa-trash text-danger" style="font-size: 3rem;"></i>
-                </div>
-                <h5 class="fw-bold mb-3">Tem certeza que deseja excluir<br>este show?</h5>
-                <p class="text-muted mb-0">Essa ação não pode ser desfeita. Todos os dados associados a este show serão perdidos.</p>
-            </div>
-            <div class="modal-footer bg-light border-0 justify-content-center">
-                <button type="button" class="btn btn-light border fw-bold px-4" data-bs-dismiss="modal">Cancelar</button>
-                <form id="formDeleteShowCalendar" method="POST" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger fw-bold px-4">Sim, Excluir</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-</div>
+{% include 'core/includes/modal_confirm_delete.html' with modal_id="modalDeleteShowCalendar" form_action="#" item_type="o show" is_dynamic=True dynamic_name_id="deleteShowCalendarName" dynamic_form_id="formDeleteShowCalendar" %}
 {% endif %}
 
 <!-- Modal Eventos do Dia (+N) -->
@@ -521,6 +497,10 @@
             var formDelete = document.getElementById('formDeleteShowCalendar');
             if (formDelete) {
                 formDelete.action = eventObj.extendedProps.deleteUrl;
+                var delNameEl = document.getElementById('deleteShowCalendarName');
+                if (delNameEl) {
+                    delNameEl.textContent = eventObj.title || 'Sem Título';
+                }
             }
             
             var myModal = new bootstrap.Modal(document.getElementById('showModal'));
