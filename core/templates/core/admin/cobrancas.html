@@ -80,21 +80,21 @@
                         </td>
                         <td class="text-center">
                             {% if rec.status == 'PAGO' %}
-                                <span class="badge bg-success px-3 py-2 rounded-pill"><i class="fa-solid fa-check-double me-1"></i>Pago</span>
+                                <span class="badge bg-success bg-opacity-10 text-dark border border-success border-opacity-25 px-3 py-2 rounded-pill"><i class="fa-solid fa-check-double me-1"></i>Pago</span>
                             {% elif rec.status == 'ATRASADO' %}
-                                <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill"><i class="fa-solid fa-triangle-exclamation me-1"></i>Atrasado</span>
+                                <span class="badge bg-danger bg-opacity-10 text-dark border border-danger border-opacity-25 px-3 py-2 rounded-pill"><i class="fa-solid fa-triangle-exclamation me-1"></i>Atrasado</span>
                             {% elif rec.status == 'PENDENTE' %}
                                 {% if rec.is_vencido %}
-                                    <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill border border-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>Vencido</span>
+                                    <span class="badge bg-danger bg-opacity-10 text-dark border border-danger border-opacity-25 px-3 py-2 rounded-pill"><i class="fa-solid fa-triangle-exclamation me-1"></i>Vencido</span>
                                 {% elif rec.is_vencendo_7d %}
-                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>Vencendo</span>
+                                    <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>Vencendo</span>
                                 {% else %}
-                                    <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill border border-primary"><i class="fa-solid fa-clock me-1"></i>Pendente</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-dark border border-primary border-opacity-25 px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>Pendente</span>
                                 {% endif %}
                             {% elif rec.status == 'CANCELADO' %}
-                                <span class="badge bg-secondary px-3 py-2 rounded-pill"><i class="fa-solid fa-ban me-1"></i>Cancelado</span>
+                                <span class="badge bg-secondary bg-opacity-10 text-dark border border-secondary border-opacity-25 px-3 py-2 rounded-pill"><i class="fa-solid fa-ban me-1"></i>Cancelado</span>
                             {% else %}
-                                <span class="badge bg-info text-dark px-3 py-2 rounded-pill">{{ rec.get_status_display }}</span>
+                                <span class="badge bg-info bg-opacity-10 text-dark border border-info border-opacity-25 px-3 py-2 rounded-pill">{{ rec.get_status_display }}</span>
                             {% endif %}
                         </td>
                         <td class="text-center align-middle">
