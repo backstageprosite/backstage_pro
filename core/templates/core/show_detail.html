@@ -13,7 +13,7 @@
         <a href="{% url 'calendario' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
         {% if user.is_produtor or user.is_superuser %}
             {% if show.room_lists.exists %}
-                <a href="{% url 'room_list_manage' band.slug show.room_lists.first.id %}" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm"><i class="fa-solid fa-bed me-1"></i> Ver Hotel</a>
+                <a href="{% url 'room_list_manage' band.slug show.room_lists.first.id %}" class="btn rounded-pill px-3 fw-bold shadow-sm text-white" style="background-color: #ffc107; border-color: #ffc107;"><i class="fa-solid fa-bed me-1 text-white"></i> Ver Hotel</a>
             {% else %}
                 <a href="{% url 'room_list_create' band.slug show.id %}" class="btn btn-outline-primary rounded-pill px-3 fw-bold shadow-sm"><i class="fa-solid fa-bed me-1"></i> Ir para Hospedagem</a>
             {% endif %}
@@ -21,7 +21,7 @@
             <a href="{% url 'show_pdf' band.slug show.id %}" target="_blank" class="btn btn-dark border-dark rounded-pill px-3 fw-bold shadow-sm" style="color: white !important;"><i class="fa-solid fa-file-pdf me-1"></i> PDF Show</a>
         {% else %}
             {% if show.room_lists.exists and show.room_lists.first.status == 'PUBLICADA' %}
-                <a href="{% url 'room_list_pdf' band.slug show.room_lists.first.id %}" target="_blank" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm"><i class="fa-solid fa-file-pdf me-1"></i> Ver Hotel</a>
+                <a href="{% url 'room_list_pdf' band.slug show.room_lists.first.id %}" target="_blank" class="btn rounded-pill px-3 fw-bold shadow-sm text-white" style="background-color: #ffc107; border-color: #ffc107;"><i class="fa-solid fa-file-pdf me-1 text-white"></i> Ver Hotel</a>
             {% endif %}
         {% endif %}
     </div>
