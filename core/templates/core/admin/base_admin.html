@@ -289,11 +289,11 @@
                     
 
 
-                    {% include 'core/includes/pwa_install.html' %}
                 </ul>
                 
                 <hr class="mt-4 mb-3 text-muted">
                 <ul class="nav nav-pills flex-column">
+                    {% include 'core/includes/pwa_install.html' %}
                     <li class="nav-item">
                         <a href="{% url 'admin_painel:configuracoes' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'configuracoes' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
                             <i class="fa-solid fa-gear fa-fw me-2 {% if request.resolver_match.url_name != 'configuracoes' %}opacity-75{% endif %}"></i> Configurações
