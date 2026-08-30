@@ -1,0 +1,29 @@
+﻿{% if tipo == 'HOSPEDAGEM' %}
+    <span class="contact-type-pill bg-info-subtle border border-info border-opacity-25" aria-label="Hotel">
+        <i class="fa-solid fa-hotel" aria-hidden="true"></i> Hotel
+    </span>
+{% elif tipo == 'RESTAURANTE' %}
+    <span class="contact-type-pill bg-warning-subtle border border-warning border-opacity-25" aria-label="Restaurante">
+        <i class="fa-solid fa-utensils" aria-hidden="true"></i> Restaurante
+    </span>
+{% elif tipo == 'ESTABELECIMENTO' %}
+    <span class="contact-type-pill bg-secondary-subtle border border-secondary border-opacity-25" aria-label="Empresa">
+        <i class="fa-solid fa-building" aria-hidden="true"></i> Empresa
+    </span>
+{% elif tipo == 'FORNECEDOR' %}
+    <span class="contact-type-pill border" style="background-color: #e2e3e5; border-color: #d3d6d8;" aria-label="Fornecedor">
+        <i class="fa-solid fa-truck" aria-hidden="true"></i> Fornecedor
+    </span>
+{% elif tipo == 'PRODUTOR' %}
+    <span class="contact-type-pill bg-success-subtle border border-success border-opacity-25" aria-label="Produtor(a)">
+        <i class="fa-solid fa-user-tie" aria-hidden="true"></i> Produtor(a)
+    </span>
+{% elif tipo == 'CONTRATANTE' %}
+    <span class="contact-type-pill bg-primary-subtle border border-primary border-opacity-25" aria-label="Contratante">
+        <i class="fa-solid fa-handshake" aria-hidden="true"></i> Contratante
+    </span>
+{% else %}
+    <span class="contact-type-pill bg-light border" aria-label="{{ display }}">
+        {{ display }}
+    </span>
+{% endif %}

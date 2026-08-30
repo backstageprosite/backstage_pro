@@ -270,3 +270,26 @@
     min-height: 44px;
   }
 }
+
+/* Badges de Contatos */
+.contact-type-pill {
+    width: 132px;
+    height: 30px;
+    padding: 4px 12px;
+    border-radius: 50rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-sizing: border-box;
+    white-space: nowrap;
+    font-family: Inter, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    color: #212529;
+}
+.contact-type-pill i {
+    font-size: 13px;
+    color: currentColor;
+}

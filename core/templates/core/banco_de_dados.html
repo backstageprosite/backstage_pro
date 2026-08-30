@@ -62,21 +62,7 @@
                         </td>
                         <td class="text-center wa-link-cell" data-phone="{{ contato.phone|default:'' }}">{{ contato.phone|default:'-' }}</td>
                         <td>
-                            {% if contato.contact_type == 'FORNECEDOR' %}
-                                <span class="badge bg-secondary-subtle text-secondary border border-secondary border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-truck-fast me-1"></i> Fornecedor</span>
-                            {% elif contato.contact_type == 'CONTRATANTE' %}
-                                <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-handshake me-1"></i> Contratante</span>
-                            {% elif contato.contact_type == 'ESTABELECIMENTO' %}
-                                <span class="badge bg-dark-subtle text-dark border border-dark border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-building me-1"></i> Estabelecimento</span>
-                            {% elif contato.contact_type == 'HOSPEDAGEM' %}
-                                <span class="badge bg-info-subtle text-info border border-info border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-hotel me-1"></i> Hospedagem</span>
-                            {% elif contato.contact_type == 'RESTAURANTE' %}
-                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-utensils me-1"></i> Restaurante</span>
-                            {% elif contato.contact_type == 'PRODUTOR' %}
-                                <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em"><i class="fa-solid fa-user-tie me-1"></i> Produtor</span>
-                            {% else %}
-                                <span class="badge bg-light text-dark border d-inline-block text-center" style="min-width:130px;padding:0.4em 0.6em">{{ contato.get_contact_type_display }}</span>
-                            {% endif %}
+                            {% include 'core/includes/_badge_contato.html' with tipo=contato.contact_type display=contato.get_contact_type_display %}
                         </td>
                         <td class="text-muted">{{ contato.location|default:"-" }}</td>
                         <td class="text-center">

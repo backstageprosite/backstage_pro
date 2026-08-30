@@ -318,12 +318,12 @@ class ShowTeamCost(models.Model):
 
 class Contact(models.Model):
     CONTACT_TYPE_CHOICES = (
-        ('FORNECEDOR', 'Fornecedor (a)'),
-        ('CONTRATANTE', 'Contratante'),
-        ('ESTABELECIMENTO', 'Estabelecimento'),
+        ('HOSPEDAGEM', 'Hotel'),
         ('RESTAURANTE', 'Restaurante'),
-        ('HOSPEDAGEM', 'Hospedagem'),
-        ('PRODUTOR', 'Produtor (a)'),
+        ('ESTABELECIMENTO', 'Empresa'),
+        ('FORNECEDOR', 'Fornecedor'),
+        ('PRODUTOR', 'Produtor(a)'),
+        ('CONTRATANTE', 'Contratante'),
     )
 
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='contacts', verbose_name='Banda')
