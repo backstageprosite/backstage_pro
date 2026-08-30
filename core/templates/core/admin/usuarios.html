@@ -80,11 +80,17 @@
                         </td>
                         <td>
                             {% if u.is_superuser %}
-                                <span class="badge bg-dark rounded-pill px-2"><i class="fa-solid fa-shield"></i> Admin Geral</span>
+                                <span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 rounded-pill px-3 py-2" style="width: 125px; display: inline-flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-shield me-1"></i> Admin Geral
+                                </span>
                             {% elif u.is_produtor %}
-                                <span class="badge bg-primary rounded-pill px-2"><i class="fa-solid fa-crown"></i> Produtor</span>
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2" style="width: 125px; display: inline-flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-crown me-1"></i> Produtor
+                                </span>
                             {% else %}
-                                <span class="badge bg-secondary rounded-pill px-2"><i class="fa-solid fa-guitar"></i> Integrante</span>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3 py-2" style="width: 125px; display: inline-flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-guitar me-1"></i> Integrante
+                                </span>
                             {% endif %}
                         </td>
                         <td class="text-end pe-4">
