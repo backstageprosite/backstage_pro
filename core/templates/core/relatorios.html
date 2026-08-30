@@ -125,14 +125,14 @@
                     <tr>
                         <th class="ps-4 py-3">Data</th>
                         <th class="py-3">Show</th>
-                        <th class="py-3">Cachê (R$)</th>
-                        <th class="py-3">Recebido (R$)</th>
-                        <th class="py-3">Pendente (R$)</th>
-                        <th class="py-3">Custos (R$)</th>
-                        <th class="py-3">Equipe (R$)</th>
-                        <th class="py-3">Resultado (R$)</th>
-                        <th class="py-3">Caixa Real (R$)</th>
-                        <th class="py-3">Status</th>
+                        <th class="py-3">Cachê</th>
+                        <th class="py-3">Recebido</th>
+                        <th class="py-3">Pendente</th>
+                        <th class="py-3">Custos</th>
+                        <th class="py-3">Equipe</th>
+                        <th class="py-3">Resultado</th>
+                        <th class="py-3">Caixa Real</th>
+                        <th class="py-3 text-center">Status</th>
                         <th class="pe-4 py-3 text-end">Ações</th>
                     </tr>
                 </thead>
@@ -171,18 +171,18 @@
                         <td class="text-success fw-bold">
                             R$ {{ show.caixa_realizado|floatformat:"2g" }}
                         </td>
-                        <td>
+                        <td class="text-center">
                             {% if show.payment_status == 'PAGO' %}
-                                <span class="badge bg-success">Pago</span>
+                                <span class="badge rounded-pill bg-success px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Pago</span>
                             {% elif show.payment_status == 'PARCIAL' %}
-                                <span class="badge bg-warning text-dark">Parcial</span>
+                                <span class="badge rounded-pill bg-warning text-dark px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Parcial</span>
                             {% else %}
-                                <span class="badge bg-danger">Pendente</span>
+                                <span class="badge rounded-pill bg-danger px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Pendente</span>
                             {% endif %}
                         </td>
                         <td class="pe-4 text-end text-nowrap">
-                            <a href="{% url 'show_finance_detail' band.slug show.id %}" class="btn btn-sm btn-outline-primary rounded-pill fw-bold">
-                                <i class="fa-solid fa-pen-to-square text-primary me-1"></i> Editar
+                            <a href="{% url 'show_finance_detail' band.slug show.id %}" class="btn btn-sm btn-outline-primary rounded-circle" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Editar">
+                                <i class="fa-solid fa-pen-to-square"></i>
                             </a>
                         </td>
                     </tr>
