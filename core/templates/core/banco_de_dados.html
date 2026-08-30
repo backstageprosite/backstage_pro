@@ -45,7 +45,7 @@
                 <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
                     <tr>
                         <th class="ps-4 py-3">Nome</th>
-                        <th class="py-3">Contato</th>
+                        <th class="py-3 text-center align-middle">Contato</th>
                         <th class="py-3">Tipo</th>
                         <th class="py-3">Local</th>
                         <th class="py-3 text-center">Link</th>
@@ -60,7 +60,7 @@
                         <td class="ps-4">
                             <h6 class="mb-0 text-dark">{{ contato.name }}</h6>
                         </td>
-                        <td class="text-center wa-link-cell" data-phone="{{ contato.phone|default:'' }}">{{ contato.phone|default:'-' }}</td>
+                        <td class="text-center align-middle wa-link-cell" data-phone="{{ contato.phone|default:'' }}">{{ contato.phone|default:'-' }}</td>
                         <td>
                             {% include 'core/includes/_badge_contato.html' with tipo=contato.contact_type display=contato.get_contact_type_display %}
                         </td>
@@ -285,12 +285,12 @@
                 }
                 
                 if (waDigits.length >= 10) {
-                    cell.innerHTML = `<a href="https://wa.me/${waDigits}" target="_blank" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;" title="Falar no WhatsApp (${formatted})"><i class="fa-brands fa-whatsapp fs-5"></i></a>`;
+                    cell.innerHTML = `<div class=\"contact-cell-content\"><a href=\"https://wa.me/${waDigits}\" target=\"_blank\" class=\"btn btn-sm btn-success rounded-circle shadow-sm\" style=\"width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;\" title=\"Falar no WhatsApp (${formatted})\"><i class=\"fa-brands fa-whatsapp fs-5\"></i></a></div>`;
                 } else {
-                    cell.innerHTML = '<span class="text-muted">-</span>';
+                    cell.innerHTML = '<div class=\"contact-cell-content\"><span class=\"contact-cell-placeholder\">-</span></div>';
                 }
             } else {
-                cell.innerHTML = '<span class="text-muted">-</span>';
+                cell.innerHTML = '<div class=\"contact-cell-content\"><span class=\"contact-cell-placeholder\">-</span></div>';
             }
         });
 

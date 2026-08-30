@@ -56,7 +56,7 @@
                 <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
                     <tr>
                         <th class="ps-4 py-3">Nome</th>
-                        <th class="py-3 text-center">Contato</th>
+                        <th class="py-3 text-center align-middle">Contato</th>
                         <th class="py-3">Tipo</th>
                         <th class="py-3">Local</th>
                         <th class="py-3 text-center">Link</th>
@@ -70,14 +70,16 @@
                     {% for contato in contacts %}
                     <tr {% if contato.is_hidden %}style="background-color: #f8f9fa; opacity: 0.85;"{% endif %}>
                         <td class="ps-4 fw-medium">{{ contato.name }}</td>
-                        <td class="text-center">
+                        <td class="text-center align-middle">
+                              <div class="contact-cell-content">
                             {% if contato.phone %}
                             <a href="https://wa.me/55{{ contato.normalized_phone|default:contato.phone|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success rounded-circle shadow-sm" style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;" title="Falar no WhatsApp">
                                 <i class="fa-brands fa-whatsapp fs-5"></i>
                             </a>
                             {% else %}
-                            <span class="text-muted small">---</span>
+                                  <span class="contact-cell-placeholder">-</span>
                             {% endif %}
+                              </div>
                         </td>
                         <td><span class="badge bg-light text-dark border">{{ contato.get_contact_type_display }}</span></td>
                         <td class="text-muted">{{ contato.location|default:"---" }}</td>
