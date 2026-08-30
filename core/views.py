@@ -2559,7 +2559,7 @@ def contact_copy_from_global_view(request, band_slug, pk):
                 email=original_contact.email,
                 location=original_contact.location,
                 link=original_contact.link,
-                notes=original_contact.notes,
+                notes='',
                 public_information=original_contact.public_information,
                 is_shared_globally=False,
                 is_hidden=False,

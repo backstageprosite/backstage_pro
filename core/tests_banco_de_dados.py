@@ -365,7 +365,7 @@ class ContactCopyFromGlobalTests(TestCase):
         self.assertEqual(copy.email, self.contato_global.email)
         self.assertEqual(copy.location, self.contato_global.location)
         self.assertEqual(copy.link, self.contato_global.link)
-        self.assertEqual(copy.notes, self.contato_global.notes)
+        self.assertEqual(copy.notes, '')
         self.assertEqual(copy.public_information, self.contato_global.public_information)
 
         # Regras de isolamento / novos metadados
