@@ -131,16 +131,16 @@
                 </div>
             </div>
 
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-md-2" style="max-width: 150px;">
                 <label class="form-label small fw-bold text-muted">Data Inicial</label>
                 <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date }}">
             </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-md-2" style="max-width: 150px;">
                 <label class="form-label small fw-bold text-muted">Data Final</label>
                 <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date }}">
             </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label small fw-bold text-muted">Status da Cobrança</label>
+            <div class="col-6 col-md-2" style="max-width: 125px;">
+                <label class="form-label small fw-bold text-muted">Status</label>
                 <select name="status" class="form-select form-select-sm">
                     <option value="">Todos</option>
                     <option value="PAGO" {% if status == 'PAGO' %}selected{% endif %}>Pago</option>
@@ -150,11 +150,20 @@
                     <option value="ISENTO" {% if status == 'ISENTO' %}selected{% endif %}>Isento</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-md-2" style="max-width: 135px;">
                 <label class="form-label small fw-bold text-muted">Plano</label>
-                <input type="text" name="plan" class="form-control form-control-sm" placeholder="Ex: Mensal" value="{{ plan|default:'' }}">
+                <select name="plan" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    {% for p in available_plans %}
+                        <option value="{{ p }}" {% if plan == p %}selected{% endif %}>{{ p }}</option>
+                    {% empty %}
+                        <option value="Mensal" {% if plan == 'Mensal' %}selected{% endif %}>Mensal</option>
+                        <option value="Semestral" {% if plan == 'Semestral' %}selected{% endif %}>Semestral</option>
+                        <option value="Anual" {% if plan == 'Anual' %}selected{% endif %}>Anual</option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="col-6 col-md-2">
+            <div class="col-6 col-md-2" style="max-width: 125px;">
                 <label class="form-label small fw-bold text-muted">Ciclo</label>
                 <select name="cycle" class="form-select form-select-sm">
                     <option value="">Todos</option>

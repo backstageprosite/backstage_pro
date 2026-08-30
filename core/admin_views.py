@@ -456,6 +456,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
             'band_summaries': band_summaries,
             'all_bands': Band.objects.filter(subscriptions__is_deleted=False).distinct().order_by('name'),
+            'available_plans': BandSubscription.objects.filter(is_deleted=False).values_list('plan_name', flat=True).distinct().order_by('plan_name'),
             'expenses': expenses.order_by('-due_date'),
         })
 
