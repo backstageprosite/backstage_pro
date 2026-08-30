@@ -13,11 +13,6 @@
         </div>
     </div>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
 
     {% if room_lists %}
     <div class="card shadow-sm border-0" style="border-radius: 12px;">

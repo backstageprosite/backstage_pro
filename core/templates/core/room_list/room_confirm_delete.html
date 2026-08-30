@@ -8,12 +8,6 @@
         <a href="{% url 'room_list_manage' request.band.slug room_list.id %}" class="btn btn-secondary">Cancelar</a>
     </div>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-
     <div class="alert alert-danger">
         <h4>Tem certeza que deseja excluir o quarto "{{ room.number_or_name }}"?</h4>
         <p><strong>Tipo:</strong> {{ room.get_type_display }} (Capacidade: {{ room.capacity }})</p>
