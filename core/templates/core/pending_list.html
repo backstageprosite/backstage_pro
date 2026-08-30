@@ -55,9 +55,9 @@
                                 <span class="text-secondary fw-medium">Geral</span>
                                 {% endif %}
                             </td>
-                            <td class="py-3 px-4">
-                                <span class="badge rounded-pill {{ item.status_info.class }} fw-medium px-3 py-2">{{ item.status_info.label }}</span>
-                            </td>
+                             <td class="py-3 px-4 text-center">
+                                <span class="badge rounded-pill {{ item.status_info.class }} fw-medium px-3 py-2" style="width: 80px; display: inline-block; text-align: center;">{{ item.status_info.label }}</span>
+                             </td>
                             {% if request.user.is_produtor %}
                             <td class="py-3 px-4">
                                 <div class="dropdown d-flex justify-content-end">
