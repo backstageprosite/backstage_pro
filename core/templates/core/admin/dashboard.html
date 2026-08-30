@@ -266,7 +266,7 @@
                                 <th>Valor</th>
                                 <th>Vencimento</th>
                                 <th class="text-center">Status</th>
-                                <th class="text-end pe-4">Ação</th>
+                                <th class="text-center pe-4">Ação</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -283,9 +283,9 @@
                                         <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 rounded-pill px-2 py-1 small">Vencendo</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-end pe-4">
-                                    <a href="{% url 'admin_painel:assinaturas' %}?q={{ sub.band.name }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1">
-                                        Ver
+                                <td class="text-center pe-4">
+                                    <a href="{% url 'admin_painel:assinaturas' %}?q={{ sub.band.name }}" class="btn btn-sm btn-outline-primary" title="Visualizar" aria-label="Visualizar">
+                                        <i class="fa-solid fa-eye"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -324,7 +324,7 @@
                                 <th>Assunto / Usuário</th>
                                 <th>Data</th>
                                 <th class="text-center">Status</th>
-                                <th class="text-end pe-4">Ação</th>
+                                <th class="text-center pe-4">Ação</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -347,9 +347,9 @@
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2 py-1 small">{{ ticket.get_status_display }}</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-end pe-4">
-                                    <a href="{% url 'admin_painel:support_detail' ticket.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1">
-                                        Ver mensagem
+                                <td class="text-center pe-4">
+                                    <a href="{% url 'admin_painel:support_detail' ticket.id %}" class="btn btn-sm btn-outline-primary" title="Visualizar" aria-label="Visualizar">
+                                        <i class="fa-solid fa-eye"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -393,7 +393,7 @@
                                 <th>Valor</th>
                                 <th>Vencimento</th>
                                 <th class="text-center">Status</th>
-                                <th class="text-end pe-4">Ação</th>
+                                <th class="text-center pe-4">Ação</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -418,9 +418,9 @@
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2 py-1 small">{{ fatura.get_status_display }}</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-end pe-4">
-                                    <a href="{% url 'admin_painel:cobrancas' %}?q={{ fatura.band.name }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1">
-                                        Ver
+                                <td class="text-center pe-4">
+                                    <a href="{% url 'admin_painel:cobrancas' %}?q={{ fatura.band.name }}" class="btn btn-sm btn-outline-primary" title="Visualizar" aria-label="Visualizar">
+                                        <i class="fa-solid fa-eye"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -480,7 +480,7 @@
                     {% endfor %}
                 </div>
                 <div class="mt-3 text-end">
-                    <a href="{% url 'admin_painel:avisos' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-bold px-3">
+                    <a href="{% url 'admin_painel:avisos' %}" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: transparent;">
                         <i class="fa-solid fa-plus me-1"></i> Novo Aviso
                     </a>
                 </div>
@@ -496,11 +496,11 @@
     <div class="card-body p-4">
         <h6 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-bolt text-warning me-2"></i>Atalhos Rápidos</h6>
         <div class="d-flex flex-wrap gap-2">
-            <a href="{% url 'admin_painel:bandas' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold px-3 py-2 shadow-sm bg-white">
-                <i class="fa-solid fa-plus text-success me-1"></i> Nova Banda
+            <a href="{% url 'admin_painel:bandas' %}" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: transparent;">
+                <i class="fa-solid fa-plus me-1"></i> Nova Banda
             </a>
-            <a href="{% url 'admin_painel:avisos' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold px-3 py-2 shadow-sm bg-white">
-                <i class="fa-solid fa-plus text-warning me-1"></i> Novo Aviso
+            <a href="{% url 'admin_painel:avisos' %}" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: transparent;">
+                <i class="fa-solid fa-plus me-1"></i> Novo Aviso
             </a>
             <a href="{% url 'admin_painel:assinaturas' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold px-3 py-2 shadow-sm bg-white">
                 <i class="fa-solid fa-star text-warning me-1"></i> Ver Assinaturas
