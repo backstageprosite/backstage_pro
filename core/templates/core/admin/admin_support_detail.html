@@ -46,10 +46,7 @@
             </form>
         {% endif %}
         
-        <form method="POST" action="{% url 'admin_painel:support_delete' ticket.id %}" onsubmit="return confirm('Tem certeza que deseja excluir este chamado e todo o seu histórico? Esta ação é irreversível.');">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-danger rounded-pill fw-bold"><i class="fa-solid fa-trash me-1"></i></button>
-        </form>
+        <button type="button" class="btn btn-danger rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:support_delete' ticket.id %}" data-item-type="o atendimento" data-item-name="#{{ ticket.id }} - {{ ticket.band.name }}"><i class="fa-solid fa-trash me-1"></i> Excluir</button>
     </div>
 </div>
 

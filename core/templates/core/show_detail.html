@@ -11,19 +11,19 @@
     <!-- Ações (Unificado para Mobile, Tablet e Desktop) -->
     <div class="d-flex flex-wrap gap-2 justify-content-md-end">
         {% if user.is_produtor or user.is_superuser %}
-        <a href="{% url 'show_pdf' band.slug show.id %}" target="_blank" class="btn btn-sm btn-dark border-dark rounded-pill fw-bold" style="color: white !important;"><i class="fa-solid fa-file-pdf me-1"></i> PDF Show</a>
+        <a href="{% url 'show_pdf' band.slug show.id %}" target="_blank" class="btn btn-dark border-dark rounded-pill px-3 fw-bold shadow-sm" style="color: white !important;"><i class="fa-solid fa-file-pdf me-1"></i> PDF Show</a>
         {% if show.room_lists.exists %}
-            <a href="{% url 'room_list_manage' band.slug show.room_lists.first.id %}" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold"><i class="fa-solid fa-bed me-1"></i> Gerenciar Hospedagem</a>
+            <a href="{% url 'room_list_manage' band.slug show.room_lists.first.id %}" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm"><i class="fa-solid fa-bed me-1"></i> Gerenciar Hospedagem</a>
         {% else %}
-            <a href="{% url 'room_list_create' band.slug show.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold"><i class="fa-solid fa-bed me-1"></i> Ir para Hospedagem</a>
+            <a href="{% url 'room_list_create' band.slug show.id %}" class="btn btn-outline-primary rounded-pill px-3 fw-bold shadow-sm"><i class="fa-solid fa-bed me-1"></i> Ir para Hospedagem</a>
         {% endif %}
-        <a href="{% url 'shows_edit' band.slug show.id %}" class="bp-btn bp-btn-edit">Editar</a>
+        <a href="{% url 'shows_edit' band.slug show.id %}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm"><i class="fa-solid fa-pen-to-square me-1"></i> Editar</a>
         {% else %}
             {% if show.room_lists.exists and show.room_lists.first.status == 'PUBLICADA' %}
-                <a href="{% url 'room_list_pdf' band.slug show.room_lists.first.id %}" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold"><i class="fa-solid fa-file-pdf me-1"></i> Ver Hospedagem</a>
+                <a href="{% url 'room_list_pdf' band.slug show.room_lists.first.id %}" target="_blank" class="btn btn-primary rounded-pill px-3 fw-bold shadow-sm"><i class="fa-solid fa-file-pdf me-1"></i> Ver Hospedagem</a>
             {% endif %}
         {% endif %}
-        <a href="{% url 'calendario' band.slug %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
+        <a href="{% url 'calendario' band.slug %}" class="btn btn-outline-secondary rounded-pill px-3 fw-bold shadow-sm"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
     </div>
 </div>
 
