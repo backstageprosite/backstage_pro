@@ -62,3 +62,41 @@ def brl_currency(value):
     formatted = formatted.replace(".", ",")   # ex: "8X000,00"
     formatted = formatted.replace("X", ".")   # ex: "8.000,00"
     return "R$ " + formatted
+
+
+@register.filter
+def billing_whatsapp_link(record):
+    """
+    Gera o link wa.me com número limpo e texto pré-formatado de aviso de vencimento do plano.
+    """
+    if not record or not getattr(record, 'subscription', None):
+        return ""
+
+    phone = whatsapp_clean(record.subscription.billing_phone)
+    if not phone:
+        return ""
+
+    import urllib.parse
+
+    resp = record.subscription.financial_responsible_name or (record.band.name if record.band else "Responsável")
+    band_name = record.band.name if record.band else "Banda"
+    plan_name = record.plan_name or record.subscription.plan_name or "Plano Backstage Pro"
+    period = record.reference_period or ""
+    amount_str = f"R$ {record.amount}" if record.amount is not None else ""
+    due_str = record.due_date.strftime('%d/%m/%Y') if record.due_date else ""
+
+    msg = (
+        f"Olá, {resp}. Tudo bem?\n\n"
+        f"Estou passando para lembrar sobre o vencimento da assinatura do Backstage Pro da banda *{band_name}*.\n\n"
+        f"📄 *Plano:* {plan_name}\n"
+        f"🗓 *Período:* {period}\n"
+        f"💰 *Valor:* {amount_str}\n"
+        f"📅 *Vencimento:* {due_str}\n\n"
+        f"O pagamento pode ser regularizado conforme combinado via Pix/transferência.\n\n"
+        f"Qualquer dúvida ou se já efetuou o pagamento, fico à disposição!\n\n"
+        f"Atenciosamente,\n"
+        f"Equipe Backstage Pro"
+    )
+
+    encoded_text = urllib.parse.quote(msg)
+    return f"https://wa.me/{phone}?text={encoded_text}"

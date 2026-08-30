@@ -98,10 +98,10 @@
                             {% endif %}
                         </td>
                         <td class="text-center align-middle">
-                            {% with phone=rec.subscription.billing_phone|whatsapp_clean %}
+                            {% with wa_link=rec|billing_whatsapp_link %}
                             <div class="contact-cell-content">
-                                {% if phone %}
-                                <a href="https://wa.me/{{ phone }}" target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp" class="btn btn-sm btn-success rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="{{ rec.subscription.billing_phone }}">
+                                {% if wa_link %}
+                                <a href="{{ wa_link }}" target="_blank" rel="noopener noreferrer" aria-label="Enviar cobrança no WhatsApp" class="btn btn-sm btn-success rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="{{ rec.subscription.billing_phone }}">
                                     <i class="fa-brands fa-whatsapp" style="font-size: 20px;"></i>
                                 </a>
                                 {% else %}
