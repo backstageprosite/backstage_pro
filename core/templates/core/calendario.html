@@ -1,20 +1,19 @@
 {% extends 'core/base.html' %}
 
 {% block content %}
-<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4 gap-3">
-    <h2 class="mb-0 text-uppercase fw-bold text-center text-lg-start agenda-title">Agenda de Shows - {{ band.name }}</h2>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2 gap-md-3">
+    <h2 class="mb-0 text-uppercase fw-bold text-center text-md-start agenda-title">Agenda de Shows - {{ band.name }}</h2>
     
     {% if request.user.is_produtor or request.user.is_superuser %}
-    <div class="d-flex flex-wrap justify-content-center justify-content-lg-end gap-2 action-buttons-container">
+    <div class="d-flex flex-wrap justify-content-center justify-content-md-end gap-2 action-buttons-container">
         <!-- Novo Show -->
-        <a href="{% url 'shows_add' band.slug %}" class="btn rounded-pill px-4 py-2 fw-bold d-flex align-items-center shadow-sm action-btn-mobile text-dark" style="background-color: #6BD443;">
-            <i class="fa-solid fa-plus me-2"></i> <span>Novo Show</span>
+        <a href="{% url 'shows_add' band.slug %}" class="btn rounded-pill px-3 px-lg-4 py-2 fw-bold d-flex align-items-center shadow-sm action-btn-mobile text-dark text-nowrap" style="background-color: #6BD443;">
+            <i class="fa-solid fa-plus me-1 me-lg-2"></i> <span>Novo Show</span>
         </a>
         
-        
         <!-- Exportar PDF -->
-        <button type="button" class="btn btn-dark rounded-pill shadow-sm px-4 py-2 fw-bold d-flex align-items-center transition-hover action-btn-mobile" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
-            <i class="fa-solid fa-file-pdf me-2 fs-5"></i> <span>PDF Agenda</span>
+        <button type="button" class="btn btn-dark rounded-pill shadow-sm px-3 px-lg-4 py-2 fw-bold d-flex align-items-center transition-hover action-btn-mobile text-nowrap" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
+            <i class="fa-solid fa-file-pdf me-1 me-lg-2 fs-5"></i> <span>PDF Agenda</span>
         </button>
     </div>
     {% endif %}
@@ -24,30 +23,45 @@
     .transition-hover { transition: all 0.2s ease; }
     .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,.15)!important; }
     
-    @media (min-width: 769px) {
+    @media (min-width: 992px) {
         .agenda-title {
-            font-size: 1.5rem !important; /* Reduces default h2 (2rem) down to h4 size */
+            font-size: 1.5rem !important;
         }
     }
-    
-    @media (max-width: 768px) {
+
+    @media (min-width: 768px) and (max-width: 991.98px) {
         .agenda-title {
-            white-space: nowrap;
-            font-size: clamp(13px, 4.2vw, 20px) !important;
-            line-height: 1.1;
-            text-align: center;
-            max-width: 100%;
-            overflow: visible;
+            font-size: 1.15rem !important;
+            line-height: 1.2;
+            text-align: left !important;
         }
         .action-buttons-container {
             flex-wrap: nowrap !important;
-            gap: 4px !important;
+            gap: 6px !important;
+        }
+        .action-btn-mobile {
+            padding: 6px 12px !important;
+            font-size: 0.85rem !important;
+        }
+    }
+    
+    @media (max-width: 767.98px) {
+        .agenda-title {
+            white-space: normal;
+            font-size: clamp(14px, 4.5vw, 18px) !important;
+            line-height: 1.2;
+            text-align: center;
+            max-width: 100%;
+        }
+        .action-buttons-container {
+            flex-wrap: wrap !important;
+            gap: 8px !important;
             width: 100%;
             justify-content: center;
         }
         .action-btn-mobile {
-            padding: 6px 6px !important;
-            font-size: 0.65rem !important;
+            padding: 6px 12px !important;
+            font-size: 0.8rem !important;
             white-space: nowrap !important;
             flex: 1 1 auto;
             justify-content: center;
@@ -55,7 +69,7 @@
         }
         .action-btn-mobile i {
             margin-right: 4px !important;
-            font-size: 0.8rem !important;
+            font-size: 0.85rem !important;
         }
         .action-btn-mobile span {
             display: inline-block;

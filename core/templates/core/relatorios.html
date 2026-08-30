@@ -47,7 +47,8 @@
 <!-- Cards Gerenciais -->
 <div class="row g-3 mb-4">
     <!-- Linha 1 -->
-    <div class="col-6 col-md-3">
+    <!-- Linha 1 -->
+    <div class="col-12 col-md-4">
         <div class="card shadow-sm border-0 border-start border-4 border-primary h-100" style="border-radius: 12px;">
             <div class="card-body p-3">
                 <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Receita Contratada</p>
@@ -55,7 +56,7 @@
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-12 col-md-4">
         <div class="card shadow-sm border-0 border-start border-4 border-success h-100" style="border-radius: 12px;">
             <div class="card-body p-3">
                 <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Total Recebido</p>
@@ -63,7 +64,7 @@
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-12 col-md-4">
         <div class="card shadow-sm border-0 border-start border-4 border-warning h-100" style="border-radius: 12px;">
             <div class="card-body p-3">
                 <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Total Pendente</p>
@@ -71,7 +72,8 @@
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <!-- Linha 2 -->
+    <div class="col-12 col-md-4">
         <div class="card shadow-sm border-0 border-start border-4 border-danger h-100" style="border-radius: 12px;">
             <div class="card-body p-3">
                 <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Custos Cadastrados</p>
@@ -79,8 +81,7 @@
             </div>
         </div>
     </div>
-    <!-- Linha 2 -->
-    <div class="col-6 col-md-3">
+    <div class="col-12 col-md-4">
         <div class="card shadow-sm border-0 border-start border-4 border-info h-100" style="border-radius: 12px;">
             <div class="card-body p-3">
                 <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Resultado Previsto</p>
@@ -88,27 +89,11 @@
             </div>
         </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-12 col-md-4">
         <div class="card shadow-sm border-0 border-start border-4 border-success h-100" style="border-radius: 12px;">
             <div class="card-body p-3">
                 <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Caixa Realizado</p>
                 <h4 class="fw-bold mb-0 text-success">R$ {{ caixa_realizado_geral|default:"0,00"|floatformat:"2g" }}</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card shadow-sm border-0 border-start border-4 border-secondary h-100" style="border-radius: 12px;">
-            <div class="card-body p-3">
-                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Margem Prevista</p>
-                <h4 class="fw-bold mb-0 text-secondary">{{ margem_prevista_geral|default:"0,00"|floatformat:"2" }}%</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card shadow-sm border-0 border-start border-4 border-dark h-100" style="border-radius: 12px;">
-            <div class="card-body p-3">
-                <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.70rem;">Qtd. Shows</p>
-                <h4 class="fw-bold mb-0 text-dark">{{ qtd_shows }}</h4>
             </div>
         </div>
     </div>
@@ -123,7 +108,7 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
                     <tr>
-                        <th class="ps-4 py-3">Data</th>
+                        <th class="ps-4 py-3" style="width: 95px;">Data</th>
                         <th class="py-3">Show</th>
                         <th class="py-3">Cachê</th>
                         <th class="py-3">Recebido</th>
@@ -138,7 +123,7 @@
                 <tbody>
                     {% for show in shows %}
                     <tr>
-                        <td class="ps-4 text-nowrap fw-medium">{{ show.date|date:"d/m/Y" }}</td>
+                        <td class="ps-4 text-nowrap fw-medium" style="width: 95px;">{{ show.date|date:"d/m/y" }}</td>
                         <td>
                             <a href="{% url 'show_detail' band.slug show.id %}" class="text-decoration-none fw-bold text-dark">
                                 {{ show.title|default:"Sem Título" }}

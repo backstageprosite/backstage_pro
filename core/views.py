@@ -1369,7 +1369,7 @@ def commercial_index_view(request, band_slug):
 
     # Filtros da URL
     q_name = request.GET.get('name', '').strip()
-    q_start_date = request.GET.get('start_date', '').strip()
+    q_start_date = (request.GET.get('date') or request.GET.get('start_date') or '').strip()
     q_end_date = request.GET.get('end_date', '').strip()
     q_phase = request.GET.get('phase', '').strip()
     q_origin = request.GET.get('origin', '').strip()
