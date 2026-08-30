@@ -269,20 +269,8 @@
                     </li>
                     
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:assinaturas' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'assinaturas' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
-                            <i class="fa-solid fa-star fa-fw me-2 {% if request.resolver_match.url_name != 'assinaturas' %}opacity-75{% endif %}"></i> Assinaturas
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a href="{% url 'admin_painel:cobrancas' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'cobrancas' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
-                            <i class="fa-solid fa-file-invoice-dollar fa-fw me-2 {% if request.resolver_match.url_name != 'cobrancas' %}opacity-75{% endif %}"></i> Faturas
-                        </a>
-                    </li>
-                    
-                    <li class="nav-item">
-                        <a href="{% url 'admin_painel:relatorios' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
-                            <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios' %}opacity-75{% endif %}"></i> Relatórios
+                        <a href="{% url 'admin_painel:relatorios' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios' or request.resolver_match.url_name == 'assinaturas' or request.resolver_match.url_name == 'cobrancas' or request.resolver_match.url_name == 'relatorio_financeiro' or request.resolver_match.url_name == 'parceiros' or request.resolver_match.url_name == 'support_list' or request.resolver_match.url_name == 'site_logos' or request.resolver_match.url_name == 'admin_web_push_dashboard' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                            <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios' and request.resolver_match.url_name != 'assinaturas' and request.resolver_match.url_name != 'cobrancas' and request.resolver_match.url_name != 'relatorio_financeiro' and request.resolver_match.url_name != 'parceiros' and request.resolver_match.url_name != 'support_list' and request.resolver_match.url_name != 'site_logos' and request.resolver_match.url_name != 'admin_web_push_dashboard' %}opacity-75{% endif %}"></i> Relatórios
                         </a>
                     </li>
                     {% endif %}
