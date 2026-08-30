@@ -9,7 +9,7 @@
     
     {% if request.user.is_produtor %}
     <div class="d-flex flex-wrap gap-2">
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-light rounded-pill px-3 shadow-sm border">
+        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3">
             <i class="fa-solid fa-arrow-left me-1"></i> Voltar
         </a>
         <button type="button" class="btn btn-dark fw-bold rounded-pill px-3 shadow-sm" onclick="gerarPDF()">
@@ -21,7 +21,7 @@
     </div>
     {% else %}
     <div class="d-flex flex-wrap gap-2">
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-light rounded-pill px-3 shadow-sm border">
+        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3">
             <i class="fa-solid fa-arrow-left me-1"></i> Voltar
         </a>
         <button type="button" class="btn btn-dark fw-bold rounded-pill px-3 shadow-sm" onclick="gerarPDF()">
@@ -76,7 +76,6 @@
                                             <i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar
                                         </a>
                                     </li>
-                                    <li><hr class="dropdown-divider my-1"></li>
                                     <li>
                                         <a class="dropdown-item py-2 text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteIntegranteModal{{ item.id }}">
                                             <i class="fa-solid fa-trash me-2"></i> Excluir
