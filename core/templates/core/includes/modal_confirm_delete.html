@@ -36,6 +36,7 @@
             const button = event.relatedTarget;
             if (!button) return;
 
+            const customTitle = button.getAttribute('data-modal-title') || 'Confirmar Exclusão';
             const url = button.getAttribute('data-delete-url') || button.getAttribute('data-url') || '';
             const itemName = button.getAttribute('data-item-name') || button.getAttribute('data-name') || '';
             const itemType = button.getAttribute('data-item-type') || button.getAttribute('data-type') || '';
@@ -44,6 +45,7 @@
             const btnText = button.getAttribute('data-delete-btn-text') || button.getAttribute('data-btn-text') || 'Excluir';
             const extraFieldsJson = button.getAttribute('data-extra-fields') || '';
 
+            const titleEl = document.getElementById('modalConfirmDeleteUniversalLabel');
             const form = document.getElementById('modalConfirmDeleteUniversalForm');
             const nameEl = document.getElementById('modalConfirmDeleteUniversalItemName');
             const typeEl = document.getElementById('modalConfirmDeleteUniversalItemType');
@@ -52,6 +54,7 @@
             const submitBtn = document.getElementById('modalConfirmDeleteUniversalSubmitBtn');
             const extraFieldsContainer = document.getElementById('modalConfirmDeleteUniversalExtraFields');
 
+            if (titleEl) titleEl.textContent = customTitle;
             if (form) form.action = url;
             if (submitBtn) submitBtn.textContent = btnText;
             if (warnEl) warnEl.textContent = customWarning;

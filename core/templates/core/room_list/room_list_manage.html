@@ -184,21 +184,10 @@
                                               {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-2 px-2 py-1" style="cursor: grab; touch-action: none; opacity: 0.8; font-size: 1.1rem;"></i>{% endif %} <span>{{ p.snapshot_name }}</span>
 
                                               {% if room_list.status == 'RASCUNHO' %}
-
-                                              <form method="post" action="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" class="d-inline m-0 p-0">
-
-                                                  {% csrf_token %}
-
-                                                  <button type="submit" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover integrante" onclick="return confirm('Deseja realmente remover {{ p.snapshot_name }} desta lista? (Ele poderá ser adicionado novamente em Sincronizar)');">
-
-                                                      <i class="fa-solid fa-xmark text-white"></i>
-
-                                                  </button>
-
-                                              </form>
-
+                                              <button type="button" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover do quarto" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}" data-modal-title="Remover integrante do quarto" data-custom-message="Deseja remover <strong>{{ p.snapshot_name }}</strong> deste quarto?" data-custom-warning="O integrante será movido para “Não Alocados” e continuará disponível nesta Room List." data-delete-btn-text="Remover do quarto">
+                                                  <i class="fa-solid fa-xmark text-white"></i>
+                                              </button>
                                               {% endif %}
-
                                           </div>
 
 
@@ -274,21 +263,10 @@
                                       {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-2 px-2 py-1" style="cursor: grab; touch-action: none; opacity: 0.8; font-size: 1.1rem;"></i>{% endif %} <span>{{ p.snapshot_name }}</span>
 
                                       {% if room_list.status == 'RASCUNHO' %}
-
-                                      <form method="post" action="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" class="d-inline m-0 p-0">
-
-                                          {% csrf_token %}
-
-                                          <button type="submit" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover integrante" onclick="return confirm('Deseja realmente remover {{ p.snapshot_name }} desta lista? (Ele poderá ser adicionado novamente em Sincronizar)');">
-
-                                              <i class="fa-solid fa-xmark text-dark"></i>
-
-                                          </button>
-
-                                      </form>
-
+                                      <button type="button" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover da lista" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" data-modal-title="Remover integrante da lista" data-custom-message="Deseja realmente remover <strong>{{ p.snapshot_name }}</strong> desta lista?" data-custom-warning="(Ele poderá ser adicionado novamente em “Sincronizar”.)" data-delete-btn-text="Remover da lista">
+                                          <i class="fa-solid fa-xmark text-dark"></i>
+                                      </button>
                                       {% endif %}
-
                                   </div>
 
 

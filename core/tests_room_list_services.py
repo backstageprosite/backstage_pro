@@ -485,6 +485,13 @@ class TestRoomListLifecycle(RoomListServiceTestBase):
         rl.refresh_from_db()
         self.assertEqual(rl.content_revision, rev_before)
 
+    def test_publish_blocked_when_participants_unassigned(self):
+        """Publicação bloqueada com mensagem específica quando há integrantes em Não Alocados."""
+        rl = self._create_rl() # participantes criados sem quarto
+        with self.assertRaises(PublicationBlockedError) as ctx:
+            publish_room_list(rl.pk, self.user)
+        self.assertIn("Existem integrantes ainda no espaço Não Alocados", str(ctx.exception))
+
     def test_publish_success(self):
         """Publicação bem-sucedida de Room List sem pendências."""
         rl = self._create_rl()

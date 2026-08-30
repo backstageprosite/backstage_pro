@@ -605,8 +605,13 @@ def publish_room_list(room_list_id, user):
     # Verificar pendências sob lock
     report = get_pending_issues(locked_rl)
     if report.has_blocking:
+        has_unassigned = any(issue.category == 'no_room' for issue in report.blocking_issues)
+        if has_unassigned:
+            error_msg = "Existem integrantes ainda no espaço Não Alocados"
+        else:
+            error_msg = "Existem pendências bloqueantes que impedem a publicação."
         raise PublicationBlockedError(
-            "Existem pendências bloqueantes que impedem a publicação.",
+            error_msg,
             pending_issues=report,
         )
 
