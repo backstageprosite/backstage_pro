@@ -5,7 +5,8 @@
     <div class="col-md-5">
         <div class="text-center mb-4">
             {% if band and band.logo %}
-                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid mb-3" style="max-height: 200px;">
+                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid mb-3" style="max-height: 200px;" onerror="this.onerror=null; this.style.display='none'; document.getElementById('band-fallback-title').style.display='block';">
+                <h1 id="band-fallback-title" class="text-primary" style="display: none;"><i class="fa-solid fa-guitar"></i> {{ band.name }}</h1>
             {% else %}
                 <h1 class="text-primary"><i class="fa-solid fa-guitar"></i> {% if band %}{{ band.name }}{% else %}Backstage Pro{% endif %}</h1>
             {% endif %}
