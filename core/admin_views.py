@@ -46,64 +46,211 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from django.db.models import Sum
+        import json
+        from django.db.models import Sum, Q, Count
+
         today = datetime.date.today()
         seven_days_from_now = today + datetime.timedelta(days=7)
+        first_day_this_month = today.replace(day=1)
 
-        context['total_bandas'] = Band.objects.count()
+        # -------------------------------------------------------------
+        # 1. Indicadores Linha 1 (Cards Existentes)
+        # -------------------------------------------------------------
         context['bandas_ativas'] = Band.objects.filter(is_active=True).count()
         context['total_usuarios'] = User.objects.count()
 
-        # Financeiro SaaS
-        context['assinaturas_ativas'] = BandSubscription.objects.filter(status='ATIVO').count()
+        # Assinaturas SaaS vencendo em 7 dias (próximos 7 dias)
+        context['assinaturas_vencendo'] = BandSubscription.objects.filter(
+            is_deleted=False,
+            status='ATIVO',
+            next_due_date__gte=today,
+            next_due_date__lte=seven_days_from_now
+        ).count()
 
-        receita_prevista = BandSubscription.objects.filter(status='ATIVO').aggregate(total=Sum('contracted_value'))['total'] or 0
-        context['receita_prevista'] = receita_prevista
+        # Assinaturas SaaS vencidas
+        context['assinaturas_vencidas'] = BandSubscription.objects.filter(
+            is_deleted=False,
+            status='ATIVO',
+            next_due_date__lt=today
+        ).count()
 
-        receita_recebida = BillingRecord.objects.filter(status='PAGO', paid_date__month=today.month, paid_date__year=today.year).aggregate(total=Sum('amount'))['total'] or 0
-        context['receita_recebida'] = receita_recebida
+        # -------------------------------------------------------------
+        # 2. Novos Indicadores (Linha 2)
+        # -------------------------------------------------------------
+        # Recebido no mês (faturas pagas no mês atual)
+        recebido_mes = BillingRecord.objects.filter(
+            subscription__is_deleted=False,
+            status='PAGO',
+            paid_date__gte=first_day_this_month,
+            paid_date__lte=today
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        context['recebido_mes'] = float(recebido_mes)
 
-        context['cobrancas_pendentes'] = BillingRecord.objects.filter(status='PENDENTE').count()
-        context['cobrancas_atrasadas'] = BillingRecord.objects.filter(status='ATRASADO').count()
+        # A receber (faturas abertas PENDENTES não vencidas)
+        a_receber = BillingRecord.objects.filter(
+            subscription__is_deleted=False,
+            status='PENDENTE',
+            due_date__gte=today
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        context['a_receber'] = float(a_receber)
 
-        # Alertas Vencimentos
-        context['bandas_vencidas'] = BandSubscription.objects.filter(status='VENCIDO')
-        context['bandas_vencendo_7d'] = BandSubscription.objects.filter(next_due_date__gt=today, next_due_date__lte=seven_days_from_now)
-        context['bandas_sem_assinatura'] = Band.objects.filter(subscriptions__isnull=True)
-        context['faturas_atrasadas'] = BillingRecord.objects.filter(status='ATRASADO')
+        # Total em atraso (faturas vencidas e não pagas: ATRASADO ou PENDENTE com due_date < today)
+        total_atraso = BillingRecord.objects.filter(
+            subscription__is_deleted=False
+        ).filter(
+            Q(status='ATRASADO') | Q(status='PENDENTE', due_date__lt=today)
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        context['total_atraso'] = float(total_atraso)
 
-        if context['bandas_vencidas'].exists():
-            context['show_alert_modal'] = True
-        else:
-            context['show_alert_modal'] = False
-
-        context['total_shows'] = Show.objects.count()
-
-        # Shows no mes atual
-        context['shows_mes_atual'] = Show.objects.filter(date__year=today.year, date__month=today.month).count()
-
-        # Shows futuros
-        context['shows_futuros'] = Show.objects.filter(date__gte=today).count()
-
-        # Fale Conosco (Mensagens não lidas pelo administrador)
-        unread_tickets = SupportTicket.objects.filter(
+        # Fale Conosco (mensagens novas ou aguardando resposta)
+        context['fale_conosco_count'] = SupportTicket.objects.filter(
             status__in=['NEW', 'WAITING_ADMIN']
-        ).order_by('-last_message_at')
-        
-        unread_tickets_list = []
-        for t in unread_tickets:
-            if not t.admin_last_read_at or t.last_message_at > t.admin_last_read_at:
-                unread_tickets_list.append(t)
-                
-        context['support_unread_count'] = len(unread_tickets_list)
-        context['support_unread_tickets'] = unread_tickets_list[:5] # mostrar até 5 no dashboard
+        ).count()
 
-        # Bandas com assinatura vencida (se date for menor que hoje)
-        context['assinaturas_vencidas'] = Band.objects.filter(subscription_due_date__lt=today).count()
+        # -------------------------------------------------------------
+        # 3. Gráfico Financeiro (Últimos 6 meses)
+        # -------------------------------------------------------------
+        months_labels = []
+        months_recebido = []
+        months_pendente = []
+        months_vencido = []
 
-        # Bandas vencendo nos proximos 7 dias
-        next_week = today + datetime.timedelta(days=7)
-        context['assinaturas_vencendo'] = Band.objects.filter(subscription_due_date__gte=today, subscription_due_date__lte=next_week).count()
+        # Calcular últimos 6 meses (do mais antigo ao atual)
+        month_cursor = today.replace(day=1)
+        start_months = []
+        for i in range(5, -1, -1):
+            # Calcular mês (today - i meses)
+            year = today.year
+            month = today.month - i
+            while month <= 0:
+                month += 12
+                year -= 1
+            m_start = datetime.date(year, month, 1)
+            if month == 12:
+                m_end = datetime.date(year + 1, 1, 1) - datetime.timedelta(days=1)
+            else:
+                m_end = datetime.date(year, month + 1, 1) - datetime.timedelta(days=1)
+            start_months.append((m_start, m_end, m_start.strftime('%b/%y').capitalize()))
+
+        for m_start, m_end, m_label in start_months:
+            months_labels.append(m_label)
+
+            # Recebido no mês (por paid_date)
+            rec_val = BillingRecord.objects.filter(
+                subscription__is_deleted=False,
+                status='PAGO',
+                paid_date__gte=m_start,
+                paid_date__lte=m_end
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            months_recebido.append(float(rec_val))
+
+            # Pendente no mês (vencimento no mês que ainda está pendente ou não venceu)
+            pend_val = BillingRecord.objects.filter(
+                subscription__is_deleted=False,
+                status='PENDENTE',
+                due_date__gte=max(m_start, today),
+                due_date__lte=m_end
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            months_pendente.append(float(pend_val))
+
+            # Vencido no mês (vencimento no mês com atraso)
+            venc_val = BillingRecord.objects.filter(
+                subscription__is_deleted=False,
+                due_date__gte=m_start,
+                due_date__lte=min(m_end, today - datetime.timedelta(days=1))
+            ).filter(
+                Q(status='ATRASADO') | Q(status='PENDENTE')
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            months_vencido.append(float(venc_val))
+
+        chart_financial_data = {
+            'labels': months_labels,
+            'recebido': months_recebido,
+            'pendente': months_pendente,
+            'vencido': months_vencido,
+            'has_data': any(sum(x) > 0 for x in [months_recebido, months_pendente, months_vencido])
+        }
+        context['chart_financial_json'] = json.dumps(chart_financial_data)
+
+        # -------------------------------------------------------------
+        # 4. Resumo das Assinaturas (Doughnut / Distribuição)
+        # -------------------------------------------------------------
+        sub_ativas_em_dia = BandSubscription.objects.filter(
+            is_deleted=False,
+            status='ATIVO',
+            next_due_date__gt=seven_days_from_now
+        ).count()
+        sub_vencendo_7d = context['assinaturas_vencendo']
+        sub_vencidas = context['assinaturas_vencidas']
+        sub_suspensas = BandSubscription.objects.filter(
+            is_deleted=False,
+            status='DESATIVADO'
+        ).count()
+
+        chart_subs_data = {
+            'labels': ['Ativas (Em dia)', 'Vencendo (7d)', 'Vencidas', 'Desativadas / Suspensas'],
+            'data': [sub_ativas_em_dia, sub_vencendo_7d, sub_vencidas, sub_suspensas],
+            'has_data': any([sub_ativas_em_dia, sub_vencendo_7d, sub_vencidas, sub_suspensas])
+        }
+        context['chart_subs_json'] = json.dumps(chart_subs_data)
+        context['sub_counts'] = {
+            'ativas': sub_ativas_em_dia,
+            'vencendo': sub_vencendo_7d,
+            'vencidas': sub_vencidas,
+            'suspensas': sub_suspensas,
+        }
+
+        # -------------------------------------------------------------
+        # 5. Assinaturas que exigem atenção (até 5: vencidas primeiro, depois vencendo 7d)
+        # -------------------------------------------------------------
+        attention_subs_vencidas = list(BandSubscription.objects.filter(
+            is_deleted=False,
+            status='ATIVO',
+            next_due_date__lt=today
+        ).select_related('band').order_by('next_due_date')[:5])
+
+        vagas_restantes = 5 - len(attention_subs_vencidas)
+        attention_subs_vencendo = []
+        if vagas_restantes > 0:
+            attention_subs_vencendo = list(BandSubscription.objects.filter(
+                is_deleted=False,
+                status='ATIVO',
+                next_due_date__gte=today,
+                next_due_date__lte=seven_days_from_now
+            ).select_related('band').order_by('next_due_date')[:vagas_restantes])
+
+        context['attention_subscriptions'] = attention_subs_vencidas + attention_subs_vencendo
+
+        # -------------------------------------------------------------
+        # 6. Fale Conosco (Até 5 chamados recentes / pendentes)
+        # -------------------------------------------------------------
+        context['recent_tickets'] = SupportTicket.objects.select_related('band', 'created_by').order_by('-last_message_at')[:5]
+
+        # -------------------------------------------------------------
+        # 7. Faturas Recentes (Até 5: priorizando atrasadas e pendentes)
+        # -------------------------------------------------------------
+        faturas_prioritarias = list(BillingRecord.objects.filter(
+            subscription__is_deleted=False
+        ).filter(
+            Q(status='ATRASADO') | Q(status='PENDENTE')
+        ).select_related('band', 'subscription').order_by('due_date')[:5])
+
+        if len(faturas_prioritarias) < 5:
+            sobra = 5 - len(faturas_prioritarias)
+            outras = list(BillingRecord.objects.filter(
+                subscription__is_deleted=False
+            ).exclude(
+                id__in=[f.id for f in faturas_prioritarias]
+            ).select_related('band', 'subscription').order_by('-due_date')[:sobra])
+            faturas_prioritarias.extend(outras)
+
+        context['recent_billings'] = faturas_prioritarias
+
+        # -------------------------------------------------------------
+        # 8. Avisos Ativos (Quantidade total e até 3 recentes)
+        # -------------------------------------------------------------
+        context['total_avisos'] = AdministrativeBandNotice.objects.count()
+        context['recent_avisos'] = AdministrativeBandNotice.objects.select_related('band').order_by('-created_at')[:3]
 
         return context
 
