@@ -63,13 +63,9 @@
                                             </form>
                                         </li>
                                         {% endif %}
-                                        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ room_list.id }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
+                                        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'room_list_delete' request.band.slug room_list.id %}" data-item-type="a lista de hospedagem do show" data-item-name="{{ room_list.show.title|default:'Sem Título' }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
                                     </ul>
                                 </div>
-
-                                <!-- Modal de Exclusão -->
-                                {% url 'room_list_delete' request.band.slug room_list.id as rl_idx_del_url %}
-                                {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteModal"|add:room_list.id|stringformat:"s" form_action=rl_idx_del_url item_type="a lista de hospedagem do show" item_name=room_list.show.title|default:"Sem Título" %}
                             </td>
                         </tr>
                         {% endfor %}

@@ -139,7 +139,7 @@
                                         </button>
                                     </li>
                                     <li>
-                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalDeleteCobranca{{ rec.id }}">
+                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:cobrancas_excluir' rec.id %}" data-item-type="a fatura da banda" data-item-name="{{ rec.band.name }}">
                                             <i class="fa-solid fa-trash text-danger w-20px me-2"></i> Excluir
                                         </button>
                                     </li>
@@ -153,7 +153,7 @@
                         <div class="modal-dialog modal-dialog-centered modal-lg">
                             <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
                                 <div class="modal-header bg-light border-bottom-0">
-                                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Editar Fatura: {{ rec.band.name }}</h5>
+                                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square text-primary me-2"></i>Editar Fatura: {{ rec.band.name }}</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <form method="POST" action="{% url 'admin_painel:cobrancas_editar' rec.id %}" enctype="multipart/form-data">
@@ -220,10 +220,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Modal Delete Record -->
-                    {% url 'admin_painel:cobrancas_excluir' rec.id as cobranca_del_url %}
-                    {% include 'core/includes/modal_confirm_delete.html' with modal_id="modalDeleteCobranca"|add:rec.id|stringformat:"s" form_action=cobranca_del_url item_type="a fatura da banda" item_name=rec.band.name %}
 
                     {% empty %}
                     <tr>

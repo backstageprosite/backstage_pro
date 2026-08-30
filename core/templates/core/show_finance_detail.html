@@ -160,14 +160,13 @@
                                                 </button>
                                             </li>
                                             <li>
-                                                <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalExcluirReceita-{{payment.id}}">
+                                                <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'payment_delete' band.slug payment.id %}?next={{ request.resolver_match.url_name }}" data-item-type="o recebimento" data-item-name="{{ payment.description }}">
                                                     <i class="fa-solid fa-trash me-2"></i> Excluir
                                                 </button>
                                             </li>
                                         </ul>
                                     </div>
                                     {% include "core/includes/modal_editar_receita.html" %}
-                                    {% include "core/includes/modal_excluir_receita.html" %}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -234,14 +233,12 @@
                                                 </button>
                                             </li>
                                             <li>
-                                                <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalExcluirDespesa-{{receipt.id}}">
+                                                <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'receipt_delete' band.slug receipt.id %}?next={{ request.resolver_match.url_name }}" data-item-type="a despesa" data-item-name="{{ receipt.description }}">
                                                     <i class="fa-solid fa-trash me-2"></i> Excluir
                                                 </button>
                                             </li>
                                         </ul>
                                     </div>
-                                    {% include "core/includes/modal_excluir_despesa.html" %}
-
                                     {% include "core/includes/modal_editar_despesa.html" %}
 
                                 </td>
@@ -304,14 +301,13 @@
                                                 </button>
                                             </li>
                                             <li>
-                                                <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalExcluirCustoEquipe-{{cost.id}}">
+                                                <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'teamcost_delete' band.slug cost.id %}?next={{ request.resolver_match.url_name }}" data-item-type="o custo de equipe de" data-item-name="{{ cost.name }}">
                                                     <i class="fa-solid fa-trash me-2"></i> Excluir
                                                 </button>
                                             </li>
                                         </ul>
                                     </div>
                                       {% include "core/includes/modal_editar_equipe.html" %}
-                                      {% include "core/includes/modal_excluir_equipe.html" %}
                                 </td>
                             </tr>
                             {% endfor %}

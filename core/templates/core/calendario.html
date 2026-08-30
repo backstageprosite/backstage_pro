@@ -276,17 +276,12 @@
         {% if request.user.is_produtor or request.user.is_superuser %}
         <a href="#" id="modalBtnEdit" class="btn btn-outline-primary rounded-pill btn-sm w-100 fw-bold">Editar</a>
         <a href="#" id="modalBtnPdf" target="_blank" class="btn btn-outline-dark rounded-pill btn-sm w-100 fw-bold"><i class="fa-solid fa-file-pdf me-1"></i> PDF Show</a>
-        <button type="button" class="btn btn-outline-danger rounded-pill btn-sm w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#modalDeleteShowCalendar" onclick="document.getElementById('showModal').querySelector('.btn-close').click();">Excluir</button>
+        <button type="button" id="modalBtnDeleteShow" class="btn btn-outline-danger rounded-pill btn-sm w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="" data-item-type="o show" data-item-name="" onclick="const sm = bootstrap.Modal.getInstance(document.getElementById('showModal')); if(sm) sm.hide();">Excluir</button>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
-
-<!-- Modal Excluir Show do Calendário -->
-{% if request.user.is_produtor or request.user.is_superuser %}
-{% include 'core/includes/modal_confirm_delete.html' with modal_id="modalDeleteShowCalendar" form_action="#" item_type="o show" is_dynamic=True dynamic_name_id="deleteShowCalendarName" dynamic_form_id="formDeleteShowCalendar" %}
-{% endif %}
 
 <!-- Modal Eventos do Dia (+N) -->
 <div class="modal fade" id="dayEventsModal" tabindex="-1" aria-hidden="true">
@@ -494,13 +489,10 @@
                 btnPdf.href = eventObj.extendedProps.pdfUrl;
             }
             
-            var formDelete = document.getElementById('formDeleteShowCalendar');
-            if (formDelete) {
-                formDelete.action = eventObj.extendedProps.deleteUrl;
-                var delNameEl = document.getElementById('deleteShowCalendarName');
-                if (delNameEl) {
-                    delNameEl.textContent = eventObj.title || 'Sem Título';
-                }
+            var btnDelete = document.getElementById('modalBtnDeleteShow');
+            if (btnDelete) {
+                btnDelete.setAttribute('data-delete-url', eventObj.extendedProps.deleteUrl);
+                btnDelete.setAttribute('data-item-name', eventObj.title || 'Sem Título');
             }
             
             var myModal = new bootstrap.Modal(document.getElementById('showModal'));

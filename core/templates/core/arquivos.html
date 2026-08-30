@@ -59,7 +59,7 @@
     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
         <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-download-url="{% url 'download_contract' band.slug doc.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-filename="{{ doc.file.name|default:'documento' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
         <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
-        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteDocModal{{ doc.id }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
+        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'document_delete' band.slug doc.id %}?next=arquivos" data-item-type="o documento" data-item-name="{{ doc.description }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
     </ul>
 </div>
                                 </li>
@@ -84,7 +84,7 @@
     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
         <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-download-url="{% url 'download_receipt' band.slug receipt.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-filename="{{ receipt.file.name|default:'comprovante' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
         <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editReceiptModal{{ receipt.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
-        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteReceiptModal{{ receipt.id }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
+        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'receipt_delete' band.slug receipt.id %}?next=arquivos" data-item-type="o comprovante" data-item-name="{{ receipt.description }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
     </ul>
 </div>
                                 </li>
@@ -143,8 +143,6 @@
             </div>
         </div>
     </div>
-    {% url 'document_delete' band.slug doc.id as doc_del_url %}
-    {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteDocModal"|add:doc.id|stringformat:"s" form_action=doc_del_url|add:"?next=arquivos" item_type="o documento" item_name=doc.description %}
     {% endfor %}
     
     {% for receipt in show.receipts.all %}
@@ -190,8 +188,6 @@
             </div>
         </div>
     </div>
-    {% url 'receipt_delete' band.slug receipt.id as receipt_del_url %}
-    {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteReceiptModal"|add:receipt.id|stringformat:"s" form_action=receipt_del_url|add:"?next=arquivos" item_type="o comprovante" item_name=receipt.description %}
     {% endfor %}
 {% endfor %}
 

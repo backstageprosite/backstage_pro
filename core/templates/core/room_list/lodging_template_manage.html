@@ -41,7 +41,7 @@
                         <strong class="text-dark fs-5">{{ room.number_or_name|default:"Sem número" }}</strong>
                         <div class="d-flex gap-2">
                             <button type="button" class="bp-btn bp-btn-edit bp-btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditarQuarto{{ room.id }}">Editar</button>
-                            <button type="button" class="bp-btn bp-btn-danger bp-btn-sm" data-bs-toggle="modal" data-bs-target="#modalExcluirQuarto{{ room.id }}">Excluir</button>
+                            <button type="button" class="bp-btn bp-btn-danger bp-btn-sm" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'lodging_template_room_delete' request.band.slug template.id room.id %}" data-item-type="o quarto" data-item-name="{{ room.number_or_name|default:'Sem número' }}" data-custom-warning="O quarto será removido do modelo padrão.">Excluir</button>
                         </div>
                     </div>
                     <div class="card-body p-3 bg-light rounded-bottom">
@@ -100,10 +100,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Modal Excluir Quarto -->
-                {% url 'lodging_template_room_delete' request.band.slug template.id room.id as lodg_del_url %}
-                {% include 'core/includes/modal_confirm_delete.html' with modal_id="modalExcluirQuarto"|add:room.id|stringformat:"s" form_action=lodg_del_url item_type="o quarto" item_name=room.number_or_name|default:"Sem número" custom_warning="O quarto será removido do modelo padrão." %}
                 {% endfor %}
             </div>
         {% endif %}

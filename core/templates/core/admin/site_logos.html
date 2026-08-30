@@ -75,7 +75,7 @@
                                             </form>
                                         </li>
                                         <li>
-                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteLogoModal{{ logo.pk }}">
+                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:site_logos_delete' logo.pk %}" data-item-type="a logomarca de" data-item-name="{{ logo.name }}">
                                                 <i class="fa-solid fa-trash me-2 text-danger"></i> Excluir
                                             </button>
                                         </li>
@@ -83,10 +83,6 @@
                                 </div>
                             </td>
                         </tr>
-
-                        <!-- Modal de Exclusão -->
-                        {% url 'admin_painel:site_logos_delete' logo.pk as logo_del_url %}
-                        {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteLogoModal"|add:logo.pk|stringformat:"s" form_action=logo_del_url item_type="a logomarca de" item_name=logo.name %}
 
                         <!-- Modal de Edição -->
                         <div class="modal fade" id="editLogoModal{{ logo.pk }}" tabindex="-1" aria-labelledby="editLogoModalLabel{{ logo.pk }}" aria-hidden="true">

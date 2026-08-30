@@ -67,7 +67,7 @@
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
                                     <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editUserModal{{ usuario.id }}"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar</button></li>
                                     <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalResetPass{{ usuario.id }}"><i class="fa-solid fa-key me-2 text-warning"></i> Senha</button></li>
-                                    <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ usuario.id }}"><i class="fa-solid fa-trash me-2"></i> Excluir</button></li>
+                                    <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'usuarios_delete' band.slug usuario.id %}" data-item-type="o usuário" data-item-name="{{ usuario.first_name|default:usuario.username }}"><i class="fa-solid fa-trash me-2"></i> Excluir</button></li>
                                 </ul>
                             </div>
                         </td>
@@ -152,14 +152,6 @@
         </div>
     </div>
 </div>
-
-{% for usuario in usuarios %}
-
-
-                            <!-- Modal Excluir Usuário -->
-                            {% url 'usuarios_delete' band.slug usuario.id as usuario_del_url %}
-                            {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteUserModal"|add:usuario.id|stringformat:"s" form_action=usuario_del_url item_type="o usuário" item_name=usuario.first_name|default:usuario.username %}
-{% endfor %}
 
 
 {% for usuario in usuarios %}

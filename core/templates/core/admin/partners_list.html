@@ -96,7 +96,7 @@
                                         </form>
                                     </li>
                                     <li>
-                                        <button class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deletePartnerModal{{ partner.id }}">
+                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:parceiros_excluir' partner.id %}" data-item-type="o parceiro" data-item-name="{{ partner.name }}">
                                             <i class="fa-solid fa-trash me-2"></i> Excluir
                                         </button>
                                     </li>
@@ -121,16 +121,20 @@
                                             <input type="text" name="name" class="form-control" value="{{ partner.name }}" required>
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">Segmento *</label>
-                                            <input type="text" name="segment" class="form-control" value="{{ partner.segment }}" required>
+                                            <label class="form-label fw-bold">Link de Redirecionamento (com https://)</label>
+                                            <input type="url" name="link" class="form-control" value="{{ partner.link|default:'' }}" placeholder="https://exemplo.com.br">
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">Instagram</label>
-                                            <input type="text" name="instagram" class="form-control" value="{{ partner.instagram|default:'' }}" placeholder="@empresa ou URL">
+                                            <label class="form-label fw-bold">Posição de Exibição</label>
+                                            <select name="position" class="form-select">
+                                                <option value="LOGIN" {% if partner.position == 'LOGIN' %}selected{% endif %}>Tela de Login (Rodapé)</option>
+                                                <option value="HEADER" {% if partner.position == 'HEADER' %}selected{% endif %}>Cabeçalho dos Sistemas</option>
+                                                <option value="ALL" {% if partner.position == 'ALL' %}selected{% endif %}>Todos os Locais</option>
+                                            </select>
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">Telefone / WhatsApp</label>
-                                            <input type="text" name="phone" class="form-control" value="{{ partner.phone|default:'' }}" placeholder="(71) 99999-9999">
+                                            <label class="form-label fw-bold">Ordem de Prioridade (menor aparece primeiro)</label>
+                                            <input type="number" name="order" class="form-control" value="{{ partner.order }}" min="0">
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">Logomarca (nova)</label>
@@ -150,10 +154,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Delete Partner Modal -->
-                    {% url 'admin_painel:parceiros_excluir' partner.id as partner_del_url %}
-                    {% include 'core/includes/modal_confirm_delete.html' with modal_id="deletePartnerModal"|add:partner.id|stringformat:"s" form_action=partner_del_url item_type="o parceiro" item_name=partner.name %}
                     {% empty %}
                     <tr>
                         <td colspan="7" class="text-center py-5 text-muted">

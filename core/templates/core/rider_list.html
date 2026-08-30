@@ -55,7 +55,7 @@
                                         </button>
                                     </li>
                                     <li>
-                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalExcluirRider-{{ rider.id }}">
+                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="" data-item-type="o rider" data-item-name="{{ rider.name }}" data-extra-fields='{"rider_id": "{{ rider.id }}", "delete_rider": "1"}'>
                                             <i class="fa-solid fa-trash text-danger me-2"></i> Excluir
                                         </button>
                                     </li>
@@ -94,9 +94,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Modal Excluir Rider -->
-                            {% include 'core/includes/modal_confirm_delete.html' with modal_id="modalExcluirRider-"|add:rider.id|stringformat:"s" form_action="" item_type="o rider" item_name=rider.name extra_hidden_fields='<input type="hidden" name="rider_id" value="'|add:rider.id|stringformat:"s"|add:'"><input type="hidden" name="delete_rider" value="1">' %}
                             {% endif %}
                         </td>
                     </tr>

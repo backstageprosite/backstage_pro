@@ -568,12 +568,15 @@ document.addEventListener("DOMContentLoaded", function() {
                     <p class="text-muted fw-medium px-3">Este recurso faz parte do plano AvanÃ§ado. Atualize sua assinatura para continuar aproveitando os benefÃ­cios do Backstage Pro.</p>
                 </div>
                 <div class="modal-footer bg-light border-top-0 d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary rounded-pill fw-medium px-4" data-bs-dismiss="modal">Agora nÃ£o</button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill fw-medium px-4" data-bs-dismiss="modal">Agora não</button>
                     <a href="https://backstagepro.site/" target="_blank" class="btn btn-primary rounded-pill fw-bold text-white px-4">Conhecer Planos</a>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Modal Universal de Confirmação de Exclusão -->
+    {% include 'core/includes/modal_confirm_delete.html' %}
 
 </body>
 </html>

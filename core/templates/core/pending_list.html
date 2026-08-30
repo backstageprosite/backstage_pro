@@ -71,7 +71,8 @@
                                             </button>
                                         </li>
                                         <li>
-                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deletePendingModal{{ item.id }}">
+                                            {% url 'pendencias' band.slug as pend_next_url %}
+                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'delete_dashboard_pending_item' band.slug item.id %}" data-item-type="a pendência" data-item-name="{{ item.description|truncatechars:80 }}" data-extra-fields='{"next": "{{ pend_next_url }}"}'>
                                                 <i class="fa-solid fa-trash me-2"></i> Excluir
                                             </button>
                                         </li>
@@ -113,11 +114,6 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Delete Modal -->
-                                {% url 'delete_dashboard_pending_item' band.slug item.id as pend_del_url %}
-                                {% url 'pendencias' band.slug as pend_next_url %}
-                                {% include 'core/includes/modal_confirm_delete.html' with modal_id="deletePendingModal"|add:item.id|stringformat:"s" form_action=pend_del_url item_type="a pendência" item_name=item.description|truncatechars:80 extra_hidden_fields='<input type="hidden" name="next" value="'|add:pend_next_url|add:'">' %}
                             </td>
                             {% endif %}
                         </tr>

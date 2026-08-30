@@ -48,9 +48,11 @@
                                 </button>
                             </li>
                             <li>
-                                <button type="button" class="dropdown-item d-flex align-items-center py-2 px-3 text-danger js-btn-delete-proposal"
+                                <button type="button" class="dropdown-item d-flex align-items-center py-2 px-3 text-danger"
+                                    data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal"
                                     data-delete-url="{% url 'commercial_delete' band.slug prop.id %}"
-                                    data-proposal-name="{{ prop.name }}">
+                                    data-item-type="a solicitação"
+                                    data-item-name="{{ prop.name }}">
                                     <i class="fa-solid fa-trash me-2"></i> Excluir
                                 </button>
                             </li>

@@ -11,7 +11,7 @@
         <a href="{% url 'show_pdf' band.slug form.instance.id %}" target="_blank" class="btn btn-dark text-white border-dark rounded-pill px-4 fw-bold shadow-sm" style="color: white !important;">
             <i class="fa-solid fa-file-pdf me-1"></i> PDF Show
         </a>
-        <button type="button" class="btn btn-outline-danger rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalDeleteShow">
+        <button type="button" class="btn btn-outline-danger rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'shows_delete' band.slug form.instance.id %}" data-item-type="o show" data-item-name="{{ form.instance.title|default:'Sem Título' }}">
             Excluir
         </button>
         {% endif %}
@@ -572,13 +572,6 @@
         </form>
     </div>
 </div>
-
-<!-- Modal Excluir Show -->
-{% if is_edit %}
-{% url 'shows_delete' band.slug form.instance.id as show_form_del_url %}
-{% include 'core/includes/modal_confirm_delete.html' with modal_id="modalDeleteShow" form_action=show_form_del_url item_type="o show" item_name=form.instance.title|default:"Sem Título" %}
-{% endif %}
-
 {% endblock %}
 
 {% block extra_js %}

@@ -115,14 +115,9 @@
                                     <li><a class="dropdown-item py-2 fw-medium" href="{% url 'show_detail' band.slug show.id %}"><i class="fa-solid fa-eye text-primary me-2"></i> Ver Detalhes</a></li>
                                     <li><a class="dropdown-item btn-loading py-2 fw-medium" href="{% url 'show_pdf' band.slug show.id %}"><i class="fa-solid fa-file-pdf text-success me-2"></i> Gerar PDF</a></li>
                                     <li><a class="dropdown-item py-2 fw-medium" href="{% url 'shows_edit' band.slug show.id %}"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar</a></li>
-                                    <li><a class="dropdown-item py-2 fw-medium text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteModal{{ show.id }}"><i class="fa-solid fa-trash me-2"></i> Excluir</a></li>
+                                    <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'shows_delete' band.slug show.id %}" data-item-type="o show" data-item-name="{{ show.title|default:'Sem Título' }}"><i class="fa-solid fa-trash me-2"></i> Excluir</button></li>
                                 </ul>
                             </div>
-                        </td>
-
-                            <!-- Modal de Remoção -->
-                            {% url 'shows_delete' band.slug show.id as show_del_url %}
-                            {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteModal"|add:show.id|stringformat:"s" form_action=show_del_url item_type="o show" item_name=show.title|default:"Sem Título" %}
                         </td>
                     </tr>
                     {% empty %}

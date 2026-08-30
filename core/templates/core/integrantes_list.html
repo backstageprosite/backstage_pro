@@ -77,9 +77,9 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item py-2 text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteIntegranteModal{{ item.id }}">
+                                        <button type="button" class="dropdown-item py-2 text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'integrante_delete' band.slug item.id %}" data-item-type="o integrante" data-item-name="{{ item.name }}">
                                             <i class="fa-solid fa-trash me-2"></i> Excluir
-                                        </a>
+                                        </button>
                                     </li>
                                 </ul>
                             </div>
@@ -109,25 +109,13 @@
                                             <label class="form-label fw-semibold text-dark small">Função</label>
                                             <input type="text" name="role" class="form-control" value="{{ item.role }}" required style="border-radius: 8px;">
                                         </div>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label fw-semibold text-dark small">CPF</label>
-                                                <input type="text" name="cpf" class="form-control cpf-mask" value="{{ item.cpf|default:'' }}" style="border-radius: 8px;">
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label fw-semibold text-dark small">Veículo</label>
-                                                <input type="text" name="vehicle" class="form-control" value="{{ item.vehicle|default:'' }}" style="border-radius: 8px;">
-                                            </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold text-dark small">Documento (RG / CPF)</label>
+                                            <input type="text" name="document" class="form-control" value="{{ item.document|default:'' }}" style="border-radius: 8px;">
                                         </div>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label fw-semibold text-dark small">Data de Nascimento</label>
-                                                <input type="text" name="birth_date" class="form-control date-mask" value="{{ item.birth_date|default:'' }}" style="border-radius: 8px;">
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label fw-semibold text-dark small">Número Milhas</label>
-                                                <input type="text" name="miles_number" class="form-control" value="{{ item.miles_number|default:'' }}" style="border-radius: 8px;">
-                                            </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold text-dark small">Telefone / WhatsApp</label>
+                                            <input type="text" name="phone" class="form-control" value="{{ item.phone|default:'' }}" style="border-radius: 8px;">
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label fw-semibold text-dark small">Categoria</label>
@@ -151,10 +139,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Modal Excluir Integrante -->
-                    {% url 'integrante_delete' band.slug item.id as integrante_del_url %}
-                    {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteIntegranteModal"|add:item.id|stringformat:"s" form_action=integrante_del_url item_type="o integrante" item_name=item.name %}
                     {% endif %}
                     {% endfor %}
                 </tbody>

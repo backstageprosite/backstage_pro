@@ -67,16 +67,12 @@
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteNoticeModal{{ notice.id }}">
+                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'band_notices_delete' band.slug notice.id %}" data-item-type="o aviso" data-item-name="{{ notice.message|truncatechars:60 }}">
                                             <i class="fa-solid fa-trash text-danger me-2"></i> Excluir
                                         </button>
                                     </li>
                                 </ul>
                             </div>
-
-                            <!-- Modal Excluir -->
-                            {% url 'band_notices_delete' band.slug notice.id as notice_del_url %}
-                            {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteNoticeModal"|add:notice.id|stringformat:"s" form_action=notice_del_url item_type="o aviso" item_name=notice.message|truncatechars:60 %}
                             {% endif %}
                         </td>
                     </tr>

@@ -1,43 +1,105 @@
-﻿{% comment %}
-Componente Universal de Confirmação de Exclusão
-Parâmetros suportados:
-- modal_id: ID único do modal (obrigatório, ex: "deleteModal123")
-- form_action: URL de destino do formulário POST (obrigatório)
-- item_type: Tipo do item em minúsculas (opcional, ex: "o contato", "o integrante", "o show", "o arquivo", etc.)
-- item_name: Nome do registro em negrito (opcional, ex: "João Silva")
-- custom_message: Mensagem customizada completa (opcional, sobrescreve a frase padrão)
-- custom_warning: Mensagem de aviso secundária (opcional, default: "Esta ação não pode ser desfeita.")
-- delete_button_text: Texto do botão de exclusão (opcional, default: "Excluir")
-- is_dynamic: Se True, o modal usa slots com IDs JS para preenchimento dinâmico
-- dynamic_name_id: ID do elemento <span> para nome dinâmico (ex: "deleteShowName")
-- dynamic_form_id: ID do <form> para action dinâmica (ex: "formDeleteShow")
-- extra_hidden_fields: Bloco/string de inputs hidden adicionais (opcional)
-- extra_modal_class: Classes adicionais para o modal fade (opcional)
-{% endcomment %}
-<div class="modal fade {{ extra_modal_class|default:'' }}" id="{{ modal_id }}" tabindex="-1" aria-labelledby="{{ modal_id }}Label" aria-hidden="true">
+<!-- Modal Universal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalConfirmDeleteUniversal" tabindex="-1" aria-labelledby="modalConfirmDeleteUniversalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-danger" id="{{ modal_id }}Label">Confirmar Exclusão</h5>
+                <h5 class="modal-title fw-bold text-danger" id="modalConfirmDeleteUniversalLabel">Confirmar Exclusão</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body pt-3 pb-2 text-dark" style="white-space: normal; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; min-width: 0;">
-                {% if custom_message %}
-                    {{ custom_message|safe }}
-                {% else %}
-                    Tem certeza que deseja excluir {% if item_type %}{{ item_type }} {% endif %}<strong>{% if is_dynamic %}<span id="{{ dynamic_name_id }}">{{ item_name|default:'' }}</span>{% else %}{{ item_name|default:'' }}{% endif %}</strong>?
-                {% endif %}
+                <span id="modalConfirmDeleteUniversalMessage">
+                    Tem certeza que deseja excluir <span id="modalConfirmDeleteUniversalItemType"></span><strong><span id="modalConfirmDeleteUniversalItemName"></span></strong>?
+                </span>
                 <br>
-                <small class="text-muted">{{ custom_warning|default:"Esta ação não pode ser desfeita." }}</small>
+                <small class="text-muted" id="modalConfirmDeleteUniversalWarning">Esta ação não pode ser desfeita.</small>
             </div>
             <div class="modal-footer border-top-0 pt-2 d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                <form method="post" action="{{ form_action|default:'' }}" {% if dynamic_form_id %}id="{{ dynamic_form_id }}"{% endif %} class="d-inline m-0 p-0">
+                <form method="post" id="modalConfirmDeleteUniversalForm" action="" class="d-inline m-0 p-0">
                     {% csrf_token %}
-                    {% if extra_hidden_fields %}{{ extra_hidden_fields|safe }}{% endif %}
-                    <button type="submit" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">{{ delete_button_text|default:"Excluir" }}</button>
+                    <div id="modalConfirmDeleteUniversalExtraFields"></div>
+                    <button type="submit" id="modalConfirmDeleteUniversalSubmitBtn" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">Excluir</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+(function() {
+    function initUniversalDeleteModal() {
+        const modalEl = document.getElementById('modalConfirmDeleteUniversal');
+        if (!modalEl || modalEl.dataset.initialized === 'true') return;
+        modalEl.dataset.initialized = 'true';
+
+        modalEl.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            if (!button) return;
+
+            const url = button.getAttribute('data-delete-url') || button.getAttribute('data-url') || '';
+            const itemName = button.getAttribute('data-item-name') || button.getAttribute('data-name') || '';
+            const itemType = button.getAttribute('data-item-type') || button.getAttribute('data-type') || '';
+            const customMessage = button.getAttribute('data-custom-message') || '';
+            const customWarning = button.getAttribute('data-custom-warning') || 'Esta ação não pode ser desfeita.';
+            const btnText = button.getAttribute('data-delete-btn-text') || button.getAttribute('data-btn-text') || 'Excluir';
+            const extraFieldsJson = button.getAttribute('data-extra-fields') || '';
+
+            const form = document.getElementById('modalConfirmDeleteUniversalForm');
+            const nameEl = document.getElementById('modalConfirmDeleteUniversalItemName');
+            const typeEl = document.getElementById('modalConfirmDeleteUniversalItemType');
+            const msgEl = document.getElementById('modalConfirmDeleteUniversalMessage');
+            const warnEl = document.getElementById('modalConfirmDeleteUniversalWarning');
+            const submitBtn = document.getElementById('modalConfirmDeleteUniversalSubmitBtn');
+            const extraFieldsContainer = document.getElementById('modalConfirmDeleteUniversalExtraFields');
+
+            if (form) form.action = url;
+            if (submitBtn) submitBtn.textContent = btnText;
+            if (warnEl) warnEl.textContent = customWarning;
+
+            if (customMessage) {
+                if (msgEl) msgEl.innerHTML = customMessage;
+            } else {
+                if (msgEl) {
+                    msgEl.innerHTML = 'Tem certeza que deseja excluir ' +
+                        (itemType ? (escapeHtml(itemType) + ' ') : '') +
+                        '<strong>' + escapeHtml(itemName) + '</strong>?';
+                }
+            }
+
+            if (extraFieldsContainer) {
+                extraFieldsContainer.innerHTML = '';
+                if (extraFieldsJson) {
+                    try {
+                        const fields = JSON.parse(extraFieldsJson);
+                        Object.keys(fields).forEach(key => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = key;
+                            input.value = fields[key];
+                            extraFieldsContainer.appendChild(input);
+                        });
+                    } catch (e) {
+                        console.error('Erro ao processar extra-fields no modal universal:', e);
+                    }
+                }
+            }
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initUniversalDeleteModal);
+    } else {
+        initUniversalDeleteModal();
+    }
+})();
+</script>

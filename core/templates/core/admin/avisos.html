@@ -52,7 +52,7 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
                                     <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editAvisoModal{{ aviso.pk }}"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar</button></li>
-                                    <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#deleteAvisoModal{{ aviso.pk }}"><i class="fa-solid fa-trash me-2"></i> Excluir</button></li>
+                                    <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:avisos_excluir' aviso.pk %}" data-item-type="o aviso" data-item-name="{{ aviso.message|truncatechars:60 }}"><i class="fa-solid fa-trash me-2"></i> Excluir</button></li>
                                 </ul>
                             </div>
                         </td>
@@ -91,10 +91,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Delete Modal -->
-                    {% url 'admin_painel:avisos_excluir' aviso.pk as aviso_del_url %}
-                    {% include 'core/includes/modal_confirm_delete.html' with modal_id="deleteAvisoModal"|add:aviso.pk|stringformat:"s" form_action=aviso_del_url item_type="o aviso" item_name=aviso.message|truncatechars:60 %}
                     {% empty %}
                     <tr>
                         <td colspan="4" class="text-center py-5 text-muted">
