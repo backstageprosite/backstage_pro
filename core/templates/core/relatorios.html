@@ -130,8 +130,7 @@
                         <th class="py-3">Pendente</th>
                         <th class="py-3">Custos</th>
                         <th class="py-3">Equipe</th>
-                        <th class="py-3">Resultado</th>
-                        <th class="py-3">Caixa Real</th>
+                        <th class="py-3">Lucro</th>
                         <th class="py-3 text-center">Status</th>
                         <th class="pe-4 py-3 text-end">Ações</th>
                     </tr>
@@ -160,13 +159,6 @@
                         </td>
                         <td class="text-danger fw-medium">
                             {% if show.total_equipe %}R$ {{ show.total_equipe|floatformat:"2g" }}{% else %}-{% endif %}
-                        </td>
-                        <td class="text-info fw-bold">
-                            {% if show.fee %}
-                                R$ {{ show.resultado_previsto|floatformat:"2g" }}
-                            {% else %}
-                                -
-                            {% endif %}
                         </td>
                         <td class="text-success fw-bold">
                             R$ {{ show.caixa_realizado|floatformat:"2g" }}
