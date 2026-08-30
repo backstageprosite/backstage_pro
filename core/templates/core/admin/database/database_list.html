@@ -33,7 +33,7 @@
                 <input type="text" name="banda" class="form-control form-control-sm" placeholder="Nome da banda..." value="{{ search_banda|default:'' }}">
             </div>
             <div class="col-6 col-md-1" style="min-width: 110px;">
-                <label class="form-label small fw-bold text-muted">Situação</label>
+                <label class="form-label small fw-bold text-muted">Status</label>
                 <select name="situacao" class="form-select form-select-sm">
                     <option value="todos" {% if search_situacao == 'todos' %}selected{% endif %}>Todos</option>
                     <option value="visiveis" {% if search_situacao == 'visiveis' %}selected{% endif %}>Visíveis</option>
@@ -59,7 +59,7 @@
                         <th class="py-3">Local</th>
                         <th class="py-3">Banda</th>
                         <th class="py-3">Autor</th>
-                        <th class="py-3 text-center">Situação</th>
+                        <th class="py-3 text-center">Status</th>
                         <th class="pe-4 py-3 text-end">Ações</th>
                     </tr>
                 </thead>
@@ -82,9 +82,13 @@
                         </td>
                         <td class="text-center">
                             {% if contato.is_hidden %}
-                            <span class="badge rounded-pill bg-secondary px-3 py-2" style="width: 95px; display: inline-flex; align-items: center; justify-content: center;"><i class="fa-solid fa-eye-slash me-1"></i> Oculto</span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-eye-slash me-1"></i> Oculto
+                            </span>
                             {% else %}
-                            <span class="badge rounded-pill bg-success px-3 py-2" style="width: 95px; display: inline-flex; align-items: center; justify-content: center;"><i class="fa-solid fa-eye me-1"></i> Visível</span>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-circle-check me-1"></i> Visível
+                            </span>
                             {% endif %}
                         </td>
                         <td class="pe-4 text-end">
