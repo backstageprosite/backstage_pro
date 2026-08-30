@@ -5,7 +5,6 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold m-0"><i class="fa-solid fa-chart-line text-primary me-2"></i> Relatório Financeiro</h4>
-        <p class="text-muted mb-0">Controle financeiro das assinaturas das bandas</p>
     </div>
     <div class="d-flex gap-2">
         <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-light rounded-pill px-3 shadow-sm border">
@@ -119,9 +118,9 @@
 </div>
 
 <!-- Filtros -->
-<div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
     <div class="card-body">
-        <form method="GET" class="row g-3 align-items-end">
+        <form method="GET" class="row g-2 align-items-end">
             <!-- Botões Rápidos -->
             <div class="col-12 mb-2">
                 <div class="btn-group" role="group">
@@ -132,26 +131,17 @@
                 </div>
             </div>
 
-            <div class="col-md-2">
-                <label class="form-label text-muted small fw-bold">Data Inicial</label>
-                <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold text-muted">Data Inicial</label>
+                <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date }}">
             </div>
-            <div class="col-md-2">
-                <label class="form-label text-muted small fw-bold">Data Final</label>
-                <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold text-muted">Data Final</label>
+                <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date }}">
             </div>
-            <div class="col-md-2">
-                <label class="form-label text-muted small fw-bold">Banda</label>
-                <select name="band" class="form-select">
-                    <option value="">Todas as Bandas</option>
-                    {% for b in all_bands %}
-                        <option value="{{ b.id }}" {% if band_id == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label text-muted small fw-bold">Status da Cobrança</label>
-                <select name="status" class="form-select">
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold text-muted">Status da Cobrança</label>
+                <select name="status" class="form-select form-select-sm">
                     <option value="">Todos</option>
                     <option value="PAGO" {% if status == 'PAGO' %}selected{% endif %}>Pago</option>
                     <option value="PENDENTE" {% if status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
@@ -160,22 +150,22 @@
                     <option value="ISENTO" {% if status == 'ISENTO' %}selected{% endif %}>Isento</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <label class="form-label text-muted small fw-bold">Plano</label>
-                <input type="text" name="plan" class="form-control" placeholder="Ex: Mensal" value="{{ plan|default:'' }}">
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold text-muted">Plano</label>
+                <input type="text" name="plan" class="form-control form-control-sm" placeholder="Ex: Mensal" value="{{ plan|default:'' }}">
             </div>
-            <div class="col-md-2">
-                <label class="form-label text-muted small fw-bold">Ciclo</label>
-                <select name="cycle" class="form-select">
+            <div class="col-6 col-md-2">
+                <label class="form-label small fw-bold text-muted">Ciclo</label>
+                <select name="cycle" class="form-select form-select-sm">
                     <option value="">Todos</option>
                     <option value="MENSAL" {% if cycle == 'MENSAL' %}selected{% endif %}>Mensal</option>
                     <option value="SEMESTRAL" {% if cycle == 'SEMESTRAL' %}selected{% endif %}>Semestral</option>
                     <option value="ANUAL" {% if cycle == 'ANUAL' %}selected{% endif %}>Anual</option>
                 </select>
             </div>
-            <div class="col-md-12 text-end mt-3">
-                <a href="{% url 'admin_painel:relatorio_financeiro' %}" class="btn btn-light rounded-pill me-2">Limpar</a>
-                <button type="submit" class="btn btn-dark rounded-pill px-4"><i class="fa-solid fa-filter me-2"></i>Filtrar</button>
+            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 text-end d-flex gap-2 justify-content-end">
+                <a href="{% url 'admin_painel:relatorio_financeiro' %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
+                <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
             </div>
         </form>
     </div>
