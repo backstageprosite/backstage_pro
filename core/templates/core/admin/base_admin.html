@@ -1,4 +1,4 @@
-﻿{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br" data-bs-theme="light">
 <head>
@@ -267,8 +267,6 @@
                             <i class="fa-solid fa-bullhorn fa-fw me-2 {% if request.resolver_match.url_name != 'avisos' %}opacity-75{% endif %}"></i> Avisos
                         </a>
                     </li>
-                    
-                    <hr class="mt-4 mb-3 text-muted">
                     
                     <li class="nav-item">
                         <a href="{% url 'admin_painel:assinaturas' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'assinaturas' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
