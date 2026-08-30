@@ -39,12 +39,12 @@
                     <option value="CANCELADO" {% if current_status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-1" style="min-width: 120px; max-width: 140px;">
                 <label class="form-label small fw-bold text-muted">Pagamento</label>
                 <select name="payment_status" class="form-select form-select-sm">
                     <option value="">Todos</option>
                     <option value="PENDENTE" {% if current_payment_status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
-                    <option value="PARCIAL" {% if current_payment_status == 'PARCIAL' %}selected{% endif %}>Parcial</option>
+                    <option value="PARCIAL" {% if current_payment_status == 'PARCIAL' %}selected{% endif %}>Pgt. Parcial</option>
                     <option value="PAGO" {% if current_payment_status == 'PAGO' %}selected{% endif %}>Pago</option>
                 </select>
             </div>
@@ -87,13 +87,13 @@
                         <td class="d-none d-md-table-cell">{{ show.contract_type|default:"-" }}</td>
                         <td>
                             {% if show.status == 'CANCELADO' %}
-                                <span class="badge bg-danger px-3 py-2" style="min-width: 92px; display: inline-block; text-align: center;">Cancelado</span>
+                                <span class="badge bg-danger px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Cancelado</span>
                             {% elif show.is_past %}
-                                <span class="badge bg-secondary px-3 py-2" style="min-width: 92px; display: inline-block; text-align: center;">Concluído</span>
+                                <span class="badge bg-secondary px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Concluído</span>
                             {% elif show.status == 'CONFIRMADO' %}
-                                <span class="badge bg-success px-3 py-2" style="min-width: 92px; display: inline-block; text-align: center;">Confirmado</span>
+                                <span class="badge bg-success px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Confirmado</span>
                             {% elif show.status == 'PRE_RESERVADO' %}
-                                <span class="badge bg-warning text-dark px-3 py-2" style="min-width: 92px; display: inline-block; text-align: center;">Reserva</span>
+                                <span class="badge bg-warning text-dark px-3 py-2" style="width: 92px; display: inline-block; text-align: center;">Reserva</span>
                             {% endif %}
                         </td>
                         <td class="d-none d-md-table-cell">
