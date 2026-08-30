@@ -7,39 +7,40 @@
         <h4 class="fw-bold m-0"><i class="fa-solid fa-headset me-2 text-primary"></i> Fale Conosco</h4>
     </div>
     <div>
-        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-light rounded-pill px-3 shadow-sm border">
+        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark rounded-pill fw-bold px-3">
             <i class="fa-solid fa-arrow-left me-1"></i> Voltar
         </a>
     </div>
 </div>
 
-<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
-    <div class="card-body bg-light">
-        <form method="GET" class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label for="status" class="form-label fw-bold">Status</label>
-                <select name="status" id="status" class="form-select">
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
+    <div class="card-body">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+                <label for="status" class="form-label small fw-bold text-muted">Status</label>
+                <select name="status" id="status" class="form-select form-select-sm">
                     <option value="">Todos</option>
                     {% for val, label in status_choices %}
                         <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
-                <label for="band_id" class="form-label fw-bold">Banda</label>
-                <select name="band_id" id="band_id" class="form-select">
+            <div class="col-6 col-md-3">
+                <label for="band_id" class="form-label small fw-bold text-muted">Banda</label>
+                <select name="band_id" id="band_id" class="form-select form-select-sm">
                     <option value="">Todas</option>
                     {% for b in bands %}
                         <option value="{{ b.id }}" {% if request.GET.band_id == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-4">
-                <label for="q" class="form-label fw-bold">Buscar</label>
-                <input type="text" name="q" id="q" class="form-control" placeholder="Mensagem, banda ou remetente" value="{{ request.GET.q }}">
+            <div class="col-12 col-md-4">
+                <label for="q" class="form-label small fw-bold text-muted">Buscar</label>
+                <input type="text" name="q" id="q" class="form-control form-control-sm" placeholder="Mensagem, banda ou remetente" value="{{ request.GET.q }}">
             </div>
-            <div class="col-md-2 d-grid">
-                <button type="submit" class="btn btn-primary fw-bold"><i class="fa-solid fa-magnifying-glass me-1"></i> Filtrar</button>
+            <div class="col-12 col-md-auto ms-md-auto mt-2 mt-md-0 d-flex gap-2 justify-content-end">
+                <a href="{% url 'admin_painel:support_list' %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
+                <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
             </div>
         </form>
     </div>
