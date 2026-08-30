@@ -157,7 +157,7 @@ class Show(models.Model):
     accommodation = models.TextField(blank=True, null=True, verbose_name='Hospedagem')
     accommodation_link = models.URLField(max_length=500, blank=True, null=True, verbose_name='Link de Localização da Hospedagem')
     accommodation_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Hospedagem)')
-    checkout_time = models.TimeField(blank=True, null=True, verbose_name='Saída Hospedagem')
+    checkout_time = models.TimeField(blank=True, null=True, verbose_name='Saída p/ Show')
     dressing_room = models.TextField(blank=True, null=True, verbose_name='Camarim')
     dressing_room_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Camarim)')
     catering = models.TextField(blank=True, null=True, verbose_name='Alimentação')
