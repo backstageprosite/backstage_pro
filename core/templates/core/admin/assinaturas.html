@@ -121,7 +121,6 @@
                                         </button>
                                     </li>
                                     {% if sub.status != 'CANCELADO' %}
-                                    <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form method="POST" action="{% url 'admin_painel:assinaturas_cancelar' sub.id %}" class="d-inline w-100">
                                             {% csrf_token %}

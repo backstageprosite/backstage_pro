@@ -38,22 +38,22 @@
                         <td class="text-muted">{{ b.slug }}</td>
                         <td>
                             {% if b.plan_type == 'AVANCADO' %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
                                     <i class="fa-solid fa-star me-1"></i> Avançado
                                 </span>
                             {% else %}
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
                                     <i class="fa-solid fa-cube me-1"></i> Básico
                                 </span>
                             {% endif %}
                         </td>
                         <td>
                             {% if b.is_active %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
                                     <i class="fa-solid fa-circle-check me-1"></i> Ativa
                                 </span>
                             {% else %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2">
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
                                     <i class="fa-solid fa-ban me-1"></i> Suspensa
                                 </span>
                             {% endif %}
@@ -67,7 +67,6 @@
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
                                     {% if b.slug %}<li><a href="{% url 'calendario' b.slug %}" target="_blank" class="dropdown-item py-2 fw-medium"><i class="fa-solid fa-gauge-high text-dark me-2"></i> Painel</a></li>{% endif %}
                                     <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditBand{{ b.id }}"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar</button></li>
-                                    <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <button type="button" class="dropdown-item py-2 fw-medium {% if b.is_active %}text-danger{% else %}text-success{% endif %}" data-bs-toggle="modal" data-bs-target="#modalToggleBand{{ b.id }}">
                                             {% if b.is_active %}
