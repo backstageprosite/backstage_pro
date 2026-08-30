@@ -45,13 +45,13 @@
                 <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
                     <tr>
                         <th class="ps-4 py-3">Nome</th>
-                        <th class="py-3 text-center align-middle">Contato</th>
-                        <th class="py-3">Tipo</th>
                         <th class="py-3">Local</th>
+                        <th class="py-3">Tipo</th>
+                        <th class="py-3 text-center align-middle">Tel.</th>
                         <th class="py-3 text-center">Link</th>
                         <th class="py-3">Banda</th>
                         <th class="py-3 text-center">Curtidas</th>
-                        <th class="pe-4 py-3 text-end">Visualizar</th>
+                        <th class="pe-4 py-3 text-end">Ver</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,11 +60,11 @@
                         <td class="ps-4">
                             <h6 class="mb-0 text-dark">{{ contato.name }}</h6>
                         </td>
-                        <td class="text-center align-middle wa-link-cell" data-phone="{{ contato.phone|default:'' }}">{{ contato.phone|default:'-' }}</td>
+                        <td class="text-muted">{{ contato.location|default:"-" }}</td>
                         <td>
                             {% include 'core/includes/_badge_contato.html' with tipo=contato.contact_type display=contato.get_contact_type_display %}
                         </td>
-                        <td class="text-muted">{{ contato.location|default:"-" }}</td>
+                        <td class="text-center align-middle wa-link-cell" data-phone="{{ contato.phone|default:'' }}">{{ contato.phone|default:'-' }}</td>
                         <td class="text-center">
                             {% if contato.link %}
                                 <a href="{{ contato.link }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-circle"><i class="fa-solid fa-link"></i></a>
@@ -81,7 +81,7 @@
                             </button>
                         </td>
                         <td class="pe-4 text-end">
-                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalVisContato{{ contato.id }}" title="Visualizar">
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalVisContato{{ contato.id }}" title="Ver">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
                         </td>

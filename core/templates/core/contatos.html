@@ -44,9 +44,9 @@
                 <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
                     <tr>
                         <th class="ps-4 py-3">Nome</th>
-                        <th class="py-3 text-center align-middle">Contato</th>
-                        <th class="py-3">Tipo</th>
                         <th class="py-3">Local</th>
+                        <th class="py-3">Tipo</th>
+                        <th class="py-3 text-center align-middle">Tel.</th>
                         <th class="py-3 text-center">Link</th>
                         <th class="py-3 text-center">Observações</th>
                         <th class="pe-4 py-3 text-end">Ações</th>
@@ -58,11 +58,11 @@
                         <td class="ps-4">
                             <h6 class="mb-0 text-dark">{{ contato.name }}</h6>
                         </td>
-                        <td class="fw-medium text-dark phone-format text-center align-middle">{{ contato.phone|default:"-" }}</td>
+                        <td class="fw-medium text-dark">{{ contato.location|default:"-" }}</td>
                         <td>
                             {% include 'core/includes/_badge_contato.html' with tipo=contato.contact_type display=contato.get_contact_type_display %}
                         </td>
-                        <td class="fw-medium text-dark">{{ contato.location|default:"-" }}</td>
+                        <td class="fw-medium text-dark phone-format text-center align-middle">{{ contato.phone|default:"-" }}</td>
                         <td class="text-center">
                             {% if contato.link %}
                                 <a href="{{ contato.link }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-circle">
