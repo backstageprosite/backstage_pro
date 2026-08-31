@@ -61,6 +61,7 @@ urlpatterns = [
 
     # Gestão do Site
     path('relatorios/site/', admin_views.SiteLogosView.as_view(), name='site_logos'),
+    path('relatorios/site/planos/', admin_views.SitePlansPriceUpdateView.as_view(), name='site_plans_update'),
     path('relatorios/site/reordenar/', admin_views.SiteLogoReorderView.as_view(), name='site_logos_reorder'),
     path('relatorios/site/<int:pk>/editar/', admin_views.SiteLogoEditView.as_view(), name='site_logos_edit'),
     path('relatorios/site/<int:pk>/excluir/', admin_views.SiteLogoDeleteView.as_view(), name='site_logos_delete'),

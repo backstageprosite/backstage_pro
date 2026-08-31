@@ -59,11 +59,40 @@ def landing_page_view(request):
 
     """
 
-    from .models import LandingPageBandLogo
+    from .models import LandingPageBandLogo, SystemSettings
 
     landing_band_logos = LandingPageBandLogo.objects.filter(is_active=True)
+    settings_obj = SystemSettings.get_settings()
 
-    return render(request, 'core/landing.html', {'landing_band_logos': landing_band_logos})
+    basic_monthly = float(settings_obj.plan_basic_monthly or Decimal('19.90'))
+    basic_annual = float(settings_obj.plan_basic_annual or Decimal('199.90'))
+    advanced_monthly = float(settings_obj.plan_advanced_monthly or Decimal('49.90'))
+    advanced_annual = float(settings_obj.plan_advanced_annual or Decimal('499.90'))
+
+    # Cálculos
+    basic_equiv = basic_annual / 12.0
+    basic_savings = (basic_monthly * 12.0) - basic_annual
+
+    advanced_equiv = advanced_annual / 12.0
+    advanced_savings = (advanced_monthly * 12.0) - advanced_annual
+
+    plan_prices = {
+        'basic_monthly': basic_monthly,
+        'basic_annual': basic_annual,
+        'basic_equiv': basic_equiv,
+        'basic_savings': basic_savings,
+        'advanced_monthly': advanced_monthly,
+        'advanced_annual': advanced_annual,
+        'advanced_equiv': advanced_equiv,
+        'advanced_savings': advanced_savings,
+    }
+
+    context = {
+        'landing_band_logos': landing_band_logos,
+        'plan_prices': plan_prices,
+    }
+
+    return render(request, 'core/landing.html', context)
 
 
 

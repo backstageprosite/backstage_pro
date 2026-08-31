@@ -211,3 +211,22 @@ class LandingPageBandLogoForm(forms.ModelForm):
             image.seek(0)
             
         return image
+
+
+class SystemPlanPricingForm(forms.ModelForm):
+    class Meta:
+        from core.models import SystemSettings
+        model = SystemSettings
+        fields = ['plan_basic_monthly', 'plan_basic_annual', 'plan_advanced_monthly', 'plan_advanced_annual']
+        widgets = {
+            'plan_basic_monthly': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'plan_basic_annual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'plan_advanced_monthly': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'plan_advanced_annual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+        }
+        labels = {
+            'plan_basic_monthly': 'Mensal (R$)',
+            'plan_basic_annual': 'Anual (R$)',
+            'plan_advanced_monthly': 'Mensal (R$)',
+            'plan_advanced_annual': 'Anual (R$)',
+        }

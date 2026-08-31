@@ -10,6 +10,9 @@
         <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark rounded-pill fw-bold px-3">
             <i class="fa-solid fa-arrow-left me-1"></i> Voltar
         </a>
+        <button type="button" class="btn fw-bold px-4 rounded-pill shadow-sm text-dark" style="background-color: #ffc107; border-color: #ffc107;" data-bs-toggle="modal" data-bs-target="#modalPlansPricing">
+            <i class="fa-solid fa-tags me-1 text-dark"></i> Planos
+        </button>
         <button type="button" class="btn fw-bold px-4 rounded-pill shadow-sm text-dark" style="background-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#addLogoModal">
             <i class="fa-solid fa-plus me-1"></i> Adicionar Logo
         </button>
@@ -181,6 +184,57 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Valores dos Planos -->
+<div class="modal fade" id="modalPlansPricing" tabindex="-1" aria-labelledby="modalPlansPricingLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="modalPlansPricingLabel"><i class="fa-solid fa-tags me-2 text-warning"></i>Valores dos Planos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'admin_painel:site_plans_update' %}">
+                {% csrf_token %}
+                <div class="modal-body pt-3 pb-2 text-start">
+                    <!-- Plano Básico -->
+                    <div class="p-3 mb-3 bg-light rounded-3 border">
+                        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-layer-group me-2 text-secondary"></i>Plano Básico</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label for="{{ form_plans.plan_basic_monthly.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Mensal (R$)</label>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_basic_monthly.name }}" id="{{ form_plans.plan_basic_monthly.id_for_label }}" class="form-control form-control-sm" value="{{ form_plans.plan_basic_monthly.value|stringformat:'.2f'|default:'19.90' }}" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="{{ form_plans.plan_basic_annual.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Anual (R$)</label>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_basic_annual.name }}" id="{{ form_plans.plan_basic_annual.id_for_label }}" class="form-control form-control-sm" value="{{ form_plans.plan_basic_annual.value|stringformat:'.2f'|default:'199.90' }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Plano Avançado -->
+                    <div class="p-3 mb-2 bg-light rounded-3 border">
+                        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-crown me-2 text-success"></i>Plano Avançado</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label for="{{ form_plans.plan_advanced_monthly.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Mensal (R$)</label>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_advanced_monthly.name }}" id="{{ form_plans.plan_advanced_monthly.id_for_label }}" class="form-control form-control-sm" value="{{ form_plans.plan_advanced_monthly.value|stringformat:'.2f'|default:'49.90' }}" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="{{ form_plans.plan_advanced_annual.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Anual (R$)</label>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_advanced_annual.name }}" id="{{ form_plans.plan_advanced_annual.id_for_label }}" class="form-control form-control-sm" value="{{ form_plans.plan_advanced_annual.value|stringformat:'.2f'|default:'499.90' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-2">
+                    <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-medium shadow-sm" style="border-radius: 8px;">Salvar alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% if open_modal %}
 <div class="modal-backdrop fade show"></div>
 {% endif %}

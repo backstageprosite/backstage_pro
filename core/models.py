@@ -1,4 +1,5 @@
 from django.db import models
+from decimal import Decimal
 from core.file_policy import validate_file_size_and_type
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
@@ -1408,13 +1409,26 @@ class SystemSettings(models.Model):
         verbose_name="Guia de Instalação Android"
     )
 
+    plan_basic_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('19.90'), verbose_name="Plano Básico Mensal")
+    plan_basic_annual = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('199.90'), verbose_name="Plano Básico Anual")
+    plan_advanced_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('49.90'), verbose_name="Plano Avançado Mensal")
+    plan_advanced_annual = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('499.90'), verbose_name="Plano Avançado Anual")
+
     class Meta:
         verbose_name = "Configuração do Sistema"
         verbose_name_plural = "Configurações do Sistema"
 
     @classmethod
     def get_settings(cls):
-        obj, created = cls.objects.get_or_create(pk=1)
+        obj, created = cls.objects.get_or_create(
+            pk=1,
+            defaults={
+                'plan_basic_monthly': Decimal('19.90'),
+                'plan_basic_annual': Decimal('199.90'),
+                'plan_advanced_monthly': Decimal('49.90'),
+                'plan_advanced_annual': Decimal('499.90'),
+            }
+        )
         return obj
 
 

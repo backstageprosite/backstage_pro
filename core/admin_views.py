@@ -1281,8 +1281,8 @@ def admin_partner_delete(request, pk):
         messages.success(request, 'Parceiro excluído com sucesso.')
     return redirect('admin_painel:parceiros')
 from django.views.generic import DeleteView
-from core.models import LandingPageBandLogo
-from core.admin_forms import LandingPageBandLogoForm
+from core.models import LandingPageBandLogo, SystemSettings
+from core.admin_forms import LandingPageBandLogoForm, SystemPlanPricingForm
 
 class SiteLogosView(AdminRequiredMixin, ListView):
     model = LandingPageBandLogo
@@ -1293,6 +1293,9 @@ class SiteLogosView(AdminRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         if 'form' not in context:
             context['form'] = LandingPageBandLogoForm()
+        if 'form_plans' not in context:
+            settings_obj = SystemSettings.get_settings()
+            context['form_plans'] = SystemPlanPricingForm(instance=settings_obj)
         return context
         
     def post(self, request, *args, **kwargs):
@@ -1307,6 +1310,19 @@ class SiteLogosView(AdminRequiredMixin, ListView):
         context['form'] = form
         context['open_modal'] = True
         return self.render_to_response(context)
+
+class SitePlansPriceUpdateView(AdminRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        settings_obj = SystemSettings.get_settings()
+        form = SystemPlanPricingForm(request.POST, instance=settings_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Valores dos planos atualizados com sucesso!')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{form.fields.get(field, field).label if field in form.fields else field}: {error}")
+        return redirect('admin_painel:site_logos')
 
 import json
 from django.http import JsonResponse

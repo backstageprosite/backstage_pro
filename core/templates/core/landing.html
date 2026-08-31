@@ -811,6 +811,21 @@
             <script>
                 var _isAnnual = false;
 
+                var _plansData = {
+                    basicMonthly: {{ plan_prices.basic_monthly|default:"19.90"|stringformat:".2f" }},
+                    basicAnnual: {{ plan_prices.basic_annual|default:"199.90"|stringformat:".2f" }},
+                    basicEquiv: {{ plan_prices.basic_equiv|default:"16.658"|stringformat:".2f" }},
+                    basicSavings: {{ plan_prices.basic_savings|default:"38.90"|stringformat:".2f" }},
+                    advancedMonthly: {{ plan_prices.advanced_monthly|default:"49.90"|stringformat:".2f" }},
+                    advancedAnnual: {{ plan_prices.advanced_annual|default:"499.90"|stringformat:".2f" }},
+                    advancedEquiv: {{ plan_prices.advanced_equiv|default:"41.658"|stringformat:".2f" }},
+                    advancedSavings: {{ plan_prices.advanced_savings|default:"98.90"|stringformat:".2f" }}
+                };
+
+                function formatMoeda(val) {
+                    return 'R$ ' + Number(val).toFixed(2).replace('.', ',');
+                }
+
                 function setBilling(annual) {
                     _isAnnual = annual;
                     var btnMensal = document.getElementById('btn-mensal');
@@ -829,10 +844,22 @@
                         btnAnual.style.backgroundColor = '#fff';
                         btnAnual.style.boxShadow = '0 1px 4px rgba(0,0,0,0.12)';
                         btnAnual.style.fontWeight = '700';
-                        priceBasic.textContent = 'R$ 199,90'; periodBasic.textContent = '/ano';
-                        savingsBasic.textContent = 'Equivale a R$ 16,66/mês (economia de R$ 38,90)';
-                        priceAdv.textContent = 'R$ 499,90'; periodAdv.textContent = '/ano';
-                        savingsAdv.textContent = 'Equivale a R$ 41,66/mês (economia de R$ 98,90)';
+
+                        priceBasic.textContent = formatMoeda(_plansData.basicAnnual);
+                        periodBasic.textContent = '/ano';
+                        var textSavBasic = 'Equivale a ' + formatMoeda(_plansData.basicEquiv) + '/mês';
+                        if (_plansData.basicSavings > 0) {
+                            textSavBasic += ' (economia de ' + formatMoeda(_plansData.basicSavings) + ')';
+                        }
+                        savingsBasic.textContent = textSavBasic;
+
+                        priceAdv.textContent = formatMoeda(_plansData.advancedAnnual);
+                        periodAdv.textContent = '/ano';
+                        var textSavAdv = 'Equivale a ' + formatMoeda(_plansData.advancedEquiv) + '/mês';
+                        if (_plansData.advancedSavings > 0) {
+                            textSavAdv += ' (economia de ' + formatMoeda(_plansData.advancedSavings) + ')';
+                        }
+                        savingsAdv.textContent = textSavAdv;
                     } else {
                         btnMensal.style.backgroundColor = '#fff';
                         btnMensal.style.boxShadow = '0 1px 4px rgba(0,0,0,0.12)';
@@ -840,9 +867,13 @@
                         btnAnual.style.backgroundColor = 'transparent';
                         btnAnual.style.boxShadow = 'none';
                         btnAnual.style.fontWeight = '400';
-                        priceBasic.textContent = 'R$ 19,90'; periodBasic.textContent = '/mês';
+
+                        priceBasic.textContent = formatMoeda(_plansData.basicMonthly);
+                        periodBasic.textContent = '/mês';
                         savingsBasic.textContent = '\u00a0';
-                        priceAdv.textContent = 'R$ 49,90'; periodAdv.textContent = '/mês';
+
+                        priceAdv.textContent = formatMoeda(_plansData.advancedMonthly);
+                        periodAdv.textContent = '/mês';
                         savingsAdv.textContent = '\u00a0';
                     }
                 }
