@@ -1,92 +1,171 @@
 {% extends 'core/base.html' %}
 {% load static %}
+
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para o Gerenciador de Arquivos */
+    .bp-files-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-files-page .btn-back {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-files-page .search-box {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .bp-files-page .search-input {
+        font-size: 14px;
+        padding: 8px 12px;
+        height: 38px;
+    }
+    .bp-files-page .accordion-button {
+        font-size: 14px;
+        padding: 10px 16px;
+    }
+    .bp-files-page .show-title {
+        font-size: 14px;
+        font-weight: 700;
+    }
+    .bp-files-page .show-meta {
+        font-size: 12px;
+    }
+    .bp-files-page .file-item {
+        padding: 8px 16px;
+    }
+    .bp-files-page .file-icon-box {
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
+    }
+    .bp-files-page .file-name {
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+    .bp-files-page .file-meta {
+        font-size: 12px;
+    }
+    .bp-files-page .btn-actions {
+        height: 30px;
+        padding: 3px 12px;
+        font-size: 13px;
+    }
+    .bp-files-page .btn-add-attachment {
+        height: 30px;
+        padding: 3px 12px;
+        font-size: 13px;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-files-page .search-input {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            height: 42px;
+        }
+        .bp-files-page .btn-back {
+            height: 40px;
+            padding: 8px 16px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-folder-open text-primary me-2"></i> Gerenciador de Arquivos</h4>
-    <div>
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
+<div class="bp-files-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h4 class="page-title"><i class="fa-solid fa-folder-open text-primary me-2"></i>Gerenciador de Arquivos</h4>
+        <div>
+            <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-back fw-bold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
     </div>
-</div>
 
-<div class="mb-4">
-    <div class="input-group shadow-sm" style="border-radius: 12px; overflow: hidden;">
-        <span class="input-group-text bg-white border-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-        <input type="text" id="searchInput" class="form-control border-0 py-3" placeholder="Buscar arquivos..." aria-label="Pesquisar por show, documento ou comprovante...">
+    <div class="mb-3">
+        <div class="input-group shadow-sm search-box">
+            <span class="input-group-text bg-white border-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+            <input type="text" id="searchInput" class="form-control border-0 search-input" placeholder="Buscar arquivos..." aria-label="Pesquisar por show, documento ou comprovante...">
+        </div>
     </div>
-</div>
 
-<div class="row">
-    <div class="col-12">
-        {% if shows %}
-            <div class="accordion" id="accordionArquivos">
-            {% for show in shows %}
-                <div class="accordion-item shadow-sm border-0 mb-3 file-item-container" style="border-radius: 12px;">
-                    <h2 class="accordion-header" id="heading{{ show.id }}">
-                        <button class="accordion-button collapsed bg-white fw-bold d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ show.id }}" aria-expanded="false" aria-controls="collapse{{ show.id }}">
-                            <div class="mb-2 mb-md-0">
-                                <span class="fs-5">{{ show.title|default:"Show sem título" }}</span>
-                                <small class="text-muted ms-md-3 d-block d-md-inline fw-normal"><i class="fa-regular fa-calendar me-1"></i> {{ show.date|date:"d/m/Y" }} &nbsp;|&nbsp; <i class="fa-solid fa-location-dot me-1"></i> {{ show.city|default:"Cidade não informada" }}</small>
-                            </div>
-                        </button>
-                    </h4>
-                    
-                    <div id="collapse{{ show.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ show.id }}" data-bs-parent="#accordionArquivos">
-                        <div class="accordion-body p-0">
-                            <div class="d-flex justify-content-end p-2 bg-light border-bottom">
-                                <a href="{% url 'shows_edit' band.slug show.id %}#anexos" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-3">
-                                    <i class="fa-solid fa-plus me-1"></i> Adicionar Anexo
-                                </a>
-                            </div>
+    <div class="row">
+        <div class="col-12">
+            {% if shows %}
+                <div class="accordion" id="accordionArquivos">
+                {% for show in shows %}
+                    <div class="accordion-item shadow-sm border-0 mb-2 file-item-container" style="border-radius: 10px;">
+                        <h2 class="accordion-header" id="heading{{ show.id }}">
+                            <button class="accordion-button collapsed bg-white fw-bold d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ show.id }}" aria-expanded="false" aria-controls="collapse{{ show.id }}">
+                                <div class="mb-1 mb-md-0">
+                                    <span class="show-title">{{ show.title|default:"Show sem título" }}</span>
+                                    <small class="text-muted ms-md-3 d-block d-md-inline fw-normal show-meta"><i class="fa-regular fa-calendar me-1"></i> {{ show.date|date:"d/m/Y" }} &nbsp;|&nbsp; <i class="fa-solid fa-location-dot me-1"></i> {{ show.city|default:"Cidade não informada" }}</small>
+                                </div>
+                            </button>
+                        </h2>
+
+                        <div id="collapse{{ show.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ show.id }}" data-bs-parent="#accordionArquivos">
+                            <div class="accordion-body p-0">
+                                <div class="d-flex justify-content-end p-2 bg-light border-bottom">
+                                    <a href="{% url 'shows_edit' band.slug show.id %}#anexos" class="btn btn-outline-secondary rounded-pill fw-bold btn-add-attachment">
+                                        <i class="fa-solid fa-plus me-1"></i> Adicionar Anexo
+                                    </a>
+                                </div>
                                 <ul class="list-group list-group-flush">
                                 <!-- Contratos e Documentos -->
                                 {% for doc in show.documents.all %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center px-4 py-3">
+                                <li class="list-group-item d-flex justify-content-between align-items-center file-item">
                                     <div class="d-flex align-items-center">
-                                        <div class="bg-light text-primary rounded d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
-                                            <i class="fa-solid fa-file-contract fs-5"></i>
+                                        <div class="bg-light text-primary rounded d-flex justify-content-center align-items-center me-3 file-icon-box">
+                                            <i class="fa-solid fa-file-contract"></i>
                                         </div>
                                         <div>
-                                            <h6 class="mb-0 fw-bold">{{ doc.description }}</h6>
-                                            <small class="text-muted">Documento do Show</small>
+                                            <h6 class="mb-0 file-name">{{ doc.description }}</h6>
+                                            <small class="text-muted file-meta">Documento do Show</small>
                                         </div>
                                     </div>
                                     <div class="dropdown">
-    <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
-        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
-        <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-download-url="{% url 'download_contract' band.slug doc.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-filename="{{ doc.file.name|default:'documento' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
-        <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
-        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'document_delete' band.slug doc.id %}?next=arquivos" data-item-type="o documento" data-item-name="{{ doc.description }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
-    </ul>
-</div>
+                                        <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
+                                            <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-download-url="{% url 'download_contract' band.slug doc.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-filename="{{ doc.file.name|default:'documento' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
+                                            <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
+                                            <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'document_delete' band.slug doc.id %}?next=arquivos" data-item-type="o documento" data-item-name="{{ doc.description }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
+                                        </ul>
+                                    </div>
                                 </li>
                                 {% endfor %}
-                                
+
                                 <!-- Comprovantes Financeiros -->
                                 {% for receipt in show.receipts.all %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center px-4 py-3">
+                                <li class="list-group-item d-flex justify-content-between align-items-center file-item">
                                     <div class="d-flex align-items-center">
-                                        <div class="bg-light text-success rounded d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
-                                            <i class="fa-solid fa-file-invoice-dollar fs-5"></i>
+                                        <div class="bg-light text-success rounded d-flex justify-content-center align-items-center me-3 file-icon-box">
+                                            <i class="fa-solid fa-file-invoice-dollar"></i>
                                         </div>
                                         <div>
-                                            <h6 class="mb-0 fw-bold">{{ receipt.description }}</h6>
-                                            <small class="text-muted">Comprovante Financeiro &bull; <strong class="text-dark">R$ {{ receipt.value|floatformat:"2g" }}</strong></small>
+                                            <h6 class="mb-0 file-name">{{ receipt.description }}</h6>
+                                            <small class="text-muted file-meta">Comprovante Financeiro &bull; <strong class="text-dark">R$ {{ receipt.value|floatformat:"2g" }}</strong></small>
                                         </div>
                                     </div>
                                     <div class="dropdown">
-    <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
-        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
-        <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-download-url="{% url 'download_receipt' band.slug receipt.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-filename="{{ receipt.file.name|default:'comprovante' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
-        <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editReceiptModal{{ receipt.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
-        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'receipt_delete' band.slug receipt.id %}?next=arquivos" data-item-type="o comprovante" data-item-name="{{ receipt.description }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
-    </ul>
-</div>
+                                        <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
+                                            <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-download-url="{% url 'download_receipt' band.slug receipt.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-filename="{{ receipt.file.name|default:'comprovante' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
+                                            <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editReceiptModal{{ receipt.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
+                                            <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'receipt_delete' band.slug receipt.id %}?next=arquivos" data-item-type="o comprovante" data-item-name="{{ receipt.description }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
+                                        </ul>
+                                    </div>
                                 </li>
                                 {% endfor %}
                             </ul>
@@ -100,13 +179,14 @@
                 <div class="card-body text-center py-5">
                     <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
                         <i class="fa-solid fa-folder-open text-muted mb-3" style="font-size: 3rem;"></i>
-                        <h5 class="fw-bold text-dark mb-1">Nenhum arquivo encontrado</h5>
+                        <h5 class="fw-bold text-dark mb-1 fs-6">Nenhum arquivo encontrado</h5>
                         <p class="text-muted small mb-0">Ainda não existem contratos ou comprovantes anexados aos shows da banda.</p>
                     </div>
                 </div>
             </div>
         {% endif %}
     </div>
+</div>
 </div>
 
 <!-- Modals for Document/Receipt Deletion and Edition -->
@@ -144,7 +224,7 @@
         </div>
     </div>
     {% endfor %}
-    
+
     {% for receipt in show.receipts.all %}
     <div class="modal fade text-start" id="editReceiptModal{{ receipt.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -204,7 +284,7 @@
                     <i id="pwaFileIcon" class="fa-solid fa-file text-primary" style="font-size: 3rem;"></i>
                 </div>
                 <h6 id="pwaFileName" class="fw-bold mb-4 text-break" style="max-height: 3rem; overflow: hidden; text-overflow: ellipsis;">documento</h6>
-                
+
                 <div id="pwaFileActions">
                     <button type="button" id="btnPwaPreview" class="btn btn-primary w-100 rounded-pill fw-bold mb-2 py-2">
                         <i class="fa-solid fa-eye me-2"></i> Visualizar
@@ -223,7 +303,7 @@
                     </div>
                     <p class="mb-0 fw-bold text-muted" id="pwaFileLoadingText">Preparando arquivo...</p>
                 </div>
-                
+
                 <div id="pwaFileError" class="d-none py-2 text-danger fw-medium small">
                 </div>
             </div>
@@ -241,7 +321,7 @@ document.addEventListener("DOMContentLoaded", function() {
         searchInput.addEventListener("keyup", function() {
             const query = this.value.toLowerCase();
             const items = document.querySelectorAll(".file-item-container");
-            
+
             items.forEach(function(item) {
                 const text = item.textContent.toLowerCase();
                 if (text.includes(query)) {
@@ -264,24 +344,24 @@ document.addEventListener("DOMContentLoaded", function() {
     const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
         window.navigator.standalone === true;
-    
+
     if (isIOSDevice && isStandalone) {
         const actionModal = new bootstrap.Modal(document.getElementById('pwaFileActionModal'));
-        
+
         const btnPreview = document.getElementById('btnPwaPreview');
         const btnShare = document.getElementById('btnPwaShare');
         const actionsDiv = document.getElementById('pwaFileActions');
         const loadingDiv = document.getElementById('pwaFileLoading');
         const errorDiv = document.getElementById('pwaFileError');
         const iconEl = document.getElementById('pwaFileIcon');
-        
+
         let currentFile = null;
 
         // Intercepta botões de download
         document.querySelectorAll('.js-pwa-file-action').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
-                
+
                 const originalUrl = this.getAttribute('data-download-url');
                 const viewerUrl = this.getAttribute('data-viewer-url');
                 let filename = this.getAttribute('data-filename');
@@ -290,13 +370,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
 
                 currentFile = { downloadUrl: originalUrl, viewerUrl: viewerUrl, filename: filename };
-                
+
                 document.getElementById('pwaFileName').textContent = filename;
-                
+
                 // Set icon and handle PDF specifically for iOS
                 iconEl.className = 'fa-solid text-primary';
                 const lowerName = filename.toLowerCase();
-                
+
                 btnPreview.classList.remove('d-none');
 
                 if (lowerName.endsWith('.pdf')) {
@@ -312,7 +392,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 actionsDiv.classList.remove('d-none');
                 loadingDiv.classList.add('d-none');
                 errorDiv.classList.add('d-none');
-                
+
                 actionModal.show();
             });
         });
@@ -322,10 +402,10 @@ document.addEventListener("DOMContentLoaded", function() {
         // Ação: Visualizar
         btnPreview.addEventListener('click', async function() {
             if (!currentFile || !currentFile.viewerUrl) return;
-            
+
             // Fecha o modal de ação antes de navegar para não deixar lixo no histórico
             actionModal.hide();
-            
+
             // Navega para a página interna HTML do visualizador
             window.location.href = currentFile.viewerUrl;
         });
@@ -346,7 +426,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 });
 
                 if (!response.ok) throw new Error("Falha na autenticação ou arquivo indisponível.");
-                
+
                 const blob = await response.blob();
                 let type = blob.type;
                 if (!type) {
