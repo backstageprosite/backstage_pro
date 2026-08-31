@@ -1692,36 +1692,78 @@ def commercial_check_conflict_view(request, band_slug):
 
 
 @login_required
-
 @band_required
-
 @advanced_plan_required
 def arquivos_view(request, band_slug):
-
     if not request.user.is_produtor():
-
         return HttpResponseForbidden("Apenas produtores têm acesso aos arquivos.")
-
-
 
     band = get_object_or_404(Band, slug=band_slug)
 
+    # Processamento do Modal Global de Upload de Arquivo
+    if request.method == 'POST' and request.POST.get('action') == 'add_file_global':
+        show_id = request.POST.get('show_id')
+        category_type = request.POST.get('category_type') # 'documento' ou 'comprovante'
+        description = request.POST.get('description', '').strip()
+        uploaded_file = request.FILES.get('file')
 
+        if not show_id:
+            messages.error(request, "Por favor, selecione um show.")
+            return redirect('arquivos', band_slug=band.slug)
 
+        show = get_object_or_404(Show, pk=show_id, band=band)
+
+        if not description:
+            messages.error(request, "A descrição do arquivo é obrigatória.")
+            return redirect('arquivos', band_slug=band.slug)
+
+        if not uploaded_file:
+            messages.error(request, "Nenhum arquivo selecionado para upload.")
+            return redirect('arquivos', band_slug=band.slug)
+
+        try:
+            if category_type == 'comprovante':
+                file_date = request.POST.get('date') or None
+                raw_value = request.POST.get('value', '0').replace('.', '').replace(',', '.').strip()
+                try:
+                    val = Decimal(raw_value) if raw_value else Decimal('0.00')
+                except Exception:
+                    val = Decimal('0.00')
+
+                receipt = FinancialReceipt(
+                    show=show,
+                    description=description,
+                    date=file_date,
+                    category="Comprovante",
+                    value=val,
+                    file=uploaded_file
+                )
+                receipt.full_clean()
+                receipt.save()
+                messages.success(request, f"Comprovante adicionado com sucesso ao show {show.title or 'selecionado'}!")
+            else:
+                doc = ContractDocument(
+                    show=show,
+                    description=description,
+                    file=uploaded_file
+                )
+                doc.full_clean()
+                doc.save()
+                messages.success(request, f"Documento adicionado com sucesso ao show {show.title or 'selecionado'}!")
+        except Exception as e:
+            messages.error(request, f"Erro ao salvar arquivo: {str(e)}")
+
+        return redirect('arquivos', band_slug=band.slug)
+
+    all_band_shows = Show.objects.filter(band=band).order_by('-date', 'title')
     shows_with_files = Show.objects.filter(band=band).prefetch_related('documents', 'receipts')
-
     shows_list = [show for show in shows_with_files if show.documents.exists() or show.receipts.exists()]
 
-
-
     context = {
-
         'band': band,
-
         'shows': shows_list,
-
+        'all_band_shows': all_band_shows,
     }
-
     return render(request, 'core/arquivos.html', context)
 
 

@@ -65,14 +65,71 @@
         font-size: 13px;
     }
 
+    .bp-files-page .btn-new-file {
+        font-size: 16px;
+        font-weight: 700;
+        height: 38px;
+        padding: 6px 24px;
+        border-radius: 50rem;
+        background-color: #6BD443;
+        color: #212529;
+        border: 1px solid transparent;
+        box-shadow: 0 2px 4px rgba(0,0,0,.075);
+        display: inline-flex;
+        align-items: center;
+    }
+    .bp-files-page .btn-new-file:hover {
+        background-color: #5ec437;
+        color: #111;
+    }
+    .bp-files-page .filter-row {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+        align-items: flex-end;
+    }
+    .bp-files-page .filter-search-col {
+        flex: 1.4 1 0;
+        min-width: 0;
+    }
+    .bp-files-page .filter-show-col {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+    .bp-files-page .filter-type-col {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+    .bp-files-page .filter-actions-col {
+        flex: 0 0 auto;
+        display: flex;
+        gap: 8px;
+    }
+
     @media (max-width: 767.98px) {
+        .bp-files-page .filter-row {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .bp-files-page .filter-search-col,
+        .bp-files-page .filter-show-col,
+        .bp-files-page .filter-type-col {
+            flex: 1 1 100%;
+            width: 100%;
+        }
+        .bp-files-page .filter-actions-col {
+            flex: 1 1 100%;
+            width: 100%;
+            justify-content: flex-end;
+        }
         .bp-files-page .filter-control,
         .bp-files-page input.form-control,
         .bp-files-page select.form-select {
             font-size: 16px !important; /* Evita zoom no Safari/iOS */
             min-height: 40px;
         }
-        .bp-files-page .btn-back {
+        .bp-files-page .btn-back,
+        .bp-files-page .btn-new-file {
             height: 40px;
             padding: 8px 16px;
         }
@@ -84,22 +141,25 @@
 <div class="bp-files-page">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
         <h4 class="page-title"><i class="fa-solid fa-folder-open text-primary me-2"></i>Gerenciador de Arquivos</h4>
-        <div>
+        <div class="d-flex gap-2 align-items-center">
+            <button type="button" class="btn btn-new-file shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoArquivoGlobal">
+                <i class="fa-solid fa-plus me-1" style="font-size: 16px; color: #212529;"></i> Novo Arquivo
+            </button>
             <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-back fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
             </a>
         </div>
     </div>
 
-    <!-- Filtros Compactos BP-COMPACTO-01 -->
+    <!-- Filtros Compactos BP-COMPACTO-01 em Linha Única -->
     <div class="card shadow-sm border-0 mb-3" style="border-radius: 10px; background-color: #f8f9fa;">
-        <div class="card-body" style="padding: 12px 14px;">
-            <form id="filterForm" onsubmit="return false;" class="row g-2 align-items-end">
-                <div class="col-12 col-md-4">
+        <div class="card-body" style="padding: 10px 14px;">
+            <form id="filterForm" onsubmit="return false;" class="filter-row">
+                <div class="filter-search-col">
                     <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Buscar arquivo</label>
                     <input type="text" id="filterSearch" class="form-control" placeholder="Buscar por nome..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="filter-show-col">
                     <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Show / Evento</label>
                     <select id="filterShow" class="form-select" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
                         <option value="">Todos</option>
@@ -108,7 +168,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-6 col-md-3">
+                <div class="filter-type-col">
                     <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Tipo de arquivo</label>
                     <select id="filterType" class="form-select" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
                         <option value="">Todos</option>
@@ -116,11 +176,11 @@
                         <option value="comprovante">Comprovantes Financeiros</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-auto ms-md-auto mt-2 mt-md-0 text-end d-flex gap-2 justify-content-end">
-                    <a href="{% url 'arquivos' band.slug %}" id="btnLimpar" class="btn btn-sm btn-outline-secondary px-3" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 16px; border-radius: 4px; border: 1px solid #6C757D; color: #6C757D; background-color: transparent; display: inline-flex; align-items: center;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='#FFFFFF';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';">
+                <div class="filter-actions-col">
+                    <a href="{% url 'arquivos' band.slug %}" id="btnLimpar" class="btn btn-sm btn-outline-secondary" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 14px; border-radius: 4px; border: 1px solid #6C757D; color: #6C757D; background-color: transparent; display: inline-flex; align-items: center; white-space: nowrap;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='#FFFFFF';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';">
                         <i class="fa-solid fa-eraser me-1" style="font-size: 14px;"></i> Limpar
                     </a>
-                    <button type="button" id="btnFiltrar" class="btn btn-sm btn-dark px-4" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 24px; border-radius: 4px; background-color: #212529; border: 1px solid #212529; color: #FFFFFF; display: inline-flex; align-items: center;" onmouseover="this.style.backgroundColor='#1C1F23'; this.style.borderColor='#1A1E21';" onmouseout="this.style.backgroundColor='#212529'; this.style.borderColor='#212529';">
+                    <button type="button" id="btnFiltrar" class="btn btn-sm btn-dark" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 20px; border-radius: 4px; background-color: #212529; border: 1px solid #212529; color: #FFFFFF; display: inline-flex; align-items: center; white-space: nowrap;" onmouseover="this.style.backgroundColor='#1C1F23'; this.style.borderColor='#1A1E21';" onmouseout="this.style.backgroundColor='#212529'; this.style.borderColor='#212529';">
                         <i class="fa-solid fa-filter me-1" style="font-size: 14px;"></i> Filtrar
                     </button>
                 </div>
@@ -350,6 +410,83 @@
             </div>
         </div>
     </div>
+<!-- Modal Adicionar Novo Arquivo Global -->
+<div class="modal fade text-start" id="modalNovoArquivoGlobal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <form action="{% url 'arquivos' band.slug %}" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_file_global">
+                <div class="modal-header bg-light border-0 py-3 px-4">
+                    <h5 class="modal-title fw-bold text-primary" style="font-size: 16px;">
+                        <i class="fa-solid fa-cloud-arrow-up me-2"></i>Adicionar Arquivo
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 p-md-4 text-wrap" style="white-space: normal;">
+                    <!-- Seleção de Show com Filtro por Mês -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Mês / Período (Filtro)</label>
+                            <input type="month" id="modalShowMonthFilter" class="form-control" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Selecionar Show *</label>
+                            <select name="show_id" id="modalShowSelect" class="form-select" required style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                                <option value="">-- Selecione o Show --</option>
+                                {% for s in all_band_shows %}
+                                    <option value="{{ s.id }}" data-show-date="{{ s.date|date:'Y-m'|default:'' }}">{{ s.title|default:"Sem título" }} &bull; {{ s.date|date:"d/m/Y"|default:"Sem data" }}{% if s.city %} &bull; {{ s.city }}{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text" style="font-size: 12px;">Selecione o evento ao qual este arquivo será anexado.</div>
+                        </div>
+                    </div>
+
+                    <!-- Categoria e Dados -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Categoria *</label>
+                            <select name="category_type" id="modalCategorySelect" class="form-select" required style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                                <option value="documento" selected>Documentos do Show</option>
+                                <option value="comprovante">Comprovantes Financeiros</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6" id="modalFieldDateContainer">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Data</label>
+                            <input type="date" name="date" class="form-control" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-8">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Descrição *</label>
+                            <input type="text" name="description" class="form-control" required placeholder="Ex: Contrato Assinado, Recibo Van, Nota Fiscal..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-12 col-md-4 d-none" id="modalFieldValueContainer">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Valor (R$)</label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="font-size: 13px; height: 34px; padding: 5px 10px;">R$</span>
+                                <input type="text" name="value" id="modalInputValue" class="form-control money-mask" placeholder="0,00" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 0 6px 6px 0;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Arquivo -->
+                    <div class="row g-3 mb-2">
+                        <div class="col-12">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Arquivo (PDF, Imagem) *</label>
+                            <input type="file" name="file" class="form-control" required style="font-size: 14px; padding: 5px 10px; border-radius: 6px;">
+                            <div class="form-text" style="font-size: 12px;">Formatos aceitos: PDF, JPG, PNG, GIF, WEBP.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 justify-content-end gap-2 py-2 px-4">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Adicionar Arquivo</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 {% endblock %}
@@ -357,6 +494,44 @@
 {% block extra_js %}
 <script type="module">
 document.addEventListener("DOMContentLoaded", function() {
+    // Lógica do Modal de Novo Arquivo Global
+    const modalShowMonthFilter = document.getElementById("modalShowMonthFilter");
+    const modalShowSelect = document.getElementById("modalShowSelect");
+    const modalCategorySelect = document.getElementById("modalCategorySelect");
+    const modalFieldValueContainer = document.getElementById("modalFieldValueContainer");
+
+    if (modalShowMonthFilter && modalShowSelect) {
+        modalShowMonthFilter.addEventListener("change", function() {
+            const selectedMonth = this.value; // Formato YYYY-MM
+            const options = modalShowSelect.querySelectorAll("option");
+
+            options.forEach(opt => {
+                if (opt.value === "") return;
+                const optMonth = opt.getAttribute("data-show-date");
+                if (!selectedMonth || optMonth === selectedMonth) {
+                    opt.style.display = "";
+                } else {
+                    opt.style.display = "none";
+                }
+            });
+
+            // Reseta a seleção se a opção atual ficou oculta
+            const currentSelected = modalShowSelect.options[modalShowSelect.selectedIndex];
+            if (currentSelected && currentSelected.style.display === "none") {
+                modalShowSelect.value = "";
+            }
+        });
+    }
+
+    if (modalCategorySelect && modalFieldValueContainer) {
+        modalCategorySelect.addEventListener("change", function() {
+            if (this.value === "comprovante") {
+                modalFieldValueContainer.classList.remove("d-none");
+            } else {
+                modalFieldValueContainer.classList.add("d-none");
+            }
+        });
+    }
     const filterSearch = document.getElementById("filterSearch");
     const filterShow = document.getElementById("filterShow");
     const filterType = document.getElementById("filterType");
