@@ -265,77 +265,73 @@
                     </a>
                 </div>
 
-                <ul class="nav nav-pills flex-column mb-auto gap-2">
+                <ul class="nav nav-pills flex-column mb-auto gap-1">
 
                     <li class="nav-item">
-                        <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'dashboard' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'dashboard' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
                             <i class="fa-solid fa-gauge fa-fw me-2 {% if request.resolver_match.url_name != 'dashboard' %}opacity-75{% endif %}"></i> Dashboard
                         </a>
                     </li>
 
                     <li class="nav-item">
-                        <a href="{% if band %}{% url 'calendario' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'calendario' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% if band %}{% url 'calendario' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'calendario' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
                             <i class="fa-solid fa-calendar-days fa-fw me-2 {% if request.resolver_match.url_name != 'calendario' %}opacity-75{% endif %}"></i> Agenda
                         </a>
                     </li>
                     
                     {% if request.user.is_produtor or request.user.is_superuser %}
                     <li class="nav-item">
-                        <a href="{% if band %}{% url 'shows_list' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'shows_list' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% if band %}{% url 'shows_list' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'shows_list' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
                             <i class="fa-solid fa-microphone-lines fa-fw me-2 {% if request.resolver_match.url_name != 'shows_list' %}opacity-75{% endif %}"></i> Shows
                         </a>
                     </li>
                     
                     <li class="nav-item">
                         {% if band and not band.is_advanced %}
-                        <a href="#" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" class="nav-link text-muted py-3 px-3 fw-medium" style="border-radius: 8px; opacity: 0.6;">
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" class="nav-link text-muted py-2 px-3 fw-medium" style="border-radius: 8px; font-size: 14px; opacity: 0.6;">
                             <div class="d-flex justify-content-between align-items-center w-100">
                                 <span><i class="fa-solid fa-list-check fa-fw me-2 opacity-75"></i> Pendências</span>
                                 <i class="fa-solid fa-lock" style="font-size: 0.8rem;"></i>
                             </div>
                         </a>
                         {% else %}
-                        <a href="{% if band %}{% url 'pendencias' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'pendencias' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% if band %}{% url 'pendencias' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'pendencias' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
                             <i class="fa-solid fa-list-check fa-fw me-2 {% if request.resolver_match.url_name != 'pendencias' %}opacity-75{% endif %}"></i> Pendências
                         </a>
                         {% endif %}
                     </li>
-                    
-
-
 
                     <li class="nav-item">
-                        <a href="{% if band %}{% url 'contatos_list' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'contatos_list' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% if band %}{% url 'contatos_list' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'contatos_list' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
                             <i class="fa-solid fa-address-book fa-fw me-2 {% if request.resolver_match.url_name != 'contatos_list' %}opacity-75{% endif %}"></i> Contatos
                         </a>
                     </li>
 
-                    
                     <li class="nav-item">
-                        <a href="{% url 'banco_de_dados_global' %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'banco_de_dados_global' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% url 'banco_de_dados_global' %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'banco_de_dados_global' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
                             <i class="fa-solid fa-database fa-fw me-2 {% if request.resolver_match.url_name != 'banco_de_dados_global' %}opacity-75{% endif %}"></i> Banco de Dados
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% if band %}{% url 'relatorios_index' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios_index' or request.resolver_match.url_name == 'relatorio_financeiro' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% if band %}{% url 'relatorios_index' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios_index' or request.resolver_match.url_name == 'relatorio_financeiro' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
                             <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios_index' and request.resolver_match.url_name != 'relatorio_financeiro' %}opacity-75{% endif %}"></i> Relatórios
                         </a>
                     </li>
                     {% endif %}
 
                     <li class="nav-item">
-                        <a href="{% if band %}{% url 'parceiros' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'parceiros' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% if band %}{% url 'parceiros' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'parceiros' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
                             <i class="fa-solid fa-handshake fa-fw me-2 {% if request.resolver_match.url_name != 'parceiros' %}opacity-75{% endif %}"></i> Parceiros
                         </a>
                     </li>
 
                 </ul>
                 
-                <hr class="mt-4 mb-3 text-muted">
-                <ul class="nav nav-pills flex-column">
+                <hr class="mt-3 mb-2 text-muted">
+                <ul class="nav nav-pills flex-column gap-1">
                     {% include 'core/includes/pwa_install.html' %}
                     <li class="nav-item">
-                        <a href="{% if band %}{% url 'configuracoes' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-3 px-3 fw-medium {% if request.resolver_match.url_name == 'configuracoes' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px;">
+                        <a href="{% if band %}{% url 'configuracoes' band.slug %}{% else %}#{% endif %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'configuracoes' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
                             <i class="fa-solid fa-gear fa-fw me-2 {% if request.resolver_match.url_name != 'configuracoes' %}opacity-75{% endif %}"></i> Configurações
                         </a>
                     </li>
