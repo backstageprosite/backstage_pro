@@ -61,7 +61,7 @@
         font-size: 12px;
         color: #6c757d;
     }
-    .bp-shows-page .status-pill {
+    .bp-shows-page .status-pill-base {
         font-size: 11px;
         font-weight: 600;
         padding: 4px 10px;
@@ -70,7 +70,14 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        text-align: center;
         white-space: nowrap;
+    }
+    .bp-shows-page .status-pill-show {
+        width: 82px;
+    }
+    .bp-shows-page .status-pill-payment {
+        width: 88px;
     }
     .bp-shows-page .btn-action-dropdown {
         font-size: 13px;
@@ -183,22 +190,22 @@
                             <td class="d-none d-md-table-cell">{{ show.contract_type|default:"-" }}</td>
                             <td class="text-center">
                                 {% if show.status == 'CANCELADO' %}
-                                    <span class="status-pill bg-danger text-white">Cancelado</span>
+                                    <span class="badge rounded-pill bg-danger status-pill-base status-pill-show">Cancelado</span>
                                 {% elif show.is_past %}
-                                    <span class="status-pill bg-secondary text-white">Concluído</span>
+                                    <span class="badge rounded-pill bg-secondary status-pill-base status-pill-show">Concluído</span>
                                 {% elif show.status == 'CONFIRMADO' %}
-                                    <span class="status-pill bg-success text-white">Confirmado</span>
+                                    <span class="badge rounded-pill bg-success status-pill-base status-pill-show">Confirmado</span>
                                 {% elif show.status == 'PRE_RESERVADO' %}
-                                    <span class="status-pill bg-warning text-dark">Reserva</span>
+                                    <span class="badge rounded-pill bg-warning text-dark status-pill-base status-pill-show">Reserva</span>
                                 {% endif %}
                             </td>
                             <td class="d-none d-md-table-cell text-center">
                                 {% if show.payment_status == 'PAGO' %}
-                                    <span class="status-pill bg-success text-white">Pago</span>
+                                    <span class="badge rounded-pill bg-success status-pill-base status-pill-payment">Pago</span>
                                 {% elif show.payment_status == 'PARCIAL' %}
-                                    <span class="status-pill bg-warning text-dark">Pgt. Parcial</span>
+                                    <span class="badge rounded-pill bg-warning text-dark status-pill-base status-pill-payment">Pgt. Parcial</span>
                                 {% else %}
-                                    <span class="status-pill bg-danger text-white">Pendente</span>
+                                    <span class="badge rounded-pill bg-danger status-pill-base status-pill-payment">Pendente</span>
                                 {% endif %}
                             </td>
                             <td class="pe-4 text-end text-nowrap">
