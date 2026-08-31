@@ -1,214 +1,297 @@
 {% extends 'core/admin/base_admin.html' %}
 
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-    <div>
-        <h4 class="fw-bold m-0"><i class="fa-solid fa-handshake text-primary me-2"></i> Parceiros</h4>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark rounded-pill fw-bold px-3">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
-        <button class="btn fw-bold px-4 rounded-pill shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#addPartnerModal" style="background-color: #6BD443;">
-            <i class="fa-solid fa-plus me-1"></i> Novo Parceiro
-        </button>
-    </div>
-</div>
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para Parceiros Administrativo */
+    .bp-admin-partners-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-admin-partners-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-admin-partners-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-admin-partners-page .form-control,
+    .bp-admin-partners-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-admin-partners-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 8px 12px;
+        text-transform: uppercase;
+    }
+    .bp-admin-partners-page .table tbody td {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .bp-admin-partners-page .btn-actions {
+        font-size: 13px;
+        height: 30px;
+        padding: 3px 12px;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    .bp-admin-partners-page .status-pill {
+        width: 88px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
 
-<div class="card shadow-sm border-0" style="border-radius: 12px;">
-    <div class="card-body p-0">
-        <div class="table-responsive" style="overflow: visible;">
-            <table class="table table-hover align-middle mb-0 table-hover-premium">
-                <thead class="table-light text-secondary">
-                    <tr>
-                        <th class="ps-4">Logo</th>
-                        <th>Nome</th>
-                        <th>Segmento</th>
-                        <th class="text-center">Instagram</th>
-                        <th class="text-center">Tel</th>
-                        <th>Status</th>
-                        <th class="text-end pe-4">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for partner in partners %}
-                    <tr>
-                        <td class="ps-4">
-                            {% if partner.image %}
-                            <div class="border rounded bg-light d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; padding: 4px;">
-                                <img src="{{ partner.image.url }}" alt="{{ partner.name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                            </div>
-                            {% else %}
-                            <div class="border rounded bg-light text-muted d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
-                                <i class="fa-solid fa-image"></i>
-                            </div>
-                            {% endif %}
-                        </td>
-                        <td class="fw-bold">{{ partner.name }}</td>
-                        <td>{{ partner.segment }}</td>
-                        <td class="text-center">
-                            {% if partner.instagram %}
-                            <a href="{{ partner.instagram_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width:32px;height:32px;" title="{{ partner.instagram_display }}">
-                                <i class="fa-brands fa-instagram text-danger" style="font-size:16px;"></i>
-                            </a>
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            {% if partner.phone %}
-                            <a href="{{ partner.whatsapp_url }}" target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp" class="btn btn-sm btn-success rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width:32px;height:32px;" title="{{ partner.formatted_phone }}">
-                                <i class="fa-brands fa-whatsapp" style="font-size:20px;"></i>
-                            </a>
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if partner.is_active %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-circle-check me-1"></i> Ativo
-                                </span>
-                            {% else %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-ban me-1"></i> Inativo
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end pe-4">
-                            <div class="dropdown d-inline-block">
-                                <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" style="font-size: 0.85rem;">
-                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px; font-size: 0.9rem; background-color: #ffffff; z-index: 1055;">
-                                    <li>
-                                        <button class="dropdown-item py-2 fw-medium text-dark" data-bs-toggle="modal" data-bs-target="#editPartnerModal{{ partner.id }}">
-                                            <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <form action="{% url 'admin_painel:parceiros_desativar' partner.id %}" method="POST" class="d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="dropdown-item py-2 fw-medium {% if partner.is_active %}text-warning{% else %}text-success{% endif %}">
-                                                <i class="fa-solid {% if partner.is_active %}fa-eye-slash text-warning{% else %}fa-eye text-success{% endif %} me-2"></i> 
-                                                {% if partner.is_active %}Desativar{% else %}Ativar{% endif %}
-                                            </button>
-                                        </form>
-                                    </li>
-                                    <li>
-                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:parceiros_excluir' partner.id %}" data-item-type="o parceiro" data-item-name="{{ partner.name }}">
-                                            <i class="fa-solid fa-trash me-2"></i> Excluir
-                                        </button>
-                                    </li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                    
-                    <!-- Edit Partner Modal -->
-                    <div class="modal fade" id="editPartnerModal{{ partner.id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow">
-                                <div class="modal-header bg-light border-0">
-                                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen text-primary me-2"></i>Editar Parceiro</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    @media (max-width: 767.98px) {
+        .bp-admin-partners-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-admin-partners-page .form-control,
+        .bp-admin-partners-page .form-select {
+            font-size: 16px !important;
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bp-admin-partners-page">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h4 class="page-title"><i class="fa-solid fa-handshake text-primary me-2"></i>Parceiros</h4>
+        <div class="d-flex gap-2">
+            <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+            <button class="btn btn-header-action fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#addPartnerModal" style="background-color: #6BD443; border-color: #6BD443;">
+                <i class="fa-solid fa-plus me-1"></i> Novo Parceiro
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            <div class="table-responsive" style="overflow: visible;">
+                <table class="table table-hover align-middle mb-0 table-hover-premium">
+                    <thead class="table-light text-secondary">
+                        <tr>
+                            <th class="ps-4">Logo</th>
+                            <th>Nome</th>
+                            <th>Segmento</th>
+                            <th class="text-center">Instagram</th>
+                            <th class="text-center">Tel</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end pe-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for partner in partners %}
+                        <tr>
+                            <td class="ps-4">
+                                {% if partner.image %}
+                                <div class="border rounded bg-light d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; padding: 3px;">
+                                    <img src="{{ partner.image.url }}" alt="{{ partner.name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                 </div>
-                                <form action="{% url 'admin_painel:parceiros_editar' partner.id %}" method="POST" enctype="multipart/form-data">
-                                    {% csrf_token %}
-                                    <div class="modal-body p-4">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Nome *</label>
-                                            <input type="text" name="name" class="form-control" value="{{ partner.name }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Link de Redirecionamento (com https://)</label>
-                                            <input type="url" name="link" class="form-control" value="{{ partner.link|default:'' }}" placeholder="https://exemplo.com.br">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Posição de Exibição</label>
-                                            <select name="position" class="form-select">
-                                                <option value="LOGIN" {% if partner.position == 'LOGIN' %}selected{% endif %}>Tela de Login (Rodapé)</option>
-                                                <option value="HEADER" {% if partner.position == 'HEADER' %}selected{% endif %}>Cabeçalho dos Sistemas</option>
-                                                <option value="ALL" {% if partner.position == 'ALL' %}selected{% endif %}>Todos os Locais</option>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Ordem de Prioridade (menor aparece primeiro)</label>
-                                            <input type="number" name="order" class="form-control" value="{{ partner.order }}" min="0">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">Logomarca (nova)</label>
-                                            <input type="file" name="image" class="form-control" accept="image/*">
-                                            <small class="text-muted d-block mt-1">Se não enviar um novo arquivo, a imagem atual será mantida.</small>
-                                        </div>
-                                        <div class="form-check form-switch mt-4">
-                                            <input class="form-check-input" type="checkbox" name="is_active" id="isActiveEdit{{ partner.id }}" {% if partner.is_active %}checked{% endif %}>
-                                            <label class="form-check-label fw-medium" for="isActiveEdit{{ partner.id }}">Parceiro Ativo</label>
-                                        </div>
+                                {% else %}
+                                <div class="border rounded bg-light text-muted d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                    <i class="fa-solid fa-image"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold text-dark" style="font-size: 13px;">{{ partner.name }}</td>
+                            <td style="font-size: 13px;">{{ partner.segment }}</td>
+                            <td class="text-center">
+                                {% if partner.instagram %}
+                                <a href="{{ partner.instagram_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width:30px;height:30px;" title="{{ partner.instagram_display }}">
+                                    <i class="fa-brands fa-instagram text-danger" style="font-size:14px;"></i>
+                                </a>
+                                {% else %}
+                                <span class="text-muted opacity-50">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if partner.phone %}
+                                <a href="{{ partner.whatsapp_url }}" target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp" class="btn btn-sm btn-success rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="width:30px;height:30px;" title="{{ partner.formatted_phone }}">
+                                    <i class="fa-brands fa-whatsapp" style="font-size:16px;"></i>
+                                </a>
+                                {% else %}
+                                <span class="text-muted opacity-50">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if partner.is_active %}
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 status-pill">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Ativo
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 status-pill">
+                                        <i class="fa-solid fa-ban me-1"></i> Inativo
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-light border btn-actions shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false">
+                                        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 13px; background-color: #ffffff; z-index: 1055;">
+                                        <li>
+                                            <button class="dropdown-item py-2 fw-medium text-dark" data-bs-toggle="modal" data-bs-target="#editPartnerModal{{ partner.id }}">
+                                                <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <form action="{% url 'admin_painel:parceiros_desativar' partner.id %}" method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="dropdown-item py-2 fw-medium {% if partner.is_active %}text-warning{% else %}text-success{% endif %}">
+                                                    <i class="fa-solid {% if partner.is_active %}fa-eye-slash text-warning{% else %}fa-eye text-success{% endif %} me-2"></i> 
+                                                    {% if partner.is_active %}Desativar{% else %}Ativar{% endif %}
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:parceiros_excluir' partner.id %}" data-item-type="o parceiro" data-item-name="{{ partner.name }}">
+                                                <i class="fa-solid fa-trash me-2"></i> Excluir
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Edit Partner Modal -->
+                        <div class="modal fade text-start" id="editPartnerModal{{ partner.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-pen text-primary me-2"></i>Editar Parceiro</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-                                    <div class="modal-footer bg-light border-0">
-                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Salvar Alterações</button>
-                                    </div>
-                                </form>
+                                    <form action="{% url 'admin_painel:parceiros_editar' partner.id %}" method="POST" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        <div class="modal-body p-3 p-md-4 text-start">
+                                            <div class="mb-3">
+                                                <label class="form-label">Nome *</label>
+                                                <input type="text" name="name" class="form-control" value="{{ partner.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Link de Redirecionamento</label>
+                                                <input type="url" name="link" class="form-control" value="{{ partner.link|default:'' }}" placeholder="https://exemplo.com.br">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Posição de Exibição</label>
+                                                <select name="position" class="form-select">
+                                                    <option value="LOGIN" {% if partner.position == 'LOGIN' %}selected{% endif %}>Tela de Login (Rodapé)</option>
+                                                    <option value="HEADER" {% if partner.position == 'HEADER' %}selected{% endif %}>Cabeçalho dos Sistemas</option>
+                                                    <option value="ALL" {% if partner.position == 'ALL' %}selected{% endif %}>Todos os Locais</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Ordem de Prioridade (menor aparece primeiro)</label>
+                                                <input type="number" name="order" class="form-control" value="{{ partner.order }}" min="0">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Logomarca (nova)</label>
+                                                <input type="file" name="image" class="form-control" accept="image/*">
+                                                <small class="text-muted d-block mt-1" style="font-size: 12px;">Se não enviar um novo arquivo, a imagem atual será mantida.</small>
+                                            </div>
+                                            <div class="mt-2">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" name="is_active" id="isActiveEdit{{ partner.id }}" {% if partner.is_active %}checked{% endif %}>
+                                                    <label class="form-check-label fw-bold small ms-1" for="isActiveEdit{{ partner.id }}" style="font-size: 13px;">Parceiro Ativo</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                                            <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-handshake-slash mb-3" style="font-size: 2.5rem;"></i>
-                            <p class="mb-0 fs-5">Nenhum parceiro cadastrado.</p>
-                            <p class="small">Clique em "+ Adicionar" para cadastrar o primeiro parceiro.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-handshake-slash mb-2 opacity-50" style="font-size: 2rem;"></i>
+                                <h6 class="fw-bold mb-1">Nenhum parceiro cadastrado</h6>
+                                <p class="small mb-0">Clique em "+ Novo Parceiro" para cadastrar.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Add Partner Modal -->
-<div class="modal fade" id="addPartnerModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade text-start" id="addPartnerModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light border-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-plus text-success me-2"></i>Novo Parceiro</h5>
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-plus text-success me-2"></i>Novo Parceiro</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{% url 'admin_painel:parceiros_novo' %}" method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="modal-body p-4">
+                <div class="modal-body p-3 p-md-4 text-start">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Nome *</label>
+                        <label class="form-label">Nome *</label>
                         <input type="text" name="name" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Segmento *</label>
+                        <label class="form-label">Segmento *</label>
                         <input type="text" name="segment" class="form-control" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Instagram</label>
-                        <input type="text" name="instagram" class="form-control" placeholder="@empresa ou URL">
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Instagram</label>
+                            <input type="text" name="instagram" class="form-control" placeholder="@empresa ou URL">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Telefone / WhatsApp</label>
+                            <input type="text" name="phone" class="form-control" placeholder="(71) 99999-9999">
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Telefone / WhatsApp</label>
-                        <input type="text" name="phone" class="form-control" placeholder="(71) 99999-9999">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Logomarca *</label>
+                        <label class="form-label">Logomarca *</label>
                         <input type="file" name="image" class="form-control" accept="image/*" required>
-                        <small class="text-muted d-block mt-1">Envie o logo (PNG, JPG, WebP) com fundo transparente se possível. Máx 5MB.</small>
+                        <small class="text-muted d-block mt-1" style="font-size: 12px;">Envie o logo (PNG, JPG, WebP) com fundo transparente se possível. Máx 5MB.</small>
                     </div>
-                    <div class="form-check form-switch mt-4">
-                        <input class="form-check-input" type="checkbox" name="is_active" id="isActiveNew" checked>
-                        <label class="form-check-label fw-medium" for="isActiveNew">Ativo imediatamente</label>
+                    <div class="mt-2">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="isActiveNew" checked>
+                            <label class="form-check-label fw-bold small ms-1" for="isActiveNew" style="font-size: 13px;">Ativo imediatamente</label>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">Salvar Parceiro</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-3 shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443; height: 34px; font-size: 13px;">Salvar Parceiro</button>
                 </div>
             </form>
         </div>
@@ -216,3 +299,4 @@
 </div>
 
 {% endblock %}
+

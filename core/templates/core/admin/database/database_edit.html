@@ -1,127 +1,180 @@
 {% extends 'core/admin/base_admin.html' %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para Edição de Contato Administrativo */
+    .bp-admin-db-edit-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-admin-db-edit-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-admin-db-edit-page .section-title {
+        font-size: 16px;
+        font-weight: 700;
+    }
+    .bp-admin-db-edit-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-admin-db-edit-page .form-control,
+    .bp-admin-db-edit-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-admin-db-edit-page .btn-action-submit {
+        height: 35px;
+        font-size: 14px;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-admin-db-edit-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-admin-db-edit-page .form-control,
+        .bp-admin-db-edit-page .form-select {
+            font-size: 16px !important;
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold m-0">
-        <i class="fa-solid fa-pen text-primary me-2"></i>
-        Editar Contato
-    </h4>
+<div class="bp-admin-db-edit-page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="page-title">
+            <i class="fa-solid fa-pen-to-square text-primary me-2"></i>
+            Editar Contato
+        </h4>
 
-    <a href="{% url 'admin_painel:database_list' %}" class="btn btn-outline-dark rounded-pill fw-bold px-3">
-        <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-    </a>
-</div>
-<div class="mb-4 text-center text-md-start">
-    <p class="text-muted mt-1">Banda de Origem: <strong class="badge bg-secondary">{{ contact.band.name }}</strong></p>
-</div>
+        <a href="{% url 'admin_painel:database_list' %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
+            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+    <div class="mb-3 text-center text-md-start">
+        <p class="text-muted small mb-0" style="font-size: 13px;">Banda de Origem: <strong class="badge bg-secondary" style="font-size: 12px;">{{ contact.band.name }}</strong></p>
+    </div>
 
-<div class="card shadow-sm border-0" style="border-radius: 12px; max-width: 800px; margin: 0 auto;">
-    <div class="card-body p-4 p-md-5">
-        <form method="post">
-            {% csrf_token %}
+    <div class="card shadow-sm border-0" style="border-radius: 12px; max-width: 800px; margin: 0 auto;">
+        <div class="card-body p-3 p-md-4">
+            <form method="post">
+                {% csrf_token %}
 
-            {% if form.errors %}
-                <div class="alert alert-danger" style="border-radius: 8px;">
-                    <i class="fa-solid fa-triangle-exclamation me-2"></i> Verifique os erros no formulário abaixo.
-                    {% if form.non_field_errors %}
-                        <div class="mt-2 fw-bold">{{ form.non_field_errors }}</div>
-                    {% endif %}
-                </div>
-            {% endif %}
-
-            <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">Informações do Contato</h5>
-
-            <div class="row g-3 mb-4">
-                <div class="col-md-8">
-                    <label class="form-label fw-bold">{{ form.name.label }}</label>
-                    {{ form.name }}
-                    {% if form.name.errors %}
-                        <div class="text-danger small mt-1">{{ form.name.errors }}</div>
-                    {% endif %}
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">{{ form.contact_type.label }}</label>
-                    {{ form.contact_type }}
-                    {% if form.contact_type.errors %}
-                        <div class="text-danger small mt-1">{{ form.contact_type.errors }}</div>
-                    {% endif %}
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">{{ form.phone.label }}</label>
-                    {{ form.phone }}
-                    {% if form.phone.errors %}
-                        <div class="text-danger small mt-1">{{ form.phone.errors }}</div>
-                    {% endif %}
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">{{ form.email.label }}</label>
-                    {{ form.email }}
-                    {% if form.email.errors %}
-                        <div class="text-danger small mt-1">{{ form.email.errors }}</div>
-                    {% endif %}
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">{{ form.location.label }}</label>
-                    {{ form.location }}
-                    {% if form.location.errors %}
-                        <div class="text-danger small mt-1">{{ form.location.errors }}</div>
-                    {% endif %}
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">{{ form.link.label }}</label>
-                    {{ form.link }}
-                    {% if form.link.errors %}
-                        <div class="text-danger small mt-1">{{ form.link.errors }}</div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">Detalhes</h5>
-
-            <div class="row g-3 mb-4">
-                <div class="col-12">
-                    <label class="form-label fw-bold">{{ form.notes.label }}</label>
-                    {{ form.notes }}
-                    {% if form.notes.errors %}
-                        <div class="text-danger small mt-1">{{ form.notes.errors }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="col-12 mt-3">
-                    <label class="form-label fw-bold">{{ form.public_information.label }}</label>
-                    {{ form.public_information }}
-                    {% if form.public_information.errors %}
-                        <div class="text-danger small mt-1">{{ form.public_information.errors }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="col-12 mt-3">
-                    <div class="form-check">
-                        {{ form.is_shared_globally }}
-                        <label class="form-check-label fw-bold small" for="{{ form.is_shared_globally.id_for_label }}">
-                            {{ form.is_shared_globally.label }}
-                        </label>
-                        {% if form.is_shared_globally.help_text %}
-                            <div class="form-text mt-1" style="font-size: 0.8rem; color: #6c757d;">
-                                {{ form.is_shared_globally.help_text }}
-                            </div>
+                {% if form.errors %}
+                    <div class="alert alert-danger p-2 small mb-3" style="border-radius: 8px;">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Verifique os erros no formulário abaixo.
+                        {% if form.non_field_errors %}
+                            <div class="mt-1 fw-bold">{{ form.non_field_errors }}</div>
                         {% endif %}
-                        {% if form.is_shared_globally.errors %}
-                            <div class="text-danger small mt-1">{{ form.is_shared_globally.errors }}</div>
+                    </div>
+                {% endif %}
+
+                <h6 class="section-title mb-3 text-primary border-bottom pb-2">Informações do Contato</h6>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label">{{ form.name.label }}</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.contact_type.label }}</label>
+                        {{ form.contact_type }}
+                        {% if form.contact_type.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.contact_type.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.phone.label }}</label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.phone.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.email.label }}</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.email.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.location.label }}</label>
+                        {{ form.location }}
+                        {% if form.location.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.location.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.link.label }}</label>
+                        {{ form.link }}
+                        {% if form.link.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.link.errors }}</div>
                         {% endif %}
                     </div>
                 </div>
-            </div>
 
-            <hr class="my-4">
+                <h6 class="section-title mb-3 text-primary border-bottom pb-2">Detalhes</h6>
 
-            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                <a href="{% url 'admin_painel:database_list' %}" class="btn btn-light border px-4 fw-bold rounded-pill">Cancelar</a>
-                <button type="submit" class="btn btn-success px-4 fw-bold rounded-pill shadow-sm">
-                    <i class="fa-solid fa-check me-1"></i> Salvar Contato
-                </button>
-            </div>
-        </form>
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <label class="form-label">{{ form.notes.label }}</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.notes.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">{{ form.public_information.label }}</label>
+                        {{ form.public_information }}
+                        {% if form.public_information.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.public_information.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-check">
+                            {{ form.is_shared_globally }}
+                            <label class="form-check-label fw-bold small ms-1" for="{{ form.is_shared_globally.id_for_label }}" style="font-size: 13px;">
+                                {{ form.is_shared_globally.label }}
+                            </label>
+                            <div class="form-text text-muted" style="font-size: 12px;">
+                                Se marcado, o contato fica disponível na busca global do Banco de Dados Compartilhado para todas as bandas.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'admin_painel:database_list' %}" class="btn btn-light border px-3 btn-action-submit fw-bold">Cancelar</a>
+                    <button type="submit" class="btn btn-primary btn-loading px-4 btn-action-submit fw-bold shadow-sm">
+                        <i class="fa-solid fa-check me-1"></i> Salvar Contato
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

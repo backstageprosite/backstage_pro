@@ -1,120 +1,199 @@
 {% extends 'core/admin/base_admin.html' %}
 {% load admin_tags %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para Gestão de Usuários Administrativo */
+    .bp-admin-users-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-admin-users-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-admin-users-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-admin-users-page .form-control,
+    .bp-admin-users-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-admin-users-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 8px 12px;
+        text-transform: uppercase;
+    }
+    .bp-admin-users-page .table tbody td {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .bp-admin-users-page .btn-actions {
+        font-size: 13px;
+        height: 30px;
+        padding: 3px 12px;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    .bp-admin-users-page .role-pill {
+        width: 110px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-admin-users-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-admin-users-page .form-control,
+        .bp-admin-users-page .form-select {
+            font-size: 16px !important;
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-users me-2 text-primary"></i> Usuários</h4>
-    <div class="d-flex gap-2">
-        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark rounded-pill fw-bold px-3">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
-        <button type="button" class="btn fw-bold px-4 rounded-pill shadow-sm text-dark" style="background-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalCreateUser">
-            <i class="fa-solid fa-plus me-2"></i>Novo Usuário
-        </button>
+<div class="bp-admin-users-page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="page-title"><i class="fa-solid fa-users me-2 text-primary"></i>Usuários</h4>
+        <div class="d-flex gap-2">
+            <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalCreateUser">
+                <i class="fa-solid fa-plus me-1"></i> Novo Usuário
+            </button>
+        </div>
     </div>
-</div>
 
-<!-- Filtros -->
-<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
-    <div class="card-body">
-        <form method="GET" class="row g-2 align-items-end">
-            <div class="col-12 col-md-4">
-                <label class="form-label small fw-bold text-muted">Buscar (Nome, Usuário ou E-mail)</label>
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Digite para buscar..." value="{{ q }}">
-            </div>
-            <div class="col-12 col-md-3">
-                <label class="form-label small fw-bold text-muted">Filtrar por Banda</label>
-                <select name="band" class="form-select form-select-sm">
-                    <option value="">Todas as Bandas</option>
-                    <option value="none" {% if selected_band == 'none' %}selected{% endif %}>Sem Banda (Admin/Geral)</option>
-                    {% for b in bandas_list %}
-                        <option value="{{ b.id }}" {% if selected_band == b.id|stringformat:'s' %}selected{% endif %}>{{ b.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 text-end d-flex gap-2 justify-content-end">
-                <a href="{% url 'admin_painel:usuarios' %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
-                <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
-            </div>
-        </form>
+    <!-- Filtros -->
+    <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px; background-color: #f8f9fa;">
+        <div class="card-body p-3">
+            <form method="GET" class="row g-2 align-items-end">
+                <div class="col-12 col-md-5">
+                    <label class="form-label">Buscar (Nome, Usuário ou E-mail)</label>
+                    <input type="text" name="q" class="form-control" placeholder="Digite para buscar..." value="{{ q }}">
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label">Filtrar por Banda</label>
+                    <select name="band" class="form-select">
+                        <option value="">Todas as Bandas</option>
+                        <option value="none" {% if selected_band == 'none' %}selected{% endif %}>Sem Banda (Admin/Geral)</option>
+                        {% for b in bandas_list %}
+                            <option value="{{ b.id }}" {% if selected_band == b.id|stringformat:'s' %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-3 text-end d-flex gap-2 justify-content-end">
+                    <a href="{% url 'admin_painel:usuarios' %}" class="btn btn-light border px-3" style="height: 34px; font-size: 13px; display: inline-flex; align-items: center;"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
+                    <button type="submit" class="btn btn-dark px-3" style="height: 34px; font-size: 13px; display: inline-flex; align-items: center;"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
-
-<div class="card border-0 shadow-sm" style="border-radius: 12px;">
-    <div class="card-body p-0">
-        <div class="table-responsive" style="overflow: visible;">
-            <table class="table table-hover table-hover-premium align-middle mb-0">
-                <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
-                    <tr>
-                        <th class="ps-4 py-3 border-0 rounded-start">NOME DO USUÁRIO</th>
-                        <th class="py-3 border-0">Banda Vinculada</th>
-                        <th class="py-3 border-0">Perfil</th>
-                        <th class="text-end pe-4 py-3 border-0 rounded-end">AÇÕES</th>
-                    </tr>
-                </thead>
-                <tbody class="border-top-0">
-                    {% for u in usuarios %}
-                    <tr>
-                        <td class="ps-4">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-light text-primary rounded-circle d-flex justify-content-center align-items-center me-3 fw-bold" style="width: 40px; height: 40px;">
-                                    {{ u.first_name|default:u.username|make_list|first|upper }}
+    <div class="card border-0 shadow-sm mb-3" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            <div class="table-responsive" style="overflow: visible;">
+                <table class="table table-hover table-hover-premium align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Nome do Usuário</th>
+                            <th>Banda Vinculada</th>
+                            <th class="text-center">Perfil</th>
+                            <th class="text-end pe-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for u in usuarios %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light text-primary rounded-circle d-flex justify-content-center align-items-center me-2 fw-bold" style="width: 34px; height: 34px; font-size: 13px;">
+                                        {{ u.first_name|default:u.username|make_list|first|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size: 13px;">{{ u.first_name }} {{ u.last_name }}</div>
+                                        <small class="text-muted" style="font-size: 12px;">@{{ u.username }}</small>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold text-dark">{{ u.first_name }} {{ u.last_name }}</h6>
-                                    <small class="text-muted">@{{ u.username }}</small>
+                            </td>
+                            <td>
+                                {% if u.band %}
+                                    <span class="badge {{ u.band.name|band_color }} rounded-pill px-3 py-1" style="font-size: 11px;">
+                                        {{ u.band.name }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary rounded-pill" style="font-size: 11px;">Sem Banda</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if u.is_superuser %}
+                                    <span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 role-pill">
+                                        <i class="fa-solid fa-shield me-1"></i> Admin Geral
+                                    </span>
+                                {% elif u.is_produtor %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 role-pill">
+                                        <i class="fa-solid fa-crown me-1"></i> Produtor
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 role-pill">
+                                        <i class="fa-solid fa-guitar me-1"></i> Integrante
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-light border btn-actions shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false">
+                                        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 13px;">
+                                        <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditUser{{ u.id }}"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar</button></li>
+                                        <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalResetPass{{ u.id }}"><i class="fa-solid fa-key me-2 text-warning"></i> Senha</button></li>
+                                        <li><button type="button" class="dropdown-item py-2 fw-medium {% if u.is_active %}text-danger{% else %}text-success{% endif %}" data-bs-toggle="modal" data-bs-target="#modalToggleUser{{ u.id }}"><i class="fa-solid {% if u.is_active %}fa-trash{% else %}fa-rotate-left{% endif %} me-2"></i> {% if u.is_active %}Excluir{% else %}Reativar{% endif %}</button></li>
+                                    </ul>
                                 </div>
-                            </div>
-                        </td>
-                        <td>
-                            {% if u.band %}
-                                <span class="badge {{ u.band.name|band_color }} rounded-pill px-3 py-1">
-                                    {{ u.band.name }}
-                                </span>
-                            {% else %}
-                                <span class="badge bg-secondary rounded-pill">Sem Banda</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if u.is_superuser %}
-                                <span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 rounded-pill px-3 py-2" style="width: 125px; display: inline-flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-shield me-1"></i> Admin Geral
-                                </span>
-                            {% elif u.is_produtor %}
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2" style="width: 125px; display: inline-flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-crown me-1"></i> Produtor
-                                </span>
-                            {% else %}
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3 py-2" style="width: 125px; display: inline-flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-guitar me-1"></i> Integrante
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end pe-4">
-                            <div class="dropdown d-inline-block">
-                                <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" style="font-size: 0.85rem;">
-                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
-                                    <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditUser{{ u.id }}"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar</button></li>
-                                    <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalResetPass{{ u.id }}"><i class="fa-solid fa-key me-2 text-warning"></i> Senha</button></li>
-                                    <li><button type="button" class="dropdown-item py-2 fw-medium {% if u.is_active %}text-danger{% else %}text-success{% endif %}" data-bs-toggle="modal" data-bs-target="#modalToggleUser{{ u.id }}"><i class="fa-solid {% if u.is_active %}fa-trash{% else %}fa-rotate-left{% endif %} me-2"></i> {% if u.is_active %}Excluir{% else %}Reativar{% endif %}</button></li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                    
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-users-slash fa-3x mb-3 text-secondary opacity-50"></i>
-                            <h5 class="fw-bold">Nenhum usuário</h5>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </td>
+                        </tr>
+                        
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-users-slash fa-2x mb-2 text-secondary opacity-50"></i>
+                                <h6 class="fw-bold mb-1">Nenhum usuário encontrado</h6>
+                                <p class="mb-0 small">Ajuste os filtros de busca.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -122,67 +201,69 @@
 <!-- Modal Create User -->
 <div class="modal fade text-start" id="modalCreateUser" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <form method="POST" action="{% url 'admin_painel:usuarios_novo' %}">
                 {% csrf_token %}
-                <div class="modal-header bg-light border-0">
-                    <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-user-plus me-2"></i>Novo Usuário</h5>
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-user-plus me-2 text-primary"></i>Novo Usuário</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4 text-wrap" style="white-space: normal;">
-                    <div class="row g-3">
+                <div class="modal-body p-3 p-md-4 text-start">
+                    <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label class="form-label fw-bold small">Nome</label>
+                            <label class="form-label">Nome</label>
                             <input type="text" name="first_name" class="form-control" placeholder="Ex: Danniel" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-bold small">Sobrenome</label>
+                            <label class="form-label">Sobrenome</label>
                             <input type="text" name="last_name" class="form-control" placeholder="Ex: Vieira" required>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold small">Login</label>
-                            <input type="text" name="username" class="form-control" placeholder="Ex: danniel_v" required>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold small">E-mail</label>
-                            <input type="email" name="email" class="form-control" placeholder="email@exemplo.com">
-                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Login</label>
+                        <input type="text" name="username" class="form-control" placeholder="Ex: danniel_v" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-mail</label>
+                        <input type="email" name="email" class="form-control" placeholder="email@exemplo.com">
+                    </div>
+                    <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label class="form-label fw-bold small">Senha</label>
+                            <label class="form-label">Senha</label>
                             <input type="password" name="password" class="form-control" placeholder="Senha" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-bold small">Confirmar Senha</label>
+                            <label class="form-label">Confirmar Senha</label>
                             <input type="password" name="confirm_password" class="form-control" placeholder="Confirmar Senha" required>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold small">Perfil de Acesso</label>
-                            <select name="role" class="form-select" required>
-                                <option value="INTEGRANTE">Integrante</option>
-                                <option value="PRODUTOR">Produtor</option>
-                                <option value="EMPRESARIO">Empresário</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold small">Banda Vinculada</label>
-                            <select name="band" class="form-select" required>
-                                <option value="">-- Selecione uma banda --</option>
-                                {% for band in form_create.fields.band.queryset %}
-                                    <option value="{{ band.id }}">{{ band.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-12 mt-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserCreate" checked>
-                                <label class="form-check-label fw-bold small ms-2" for="isActiveUserCreate">Usuário Ativo</label>
-                            </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Perfil de Acesso</label>
+                        <select name="role" class="form-select" required>
+                            <option value="INTEGRANTE">Integrante</option>
+                            <option value="PRODUTOR">Produtor</option>
+                            <option value="EMPRESARIO">Empresário</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Banda Vinculada</label>
+                        <select name="band" class="form-select" required>
+                            <option value="">-- Selecione uma banda --</option>
+                            {% for band in form_create.fields.band.queryset %}
+                                <option value="{{ band.id }}">{{ band.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mt-2">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserCreate" checked>
+                            <label class="form-check-label fw-bold small ms-1" for="isActiveUserCreate" style="font-size: 13px;">Usuário Ativo</label>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-0 justify-content-center">
-                    <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn fw-bold px-4 rounded-pill shadow-sm btn-loading" style="background-color: #0d6efd; border-color: #0d6efd; color: #ffffff !important;">Criar Usuário</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm btn-loading" style="height: 34px; font-size: 13px;">Criar Usuário</button>
                 </div>
             </form>
         </div>
@@ -190,130 +271,129 @@
 </div>
 
 {% for u in usuarios %}
-
-                    
-                    <!-- Modal Edit User -->
-                    <div class="modal fade" id="modalEditUser{{ u.id }}" tabindex="-1" aria-labelledby="modalEditUserLabel{{ u.id }}" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-                                <div class="modal-header bg-light border-bottom-0">
-                                    <h5 class="modal-title fw-bold" id="modalEditUserLabel{{ u.id }}"><i class="fa-solid fa-pen-to-square me-2"></i>Editar Usuário</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <form method="POST" action="{% url 'admin_painel:usuarios_editar' u.id %}">
-                                    {% csrf_token %}
-                                    <div class="modal-body py-4 text-start">
-                                        <div class="row">
-                                            <div class="col-6 mb-3">
-                                                <label class="form-label fw-semibold">Nome</label>
-                                                <input type="text" name="first_name" class="form-control" value="{{ u.first_name }}" required>
-                                            </div>
-                                            <div class="col-6 mb-3">
-                                                <label class="form-label fw-semibold">Sobrenome</label>
-                                                <input type="text" name="last_name" class="form-control" value="{{ u.last_name }}" required>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Login</label>
-                                            <input type="text" name="username" class="form-control" value="{{ u.username }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">E-mail</label>
-                                            <input type="email" name="email" class="form-control" value="{{ u.email }}">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Banda Vinculada</label>
-                                            <select name="band" class="form-select">
-                                                <option value="">-- Nenhuma Banda --</option>
-                                                {% for band in form_create.fields.band.queryset %}
-                                                    <option value="{{ band.id }}" {% if u.band and u.band.id == band.id %}selected{% endif %}>{{ band.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Perfil</label>
-                                            <select name="role" class="form-select">
-                                                <option value="INTEGRANTE" {% if u.role == 'INTEGRANTE' %}selected{% endif %}>Integrante</option>
-                                                <option value="PRODUTOR" {% if u.role == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
-                                                <option value="EMPRESARIO" {% if u.role == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-check form-switch mt-4">
-                                            <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserEdit{{ u.id }}" {% if u.is_active %}checked{% endif %}>
-                                            <label class="form-check-label fw-semibold" for="isActiveUserEdit{{ u.id }}">Usuário Ativo (Pode logar)</label>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer bg-light border-top-0">
-                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Salvar Alterações</button>
-                                    </div>
-                                </form>
-                            </div>
+<!-- Modal Edit User -->
+<div class="modal fade text-start" id="modalEditUser{{ u.id }}" tabindex="-1" aria-labelledby="modalEditUserLabel{{ u.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;" id="modalEditUserLabel{{ u.id }}"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i>Editar Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'admin_painel:usuarios_editar' u.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-3 p-md-4 text-start">
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Nome</label>
+                            <input type="text" name="first_name" class="form-control" value="{{ u.first_name }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Sobrenome</label>
+                            <input type="text" name="last_name" class="form-control" value="{{ u.last_name }}" required>
                         </div>
                     </div>
-
-                    
-                    <!-- Modal Toggle Active User -->
-                    <div class="modal fade" id="modalToggleUser{{ u.id }}" tabindex="-1" aria-labelledby="modalToggleUserLabel{{ u.id }}" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-                                <div class="modal-header bg-light border-bottom-0">
-                                    <h5 class="modal-title fw-bold text-{% if u.is_active %}danger{% else %}success{% endif %}" id="modalToggleUserLabel{{ u.id }}">
-                                        <i class="fa-solid fa-triangle-exclamation me-2"></i>{% if u.is_active %}Excluir{% else %}Ativar{% endif %} Usuário
-                                    </h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body py-4 text-center">
-                                    <p class="fs-5 mb-1">Tem certeza que deseja <strong>{% if u.is_active %}excluir{% else %}ativar{% endif %}</strong> o usuário {{ u.username }}?</p>
-                                    {% if u.is_active %}
-                                        <p class="text-muted small">Esta ação removerá o acesso do usuário.<br>Ele não conseguirá mais fazer login no sistema.</p>
-                                    {% else %}
-                                        <p class="text-muted small">O login deste usuário será restaurado.</p>
-                                    {% endif %}
-                                </div>
-                                <div class="modal-footer bg-light border-top-0 justify-content-center">
-                                    <form method="POST" action="{% url 'admin_painel:usuarios_desativar' u.id %}">
-                                        {% csrf_token %}
-                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" class="btn btn-loading btn-{% if u.is_active %}danger{% else %}success{% endif %} rounded-pill px-4">
-                                            Confirmar {% if u.is_active %}Exclusão{% else %}Ativação{% endif %}
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
+                    <div class="mb-3">
+                        <label class="form-label">Login</label>
+                        <input type="text" name="username" class="form-control" value="{{ u.username }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-mail</label>
+                        <input type="email" name="email" class="form-control" value="{{ u.email }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Banda Vinculada</label>
+                        <select name="band" class="form-select">
+                            <option value="">-- Nenhuma Banda --</option>
+                            {% for band in form_create.fields.band.queryset %}
+                                <option value="{{ band.id }}" {% if u.band and u.band.id == band.id %}selected{% endif %}>{{ band.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Perfil</label>
+                        <select name="role" class="form-select">
+                            <option value="INTEGRANTE" {% if u.role == 'INTEGRANTE' %}selected{% endif %}>Integrante</option>
+                            <option value="PRODUTOR" {% if u.role == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
+                            <option value="EMPRESARIO" {% if u.role == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
+                        </select>
+                    </div>
+                    <div class="mt-2">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserEdit{{ u.id }}" {% if u.is_active %}checked{% endif %}>
+                            <label class="form-check-label fw-bold small ms-1" for="isActiveUserEdit{{ u.id }}" style="font-size: 13px;">Usuário Ativo (Pode logar)</label>
                         </div>
                     </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm btn-loading" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
+<!-- Modal Toggle Active User -->
+<div class="modal fade text-start" id="modalToggleUser{{ u.id }}" tabindex="-1" aria-labelledby="modalToggleUserLabel{{ u.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-{% if u.is_active %}danger{% else %}success{% endif %}" style="font-size: 16px;" id="modalToggleUserLabel{{ u.id }}">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>{% if u.is_active %}Excluir{% else %}Ativar{% endif %} Usuário
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 p-md-4 text-start">
+                <p class="mb-2" style="font-size: 14px;">Tem certeza que deseja <strong>{% if u.is_active %}excluir{% else %}ativar{% endif %}</strong> o usuário <strong>{{ u.username }}</strong>?</p>
+                {% if u.is_active %}
+                    <p class="text-muted small mb-0" style="font-size: 12px;">Esta ação removerá o acesso do usuário. Ele não conseguirá mais fazer login no sistema.</p>
+                {% else %}
+                    <p class="text-muted small mb-0" style="font-size: 12px;">O login deste usuário será restaurado.</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                <form method="POST" action="{% url 'admin_painel:usuarios_desativar' u.id %}" class="d-inline-flex gap-2">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-loading btn-{% if u.is_active %}danger{% else %}success{% endif %} fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">
+                        Confirmar {% if u.is_active %}Exclusão{% else %}Ativação{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
-                    <!-- Modal Reset Password -->
-                    <div class="modal fade" id="modalResetPass{{ u.id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-                                <div class="modal-header bg-warning text-dark border-bottom-0">
-                                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-key me-2"></i>Resetar Senha: {{ u.username }}</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <form method="POST" action="{% url 'admin_painel:usuarios_resetar_senha' u.id %}">
-                                    {% csrf_token %}
-                                    <div class="modal-body py-4 text-start">
-                                        <p class="text-muted small mb-4">Atenção: Ao redefinir a senha, o usuário perderá o acesso com a senha antiga. Ele precisará usar esta nova senha para o próximo login.</p>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Nova Senha</label>
-                                            <input type="password" name="new_password" class="form-control" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Confirmar Nova Senha</label>
-                                            <input type="password" name="confirm_password" class="form-control" required>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer bg-light border-top-0">
-                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" class="btn btn-warning btn-loading rounded-pill px-4 fw-bold">Salvar Senha</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+<!-- Modal Reset Password -->
+<div class="modal fade text-start" id="modalResetPass{{ u.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-key me-2 text-warning"></i>Resetar Senha: {{ u.username }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'admin_painel:usuarios_resetar_senha' u.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-3 p-md-4 text-start">
+                    <p class="text-muted small mb-3" style="font-size: 12px;">Atenção: Ao redefinir a senha, o usuário perderá o acesso com a senha antiga e precisará usar a nova senha.</p>
+                    <div class="mb-3">
+                        <label class="form-label">Nova Senha</label>
+                        <input type="password" name="new_password" class="form-control" required>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmar Nova Senha</label>
+                        <input type="password" name="confirm_password" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-warning btn-loading fw-bold rounded-pill px-3 shadow-sm text-dark" style="height: 34px; font-size: 13px;">Salvar Senha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endfor %}
 
 {% endblock %}
+

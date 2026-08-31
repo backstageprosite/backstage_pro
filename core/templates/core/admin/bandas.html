@@ -1,223 +1,320 @@
 {% extends 'core/admin/base_admin.html' %}
 
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-guitar text-primary me-2"></i> Gestão de Bandas</h4>
-    <button class="btn rounded-pill px-4 shadow-sm text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#modalCreateBand" style="background-color: #6BD443;">
-        <i class="fa-solid fa-plus me-1"></i> Nova Banda
-    </button>
-</div>
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para Bandas Administrativo */
+    .bp-admin-bands-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-admin-bands-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-admin-bands-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 8px 12px;
+        text-transform: uppercase;
+    }
+    .bp-admin-bands-page .table tbody td {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .bp-admin-bands-page .band-avatar {
+        width: 34px;
+        height: 34px;
+    }
+    .bp-admin-bands-page .btn-actions {
+        font-size: 13px;
+        height: 30px;
+        padding: 3px 12px;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    .bp-admin-bands-page .plan-pill {
+        width: 95px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .bp-admin-bands-page .status-pill {
+        width: 88px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .bp-admin-bands-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-admin-bands-page .form-control,
+    .bp-admin-bands-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
 
-<div class="card border-0 shadow-sm" style="border-radius: 12px;">
-    <div class="card-body p-0">
-        <div class="table-responsive" style="overflow: visible;">
-            <table class="table table-hover table-hover-premium align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-4 border-0 rounded-start">Logo</th>
-                        <th class="border-0">Banda</th>
-                        <th class="border-0">Slug</th>
-                        <th class="border-0">Status</th>
-                        <th class="border-0">Plano</th>
-                        <th class="text-end pe-4 border-0 rounded-end">Ações</th>
-                    </tr>
-                </thead>
-                <tbody class="border-top-0">
-                    {% for b in bandas %}
-                    <tr>
-                        <td class="ps-4">
-                            {% if b.logo %}
-                                <img src="{% url 'admin_band_logo' b.slug %}" alt="{{ b.name }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
-                            {% else %}
-                                <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                    <i class="fa-solid fa-guitar"></i>
-                                </div>
-                            {% endif %}
-                        </td>
-                        <td class="fw-bold">{{ b.name }}</td>
-                        <td class="text-muted">{{ b.slug }}</td>
-                        <td>
-                            {% if b.plan_type == 'AVANCADO' %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-star me-1"></i> Avançado
-                                </span>
-                            {% else %}
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-cube me-1"></i> Básico
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if b.is_active %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-circle-check me-1"></i> Ativa
-                                </span>
-                            {% else %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-ban me-1"></i> Suspensa
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end pe-4">
-                            <!-- Actions Dropdown (Universal) -->
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" style="font-size: 0.85rem;">
-                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
-                                    {% if b.slug %}<li><a href="{% url 'calendario' b.slug %}" target="_blank" class="dropdown-item py-2 fw-medium"><i class="fa-solid fa-gauge-high text-dark me-2"></i> Painel</a></li>{% endif %}
-                                    <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditBand{{ b.id }}"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar</button></li>
-                                    <li>
-                                        <button type="button" class="dropdown-item py-2 fw-medium {% if b.is_active %}text-danger{% else %}text-success{% endif %}" data-bs-toggle="modal" data-bs-target="#modalToggleBand{{ b.id }}">
-                                            {% if b.is_active %}
-                                                <i class="fa-solid fa-trash me-2"></i> Excluir
-                                            {% else %}
-                                                <i class="fa-solid fa-rotate-left me-2"></i> Ativar
-                                            {% endif %}
-                                        </button>
-                                    </li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                    
-                    <!-- Modal Edit Band -->
-                    <div class="modal fade" id="modalEditBand{{ b.id }}" tabindex="-1" aria-labelledby="modalEditBandLabel{{ b.id }}" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-                                <div class="modal-header bg-light border-bottom-0">
-                                    <h5 class="modal-title fw-bold" id="modalEditBandLabel{{ b.id }}"><i class="fa-solid fa-pen-to-square me-2"></i>Editar Banda</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <form method="POST" action="{% url 'admin_painel:bandas_editar' b.id %}" enctype="multipart/form-data">
-                                    {% csrf_token %}
-                                    <div class="modal-body py-4">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Nome da Banda</label>
-                                            <input type="text" name="name" class="form-control" value="{{ b.name }}" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Slug (URL)</label>
-                                            <input type="text" name="slug" class="form-control" value="{{ b.slug }}" required>
-                                            <small class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Cuidado: Alterar o slug quebra os links antigos da banda.</small>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Logo</label>
-                                            <input type="file" name="logo" class="form-control" accept="image/*">
-                                            {% if b.logo %}
-                                                <small class="text-muted d-block mt-1">Logo atual: {{ b.logo.name }}</small>
-                                            {% endif %}
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Plano da banda</label>
-                                            <select name="plan_type" class="form-select" required>
-                                                <option value="BASICO" {% if b.plan_type == 'BASICO' %}selected{% endif %}>Básico</option>
-                                                <option value="AVANCADO" {% if b.plan_type == 'AVANCADO' %}selected{% endif %}>Avançado</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-check form-switch mt-4">
-                                            <input class="form-check-input" type="checkbox" name="is_active" id="isActiveEdit{{ b.id }}" {% if b.is_active %}checked{% endif %}>
-                                            <label class="form-check-label fw-semibold" for="isActiveEdit{{ b.id }}">Acesso Liberado</label>
-                                        </div>
+    @media (max-width: 767.98px) {
+        .bp-admin-bands-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-admin-bands-page .form-control,
+        .bp-admin-bands-page .form-select {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bp-admin-bands-page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="page-title"><i class="fa-solid fa-guitar text-primary me-2"></i>Gestão de Bandas</h4>
+        <button class="btn btn-header-action shadow-sm text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#modalCreateBand" style="background-color: #6BD443; border-color: #6BD443;">
+            <i class="fa-solid fa-plus me-1"></i> Nova Banda
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            <div class="table-responsive" style="overflow: visible;">
+                <table class="table table-hover table-hover-premium align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4 border-0 rounded-start">Logo</th>
+                            <th class="border-0">Banda</th>
+                            <th class="border-0">Slug</th>
+                            <th class="border-0">Plano</th>
+                            <th class="border-0">Status</th>
+                            <th class="text-end pe-4 border-0 rounded-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for b in bandas %}
+                        <tr>
+                            <td class="ps-4">
+                                {% if b.logo %}
+                                    <img src="{% url 'admin_band_logo' b.slug %}" alt="{{ b.name }}" class="rounded-circle band-avatar" style="object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center band-avatar">
+                                        <i class="fa-solid fa-guitar" style="font-size: 13px;"></i>
                                     </div>
-                                    <div class="modal-footer bg-light border-top-0">
-                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" class="bp-btn bp-btn-confirm">Salvar Alterações</button>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold text-dark" style="font-size: 13px;">{{ b.name }}</td>
+                            <td class="text-muted" style="font-size: 13px;">{{ b.slug }}</td>
+                            <td>
+                                {% if b.plan_type == 'AVANCADO' %}
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 plan-pill">
+                                        <i class="fa-solid fa-star me-1"></i> Avançado
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 plan-pill">
+                                        <i class="fa-solid fa-cube me-1"></i> Básico
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if b.is_active %}
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 status-pill">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Ativa
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 status-pill">
+                                        <i class="fa-solid fa-ban me-1"></i> Suspensa
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <!-- Actions Dropdown -->
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light border btn-actions shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false">
+                                        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 13px;">
+                                        {% if b.slug %}<li><a href="{% url 'calendario' b.slug %}" target="_blank" class="dropdown-item py-2 fw-medium"><i class="fa-solid fa-gauge-high text-dark me-2"></i> Painel</a></li>{% endif %}
+                                        <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditBand{{ b.id }}"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar</button></li>
+                                        <li>
+                                            <button type="button" class="dropdown-item py-2 fw-medium {% if b.is_active %}text-danger{% else %}text-success{% endif %}" data-bs-toggle="modal" data-bs-target="#modalToggleBand{{ b.id }}">
+                                                {% if b.is_active %}
+                                                    <i class="fa-solid fa-ban me-2"></i> Desativar
+                                                {% else %}
+                                                    <i class="fa-solid fa-rotate-left me-2"></i> Ativar
+                                                {% endif %}
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Modal Edit Band -->
+                        <div class="modal fade text-start" id="modalEditBand{{ b.id }}" tabindex="-1" aria-labelledby="modalEditBandLabel{{ b.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold text-dark" id="modalEditBandLabel{{ b.id }}" style="font-size: 16px;"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i>Editar Banda</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Modal Toggle Active Band -->
-                    <div class="modal fade" id="modalToggleBand{{ b.id }}" tabindex="-1" aria-labelledby="modalToggleBandLabel{{ b.id }}" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-                                <div class="modal-header bg-light border-bottom-0">
-                                    <h5 class="modal-title fw-bold text-{% if b.is_active %}danger{% else %}success{% endif %}" id="modalToggleBandLabel{{ b.id }}">
-                                        <i class="fa-solid fa-triangle-exclamation me-2"></i>{% if b.is_active %}Desativar{% else %}Ativar{% endif %} Banda
-                                    </h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body py-4 text-center">
-                                    <p class="fs-5 mb-1">Tem certeza que deseja <strong>{% if b.is_active %}desativar{% else %}ativar{% endif %}</strong> a banda {{ b.name }}?</p>
-                                    {% if b.is_active %}
-                                        <p class="text-muted small">Os produtores e integrantes não conseguirão mais acessar o painel desta banda. Nenhum dado será excluído.</p>
-                                    {% else %}
-                                        <p class="text-muted small">O acesso ao painel será restaurado.</p>
-                                    {% endif %}
-                                </div>
-                                <div class="modal-footer bg-light border-top-0 justify-content-center">
-                                    <form method="POST" action="{% url 'admin_painel:bandas_desativar' b.id %}">
+                                    <form method="POST" action="{% url 'admin_painel:bandas_editar' b.id %}" enctype="multipart/form-data">
                                         {% csrf_token %}
-                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4 me-2" data-bs-dismiss="modal">Cancelar</button>
-                                        <button type="submit" class="btn btn-loading btn-{% if b.is_active %}danger{% else %}success{% endif %} rounded-pill px-4">
-                                            Confirmar {% if b.is_active %}Desativação{% else %}Ativação{% endif %}
-                                        </button>
+                                        <div class="modal-body p-3 p-md-4">
+                                            <div class="mb-3">
+                                                <label class="form-label">Nome da Banda</label>
+                                                <input type="text" name="name" class="form-control" value="{{ b.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Slug (URL)</label>
+                                                <input type="text" name="slug" class="form-control" value="{{ b.slug }}" required>
+                                                <small class="text-danger d-block mt-1" style="font-size: 12px;"><i class="fa-solid fa-triangle-exclamation"></i> Cuidado: Alterar o slug quebra os links antigos da banda.</small>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Logo</label>
+                                                <input type="file" name="logo" class="form-control" accept="image/*">
+                                                {% if b.logo %}
+                                                    <small class="text-muted d-block mt-1" style="font-size: 12px;">Logo atual: {{ b.logo.name }}</small>
+                                                {% endif %}
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Plano da banda</label>
+                                                <select name="plan_type" class="form-select" required>
+                                                    <option value="BASICO" {% if b.plan_type == 'BASICO' %}selected{% endif %}>Básico</option>
+                                                    <option value="AVANCADO" {% if b.plan_type == 'AVANCADO' %}selected{% endif %}>Avançado</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-check form-switch mt-3">
+                                                <input class="form-check-input" type="checkbox" name="is_active" id="isActiveEdit{{ b.id }}" {% if b.is_active %}checked{% endif %}>
+                                                <label class="form-check-label fw-bold small ms-2" for="isActiveEdit{{ b.id }}" style="font-size: 13px;">Acesso Liberado</label>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                                            <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
+                                        </div>
                                     </form>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        
+                        <!-- Modal Toggle Active Band -->
+                        <div class="modal fade text-start" id="modalToggleBand{{ b.id }}" tabindex="-1" aria-labelledby="modalToggleBandLabel{{ b.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold text-{% if b.is_active %}danger{% else %}success{% endif %}" id="modalToggleBandLabel{{ b.id }}" style="font-size: 16px;">
+                                            <i class="fa-solid fa-triangle-exclamation me-2"></i>{% if b.is_active %}Desativar{% else %}Ativar{% endif %} Banda
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-3 p-md-4 text-center">
+                                        <p class="mb-2" style="font-size: 14px;">Tem certeza que deseja <strong>{% if b.is_active %}desativar{% else %}ativar{% endif %}</strong> a banda {{ b.name }}?</p>
+                                        {% if b.is_active %}
+                                            <p class="text-muted small mb-0" style="font-size: 12px;">Os produtores e integrantes não conseguirão mais acessar o painel desta banda. Nenhum dado será excluído.</p>
+                                        {% else %}
+                                            <p class="text-muted small mb-0" style="font-size: 12px;">O acesso ao painel será restaurado.</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer border-top-0 pt-0 justify-content-center gap-2">
+                                        <form method="POST" action="{% url 'admin_painel:bandas_desativar' b.id %}" class="d-flex gap-2">
+                                            {% csrf_token %}
+                                            <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                                            <button type="submit" class="btn btn-{% if b.is_active %}danger{% else %}success{% endif %} fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">
+                                                Confirmar {% if b.is_active %}Desativação{% else %}Ativação{% endif %}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-guitar fa-3x mb-3 text-secondary opacity-50"></i>
-                            <h5 class="fw-bold">Nenhuma banda cadastrada</h5>
-                            <p>As bandas aparecerão aqui.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-guitar fa-2x mb-2 text-secondary opacity-50"></i>
+                                <h6 class="fw-bold mb-1">Nenhuma banda cadastrada</h6>
+                                <p class="mb-0 small">As bandas cadastradas aparecerão aqui.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Modal Create Band -->
-<div class="modal fade" id="modalCreateBand" tabindex="-1" aria-labelledby="modalCreateBandLabel" aria-hidden="true">
+<div class="modal fade text-start" id="modalCreateBand" tabindex="-1" aria-labelledby="modalCreateBandLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-            <div class="modal-header bg-light border-bottom-0">
-                <h5 class="modal-title fw-bold" id="modalCreateBandLabel"><i class="fa-solid fa-plus me-2"></i>Nova Banda</h5>
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="modalCreateBandLabel" style="font-size: 16px;"><i class="fa-solid fa-plus me-2 text-primary"></i>Nova Banda</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="{% url 'admin_painel:bandas_nova' %}" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="modal-body py-4">
+                <div class="modal-body p-3 p-md-4">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Nome da Banda</label>
-                        <input type="text" name="name" class="form-control" required placeholder="Ex: Banda X">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome da Banda</label>
+                        <input type="text" name="name" class="form-control" required placeholder="Ex: Banda X" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Slug (URL)</label>
-                        <input type="text" name="slug" class="form-control" required placeholder="ex: banda-x">
-                        <small class="text-muted">A url ficará: meudominio.com/banda-x/</small>
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Slug (URL)</label>
+                        <input type="text" name="slug" class="form-control" required placeholder="ex: banda-x" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        <small class="text-muted d-block mt-1" style="font-size: 12px;">A url ficará: meudominio.com/banda-x/</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Logo (Opcional)</label>
-                        <input type="file" name="logo" class="form-control" accept="image/*">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Logo (Opcional)</label>
+                        <input type="file" name="logo" class="form-control" accept="image/*" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Plano da banda</label>
-                        <select name="plan_type" class="form-select" required>
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Plano da banda</label>
+                        <select name="plan_type" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                             <option value="" selected disabled>Selecione um plano</option>
                             <option value="BASICO">Básico</option>
                             <option value="AVANCADO">Avançado</option>
                         </select>
                     </div>
-                    <div class="form-check form-switch mt-4">
+                    <div class="form-check form-switch mt-3">
                         <input class="form-check-input" type="checkbox" name="is_active" id="isActiveCreate" checked>
-                        <label class="form-check-label fw-semibold" for="isActiveCreate">Acesso Liberado</label>
+                        <label class="form-check-label fw-bold small ms-2" for="isActiveCreate" style="font-size: 13px;">Acesso Liberado</label>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top-0">
-                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary btn-loading rounded-pill px-4">Cadastrar Banda</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Cadastrar Banda</button>
                 </div>
             </form>
         </div>
     </div>
+</div>
 </div>
 {% endblock %}

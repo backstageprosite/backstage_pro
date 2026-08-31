@@ -1,162 +1,240 @@
 {% extends 'core/admin/base_admin.html' %}
 {% load static %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para Gestão de Logos e Planos do Site */
+    .bp-admin-site-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-admin-site-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-admin-site-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-admin-site-page .form-control,
+    .bp-admin-site-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-admin-site-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 8px 12px;
+        text-transform: uppercase;
+    }
+    .bp-admin-site-page .table tbody td {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .bp-admin-site-page .status-pill {
+        width: 100px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .bp-admin-site-page .btn-actions {
+        font-size: 13px;
+        height: 30px;
+        padding: 3px 12px;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-admin-site-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-admin-site-page .form-control,
+        .bp-admin-site-page .form-select {
+            font-size: 16px !important;
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-    <div>
-        <h4 class="fw-bold m-0"><i class="fa-solid fa-globe text-primary me-2"></i> Site</h4>
+<div class="bp-admin-site-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+        <div>
+            <h4 class="page-title"><i class="fa-solid fa-globe text-primary me-2"></i>Site</h4>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #ffc107; border-color: #ffc107;" data-bs-toggle="modal" data-bs-target="#modalPlansPricing">
+                <i class="fa-solid fa-tags me-1 text-dark"></i> Planos
+            </button>
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#addLogoModal">
+                <i class="fa-solid fa-plus me-1"></i> Adicionar Logo
+            </button>
+        </div>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark rounded-pill fw-bold px-3">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
-        <button type="button" class="btn fw-bold px-4 rounded-pill shadow-sm text-dark" style="background-color: #ffc107; border-color: #ffc107;" data-bs-toggle="modal" data-bs-target="#modalPlansPricing">
-            <i class="fa-solid fa-tags me-1 text-dark"></i> Planos
-        </button>
-        <button type="button" class="btn fw-bold px-4 rounded-pill shadow-sm text-dark" style="background-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#addLogoModal">
-            <i class="fa-solid fa-plus me-1"></i> Adicionar Logo
-        </button>
-    </div>
-</div>
 
-
-<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
-    <div class="card-body p-0">
-        <div class="table-responsive" style="overflow: visible;">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-4 border-0 py-3" style="width: 140px;">Prévia</th>
-                        <th class="border-0 py-3">Banda ou artista</th>
-                        <th class="border-0 py-3 text-center">Data de cadastro</th>
-                        <th class="border-0 py-3 text-center">Status</th>
-                        <th class="pe-4 border-0 py-3 text-end">Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="sortable-logos">
-                    {% for logo in logos %}
-                        <tr class="align-middle border-bottom" data-id="{{ logo.pk }}">
-                            <td class="ps-4 py-2">
-                                <div style="width: 90px; height: 38px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 2px; overflow: hidden;">
-                                    <img src="{% url 'landing_logo_image' logo.pk %}" alt="{{ logo.name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                                </div>
-                            </td>
-                            <td class="py-3 fw-semibold text-dark">
-                                <i class="fa-solid fa-grip-vertical text-muted me-3" style="cursor: grab;"></i>
-                                {{ logo.name }}
-                            </td>
-                            <td class="py-3 text-center text-muted small">{{ logo.created_at|date:"d/m/Y H:i" }}</td>
-                            <td class="py-3 text-center">
-                                {% if logo.is_active %}
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2" style="width: 110px; display: inline-flex; align-items: center; justify-content: center;">
-                                        <i class="fa-solid fa-circle-check me-1"></i> Ativo
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2" style="width: 110px; display: inline-flex; align-items: center; justify-content: center;">
-                                        <i class="fa-solid fa-ban me-1"></i> Desativado
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td class="pe-4 py-3 text-end">
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false" style="font-size: 0.85rem;">
-                                        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px; font-size: 0.9rem; background-color: #ffffff; z-index: 1055;">
-                                        <li>
-                                            <button type="button" class="dropdown-item py-2 fw-medium text-dark" data-bs-toggle="modal" data-bs-target="#editLogoModal{{ logo.pk }}">
-                                                <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <form method="post" action="{% url 'admin_painel:site_logos_toggle_active' logo.pk %}" class="d-inline">
-                                                {% csrf_token %}
-                                                <button type="submit" class="dropdown-item py-2 fw-medium {% if logo.is_active %}text-warning{% else %}text-success{% endif %}">
-                                                    <i class="fa-solid {% if logo.is_active %}fa-eye-slash text-warning{% else %}fa-eye text-success{% endif %} me-2"></i> 
-                                                    {% if logo.is_active %}Desativar{% else %}Ativar{% endif %}
-                                                </button>
-                                            </form>
-                                        </li>
-                                        <li>
-                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:site_logos_delete' logo.pk %}" data-item-type="a logomarca de" data-item-name="{{ logo.name }}">
-                                                <i class="fa-solid fa-trash me-2 text-danger"></i> Excluir
-                                            </button>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </td>
+    <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            <div class="table-responsive" style="overflow: visible;">
+                <table class="table table-hover align-middle mb-0 table-hover-premium">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width: 120px;">Prévia</th>
+                            <th>Banda ou Artista</th>
+                            <th class="text-center">Data de Cadastro</th>
+                            <th class="text-center">Status</th>
+                            <th class="pe-4 text-end">Ações</th>
                         </tr>
-
-                        <!-- Modal de Edição -->
-                        <div class="modal fade" id="editLogoModal{{ logo.pk }}" tabindex="-1" aria-labelledby="editLogoModalLabel{{ logo.pk }}" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content" style="border-radius: 12px; border: none;">
-                                    <div class="modal-header border-bottom-0 pb-0">
-                                        <h5 class="modal-title fw-bold text-dark" id="editLogoModalLabel{{ logo.pk }}">Editar Logomarca</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </thead>
+                    <tbody id="sortable-logos">
+                        {% for logo in logos %}
+                            <tr class="align-middle border-bottom" data-id="{{ logo.pk }}">
+                                <td class="ps-4 py-2">
+                                    <div style="width: 80px; height: 34px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 2px; overflow: hidden;">
+                                        <img src="{% url 'landing_logo_image' logo.pk %}" alt="{{ logo.name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                     </div>
-                                    <form method="post" enctype="multipart/form-data" action="{% url 'admin_painel:site_logos_edit' logo.pk %}">
-                                        {% csrf_token %}
-                                        <div class="modal-body pt-3 pb-2 text-start">
-                                            <div class="mb-3">
-                                                <label for="id_name_{{ logo.pk }}" class="form-label fw-semibold text-dark small">Nome da banda ou artista</label>
-                                                <input type="text" name="name" id="id_name_{{ logo.pk }}" class="form-control" value="{{ logo.name }}">
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label for="id_image_{{ logo.pk }}" class="form-label fw-semibold text-dark small">Logomarca (opcional)</label>
-                                                <input type="file" name="image" id="id_image_{{ logo.pk }}" class="form-control" accept=".png,.jpg,.jpeg,.webp">
-                                                <div class="form-text mt-2 small">
-                                                    Deixe em branco para manter a imagem atual.<br>
-                                                    <strong>Dimensão obrigatória:</strong> 1548 × 529 px.<br>
-                                                    <strong>Tamanho máximo:</strong> 5 MB.
+                                </td>
+                                <td class="fw-semibold text-dark" style="font-size: 13px;">
+                                    <i class="fa-solid fa-grip-vertical text-muted me-2" style="cursor: grab; font-size: 12px;"></i>
+                                    {{ logo.name }}
+                                </td>
+                                <td class="text-center text-muted" style="font-size: 12px;">{{ logo.created_at|date:"d/m/Y H:i" }}</td>
+                                <td class="text-center">
+                                    {% if logo.is_active %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 status-pill">
+                                            <i class="fa-solid fa-circle-check me-1"></i> Ativo
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 status-pill">
+                                            <i class="fa-solid fa-ban me-1"></i> Desativado
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-light border btn-actions shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false">
+                                            <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 13px; background-color: #ffffff; z-index: 1055;">
+                                            <li>
+                                                <button type="button" class="dropdown-item py-2 fw-medium text-dark" data-bs-toggle="modal" data-bs-target="#editLogoModal{{ logo.pk }}">
+                                                    <i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <form method="post" action="{% url 'admin_painel:site_logos_toggle_active' logo.pk %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="dropdown-item py-2 fw-medium {% if logo.is_active %}text-warning{% else %}text-success{% endif %}">
+                                                        <i class="fa-solid {% if logo.is_active %}fa-eye-slash text-warning{% else %}fa-eye text-success{% endif %} me-2"></i> 
+                                                        {% if logo.is_active %}Desativar{% else %}Ativar{% endif %}
+                                                    </button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:site_logos_delete' logo.pk %}" data-item-type="a logomarca de" data-item-name="{{ logo.name }}">
+                                                    <i class="fa-solid fa-trash me-2 text-danger"></i> Excluir
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Modal de Edição -->
+                            <div class="modal fade text-start" id="editLogoModal{{ logo.pk }}" tabindex="-1" aria-labelledby="editLogoModalLabel{{ logo.pk }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+                                        <div class="modal-header border-bottom-0 pb-0">
+                                            <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;" id="editLogoModalLabel{{ logo.pk }}"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i>Editar Logomarca</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form method="post" enctype="multipart/form-data" action="{% url 'admin_painel:site_logos_edit' logo.pk %}">
+                                            {% csrf_token %}
+                                            <div class="modal-body p-3 p-md-4 text-start">
+                                                <div class="mb-3">
+                                                    <label for="id_name_{{ logo.pk }}" class="form-label">Nome da banda ou artista</label>
+                                                    <input type="text" name="name" id="id_name_{{ logo.pk }}" class="form-control" value="{{ logo.name }}">
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label for="id_image_{{ logo.pk }}" class="form-label">Logomarca (opcional)</label>
+                                                    <input type="file" name="image" id="id_image_{{ logo.pk }}" class="form-control" accept=".png,.jpg,.jpeg,.webp">
+                                                    <div class="form-text mt-1 text-muted" style="font-size: 12px;">
+                                                        Deixe em branco para manter a imagem atual.<br>
+                                                        <strong>Dimensão:</strong> 1548 × 529 px. Máx 5MB.
+                                                    </div>
+                                                </div>
+
+                                                <div class="mt-2">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active_{{ logo.pk }}" {% if logo.is_active %}checked{% endif %}>
+                                                        <label class="form-check-label fw-bold small ms-1" for="id_is_active_{{ logo.pk }}" style="font-size: 13px;">Ativar visualização na landing page</label>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            
-                                            
-
-                                            <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active_{{ logo.pk }}" {% if logo.is_active %}checked{% endif %}>
-                                                <label class="form-check-label fw-semibold text-dark small" for="id_is_active_{{ logo.pk }}">Ativar visualização na landing page</label>
+                                            <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                                                <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                                                <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Salvar alterações</button>
                                             </div>
-                                        </div>
-                                        <div class="modal-footer border-top-0 pt-2">
-                                            <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                                            <button type="submit" class="btn btn-primary fw-medium shadow-sm" style="border-radius: 8px;">Salvar alterações</button>
-                                        </div>
-                                    </form>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
-                                <div class="mb-3" style="font-size: 2.5rem; opacity: 0.3;">
-                                    <i class="fa-solid fa-image"></i>
-                                </div>
-                                <p class="mb-0">Nenhuma logomarca cadastrada ainda.</p>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <div class="mb-2 opacity-50" style="font-size: 2rem;">
+                                        <i class="fa-solid fa-image"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-1">Nenhuma logomarca cadastrada</h6>
+                                    <p class="small mb-0">Clique em "+ Adicionar Logo" para começar.</p>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Modal Adicionar Logo -->
-<div class="modal fade {% if open_modal %}show{% endif %}" id="addLogoModal" tabindex="-1" aria-labelledby="addLogoModalLabel" aria-hidden="true" {% if open_modal %}style="display: block;"{% endif %}>
+<div class="modal fade text-start {% if open_modal %}show{% endif %}" id="addLogoModal" tabindex="-1" aria-labelledby="addLogoModalLabel" aria-hidden="true" {% if open_modal %}style="display: block;"{% endif %}>
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 12px; border: none;">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" id="addLogoModalLabel">Nova Logomarca</h5>
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;" id="addLogoModalLabel"><i class="fa-solid fa-plus me-2 text-success"></i>Nova Logomarca</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" {% if open_modal %}onclick="window.location.href='{% url 'admin_painel:site_logos' %}'"{% endif %}></button>
             </div>
             <form method="post" enctype="multipart/form-data" action="{% url 'admin_painel:site_logos' %}">
                 {% csrf_token %}
-                <div class="modal-body pt-3 pb-2 text-start">
+                <div class="modal-body p-3 p-md-4 text-start">
                     <div class="mb-3">
-                        <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold text-dark small">Nome da banda ou artista</label>
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Nome da banda ou artista</label>
                         <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}" class="form-control {% if form.name.errors %}is-invalid{% endif %}" value="{{ form.name.value|default_if_none:'' }}">
                         {% if form.name.errors %}
                             <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
@@ -164,21 +242,19 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="{{ form.image.id_for_label }}" class="form-label fw-semibold text-dark small">Logomarca</label>
+                        <label for="{{ form.image.id_for_label }}" class="form-label">Logomarca</label>
                         <input type="file" name="{{ form.image.name }}" id="{{ form.image.id_for_label }}" class="form-control {% if form.image.errors %}is-invalid{% endif %}" accept=".png,.jpg,.jpeg,.webp">
                         {% if form.image.errors %}
                             <div class="invalid-feedback">{{ form.image.errors.0 }}</div>
                         {% endif %}
-                        <div class="form-text mt-2 small">
-                            <strong>Dimensão obrigatória:</strong> 1548 × 529 px.<br>
-                            <strong>Formatos permitidos:</strong> PNG, JPG, JPEG ou WebP.<br>
-                            <strong>Tamanho máximo:</strong> 5 MB.
+                        <div class="form-text mt-1 text-muted" style="font-size: 12px;">
+                            <strong>Dimensão:</strong> 1548 × 529 px (PNG, JPG, WebP). Máx 5MB.
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-2">
-                    <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;" {% if open_modal %}onclick="window.location.href='{% url 'admin_painel:site_logos' %}'"{% endif %}>Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;">Salvar logo</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;" {% if open_modal %}onclick="window.location.href='{% url 'admin_painel:site_logos' %}'"{% endif %}>Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-3 shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443; height: 34px; font-size: 13px;">Salvar logo</button>
                 </div>
             </form>
         </div>
@@ -186,55 +262,55 @@
 </div>
 
 <!-- Modal Valores dos Planos -->
-<div class="modal fade" id="modalPlansPricing" tabindex="-1" aria-labelledby="modalPlansPricingLabel" aria-hidden="true">
+<div class="modal fade text-start" id="modalPlansPricing" tabindex="-1" aria-labelledby="modalPlansPricingLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 12px; border: none;">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" id="modalPlansPricingLabel"><i class="fa-solid fa-tags me-2 text-warning"></i>Valores dos Planos</h5>
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;" id="modalPlansPricingLabel"><i class="fa-solid fa-tags me-2 text-warning"></i>Valores dos Planos</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" action="{% url 'admin_painel:site_plans_update' %}">
                 {% csrf_token %}
-                <div class="modal-body pt-3 pb-2 text-start">
+                <div class="modal-body p-3 p-md-4 text-start">
                     <!-- Plano Básico -->
                     <div class="p-3 mb-3 bg-light rounded-3 border">
-                        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-layer-group me-2 text-secondary"></i>Plano Básico</h6>
+                        <h6 class="fw-bold text-dark mb-2" style="font-size: 14px;"><i class="fa-solid fa-layer-group me-2 text-secondary"></i>Plano Básico</h6>
                         <div class="row g-2">
                             <div class="col-6">
-                                <label for="{{ form_plans.plan_basic_monthly.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Mensal (R$)</label>
-                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_basic_monthly.name }}" id="{{ form_plans.plan_basic_monthly.id_for_label }}" class="form-control form-control-sm js-plan-input" value="{{ form_plans.plan_basic_monthly.value|stringformat:'.2f'|default:'19.90' }}" required>
+                                <label for="{{ form_plans.plan_basic_monthly.id_for_label }}" class="form-label">Mensal (R$)</label>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_basic_monthly.name }}" id="{{ form_plans.plan_basic_monthly.id_for_label }}" class="form-control js-plan-input" value="{{ form_plans.plan_basic_monthly.value|stringformat:'.2f'|default:'19.90' }}" required>
                             </div>
                             <div class="col-6">
-                                <label for="{{ form_plans.plan_basic_annual.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Anual (R$)</label>
-                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_basic_annual.name }}" id="{{ form_plans.plan_basic_annual.id_for_label }}" class="form-control form-control-sm js-plan-input" value="{{ form_plans.plan_basic_annual.value|stringformat:'.2f'|default:'199.90' }}" required>
+                                <label for="{{ form_plans.plan_basic_annual.id_for_label }}" class="form-label">Anual (R$)</label>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_basic_annual.name }}" id="{{ form_plans.plan_basic_annual.id_for_label }}" class="form-control js-plan-input" value="{{ form_plans.plan_basic_annual.value|stringformat:'.2f'|default:'199.90' }}" required>
                             </div>
                         </div>
-                        <div class="mt-2 pt-1">
-                            <p class="text-success small fw-bold mb-0" id="preview-basic-calc"></p>
+                        <div class="mt-2">
+                            <p class="text-success fw-bold mb-0" style="font-size: 12px;" id="preview-basic-calc"></p>
                         </div>
                     </div>
 
                     <!-- Plano Avançado -->
                     <div class="p-3 mb-2 bg-light rounded-3 border">
-                        <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-crown me-2 text-success"></i>Plano Avançado</h6>
+                        <h6 class="fw-bold text-dark mb-2" style="font-size: 14px;"><i class="fa-solid fa-crown me-2 text-success"></i>Plano Avançado</h6>
                         <div class="row g-2">
                             <div class="col-6">
-                                <label for="{{ form_plans.plan_advanced_monthly.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Mensal (R$)</label>
-                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_advanced_monthly.name }}" id="{{ form_plans.plan_advanced_monthly.id_for_label }}" class="form-control form-control-sm js-plan-input" value="{{ form_plans.plan_advanced_monthly.value|stringformat:'.2f'|default:'49.90' }}" required>
+                                <label for="{{ form_plans.plan_advanced_monthly.id_for_label }}" class="form-label">Mensal (R$)</label>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_advanced_monthly.name }}" id="{{ form_plans.plan_advanced_monthly.id_for_label }}" class="form-control js-plan-input" value="{{ form_plans.plan_advanced_monthly.value|stringformat:'.2f'|default:'49.90' }}" required>
                             </div>
                             <div class="col-6">
-                                <label for="{{ form_plans.plan_advanced_annual.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Anual (R$)</label>
-                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_advanced_annual.name }}" id="{{ form_plans.plan_advanced_annual.id_for_label }}" class="form-control form-control-sm js-plan-input" value="{{ form_plans.plan_advanced_annual.value|stringformat:'.2f'|default:'499.90' }}" required>
+                                <label for="{{ form_plans.plan_advanced_annual.id_for_label }}" class="form-label">Anual (R$)</label>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_advanced_annual.name }}" id="{{ form_plans.plan_advanced_annual.id_for_label }}" class="form-control js-plan-input" value="{{ form_plans.plan_advanced_annual.value|stringformat:'.2f'|default:'499.90' }}" required>
                             </div>
                         </div>
-                        <div class="mt-2 pt-1">
-                            <p class="text-success small fw-bold mb-0" id="preview-advanced-calc"></p>
+                        <div class="mt-2">
+                            <p class="text-success fw-bold mb-0" style="font-size: 12px;" id="preview-advanced-calc"></p>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-2">
-                    <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-medium shadow-sm" style="border-radius: 8px;">Salvar alterações</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Salvar alterações</button>
                 </div>
             </form>
         </div>

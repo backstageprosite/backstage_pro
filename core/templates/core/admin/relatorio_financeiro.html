@@ -1,435 +1,541 @@
 {% extends 'core/admin/base_admin.html' %}
 {% load admin_tags %}
 
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold m-0"><i class="fa-solid fa-chart-line text-primary me-2"></i> Relatório Financeiro</h4>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark rounded-pill fw-bold px-3">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
-        <button type="button" class="btn fw-bold px-4 rounded-pill shadow-sm" style="background-color: #dc3545; color: white;" data-bs-toggle="modal" data-bs-target="#modalNovaDespesaAdmin">
-            <i class="fa-solid fa-money-bill-transfer me-1"></i> Despesa
-        </button>
-    </div>
-</div>
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para Relatório Financeiro Administrativo */
+    .bp-admin-fin-report .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-admin-fin-report .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-admin-fin-report .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-admin-fin-report .form-control,
+    .bp-admin-fin-report .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-admin-fin-report .kpi-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-bottom: 4px;
+    }
+    .bp-admin-fin-report .kpi-value {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin: 0;
+    }
+    .bp-admin-fin-report .section-subtitle {
+        font-size: 16px;
+        font-weight: 700;
+    }
+    .bp-admin-fin-report .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 8px 12px;
+        text-transform: uppercase;
+    }
+    .bp-admin-fin-report .table tbody td {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .bp-admin-fin-report .btn-actions {
+        font-size: 13px;
+        height: 30px;
+        padding: 3px 12px;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    .bp-admin-fin-report .status-pill {
+        width: 88px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
 
-<!-- Modal Nova Despesa Admin -->
-<div class="modal fade" id="modalNovaDespesaAdmin" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content" style="border-radius: 12px; border: none;">
-      <div class="modal-header bg-light border-bottom-0">
-        <h5 class="modal-title fw-bold"><i class="fa-solid fa-money-bill-transfer me-2 text-danger"></i>Nova Despesa Administrativa</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <form method="POST" action="{% url 'admin_painel:expense_create' %}" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="modal-body">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label fw-semibold">Descrição *</label>
-                    <input type="text" name="description" class="form-control" required placeholder="Ex: Servidor AWS, Marketing...">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label fw-semibold">Fornecedor / Beneficiário</label>
-                    <input type="text" name="provider" class="form-control" placeholder="Opcional">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-semibold">Categoria *</label>
-                    <input type="text" name="category" class="form-control" required placeholder="Ex: Infraestrutura, Sistema...">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-semibold">Valor *</label>
-                    <div class="input-group">
-                        <span class="input-group-text">R$</span>
-                        <input type="number" step="0.01" name="amount" class="form-control" required>
+    @media (max-width: 767.98px) {
+        .bp-admin-fin-report .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-admin-fin-report .form-control,
+        .bp-admin-fin-report .form-select {
+            font-size: 16px !important;
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bp-admin-fin-report">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="page-title"><i class="fa-solid fa-chart-line text-primary me-2"></i>Relatório Financeiro</h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+            <button type="button" class="btn btn-danger btn-header-action fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaDespesaAdmin">
+                <i class="fa-solid fa-money-bill-transfer me-1"></i> Despesa
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Nova Despesa Admin -->
+    <div class="modal fade text-start" id="modalNovaDespesaAdmin" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+          <div class="modal-header border-bottom-0 pb-0">
+            <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-money-bill-transfer me-2 text-danger"></i>Nova Despesa Administrativa</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form method="POST" action="{% url 'admin_painel:expense_create' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="modal-body p-3 p-md-4 text-start">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Descrição *</label>
+                        <input type="text" name="description" class="form-control" required placeholder="Ex: Servidor AWS, Marketing...">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fornecedor / Beneficiário</label>
+                        <input type="text" name="provider" class="form-control" placeholder="Opcional">
                     </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-semibold">Status *</label>
-                    <select name="status" class="form-select" required>
-                        <option value="PENDENTE">Pendente</option>
-                        <option value="PAGO">Pago</option>
-                    </select>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Categoria *</label>
+                        <input type="text" name="category" class="form-control" required placeholder="Ex: Infraestrutura, Sistema...">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Valor *</label>
+                        <div class="input-group">
+                            <span class="input-group-text" style="font-size: 14px; min-height: 34px;">R$</span>
+                            <input type="number" step="0.01" name="amount" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Status *</label>
+                        <select name="status" class="form-select" required>
+                            <option value="PENDENTE">Pendente</option>
+                            <option value="PAGO">Pago</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-semibold">Data de Competência *</label>
-                    <input type="date" name="competence_date" class="form-control" required>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-semibold">Data de Vencimento *</label>
-                    <input type="date" name="due_date" class="form-control" required>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-semibold">Data do Pagamento</label>
-                    <input type="date" name="paid_date" class="form-control">
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Data de Competência *</label>
+                        <input type="date" name="competence_date" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Data de Vencimento *</label>
+                        <input type="date" name="due_date" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Data do Pagamento</label>
+                        <input type="date" name="paid_date" class="form-control">
+                    </div>
                 </div>
                 
-                <div class="col-md-6 mb-3">
-                    <label class="form-label fw-semibold">Método de Pagamento</label>
-                    <input type="text" name="payment_method" class="form-control" placeholder="Pix, Boleto, Cartão...">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label fw-semibold">Comprovante</label>
-                    <input type="file" name="proof_file" class="form-control">
-                </div>
-                <div class="col-12 mb-3">
-                    <label class="form-label fw-semibold">Observações Internas</label>
-                    <textarea name="internal_notes" class="form-control" rows="2"></textarea>
-                </div>
-            </div>
-            
-            <hr class="my-4">
-            
-            <h6 class="fw-bold mb-3"><i class="fa-solid fa-rotate me-2 text-primary"></i>Recorrência (Opcional)</h6>
-            <div class="row align-items-center">
-                <div class="col-md-4 mb-3">
-                    <div class="form-check form-switch mt-2">
-                        <input class="form-check-input" type="checkbox" role="switch" name="is_recurring" id="isRecurringToggle">
-                        <label class="form-check-label fw-semibold" for="isRecurringToggle">Despesa Recorrente?</label>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Método de Pagamento</label>
+                        <input type="text" name="payment_method" class="form-control" placeholder="Pix, Boleto, Cartão...">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Comprovante</label>
+                        <input type="file" name="proof_file" class="form-control">
                     </div>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-semibold">Ciclo</label>
-                    <select name="recurrence_cycle" class="form-select">
-                        <option value="">--</option>
-                        <option value="MENSAL">Mensal</option>
-                        <option value="TRIMESTRAL">Trimestral</option>
-                        <option value="SEMESTRAL">Semestral</option>
-                        <option value="ANUAL">Anual</option>
+
+                <div class="mb-3">
+                    <label class="form-label">Observações Internas</label>
+                    <textarea name="internal_notes" class="form-control" rows="2"></textarea>
+                </div>
+                
+                <hr class="my-3">
+                
+                <h6 class="fw-bold mb-3 text-secondary" style="font-size: 14px;"><i class="fa-solid fa-rotate me-2 text-primary"></i>Recorrência (Opcional)</h6>
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4">
+                        <div class="form-check form-switch mt-1">
+                            <input class="form-check-input" type="checkbox" role="switch" name="is_recurring" id="isRecurringToggle">
+                            <label class="form-check-label fw-bold small ms-1" for="isRecurringToggle" style="font-size: 13px;">Despesa Recorrente?</label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Ciclo</label>
+                        <select name="recurrence_cycle" class="form-select">
+                            <option value="">--</option>
+                            <option value="MENSAL">Mensal</option>
+                            <option value="TRIMESTRAL">Trimestral</option>
+                            <option value="SEMESTRAL">Semestral</option>
+                            <option value="ANUAL">Anual</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Data Final (Opcional)</label>
+                        <input type="date" name="recurrence_end_date" class="form-control">
+                    </div>
+                </div>
+                
+            </div>
+            <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+              <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+              <button type="submit" class="btn btn-danger fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Despesa</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px; background-color: #f8f9fa;">
+        <div class="card-body p-3">
+            <form method="GET" class="row g-2 align-items-end">
+                <!-- Botões Rápidos de Período -->
+                <div class="col-auto">
+                    <label class="form-label d-block">Período</label>
+                    <div class="btn-group" role="group">
+                        <button type="submit" name="period" value="this_month" class="btn btn-sm btn-outline-primary {% if period == 'this_month' %}active{% endif %}" style="height: 34px; font-size: 13px;">Este mês</button>
+                        <button type="submit" name="period" value="last_month" class="btn btn-sm btn-outline-primary {% if period == 'last_month' %}active{% endif %}" style="height: 34px; font-size: 13px;">Mês passado</button>
+                        <button type="submit" name="period" value="next_30" class="btn btn-sm btn-outline-primary {% if period == 'next_30' %}active{% endif %}" style="height: 34px; font-size: 13px;">Próx. 30 dias</button>
+                        <button type="submit" name="period" value="this_year" class="btn btn-sm btn-outline-primary {% if period == 'this_year' %}active{% endif %}" style="height: 34px; font-size: 13px;">Este ano</button>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-auto" style="min-width: 135px;">
+                    <label class="form-label">Data Inicial</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+                </div>
+                <div class="col-6 col-md-auto" style="min-width: 135px;">
+                    <label class="form-label">Data Final</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+                </div>
+                <div class="col-6 col-md-auto" style="min-width: 110px;">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="PAGO" {% if status == 'PAGO' %}selected{% endif %}>Pago</option>
+                        <option value="PENDENTE" {% if status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                        <option value="ATRASADO" {% if status == 'ATRASADO' %}selected{% endif %}>Atrasado</option>
+                        <option value="CANCELADO" {% if status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                        <option value="ISENTO" {% if status == 'ISENTO' %}selected{% endif %}>Isento</option>
                     </select>
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-semibold">Data Final (Opcional)</label>
-                    <input type="date" name="recurrence_end_date" class="form-control">
+                <div class="col-6 col-md-auto" style="min-width: 115px;">
+                    <label class="form-label">Plano</label>
+                    <select name="plan" class="form-select">
+                        <option value="">Todos</option>
+                        {% for p in available_plans %}
+                            <option value="{{ p }}" {% if plan == p %}selected{% endif %}>{{ p }}</option>
+                        {% empty %}
+                            <option value="Mensal" {% if plan == 'Mensal' %}selected{% endif %}>Mensal</option>
+                            <option value="Semestral" {% if plan == 'Semestral' %}selected{% endif %}>Semestral</option>
+                            <option value="Anual" {% if plan == 'Anual' %}selected{% endif %}>Anual</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-auto" style="min-width: 110px;">
+                    <label class="form-label">Ciclo</label>
+                    <select name="cycle" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="MENSAL" {% if cycle == 'MENSAL' %}selected{% endif %}>Mensal</option>
+                        <option value="SEMESTRAL" {% if cycle == 'SEMESTRAL' %}selected{% endif %}>Semestral</option>
+                        <option value="ANUAL" {% if cycle == 'ANUAL' %}selected{% endif %}>Anual</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-auto ms-md-auto mt-2 mt-md-0 text-end d-flex gap-2 justify-content-end">
+                    <a href="{% url 'admin_painel:relatorio_financeiro' %}" class="btn btn-light border px-3" style="height: 34px; font-size: 13px; display: inline-flex; align-items: center;"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
+                    <button type="submit" class="btn btn-dark px-3" style="height: 34px; font-size: 13px; display: inline-flex; align-items: center;"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-3">
+        <!-- Recebidos -->
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 bg-success bg-opacity-10" style="border-radius: 12px; border-left: 4px solid #198754 !important;">
+                <div class="card-body p-3">
+                    <p class="text-success kpi-title"><i class="fa-solid fa-arrow-down me-1"></i>Recebidos</p>
+                    <h4 class="kpi-value text-success">R$ {{ kpi_recebido|floatformat:2 }}</h4>
                 </div>
             </div>
-            
         </div>
-        <div class="modal-footer bg-light border-top-0">
-          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-danger rounded-pill px-4">Salvar Despesa</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Filtros -->
-<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
-    <div class="card-body">
-        <form method="GET" class="row g-2 align-items-end">
-            <!-- Botões Rápidos de Período -->
-            <div class="col-auto">
-                <label class="form-label small fw-bold text-muted d-block">Período</label>
-                <div class="btn-group" role="group">
-                    <button type="submit" name="period" value="this_month" class="btn btn-sm btn-outline-primary {% if period == 'this_month' %}active{% endif %}">Este mês</button>
-                    <button type="submit" name="period" value="last_month" class="btn btn-sm btn-outline-primary {% if period == 'last_month' %}active{% endif %}">Mês passado</button>
-                    <button type="submit" name="period" value="next_30" class="btn btn-sm btn-outline-primary {% if period == 'next_30' %}active{% endif %}">Próx. 30 dias</button>
-                    <button type="submit" name="period" value="this_year" class="btn btn-sm btn-outline-primary {% if period == 'this_year' %}active{% endif %}">Este ano</button>
+        <!-- Pendentes -->
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 bg-warning bg-opacity-10" style="border-radius: 12px; border-left: 4px solid #ffc107 !important;">
+                <div class="card-body p-3">
+                    <p class="text-warning kpi-title"><i class="fa-solid fa-clock me-1"></i>Pendentes</p>
+                    <h4 class="kpi-value text-warning">R$ {{ kpi_pendente|floatformat:2 }}</h4>
                 </div>
             </div>
-
-            <div class="col-6 col-md-auto" style="min-width: 135px;">
-                <label class="form-label small fw-bold text-muted">Data Inicial</label>
-                <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date }}">
+        </div>
+        <!-- Futuros -->
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 bg-info bg-opacity-10" style="border-radius: 12px; border-left: 4px solid #0dcaf0 !important;">
+                <div class="card-body p-3">
+                    <p class="text-info kpi-title"><i class="fa-solid fa-calendar-days me-1"></i>Futuros</p>
+                    <h4 class="kpi-value text-info">R$ {{ kpi_futuro|floatformat:2 }}</h4>
+                </div>
             </div>
-            <div class="col-6 col-md-auto" style="min-width: 135px;">
-                <label class="form-label small fw-bold text-muted">Data Final</label>
-                <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date }}">
+        </div>
+        <!-- Atrasados -->
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 bg-danger bg-opacity-10" style="border-radius: 12px; border-left: 4px solid #dc3545 !important;">
+                <div class="card-body p-3">
+                    <p class="text-danger kpi-title"><i class="fa-solid fa-triangle-exclamation me-1"></i>Atrasados</p>
+                    <h4 class="kpi-value text-danger">R$ {{ kpi_atrasado|floatformat:2 }}</h4>
+                </div>
             </div>
-            <div class="col-6 col-md-auto" style="min-width: 110px;">
-                <label class="form-label small fw-bold text-muted">Status</label>
-                <select name="status" class="form-select form-select-sm">
-                    <option value="">Todos</option>
-                    <option value="PAGO" {% if status == 'PAGO' %}selected{% endif %}>Pago</option>
-                    <option value="PENDENTE" {% if status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
-                    <option value="ATRASADO" {% if status == 'ATRASADO' %}selected{% endif %}>Atrasado</option>
-                    <option value="CANCELADO" {% if status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
-                    <option value="ISENTO" {% if status == 'ISENTO' %}selected{% endif %}>Isento</option>
-                </select>
+        </div>
+        <!-- Receita Despesas -->
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 bg-light" style="border-radius: 12px;">
+                <div class="card-body p-3">
+                    <p class="text-muted kpi-title"><i class="fa-solid fa-arrow-trend-down me-1"></i>Despesas</p>
+                    <h4 class="kpi-value text-dark">R$ {{ kpi_receita_prevista|floatformat:2 }}</h4>
+                    <small class="text-muted" style="font-size: 11px;">Pagas no Período</small>
+                </div>
             </div>
-            <div class="col-6 col-md-auto" style="min-width: 115px;">
-                <label class="form-label small fw-bold text-muted">Plano</label>
-                <select name="plan" class="form-select form-select-sm">
-                    <option value="">Todos</option>
-                    {% for p in available_plans %}
-                        <option value="{{ p }}" {% if plan == p %}selected{% endif %}>{{ p }}</option>
-                    {% empty %}
-                        <option value="Mensal" {% if plan == 'Mensal' %}selected{% endif %}>Mensal</option>
-                        <option value="Semestral" {% if plan == 'Semestral' %}selected{% endif %}>Semestral</option>
-                        <option value="Anual" {% if plan == 'Anual' %}selected{% endif %}>Anual</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-6 col-md-auto" style="min-width: 110px;">
-                <label class="form-label small fw-bold text-muted">Ciclo</label>
-                <select name="cycle" class="form-select form-select-sm">
-                    <option value="">Todos</option>
-                    <option value="MENSAL" {% if cycle == 'MENSAL' %}selected{% endif %}>Mensal</option>
-                    <option value="SEMESTRAL" {% if cycle == 'SEMESTRAL' %}selected{% endif %}>Semestral</option>
-                    <option value="ANUAL" {% if cycle == 'ANUAL' %}selected{% endif %}>Anual</option>
-                </select>
-            </div>
-            <div class="col-12 col-md-auto ms-md-auto mt-2 mt-md-0 text-end d-flex gap-2 justify-content-end">
-                <a href="{% url 'admin_painel:relatorio_financeiro' %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
-                <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- KPIs -->
-<div class="row g-3 mb-4">
-    <!-- Recebidos -->
-    <div class="col-md-4 col-lg-2">
-        <div class="card border-0 shadow-sm h-100 bg-success bg-opacity-10" style="border-radius: 12px; border-left: 5px solid #198754 !important;">
-            <div class="card-body p-3">
-                <p class="text-success small fw-bold mb-1 text-uppercase"><i class="fa-solid fa-arrow-down me-1"></i> Recebidos</p>
-                <h4 class="fw-bold text-success m-0">R$ {{ kpi_recebido|floatformat:2 }}</h4>
+        </div>
+        <!-- Receitas - Despesas -->
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 bg-light" style="border-radius: 12px;">
+                <div class="card-body p-3">
+                    <p class="text-muted kpi-title"><i class="fa-solid fa-sack-dollar me-1"></i>Valor em Caixa</p>
+                    {% if kpi_total_bandas < 0 %}
+                    <h4 class="kpi-value text-danger">R$ {{ kpi_total_bandas|floatformat:2 }}</h4>
+                    {% else %}
+                    <h4 class="kpi-value text-success">R$ {{ kpi_total_bandas|floatformat:2 }}</h4>
+                    {% endif %}
+                    <small class="text-muted" style="font-size: 11px;">Receitas - Despesas</small>
+                </div>
             </div>
         </div>
     </div>
-    <!-- Pendentes -->
-    <div class="col-md-4 col-lg-2">
-        <div class="card border-0 shadow-sm h-100 bg-warning bg-opacity-10" style="border-radius: 12px; border-left: 5px solid #ffc107 !important;">
-            <div class="card-body p-3">
-                <p class="text-warning small fw-bold mb-1 text-uppercase"><i class="fa-solid fa-clock me-1"></i> Pendentes</p>
-                <h4 class="fw-bold text-warning m-0">R$ {{ kpi_pendente|floatformat:2 }}</h4>
-            </div>
-        </div>
-    </div>
-    <!-- Futuros -->
-    <div class="col-md-4 col-lg-2">
-        <div class="card border-0 shadow-sm h-100 bg-info bg-opacity-10" style="border-radius: 12px; border-left: 5px solid #0dcaf0 !important;">
-            <div class="card-body p-3">
-                <p class="text-info small fw-bold mb-1 text-uppercase"><i class="fa-solid fa-calendar-days me-1"></i> Futuros</p>
-                <h4 class="fw-bold text-info m-0">R$ {{ kpi_futuro|floatformat:2 }}</h4>
-            </div>
-        </div>
-    </div>
-    <!-- Atrasados -->
-    <div class="col-md-4 col-lg-2">
-        <div class="card border-0 shadow-sm h-100 bg-danger bg-opacity-10" style="border-radius: 12px; border-left: 5px solid #dc3545 !important;">
-            <div class="card-body p-3">
-                <p class="text-danger small fw-bold mb-1 text-uppercase"><i class="fa-solid fa-triangle-exclamation me-1"></i> Atrasados</p>
-                <h4 class="fw-bold text-danger m-0">R$ {{ kpi_atrasado|floatformat:2 }}</h4>
-            </div>
-        </div>
-    </div>
-    <!-- Receita Despesas -->
-    <div class="col-md-4 col-lg-2">
-        <div class="card border-0 shadow-sm h-100 bg-light" style="border-radius: 12px;">
-            <div class="card-body p-3">
-                <p class="text-muted small fw-bold mb-1 text-uppercase"><i class="fa-solid fa-arrow-trend-down me-1"></i> Despesas</p>
-                <h4 class="fw-bold text-dark m-0">R$ {{ kpi_receita_prevista|floatformat:2 }}</h4>
-                <small class="text-muted" style="font-size: 0.7rem;">Pagas no Período</small>
-            </div>
-        </div>
-    </div>
-    <!-- Receitas - Despesas -->
-    <div class="col-md-4 col-lg-2">
-        <div class="card border-0 shadow-sm h-100 bg-light" style="border-radius: 12px;">
-            <div class="card-body p-3">
-                <p class="text-muted small fw-bold mb-1 text-uppercase"><i class="fa-solid fa-sack-dollar me-1"></i> Valor em Caixa</p>
-                {% if kpi_total_bandas < 0 %}
-<h4 class="fw-bold text-danger m-0">R$ {{ kpi_total_bandas|floatformat:2 }}</h4>
-{% else %}
-<h4 class="fw-bold text-success m-0">R$ {{ kpi_total_bandas|floatformat:2 }}</h4>
-{% endif %}
-                <small class="text-muted" style="font-size: 0.7rem;">Receitas - Despesas</small>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Gráficos -->
-<div class="row g-4 mb-5">
-    <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
-            <div class="card-body p-4">
-                <h5 class="fw-bold mb-4 text-dark">Evolução Financeira (Período Filtrado)</h5>
-                <div style="position: relative; height: 300px; width: 100%;">
-                    <canvas id="chartBars"></canvas>
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                <div class="card-body p-3">
+                    <h6 class="section-subtitle mb-3 text-dark">Evolução Financeira (Período Filtrado)</h6>
+                    <div style="position: relative; height: 260px; width: 100%;">
+                        <canvas id="chartBars"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
-            <div class="card-body p-4">
-                <h5 class="fw-bold mb-4 text-dark">Distribuição de Status</h5>
-                <div style="position: relative; height: 300px; width: 100%;">
-                    <canvas id="chartPie"></canvas>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                <div class="card-body p-3">
+                    <h6 class="section-subtitle mb-3 text-dark">Distribuição de Status</h6>
+                    <div style="position: relative; height: 260px; width: 100%;">
+                        <canvas id="chartPie"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
-            <div class="card-body p-4">
-                <h5 class="fw-bold mb-4 text-dark">Receita por Ciclo de Assinatura</h5>
-                <div style="position: relative; height: 300px; width: 100%;">
-                    <canvas id="chartCycle"></canvas>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                <div class="card-body p-3">
+                    <h6 class="section-subtitle mb-3 text-dark">Receita por Ciclo de Assinatura</h6>
+                    <div style="position: relative; height: 260px; width: 100%;">
+                        <canvas id="chartCycle"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
-            <div class="card-body p-4">
-                <h5 class="fw-bold mb-4 text-dark">Top 5 Bandas (Receita Recebida)</h5>
-                <div style="position: relative; height: 300px; width: 100%;">
-                    <canvas id="chartTopBandas"></canvas>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+                <div class="card-body p-3">
+                    <h6 class="section-subtitle mb-3 text-dark">Top 5 Bandas (Receita Recebida)</h6>
+                    <div style="position: relative; height: 260px; width: 100%;">
+                        <canvas id="chartTopBandas"></canvas>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Tabelas -->
-<div class="row g-4 mb-5">
-    <div class="col-12">
-        <h4 class="fw-bold mb-3"><i class="fa-solid fa-list-check me-2"></i> Resumo por Banda</h4>
-        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
-            <div class="card-body p-0 table-responsive">
-                <table class="table table-hover align-middle m-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4">Banda</th>
-                            <th>Plano</th>
-                            <th>Contratado</th>
-                            <th class="text-success">Recebido</th>
-                            <th class="text-warning">Pendente</th>
-                            <th class="text-info">Futuro</th>
-                            <th class="text-danger">Atrasado</th>
-                            <th>Status Assinatura</th>
-                            <th class="text-end pe-4">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for b in band_summaries %}
-                        <tr>
-                            <td class="ps-4 fw-bold">{{ b.band.name }}</td>
-                            <td><span class="badge bg-secondary">{{ b.subscription.get_billing_cycle_display }}</span></td>
-                            <td>R$ {{ b.subscription.contracted_value }}</td>
-                            <td class="text-success fw-bold">R$ {{ b.recebido|floatformat:2 }}</td>
-                            <td class="text-warning fw-bold">R$ {{ b.pendente|floatformat:2 }}</td>
-                            <td class="text-info fw-bold">R$ {{ b.futuro|floatformat:2 }}</td>
-                            <td class="text-danger fw-bold">R$ {{ b.atrasado|floatformat:2 }}</td>
-                            <td>
-                                {% if b.subscription.status == 'ATIVO' %}
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3">Ativo</span>
-                                {% elif b.subscription.status == 'VENCENDO' %}
-                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-3">Vencendo</span>
-                                {% elif b.subscription.status == 'VENCIDO' %}
-                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3">Vencido</span>
-                                {% elif b.subscription.status == 'SUSPENSO' %}
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3">Suspenso</span>
-                                {% else %}
-                                    <span class="badge bg-light text-dark border rounded-pill px-3">{{ b.subscription.get_status_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end pe-4">
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="9" class="text-center py-5 text-muted">
-                                <i class="fa-solid fa-inbox fa-3x mb-3 opacity-50"></i>
-                                <h5>Nenhuma assinatura encontrada no filtro.</h5>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
 
-    <div class="col-12 mt-5">
-        <h4 class="fw-bold mb-3"><i class="fa-solid fa-file-invoice-dollar me-2"></i> Faturas Detalhadas (Filtro)</h4>
-        <div class="card border-0 shadow-sm" style="border-radius: 12px;">
-            <div class="card-body p-0 table-responsive">
-                <table class="table table-hover align-middle m-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4">Banda & Período</th>
-                            <th>Valor</th>
-                            <th>Vencimento</th>
-                            <th>Data Pagamento</th>
-                            <th>Status</th>
-                            <th>Método</th>
-                            <th class="text-end pe-4">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for c in billings %}
-                        <tr>
-                            <td class="ps-4">
-                                <div class="fw-bold">{{ c.band.name }}</div>
-                                <small class="text-muted">{{ c.reference_period }}</small>
-                            </td>
-                            <td class="fw-bold">R$ {{ c.amount }}</td>
-                            <td>{{ c.due_date|date:"d/m/Y" }}</td>
-                            <td>
-                                {% if c.paid_date %}
-                                    {{ c.paid_date|date:"d/m/Y" }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if c.status == 'PAGO' %}
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3">Pago</span>
-                                {% elif c.status == 'PENDENTE' %}
-                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-3">Pendente</span>
-                                {% elif c.status == 'ATRASADO' %}
-                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3">Atrasado</span>
-                                {% elif c.status == 'CANCELADO' %}
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3">Cancelado</span>
-                                {% else %}
-                                    <span class="badge bg-light text-dark border rounded-pill px-3">{{ c.get_status_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if c.payment_method %}
-                                    <span class="badge bg-light text-dark border"><i class="fa-solid fa-credit-card me-1"></i> {{ c.get_payment_method_display }}</span>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                            <td class="text-end pe-4">
-                                {% if c.proof_file %}
-                                    <a href="{{ c.proof_file.url }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill me-1" title="Ver Comprovante">
-                                        <i class="fa-solid fa-receipt"></i>
-                                    </a>
-                                {% endif %}
-                                {% if c.subscription.billing_phone %}
-                                    <a href="https://wa.me/{{ c.subscription.billing_phone|whatsapp_clean }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill me-1" title="WhatsApp">
-                                        <i class="fa-brands fa-whatsapp"></i>
-                                    </a>
-                                {% endif %}
-                                <button onclick="copyBillingMessage('{{ c.subscription.financial_responsible_name|default:c.band.name|escapejs }}', '{{ c.band.name|escapejs }}', '{{ c.subscription.plan_name|escapejs }}', '{{ c.reference_period|escapejs }}', '{{ c.amount|escapejs }}', '{{ c.due_date|date:'d/m/Y' }}', this)" class="btn btn-sm btn-outline-secondary rounded-pill me-1" title="Copiar Mensagem">
-                                    <i class="fa-regular fa-copy"></i>
-                                </button>
-                                <a href="{% url 'admin_painel:cobrancas_editar' c.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3" title="Editar Cobrança">
-                                    Editar
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
-                                <i class="fa-solid fa-file-invoice fa-3x mb-3 opacity-50"></i>
-                                <h5>Nenhuma fatura encontrada.</h5>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- Tabelas -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <h5 class="fw-bold mb-2 text-dark" style="font-size: 16px;"><i class="fa-solid fa-list-check me-2 text-primary"></i>Resumo por Banda</h5>
+            <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover table-hover-premium align-middle m-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Banda</th>
+                                <th>Plano</th>
+                                <th>Contratado</th>
+                                <th class="text-success">Recebido</th>
+                                <th class="text-warning">Pendente</th>
+                                <th class="text-info">Futuro</th>
+                                <th class="text-danger">Atrasado</th>
+                                <th class="text-center">Status Assinatura</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in band_summaries %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark" style="font-size: 13px;">{{ b.band.name }}</td>
+                                <td><span class="badge bg-secondary" style="font-size: 11px;">{{ b.subscription.get_billing_cycle_display }}</span></td>
+                                <td style="font-size: 13px;">R$ {{ b.subscription.contracted_value }}</td>
+                                <td class="text-success fw-bold" style="font-size: 13px;">R$ {{ b.recebido|floatformat:2 }}</td>
+                                <td class="text-warning fw-bold" style="font-size: 13px;">R$ {{ b.pendente|floatformat:2 }}</td>
+                                <td class="text-info fw-bold" style="font-size: 13px;">R$ {{ b.futuro|floatformat:2 }}</td>
+                                <td class="text-danger fw-bold" style="font-size: 13px;">R$ {{ b.atrasado|floatformat:2 }}</td>
+                                <td class="text-center">
+                                    {% if b.subscription.status == 'ATIVO' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 status-pill">Ativo</span>
+                                    {% elif b.subscription.status == 'VENCENDO' %}
+                                        <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 status-pill">Vencendo</span>
+                                    {% elif b.subscription.status == 'VENCIDO' %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 status-pill">Vencido</span>
+                                    {% elif b.subscription.status == 'SUSPENSO' %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 status-pill">Suspenso</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark border status-pill">{{ b.subscription.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="fa-solid fa-inbox fa-2x mb-2 opacity-50"></i>
+                                    <h6 class="fw-bold mb-1">Nenhuma assinatura encontrada</h6>
+                                    <p class="mb-0 small">Ajuste os filtros para visualizar os dados.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 mt-4">
+            <h5 class="fw-bold mb-2 text-dark" style="font-size: 16px;"><i class="fa-solid fa-file-invoice-dollar me-2 text-primary"></i>Faturas Detalhadas (Filtro)</h5>
+            <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                <div class="card-body p-0 table-responsive">
+                    <table class="table table-hover table-hover-premium align-middle m-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Banda & Período</th>
+                                <th>Valor</th>
+                                <th>Vencimento</th>
+                                <th>Data Pagamento</th>
+                                <th class="text-center">Status</th>
+                                <th>Método</th>
+                                <th class="text-end pe-4">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in billings %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark" style="font-size: 13px;">{{ c.band.name }}</div>
+                                    <small class="text-muted" style="font-size: 12px;">{{ c.reference_period }}</small>
+                                </td>
+                                <td class="fw-bold text-dark" style="font-size: 13px;">R$ {{ c.amount }}</td>
+                                <td style="font-size: 13px;">{{ c.due_date|date:"d/m/Y" }}</td>
+                                <td style="font-size: 13px;">
+                                    {% if c.paid_date %}
+                                        <span class="text-success">{{ c.paid_date|date:"d/m/Y" }}</span>
+                                    {% else %}
+                                        <span class="text-muted opacity-50">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if c.status == 'PAGO' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 status-pill">Pago</span>
+                                    {% elif c.status == 'PENDENTE' %}
+                                        <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 status-pill">Pendente</span>
+                                    {% elif c.status == 'ATRASADO' %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 status-pill">Atrasado</span>
+                                    {% elif c.status == 'CANCELADO' %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 status-pill">Cancelado</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark border status-pill">{{ c.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if c.payment_method %}
+                                        <span class="badge bg-light text-dark border" style="font-size: 11px;"><i class="fa-solid fa-credit-card me-1"></i>{{ c.get_payment_method_display }}</span>
+                                    {% else %}
+                                        <span class="text-muted opacity-50">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="d-inline-flex gap-1 align-items-center">
+                                        {% if c.proof_file %}
+                                            <a href="{{ c.proof_file.url }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px;" title="Ver Comprovante">
+                                                <i class="fa-solid fa-receipt" style="font-size: 13px;"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if c.subscription.billing_phone %}
+                                            <a href="https://wa.me/{{ c.subscription.billing_phone|whatsapp_clean }}" target="_blank" class="btn btn-sm btn-outline-success rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px;" title="WhatsApp">
+                                                <i class="fa-brands fa-whatsapp" style="font-size: 14px;"></i>
+                                            </a>
+                                        {% endif %}
+                                        <button onclick="copyBillingMessage('{{ c.subscription.financial_responsible_name|default:c.band.name|escapejs }}', '{{ c.band.name|escapejs }}', '{{ c.subscription.plan_name|escapejs }}', '{{ c.reference_period|escapejs }}', '{{ c.amount|escapejs }}', '{{ c.due_date|date:'d/m/Y' }}', this)" class="btn btn-sm btn-outline-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px;" title="Copiar Mensagem">
+                                            <i class="fa-regular fa-copy" style="font-size: 13px;"></i>
+                                        </button>
+                                        <a href="{% url 'admin_painel:cobrancas_editar' c.id %}" class="btn btn-sm btn-outline-primary btn-actions px-2" title="Editar Cobrança">
+                                            Editar
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">
+                                    <i class="fa-solid fa-file-invoice fa-2x mb-2 opacity-50"></i>
+                                    <h6 class="fw-bold mb-1">Nenhuma fatura encontrada</h6>
+                                    <p class="mb-0 small">Ajuste os filtros para visualizar faturas.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
