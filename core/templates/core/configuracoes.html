@@ -1,74 +1,169 @@
 {% extends 'core/base.html' %}
 
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-gear text-primary me-2"></i> Configurações da Banda</h4>
-</div>
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para a página Configurações */
+    .bp-settings-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-settings-page .card-main {
+        border-radius: 12px;
+    }
+    .bp-settings-page .card-main .card-body {
+        padding: 20px 24px;
+    }
+    .bp-settings-page .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+    .bp-settings-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-settings-page .form-control {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-settings-page .form-text {
+        font-size: 12px;
+        margin-top: 4px;
+    }
+    .bp-settings-page .btn-submit-action {
+        font-size: 14px;
+        padding: 5px 16px;
+        line-height: 1.25;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-settings-page .btn-subaction {
+        font-size: 13px;
+        padding: 4px 12px;
+        line-height: 1.25;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-settings-page .feature-box {
+        padding: 12px 14px;
+        border-radius: 8px;
+    }
+    .bp-settings-page .feature-box-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+    .bp-settings-page .feature-box-desc {
+        font-size: 12px;
+        line-height: 1.35;
+    }
+    .bp-settings-page .logo-preview-box {
+        padding: 12px;
+        border-radius: 8px;
+    }
 
-<div class="row">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow-sm border-0" style="border-radius: 12px;">
-            <div class="card-body p-4">
-                {% if request.user.is_produtor %}
-                <h5 class="fw-bold mb-4">Identidade Visual</h5>
-                
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-muted">Logo Atual</label>
-                        <div class="d-flex align-items-center p-3 bg-light rounded border">
-                            {% if band.logo %}
-                                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="me-3" style="max-height: 80px; border-radius: 6px;">
-                            {% else %}
-                                <div class="bg-secondary bg-opacity-10 rounded d-flex justify-content-center align-items-center me-3" style="width: 80px; height: 80px;">
-                                    <i class="fa-solid fa-image fs-1 text-muted"></i>
+    @media (max-width: 767.98px) {
+        .bp-settings-page .card-main .card-body {
+            padding: 16px;
+        }
+        .bp-settings-page .form-control {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+        .bp-settings-page .btn-submit-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-settings-page .btn-subaction {
+            height: 36px;
+            padding: 6px 14px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bp-settings-page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="page-title"><i class="fa-solid fa-gear text-primary me-2"></i>Configurações da Banda</h4>
+    </div>
+
+    <div class="row">
+        <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+            <div class="card shadow-sm border-0 card-main">
+                <div class="card-body">
+                    {% if request.user.is_produtor %}
+                    <h5 class="section-title">Identidade Visual</h5>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Logo Atual</label>
+                            <div class="d-flex align-items-center logo-preview-box bg-light rounded border">
+                                {% if band.logo %}
+                                    <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="me-3" style="max-height: 64px; border-radius: 6px;">
+                                {% else %}
+                                    <div class="bg-secondary bg-opacity-10 rounded d-flex justify-content-center align-items-center me-3" style="width: 64px; height: 64px;">
+                                        <i class="fa-solid fa-image fs-2 text-muted"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="fw-bold mb-1" style="font-size: 14px;">{{ band.name }}</h6>
+                                    <small class="text-muted">{% if band.logo %}Logo carregada.{% else %}Nenhuma logo carregada.{% endif %}</small>
                                 </div>
-                            {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="logo" class="form-label">Alterar Logo</label>
+                            <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                            <div class="form-text text-muted">Recomendamos imagens com fundo transparente (PNG) ou formato quadrado (JPG/PNG).</div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary fw-bold shadow-sm btn-submit-action">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Alterações
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-3">
+
+                    <h5 class="section-title">Modelos Padrão {% if not band.is_advanced %}<small class="text-muted fw-normal" style="font-size: 0.75rem;">(PLANOS AVANÇADOS)</small>{% endif %}</h5>
+                    <div class="card bg-light border-0 rounded-3 mb-3">
+                        <div class="card-body feature-box d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
                             <div>
-                                <h6 class="fw-bold mb-1">{{ band.name }}</h6>
-                                <small class="text-muted">{% if band.logo %}Logo carregada.{% else %}Nenhuma logo carregada.{% endif %}</small>
+                                <h6 class="feature-box-title">{{ band.is_advanced|yesno:"Modelo Padrão de Hospedagem,Modelo Padrão de Hospedagem" }}</h6>
+                                <small class="text-muted feature-box-desc">Configure os quartos e as observações padrão para aplicação automática ao criar uma nova hospedagem.</small>
+                            </div>
+                            <div class="align-self-start align-self-sm-center flex-shrink-0">
+                                {% if band.is_advanced %}
+                                <a href="{% url 'lodging_template_manage' band.slug %}" class="btn btn-outline-dark fw-bold btn-subaction">
+                                    Configurar
+                                </a>
+                                {% else %}
+                                <button type="button" class="btn btn-outline-secondary fw-bold btn-subaction" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan">
+                                    <i class="fa-solid fa-lock me-1"></i> Configurar
+                                </button>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="mb-4">
-                        <label for="logo" class="form-label fw-bold text-muted">Alterar Logo</label>
-                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
-                        <div class="form-text">Recomendamos imagens com fundo transparente (PNG) ou formato quadrado (JPG/PNG).</div>
-                    </div>
-                    
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary px-4 fw-bold rounded-pill">
-                            <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Alterações
-                        </button>
-                    </div>
-                </form>
-                
-                <hr class="my-4">
-                
-                <h5 class="fw-bold mb-3">Modelos Padrão {% if not band.is_advanced %}<small class="text-muted fw-normal" style="font-size: 0.7rem;">(FUNCIONALIDADE DISPONÍVEL APENAS NO PLANO AVANÇADO)</small>{% endif %}</h5>
-                <div class="card bg-light border-0 rounded-3 mb-4">
-                    <div class="card-body d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="fw-bold mb-1">Modelo Padrão de Hospedagem</h6>
-                            <small class="text-muted">Configure os quartos e as observações padrão para aplicação automática ao criar uma nova hospedagem.</small>
-                        </div>
-                        {% if band.is_advanced %}
-                        <a href="{% url 'lodging_template_manage' band.slug %}" class="btn btn-sm btn-outline-dark rounded-pill fw-bold px-3">
-                            Configurar
-                        </a>
-                        {% else %}
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan">
-                            <i class="fa-solid fa-lock me-1"></i> Configurar
-                        </button>
-                        {% endif %}
-                    </div>
+
+                    {% endif %}
+
+                    {% include 'core/includes/web_push_card.html' %}
                 </div>
-
-                {% endif %}
-
-                {% include 'core/includes/web_push_card.html' %}
             </div>
         </div>
     </div>
