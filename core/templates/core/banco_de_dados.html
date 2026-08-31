@@ -1,109 +1,218 @@
 {% extends 'core/base.html' %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para o Banco de Dados */
+    .bp-database-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-database-page .filter-card {
+        border-radius: 10px;
+        background-color: #f8f9fa;
+    }
+    .bp-database-page .filter-card .card-body {
+        padding: 12px 14px;
+    }
+    .bp-database-page .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+        display: block;
+    }
+    .bp-database-page .filter-control {
+        font-size: 14px;
+        height: 34px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-database-page .btn-filter-action {
+        height: 30px;
+        font-family: Inter, sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 4px;
+    }
+    .bp-database-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 9px 12px;
+        text-transform: uppercase;
+    }
+    .bp-database-page .table tbody td {
+        font-size: 13px;
+        padding: 9px 12px;
+    }
+    .bp-database-page .table .contact-name {
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+    .bp-database-page .contact-type-pill {
+        width: 120px;
+        height: 26px;
+        padding: 3px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        gap: 5px;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .bp-database-page .contact-type-pill i {
+        font-size: 11px;
+    }
+    .bp-database-page .band-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 50rem;
+    }
+    .bp-database-page .likes-pill {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 10px;
+        min-width: 38px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .bp-database-page .btn-action-icon {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-database-page .filter-control {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            height: 40px;
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-database text-primary me-2"></i> Banco de Dados (Geral)</h4>
-</div>
-
-<!-- Barra de Filtros -->
-<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-            <div class="col-6 col-md-2 col-lg-2">
-                <label class="form-label small fw-bold text-muted">Nome</label>
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Buscar por nome..." value="{{ search_query|default:'' }}">
-            </div>
-            <div class="col-6 col-md-2 col-lg-2">
-                <label class="form-label small fw-bold text-muted">Tipo</label>
-                <select name="tipo" class="form-select form-select-sm">
-                    <option value="">Todos</option>
-                    {% for db_val, display_val in contact_types %}
-                    <option value="{{ db_val }}" {% if search_type == db_val %}selected{% endif %}>{{ display_val }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-6 col-md-2 col-lg-2">
-                <label class="form-label small fw-bold text-muted">Local</label>
-                <input type="text" name="local" class="form-control form-control-sm" placeholder="Buscar por local..." value="{{ search_location|default:'' }}">
-            </div>
-            <div class="col-6 col-md-2 col-lg-2">
-                <label class="form-label small fw-bold text-muted">Banda</label>
-                <input type="text" name="banda" class="form-control form-control-sm" placeholder="Buscar por banda..." value="{{ search_band|default:'' }}">
-            </div>
-            <div class="col-12 col-md-auto ms-md-auto mt-3 mt-md-0 text-end">
-                <a href="{% url 'banco_de_dados_global' %}" class="btn btn-sm btn-outline-secondary px-3"><i class="fa-solid fa-eraser"></i> Limpar</a>
-                <button type="submit" class="btn btn-sm btn-dark px-4"><i class="fa-solid fa-filter"></i> Filtrar</button>
-            </div>
-        </form>
+<div class="bp-database-page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="page-title"><i class="fa-solid fa-database text-primary me-2"></i>Banco de Dados (Geral)</h4>
     </div>
-</div>
 
-<div class="card shadow-sm border-0" style="border-radius: 12px;">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
-                    <tr>
-                        <th class="ps-4 py-3">Nome</th>
-                        <th class="py-3">Local</th>
-                        <th class="py-3">Tipo</th>
-                        <th class="py-3 text-center align-middle">Tel.</th>
-                        <th class="py-3 text-center">Link</th>
-                        <th class="py-3">Banda</th>
-                        <th class="py-3 text-center">Likes</th>
-                        <th class="pe-4 py-3 text-end">Ver</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for contato in page_obj %}
-                    <tr>
-                        <td class="ps-4">
-                            <h6 class="mb-0 text-dark">{{ contato.name }}</h6>
-                        </td>
-                        <td class="text-muted">{{ contato.location|default:"-" }}</td>
-                        <td>
-                            {% include 'core/includes/_badge_contato.html' with tipo=contato.contact_type display=contato.get_contact_type_display %}
-                        </td>
-                        <td class="text-center align-middle wa-link-cell" data-phone="{{ contato.phone|default:'' }}">{{ contato.phone|default:'-' }}</td>
-                        <td class="text-center">
-                            {% if contato.link %}
-                                <a href="{{ contato.link }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-circle"><i class="fa-solid fa-link"></i></a>
-                            {% else %}
-                                <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="badge bg-light text-dark border">{{ contato.band.name }}</span>
-                        </td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-sm rounded-pill fw-bold text-center px-3 py-1 js-likes-pill" data-bs-toggle="modal" data-bs-target="#modalCurtidasContato{{ contato.id }}" style="background-color: rgba(220, 53, 69, 0.10); color: #DC3545; border: 1px solid #DC3545; min-width: 42px; font-size: 0.85rem;" data-contact-id="{{ contato.id }}">
-                                <span class="js-likes-count-text">{{ contato.likes_count|default:0 }}</span>
-                            </button>
-                        </td>
-                        <td class="pe-4 text-end">
-                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalVisContato{{ contato.id }}" title="Ver">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-database fs-1 mb-3 opacity-50"></i>
-                            <h5>Nenhum contato encontrado no Banco de Dados</h5>
-                            <p class="mb-0">Tente buscar por outros termos ou verifique se as bandas compartilharam contatos.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Barra de Filtros -->
+    <div class="card shadow-sm border-0 mb-3 filter-card">
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                    <label class="filter-label">Nome</label>
+                    <input type="text" name="q" class="form-control filter-control" placeholder="Buscar por nome..." value="{{ search_query|default:'' }}">
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                    <label class="filter-label">Tipo</label>
+                    <select name="tipo" class="form-select filter-control">
+                        <option value="">Todos</option>
+                        {% for db_val, display_val in contact_types %}
+                        <option value="{{ db_val }}" {% if search_type == db_val %}selected{% endif %}>{{ display_val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-2 col-lg-2">
+                    <label class="filter-label">Local</label>
+                    <input type="text" name="local" class="form-control filter-control" placeholder="Buscar por local..." value="{{ search_location|default:'' }}">
+                </div>
+                <div class="col-6 col-md-2 col-lg-2">
+                    <label class="filter-label">Banda</label>
+                    <input type="text" name="banda" class="form-control filter-control" placeholder="Buscar por banda..." value="{{ search_band|default:'' }}">
+                </div>
+                <div class="col-12 col-lg-auto ms-lg-auto mt-2 mt-lg-0 text-end d-flex gap-2 justify-content-end">
+                    <a href="{% url 'banco_de_dados_global' %}" class="btn btn-sm btn-outline-secondary px-3 btn-filter-action" style="border: 1px solid #6C757D;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
+                    <button type="submit" class="btn btn-sm btn-dark px-4 btn-filter-action" style="background-color: #212529;" onmouseover="this.style.backgroundColor='#1C1F23';" onmouseout="this.style.backgroundColor='#212529';"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase text-muted">
+                        <tr>
+                            <th class="ps-4">Nome</th>
+                            <th>Local</th>
+                            <th>Tipo</th>
+                            <th class="text-center align-middle">Tel.</th>
+                            <th class="text-center">Link</th>
+                            <th>Banda</th>
+                            <th class="text-center">Likes</th>
+                            <th class="pe-4 text-end">Ver</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contato in page_obj %}
+                        <tr>
+                            <td class="ps-4">
+                                <h6 class="contact-name mb-0 text-dark">{{ contato.name }}</h6>
+                            </td>
+                            <td class="text-muted">{{ contato.location|default:"-" }}</td>
+                            <td>
+                                {% include 'core/includes/_badge_contato.html' with tipo=contato.contact_type display=contato.get_contact_type_display %}
+                            </td>
+                            <td class="text-center align-middle wa-link-cell" data-phone="{{ contato.phone|default:'' }}">{{ contato.phone|default:'-' }}</td>
+                            <td class="text-center">
+                                {% if contato.link %}
+                                    <a href="{{ contato.link }}" target="_blank" class="btn btn-outline-primary rounded-circle btn-action-icon"><i class="fa-solid fa-link"></i></a>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border band-badge">{{ contato.band.name }}</span>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn rounded-pill fw-bold text-center js-likes-pill likes-pill" data-bs-toggle="modal" data-bs-target="#modalCurtidasContato{{ contato.id }}" style="background-color: rgba(220, 53, 69, 0.10); color: #DC3545; border: 1px solid #DC3545;" data-contact-id="{{ contato.id }}">
+                                    <span class="js-likes-count-text">{{ contato.likes_count|default:0 }}</span>
+                                </button>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <button class="btn btn-outline-primary btn-action-icon rounded-2" data-bs-toggle="modal" data-bs-target="#modalVisContato{{ contato.id }}" title="Ver">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-database fs-1 mb-3 opacity-50"></i>
+                                <h5 class="fw-bold fs-6">Nenhum contato encontrado no Banco de Dados</h5>
+                                <p class="mb-0 small">Tente buscar por outros termos ou verifique se as bandas compartilharam contatos.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Paginação -->
 {% if page_obj.has_other_pages %}
-<nav aria-label="Navegação de páginas" class="mt-4">
+<nav aria-label="Navegação de páginas" class="mt-3">
     <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
             <li class="page-item">
