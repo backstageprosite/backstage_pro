@@ -1,251 +1,363 @@
 {% extends 'core/base.html' %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para a Dashboard */
+    .bp-dashboard-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-dashboard-page .welcome-text {
+        font-size: 14px;
+        margin: 0;
+    }
+    .bp-dashboard-page .kpi-label {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 2px;
+    }
+    .bp-dashboard-page .kpi-value {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin: 0;
+    }
+    .bp-dashboard-page .kpi-icon-box {
+        width: 42px;
+        height: 42px;
+        font-size: 18px;
+    }
+    .bp-dashboard-page .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-dashboard-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-dashboard-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 9px 12px;
+        text-transform: uppercase;
+    }
+    .bp-dashboard-page .table tbody td {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .bp-dashboard-page .status-pill {
+        width: 88px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .bp-dashboard-page .status-pill-mini {
+        width: 78px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 6px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .bp-dashboard-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-dashboard-page .form-control,
+    .bp-dashboard-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-dashboard-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-dashboard-page .form-control,
+        .bp-dashboard-page .form-select {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i> Dashboard</h4>
-    <h5 class="m-0 text-muted">Bem-vindo(a), <span class="text-dark fw-bold">{{ request.user.first_name|default:request.user.username }}</span></h5>
-</div>
-
-<!-- Cards de Resumo -->
-<div class="row mb-4">
-    <div class="col-12 col-md-4 mb-3 mb-md-0">
-        <div class="card shadow-sm border-0 border-start border-4 border-primary h-100" style="border-radius: 12px;">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.8rem;">Shows (Total)</p>
-                    <h3 class="fw-bold mb-0">{{ total_shows }}</h3>
-                </div>
-                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                    <i class="fa-solid fa-microphone-lines fs-4 text-primary"></i>
-                </div>
-            </div>
-        </div>
+<div class="bp-dashboard-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+        <h4 class="page-title"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Dashboard</h4>
+        <h6 class="welcome-text text-muted">Bem-vindo(a), <span class="text-dark fw-bold">{{ request.user.first_name|default:request.user.username }}</span></h6>
     </div>
 
-    {% if request.user.is_produtor %}
-    <div class="col-12 col-md-4 mb-3 mb-md-0">
-        <div class="card shadow-sm border-0 border-start border-4 border-success h-100" style="border-radius: 12px;">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.8rem;">Membros da Equipe</p>
-                    <h3 class="fw-bold mb-0 text-success">{{ total_users }}</h3>
-                </div>
-                <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                    <i class="fa-solid fa-users fs-4 text-success"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-md-4 mb-3 mb-md-0">
-        <div class="card shadow-sm border-0 border-start border-4 border-warning h-100" style="border-radius: 12px;">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.8rem;">Contatos (Banco)</p>
-                    <h3 class="fw-bold mb-0 text-warning">{{ total_contacts }}</h3>
-                </div>
-                <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                    <i class="fa-solid fa-address-book fs-4 text-warning"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-</div>
-
-<div class="row">
-
-    <!-- Avisos da Banda -->
-    {% if band_notices %}
-    <div class="col-12 mt-4 mb-4">
-        <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 w-100" style="border-radius: 12px; background-color: #fffdf5;">
-            <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0">
-                <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-bullhorn text-warning me-2"></i> Avisos da Banda</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-flex flex-column gap-3">
-                    {% for notice in band_notices %}
-                    <div class="p-3 bg-white rounded shadow-sm border border-warning border-opacity-25">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="fw-bold m-0 text-dark">Aviso da Produção</h6>
-                            <small class="text-muted">{{ notice.created_at|date:"d/m/Y H:i" }}</small>
-                        </div>
-                        {% if notice.date_time %}
-                        <div class="badge bg-warning text-dark mb-2">
-                            <i class="fa-regular fa-clock me-1"></i> {{ notice.date_time|date:"d/m/Y \à\s H:i" }}
-                        </div>
-                        {% endif %}
-                        <p class="mb-0 text-secondary" style="white-space: pre-wrap; font-size: 0.95rem;">{{ notice.message }}</p>
+    <!-- Cards de Resumo -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Shows (Total)</p>
+                        <h3 class="kpi-value text-dark">{{ total_shows }}</h3>
                     </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    <!-- Próximos Shows -->
-    <div class="{% if request.user.is_produtor %}col-lg-8{% else %}col-12{% endif %} mb-4 mb-lg-0">
-        <div class="card shadow-sm border-0 h-100" style="border-radius: 12px;">
-            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
-                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-calendar-day text-primary me-2"></i> Próximos Shows</h5>
-                {% if request.user.is_produtor %}
-                <a href="{% url 'shows_add' band.slug %}" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443;">
-                    <i class="fa-solid fa-plus me-1"></i> Novo Show
-                </a>
-                {% endif %}
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
-                            <tr>
-                                <th class="ps-4 py-3">Data</th>
-                                <th class="py-3">Show e Local</th>
-                                <th class="py-3 pe-4 text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for show in shows_proximos %}
-                            <tr class="clickable-row cursor-pointer" tabindex="0" role="link" data-href="{% url 'show_detail' band.slug show.id %}" style="cursor: pointer;">
-                                <td class="ps-4 text-nowrap fw-bold text-dark">{{ show.date|date:"d/m/Y" }}</td>
-                                <td>
-                                    <span class="fw-bold text-dark d-block">{{ show.title|default:"Sem Título" }}</span>
-                                    <small class="text-muted"><i class="fa-solid fa-location-dot me-1"></i> {{ show.city|default:"Cidade não informada" }}</small>
-                                </td>
-                                <td class="pe-4 text-center">
-                                    {% if show.status == 'CANCELADO' %}
-                                        <span class="badge rounded-pill bg-danger px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Cancelado</span>
-                                    {% elif show.is_past %}
-                                        <span class="badge rounded-pill bg-secondary px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Concluído</span>
-                                    {% elif show.status == 'CONFIRMADO' %}
-                                        <span class="badge rounded-pill bg-success px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Confirmado</span>
-                                    {% elif show.status == 'PRE_RESERVADO' %}
-                                        <span class="badge rounded-pill bg-warning text-dark px-3 py-2" style="width: 105px; display: inline-flex; align-items: center; justify-content: center;">Reserva</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center py-5 text-muted">
-                                    <i class="fa-regular fa-face-frown fs-1 mb-3 opacity-25"></i><br>
-                                    Não há próximos shows na agenda.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {% if request.user.is_produtor %}
-    <!-- Pendências -->
-    <div class="col-lg-4">
-        <div class="card shadow-sm border-0 h-100 {% if pendencias_bloqueadas %}bg-light opacity-75{% else %}bg-white{% endif %}" style="border-radius: 12px; display: flex; flex-direction: column;">
-            <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center" style="border-top-left-radius: 12px; border-top-right-radius: 12px; flex-shrink: 0;">
-                <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-clipboard-list text-muted me-2"></i> Pendências {% if pendencias_bloqueadas %}<i class="fa-solid fa-lock text-muted ms-2"></i>{% endif %}</h5>
-                {% if not pendencias_bloqueadas %}
-                <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#addPendingModal" style="background-color: #6BD443;">
-                    <i class="fa-solid fa-plus me-1"></i> Adicionar
-                </button>
-                {% endif %}
-            </div>
-
-            <div class="card-body p-0">
-                {% if pendencias_bloqueadas %}
-                    <div class="text-center p-5 text-muted d-flex flex-column align-items-center justify-content-center h-100">
-                        <i class="fa-solid fa-lock fa-3x mb-3 text-secondary"></i>
-                        <p class="mb-0 fw-semibold text-uppercase small">FUNCIONALIDADE DISPONIVEL APENAS NO PLANO AVANÇADO</p>
+                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-microphone-lines text-primary"></i>
                     </div>
-                {% else %}
-                {% if dashboard_pending_items %}
-                    <div class="table-responsive" style="max-width: 100%;">
-                        <table class="table table-hover align-middle mb-0 w-100" style="table-layout: fixed;">
-                            <thead class="table-light">
+                </div>
+            </div>
+        </div>
+
+        {% if request.user.is_produtor %}
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 border-start border-4 border-success h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Membros da Equipe</p>
+                        <h3 class="kpi-value text-success">{{ total_users }}</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-users text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Contatos (Banco)</p>
+                        <h3 class="kpi-value text-warning">{{ total_contacts }}</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-address-book text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <!-- Avisos da Banda -->
+        {% if band_notices %}
+        <div class="col-12 mb-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 w-100" style="border-radius: 12px; background-color: #fffdf5;">
+                <div class="card-header bg-transparent border-bottom-0 py-2 px-3">
+                    <h5 class="section-title text-dark"><i class="fa-solid fa-bullhorn text-warning me-2"></i>Avisos da Banda</h5>
+                </div>
+                <div class="card-body p-3 pt-0">
+                    <div class="d-flex flex-column gap-2">
+                        {% for notice in band_notices %}
+                        <div class="p-3 bg-white rounded shadow-sm border border-warning border-opacity-25">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold m-0 text-dark" style="font-size: 13px;">Aviso da Produção</h6>
+                                <small class="text-muted" style="font-size: 11px;">{{ notice.created_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            {% if notice.date_time %}
+                            <div class="badge bg-warning text-dark mb-1" style="font-size: 11px;">
+                                <i class="fa-regular fa-clock me-1"></i> {{ notice.date_time|date:"d/m/Y \à\s H:i" }}
+                            </div>
+                            {% endif %}
+                            <p class="mb-0 text-secondary" style="white-space: pre-wrap; font-size: 13px; line-height: 1.35;">{{ notice.message }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Próximos Shows -->
+        <div class="{% if request.user.is_produtor %}col-lg-8{% else %}col-12{% endif %} mb-3">
+            <div class="card shadow-sm border-0 h-100" style="border-radius: 12px;">
+                <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-between align-items-center" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                    <h5 class="section-title"><i class="fa-solid fa-calendar-day text-primary me-2"></i>Próximos Shows</h5>
+                    {% if request.user.is_produtor %}
+                    <a href="{% url 'shows_add' band.slug %}" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;">
+                        <i class="fa-solid fa-plus me-1"></i> Novo Show
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-uppercase text-muted">
                                 <tr>
-                                    <th class="py-3 ps-3 text-muted fw-semibold small text-uppercase" style="width: 40%;">Pendência</th>
-                                    <th class="py-3 px-2 text-muted fw-semibold small text-uppercase" style="width: 25%;">Show</th>
-                                    <th class="py-3 pe-3 text-muted fw-semibold small text-uppercase text-end" style="width: 35%;">Status</th>
+                                    <th class="ps-4">Data</th>
+                                    <th>Show e Local</th>
+                                    <th class="pe-4 text-center">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in dashboard_pending_items %}
+                                {% for show in shows_proximos %}
+                                <tr class="clickable-row cursor-pointer" tabindex="0" role="link" data-href="{% url 'show_detail' band.slug show.id %}" style="cursor: pointer;">
+                                    <td class="ps-4 text-nowrap fw-bold text-dark">{{ show.date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <span class="fw-bold text-dark d-block" style="font-size: 13px;">{{ show.title|default:"Sem Título" }}</span>
+                                        <small class="text-muted" style="font-size: 12px;"><i class="fa-solid fa-location-dot me-1"></i> {{ show.city|default:"Cidade não informada" }}</small>
+                                    </td>
+                                    <td class="pe-4 text-center">
+                                        {% if show.status == 'CANCELADO' %}
+                                            <span class="badge status-pill bg-danger">Cancelado</span>
+                                        {% elif show.is_past %}
+                                            <span class="badge status-pill bg-secondary">Concluído</span>
+                                        {% elif show.status == 'CONFIRMADO' %}
+                                            <span class="badge status-pill bg-success">Confirmado</span>
+                                        {% elif show.status == 'PRE_RESERVADO' %}
+                                            <span class="badge status-pill bg-warning text-dark">Reserva</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
                                 <tr>
-                                    <td class="py-3 ps-3 text-dark text-break" style="word-break: break-word; overflow-wrap: break-word; white-space: normal;">
-                                        <div class="fw-medium">{{ item.description }}</div>
-                                        {% if item.due_date %}
-                                        <small class="text-muted d-block mt-1">
-                                            <i class="fa-regular fa-calendar-xmark me-1"></i>{{ item.due_date|date:"d/m/Y" }}
-                                        </small>
-                                        {% endif %}
-                                    </td>
-                                    <td class="py-3 px-2 text-muted small text-break" style="word-break: break-word; overflow-wrap: break-word; white-space: normal;">
-                                        {% if item.show %}
-                                        <a href="{% url 'shows_edit' band.slug item.show.id %}" class="text-decoration-none text-primary fw-medium d-inline-block text-break">
-                                            {{ item.show.get_display_label }}
-                                        </a>
-                                        {% else %}
-                                        <span class="text-secondary fw-medium">Geral</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="py-3 pe-3 text-center">
-                                        <span class="badge rounded-pill {{ item.status_info.class }} fw-medium px-2 py-1" style="font-size: 0.75rem; width: 72px; display: inline-block; text-align: center;">{{ item.status_info.label }}</span>
+                                    <td colspan="3" class="text-center py-4 text-muted">
+                                        <i class="fa-regular fa-face-frown fs-2 mb-2 opacity-25"></i><br>
+                                        <span class="small">Não há próximos shows na agenda.</span>
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                {% else %}
-                    <div class="d-flex flex-column align-items-center justify-content-center text-center p-4 text-muted h-100" style="min-height: 200px;">
-                        <i class="fa-regular fa-circle-check fs-3 mb-2 opacity-50"></i>
-                        <span class="fw-medium">Nenhuma pendência no momento.</span>
-                    </div>
-                {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if request.user.is_produtor %}
+        <!-- Pendências -->
+        <div class="col-lg-4 mb-3">
+            <div class="card shadow-sm border-0 h-100 {% if pendencias_bloqueadas %}bg-light opacity-75{% else %}bg-white{% endif %}" style="border-radius: 12px; display: flex; flex-direction: column;">
+                <div class="card-header bg-transparent border-bottom py-2 px-3 d-flex justify-content-between align-items-center" style="border-top-left-radius: 12px; border-top-right-radius: 12px; flex-shrink: 0;">
+                    <h5 class="section-title text-dark"><i class="fa-solid fa-clipboard-list text-muted me-2"></i>Pendências {% if pendencias_bloqueadas %}<i class="fa-solid fa-lock text-muted ms-1"></i>{% endif %}</h5>
+                    {% if not pendencias_bloqueadas %}
+                    <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#addPendingModal" style="background-color: #6BD443; border-color: #6BD443; height: 30px; font-size: 13px; padding: 2px 12px;">
+                        <i class="fa-solid fa-plus me-1"></i> Adicionar
+                    </button>
+                    {% endif %}
+                </div>
+
+                <div class="card-body p-0">
+                    {% if pendencias_bloqueadas %}
+                        <div class="text-center p-4 text-muted d-flex flex-column align-items-center justify-content-center h-100">
+                            <i class="fa-solid fa-lock fs-2 mb-2 text-secondary"></i>
+                            <p class="mb-0 fw-semibold text-uppercase small">FUNCIONALIDADE DISPONÍVEL APENAS NO PLANO AVANÇADO</p>
+                        </div>
+                    {% else %}
+                    {% if dashboard_pending_items %}
+                        <div class="table-responsive" style="max-width: 100%;">
+                            <table class="table table-hover align-middle mb-0 w-100" style="table-layout: fixed;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-3" style="width: 42%;">Pendência</th>
+                                        <th class="px-2" style="width: 28%;">Show</th>
+                                        <th class="pe-3 text-center" style="width: 30%;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in dashboard_pending_items %}
+                                    <tr>
+                                        <td class="ps-3 text-dark text-break" style="word-break: break-word; overflow-wrap: break-word; white-space: normal;">
+                                            <div class="fw-medium" style="font-size: 13px; line-height: 1.3;">{{ item.description }}</div>
+                                            {% if item.due_date %}
+                                            <small class="text-muted d-block mt-1" style="font-size: 11px;">
+                                                <i class="fa-regular fa-calendar-xmark me-1"></i>{{ item.due_date|date:"d/m/Y" }}
+                                            </small>
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-2 text-muted small text-break" style="word-break: break-word; overflow-wrap: break-word; white-space: normal; font-size: 12px;">
+                                            {% if item.show %}
+                                            <a href="{% url 'shows_edit' band.slug item.show.id %}" class="text-decoration-none text-primary fw-medium d-inline-block text-break">
+                                                {{ item.show.get_display_label }}
+                                            </a>
+                                            {% else %}
+                                            <span class="text-secondary fw-medium">Geral</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="pe-3 text-center">
+                                            <span class="badge {{ item.status_info.class }} status-pill-mini">{{ item.status_info.label }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="d-flex flex-column align-items-center justify-content-center text-center p-4 text-muted h-100" style="min-height: 160px;">
+                            <i class="fa-regular fa-circle-check fs-3 mb-2 opacity-50"></i>
+                            <span class="fw-medium small">Nenhuma pendência no momento.</span>
+                        </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                {% if not pendencias_bloqueadas %}
+                <div class="card-footer bg-transparent border-top-0 py-2 text-center">
+                    <a href="{% url 'pendencias' band.slug %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium" style="font-size: 12px;">Ver Todas as Pendências</a>
+                </div>
                 {% endif %}
             </div>
-            {% if not pendencias_bloqueadas %}
-            <div class="card-footer bg-transparent border-top-0 pt-0 text-center">
-                <a href="{% url 'pendencias' band.slug %}" class="btn btn-sm btn-outline-primary rounded-pill px-4 fw-medium">Ver Todas as Pendências</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if request.user.is_produtor %}
+    <div class="row">
+        <div class="col-12 mb-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 w-100" style="border-radius: 12px; background-color: #fffdf5;">
+                <div class="card-header bg-transparent border-bottom-0 py-2 px-3">
+                    <h5 class="section-title text-dark"><i class="fa-solid fa-bullhorn text-warning me-2"></i>Avisos do Sistema</h5>
+                </div>
+                <div class="card-body p-3 pt-0">
+                    {% if administrative_notices %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for notice in administrative_notices %}
+                            <div class="p-3 bg-white rounded shadow-sm border border-warning border-opacity-25">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="fw-bold m-0 text-dark" style="font-size: 13px;">Aviso Administrativo</h6>
+                                    <small class="text-muted" style="font-size: 11px;">{{ notice.created_at|date:"d/m/Y H:i" }}</small>
+                                </div>
+                                <p class="mb-0 text-secondary" style="white-space: pre-wrap; font-size: 13px; line-height: 1.35;">{{ notice.message }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3 text-muted">
+                            <i class="fa-regular fa-bell-slash fs-4 mb-2 opacity-50"></i>
+                            <p class="mb-0 small">Nenhum aviso no momento.</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
-            {% endif %}
         </div>
     </div>
     {% endif %}
 </div>
-
-{% if request.user.is_produtor %}
-<div class="row">
-    <div class="col-12 mt-2 mb-4">
-        <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 w-100" style="border-radius: 12px; background-color: #fffdf5;">
-            <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0">
-                <h5 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-bullhorn text-warning me-2"></i> Avisos do Sistema</h5>
-            </div>
-            <div class="card-body">
-                {% if administrative_notices %}
-                    <div class="d-flex flex-column gap-3">
-                        {% for notice in administrative_notices %}
-                        <div class="p-3 bg-white rounded shadow-sm border border-warning border-opacity-25">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="fw-bold m-0 text-dark">Aviso Administrativo</h6>
-                                <small class="text-muted">{{ notice.created_at|date:"d/m/Y H:i" }}</small>
-                            </div>
-                            <p class="mb-0 text-secondary" style="white-space: pre-wrap; font-size: 0.95rem;">{{ notice.message }}</p>
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-3 text-muted">
-                        <i class="fa-regular fa-bell-slash fs-4 mb-2 opacity-50"></i>
-                        <p class="mb-0">Nenhum aviso no momento.</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 {% if request.user.is_produtor %}
 <!-- Add Pending Modal -->

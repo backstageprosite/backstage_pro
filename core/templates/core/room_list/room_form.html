@@ -2,64 +2,121 @@
 
 {% block title %}{{ action }} Quarto - {{ request.band.name }}{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para formulário de Quarto */
+    .bp-room-form-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-room-form-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-room-form-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-room-form-page .form-control,
+    .bp-room-form-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-room-form-page .btn-submit {
+        height: 36px;
+        font-size: 14px;
+        border-radius: 50rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-room-form-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-room-form-page .form-control,
+        .bp-room-form-page .form-select {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ action }} Quarto</h2>
-        <a href="{% url 'room_list_manage' request.band.slug room_list.id %}" class="btn btn-outline-dark rounded-pill fw-bold px-3"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
+<div class="bp-room-form-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h4 class="page-title">{{ action }} Quarto</h4>
+        <div>
+            <a href="{% url 'room_list_manage' request.band.slug room_list.id %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
     </div>
 
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+        <div class="card-body p-4">
+            <p class="text-muted small mb-3">Lista: <strong class="text-dark">{{ room_list.hotel_name }}</strong></p>
 
-    <div class="card shadow-sm p-4">
-        <p class="text-muted">Lista: <strong>{{ room_list.hotel_name }}</strong></p>
+            <form method="post">
+                {% csrf_token %}
 
-        <form method="post">
-            {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.number_or_name.id_for_label }}" class="form-label">{{ form.number_or_name.label }}</label>
+                        {{ form.number_or_name }}
+                        {% if form.number_or_name.errors %}
+                            <div class="text-danger mt-1 small">{{ form.number_or_name.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
 
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.number_or_name.id_for_label }}" class="form-label">{{ form.number_or_name.label }}</label>
-                    {{ form.number_or_name }}
-                    {% if form.number_or_name.errors %}
-                        <div class="text-danger mt-1">{{ form.number_or_name.errors|join:", " }}</div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.type.id_for_label }}" class="form-label">{{ form.type.label }}</label>
+                        {{ form.type }}
+                        {% if form.type.errors %}
+                            <div class="text-danger mt-1 small">{{ form.type.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.capacity.id_for_label }}" class="form-label">{{ form.capacity.label }}</label>
+                        {{ form.capacity }}
+                        {% if form.capacity.errors %}
+                            <div class="text-danger mt-1 small">{{ form.capacity.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.beds_config.id_for_label }}" class="form-label">{{ form.beds_config.label }}</label>
+                        {{ form.beds_config }}
+                        {% if form.beds_config.errors %}
+                            <div class="text-danger mt-1 small">{{ form.beds_config.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3 form-check">
+                    {{ form.has_ac }}
+                    <label for="{{ form.has_ac.id_for_label }}" class="form-check-label small fw-medium">{{ form.has_ac.label }}</label>
+                    {% if form.has_ac.errors %}
+                        <div class="text-danger mt-1 small">{{ form.has_ac.errors|join:", " }}</div>
                     {% endif %}
                 </div>
 
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.type.id_for_label }}" class="form-label">{{ form.type.label }}</label>
-                    {{ form.type }}
-                    {% if form.type.errors %}
-                        <div class="text-danger mt-1">{{ form.type.errors|join:", " }}</div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.capacity.id_for_label }}" class="form-label">{{ form.capacity.label }}</label>
-                    {{ form.capacity }}
-                    {% if form.capacity.errors %}
-                        <div class="text-danger mt-1">{{ form.capacity.errors|join:", " }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.beds_config.id_for_label }}" class="form-label">{{ form.beds_config.label }}</label>
-                    {{ form.beds_config }}
-                    {% if form.beds_config.errors %}
-                        <div class="text-danger mt-1">{{ form.beds_config.errors|join:", " }}</div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="mb-3 form-check">
-                {{ form.has_ac }}
-                <label for="{{ form.has_ac.id_for_label }}" class="form-check-label">{{ form.has_ac.label }}</label>
-                {% if form.has_ac.errors %}
-                    <div class="text-danger mt-1">{{ form.has_ac.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-
-            <button type="submit" class="btn btn-primary mt-3">Salvar Quarto</button>
-        </form>
+                <button type="submit" class="btn btn-primary btn-submit fw-bold px-4 shadow-sm mt-2">Salvar Quarto</button>
+            </form>
+        </div>
     </div>
+</div>
 {% endblock %}

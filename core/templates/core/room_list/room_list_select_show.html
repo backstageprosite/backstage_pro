@@ -2,26 +2,87 @@
 
 {% block title %}Selecionar Show para Hospedagem - {{ request.band.name }}{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para seleção de show na Room List */
+    .bp-roomlist-select-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-roomlist-select-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-roomlist-select-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-roomlist-select-page .form-select,
+    .bp-roomlist-select-page .form-control {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-roomlist-select-page .btn-submit {
+        height: 36px;
+        font-size: 14px;
+        border-radius: 50rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-roomlist-select-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-roomlist-select-page .form-select,
+        .bp-roomlist-select-page .form-control {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Criar Lista de Hospedagem: Selecionar Show</h2>
-        <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
+<div class="bp-roomlist-select-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h4 class="page-title">Criar Lista de Hospedagem: Selecionar Show</h4>
+        <div>
+            <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
     </div>
 
+    <div class="row">
+        <div class="col-md-8 col-lg-6 mx-auto">
+            <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
 
-    <div class="card shadow-sm p-4">
-        <form method="post">
-            {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="{{ form.show_id.id_for_label }}" class="form-label">{{ form.show_id.label }}</label>
+                            {{ form.show_id }}
+                            {% if form.show_id.errors %}
+                                <div class="text-danger mt-1 small">{{ form.show_id.errors|join:", " }}</div>
+                            {% endif %}
+                        </div>
 
-            <div class="mb-3">
-                <label for="{{ form.show_id.id_for_label }}" class="form-label">{{ form.show_id.label }}</label>
-                {{ form.show_id }}
-                {% if form.show_id.errors %}
-                    <div class="text-danger mt-1">{{ form.show_id.errors|join:", " }}</div>
-                {% endif %}
+                        <button type="submit" class="btn btn-primary btn-submit fw-bold px-4 w-100 shadow-sm mt-2">Continuar</button>
+                    </form>
+                </div>
             </div>
-
-            <button type="submit" class="btn btn-primary mt-3">Continuar</button>
-        </form>
+        </div>
     </div>
+</div>
 {% endblock %}

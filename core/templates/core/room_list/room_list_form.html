@@ -2,66 +2,121 @@
 
 {% block title %}{{ action }} Lista de Hospedagem - {{ request.band.name }}{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para formulário de Room List */
+    .bp-roomlist-form-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-roomlist-form-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-roomlist-form-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-roomlist-form-page .form-control,
+    .bp-roomlist-form-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-roomlist-form-page .btn-submit {
+        height: 36px;
+        font-size: 14px;
+        border-radius: 50rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-roomlist-form-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-roomlist-form-page .form-control,
+        .bp-roomlist-form-page .form-select {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>{{ action }} Lista de Hospedagem</h2>
-        <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
+<div class="bp-roomlist-form-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h4 class="page-title">{{ action }} Lista de Hospedagem</h4>
+        <div>
+            <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
     </div>
 
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+        <div class="card-body p-4">
+            {% if show %}
+            <p class="text-muted small mb-3">Show vinculado: <strong class="text-dark">{{ show.city }} - {{ show.date|date:"d/m/Y" }}</strong></p>
+            {% elif room_list %}
+            <p class="text-muted small mb-3">Show vinculado: <strong class="text-dark">{{ room_list.show.city }} - {{ room_list.show.date|date:"d/m/Y" }}</strong></p>
+            {% endif %}
 
-    <div class="card shadow-sm p-4">
-        {% if show %}
-        <p class="text-muted">Show vinculado: <strong>{{ show.city }} - {{ show.date|date:"d/m/Y" }}</strong></p>
-        {% elif room_list %}
-        <p class="text-muted">Show vinculado: <strong>{{ room_list.show.city }} - {{ room_list.show.date|date:"d/m/Y" }}</strong></p>
-        {% endif %}
+            <form method="post">
+                {% csrf_token %}
 
-        <form method="post">
-            {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.hotel_name.id_for_label }}" class="form-label">{{ form.hotel_name.label }}</label>
+                        {{ form.hotel_name }}
+                        {% if form.hotel_name.errors %}
+                            <div class="text-danger mt-1 small">{{ form.hotel_name.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
 
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.hotel_name.id_for_label }}" class="form-label">{{ form.hotel_name.label }}</label>
-                    {{ form.hotel_name }}
-                    {% if form.hotel_name.errors %}
-                        <div class="text-danger mt-1">{{ form.hotel_name.errors|join:", " }}</div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.city.id_for_label }}" class="form-label">{{ form.city.label }}</label>
+                        {{ form.city }}
+                        {% if form.city.errors %}
+                            <div class="text-danger mt-1 small">{{ form.city.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                        <div class="text-danger mt-1 small">{{ form.address.errors|join:", " }}</div>
                     {% endif %}
                 </div>
 
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.city.id_for_label }}" class="form-label">{{ form.city.label }}</label>
-                    {{ form.city }}
-                    {% if form.city.errors %}
-                        <div class="text-danger mt-1">{{ form.city.errors|join:", " }}</div>
-                    {% endif %}
-                </div>
-            </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.check_in.id_for_label }}" class="form-label">{{ form.check_in.label }}</label>
+                        {{ form.check_in }}
+                        {% if form.check_in.errors %}
+                            <div class="text-danger mt-1 small">{{ form.check_in.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
 
-            <div class="mb-3">
-                <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
-                {{ form.address }}
-                {% if form.address.errors %}
-                    <div class="text-danger mt-1">{{ form.address.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.check_in.id_for_label }}" class="form-label">{{ form.check_in.label }}</label>
-                    {{ form.check_in }}
-                    {% if form.check_in.errors %}
-                        <div class="text-danger mt-1">{{ form.check_in.errors|join:", " }}</div>
-                    {% endif %}
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.check_out.id_for_label }}" class="form-label">{{ form.check_out.label }}</label>
+                        {{ form.check_out }}
+                        {% if form.check_out.errors %}
+                            <div class="text-danger mt-1 small">{{ form.check_out.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
                 </div>
-
-                <div class="col-md-6 mb-3">
-                    <label for="{{ form.check_out.id_for_label }}" class="form-label">{{ form.check_out.label }}</label>
-                    {{ form.check_out }}
-                    {% if form.check_out.errors %}
-                        <div class="text-danger mt-1">{{ form.check_out.errors|join:", " }}</div>
-                    {% endif %}
-                </div>
-            </div>
 
             <div class="row">
                 <div class="col-md-4 mb-3">
@@ -97,7 +152,9 @@
                 {% endif %}
             </div>
 
-            <button type="submit" class="btn btn-primary mt-3">Salvar</button>
+            <button type="submit" class="btn btn-primary btn-submit fw-bold px-4 shadow-sm mt-3">Salvar</button>
         </form>
     </div>
+</div>
+</div>
 {% endblock %}
