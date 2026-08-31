@@ -21,17 +21,16 @@
 <!-- Filtros -->
 <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
     <div class="card-body p-3">
-        <form method="get" class="row g-3">
-            <!-- Linha 1: Campos -->
-            <div class="col-12 col-sm-6 col-md-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-12 col-sm-6 col-md-3 col-xl">
                 <label class="form-label small text-muted fw-bold mb-1">Nome</label>
                 <input type="text" name="name" class="form-control form-control-sm" value="{{ request.GET.name }}" placeholder="Buscar nome...">
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
+            <div class="col-6 col-sm-6 col-md-2 col-xl">
                 <label class="form-label small text-muted fw-bold mb-1">Data</label>
                 <input type="date" name="date" class="form-control form-control-sm" value="{{ request.GET.date }}">
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
+            <div class="col-6 col-sm-6 col-md-2 col-xl">
                 <label class="form-label small text-muted fw-bold mb-1">Fase</label>
                 <select name="phase" class="form-select form-select-sm">
                     <option value="TODAS" {% if request.GET.phase == 'TODAS' or not request.GET.phase %}selected{% endif %}>Todas</option>
@@ -40,13 +39,12 @@
                     <option value="DESISTENCIA" {% if request.GET.phase == 'DESISTENCIA' %}selected{% endif %}>Desistência</option>
                 </select>
             </div>
-            <div class="col-12 col-sm-6 col-md-3">
+            <div class="col-12 col-sm-6 col-md-3 col-xl">
                 <label class="form-label small text-muted fw-bold mb-1">Origem</label>
                 <input type="text" name="origin" class="form-control form-control-sm" value="{{ request.GET.origin }}" placeholder="Buscar origem...">
             </div>
 
-            <!-- Linha 2: Botões de Ação -->
-            <div class="col-12 d-flex justify-content-end gap-2 pt-1">
+            <div class="col-12 col-xl-auto ms-xl-auto d-flex gap-2 justify-content-end mt-2 mt-xl-0">
                 <a href="?" class="btn btn-sm btn-outline-secondary px-3" style="border-radius: 4px; font-family: Inter; font-size: 14px; font-weight: 400; padding: 4px 16px; height: 30px; display: inline-flex; align-items: center; border: 1px solid #6C757D;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';">
                     <i class="fa-solid fa-eraser me-1" style="font-size: 14px;"></i> Limpar
                 </a>
