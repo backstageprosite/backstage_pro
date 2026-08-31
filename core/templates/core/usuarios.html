@@ -1,245 +1,338 @@
 {% extends 'core/base.html' %}
 
-{% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-    <div>
-        <h4 class="fw-bold m-0"><i class="fa-solid fa-users text-primary me-2"></i> Usuários</h4>
-    </div>
-    <div class="d-flex flex-wrap gap-2">
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
-        <button type="button" data-bs-toggle="modal" data-bs-target="#addUserModal" class="btn fw-bold px-4 rounded-pill shadow-sm text-dark" style="background-color: #6BD443;">
-            <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">Novo </span>Usuário
-        </button>
-    </div>
-</div>
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para Usuários */
+    .bp-users-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-users-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-users-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 9px 12px;
+        text-transform: uppercase;
+    }
+    .bp-users-page .table tbody td {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .bp-users-page .user-avatar {
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
+    }
+    .bp-users-page .btn-actions {
+        font-size: 13px;
+        height: 30px;
+        padding: 3px 12px;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    .bp-users-page .status-pill {
+        width: 80px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .bp-users-page .role-pill {
+        width: 105px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .bp-users-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-users-page .form-control,
+    .bp-users-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
 
-<div class="card shadow-sm border-0" style="border-radius: 12px;">
-    <div class="card-body p-0">
-        <div class="table-responsive mobile-cards-table">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
-                    <tr>
-                        <th class="ps-4 py-3">Nome do Usuário</th>
-                        <th class="py-3 d-none d-md-table-cell">E-MAIL</th>
-                        <th class="py-3">PERFIL</th>
-                        <th class="py-3">Status</th>
-                        <th class="pe-4 py-3 text-end">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for usuario in usuarios %}
-                    <tr>
-                        <td class="ps-4 full-row">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-light text-primary rounded-circle d-flex justify-content-center align-items-center me-3 fw-bold" style="width: 40px; height: 40px;">
-                                    {{ usuario.first_name|default:usuario.username|make_list|first|upper }}
+    @media (max-width: 767.98px) {
+        .bp-users-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-users-page .form-control,
+        .bp-users-page .form-select {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bp-users-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <div>
+            <h4 class="page-title"><i class="fa-solid fa-users text-primary me-2"></i>Usuários</h4>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+            <button type="button" data-bs-toggle="modal" data-bs-target="#addUserModal" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;">
+                <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">Novo </span>Usuário
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            <div class="table-responsive mobile-cards-table">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase text-muted">
+                        <tr>
+                            <th class="ps-4">Nome do Usuário</th>
+                            <th class="d-none d-md-table-cell">E-MAIL</th>
+                            <th>PERFIL</th>
+                            <th>Status</th>
+                            <th class="pe-4 text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in usuarios %}
+                        <tr>
+                            <td class="ps-4 full-row">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light text-primary rounded-circle d-flex justify-content-center align-items-center me-3 fw-bold user-avatar">
+                                        {{ usuario.first_name|default:usuario.username|make_list|first|upper }}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-dark" style="font-size: 13px;">{{ usuario.first_name }} {{ usuario.last_name }}</h6>
+                                        <small class="text-muted" style="font-size: 12px;">@{{ usuario.username }}</small>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h6 class="mb-0 fw-bold text-dark">{{ usuario.first_name }} {{ usuario.last_name }}</h6>
-                                    <small class="text-muted">@{{ usuario.username }}</small>
+                            </td>
+                            <td class="text-muted d-none d-md-table-cell" style="font-size: 13px;">{{ usuario.email|default:"Sem e-mail" }}</td>
+                            <td data-label="Perfil">
+                                {% if usuario.is_superuser %}
+                                    <span class="badge bg-dark role-pill"><i class="fa-solid fa-shield me-1"></i> Admin Geral</span>
+                                {% elif usuario.is_produtor %}
+                                    <span class="badge bg-primary role-pill"><i class="fa-solid fa-crown me-1"></i> Produtor</span>
+                                {% else %}
+                                    <span class="badge bg-secondary role-pill"><i class="fa-solid fa-guitar me-1"></i> Integrante</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Status">
+                                {% if usuario.is_active %}
+                                    <span class="badge bg-success bg-opacity-25 text-success status-pill border border-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-danger bg-opacity-25 text-danger status-pill border border-danger">Bloqueado</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 text-end text-nowrap actions-td">
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm btn-light border btn-actions shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 13px;">
+                                        <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editUserModal{{ usuario.id }}"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar</button></li>
+                                        <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalResetPass{{ usuario.id }}"><i class="fa-solid fa-key me-2 text-warning"></i> Senha</button></li>
+                                        <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'usuarios_delete' band.slug usuario.id %}" data-item-type="o usuário" data-item-name="{{ usuario.first_name|default:usuario.username }}"><i class="fa-solid fa-trash me-2"></i> Excluir</button></li>
+                                    </ul>
                                 </div>
-                            </div>
-                        </td>
-                        <td class="text-muted d-none d-md-table-cell">{{ usuario.email|default:"Sem e-mail" }}</td>
-                        <td data-label="Perfil">
-                            {% if usuario.is_superuser %}
-                                <span class="badge bg-dark rounded-pill px-2"><i class="fa-solid fa-shield"></i> Admin Geral</span>
-                            {% elif usuario.is_produtor %}
-                                <span class="badge bg-primary rounded-pill px-2"><i class="fa-solid fa-crown"></i> Produtor</span>
-                            {% else %}
-                                <span class="badge bg-secondary rounded-pill px-2"><i class="fa-solid fa-guitar"></i> Integrante</span>
-                            {% endif %}
-                        </td>
-                        <td data-label="Status">
-                            {% if usuario.is_active %}
-                                <span class="badge bg-success bg-opacity-25 text-success px-3 py-2 fw-bold border border-success">Ativo</span>
-                            {% else %}
-                                <span class="badge bg-danger bg-opacity-25 text-danger px-3 py-2 fw-bold border border-danger">Bloqueado</span>
-                            {% endif %}
-                        </td>
-                        <td class="pe-4 text-end text-nowrap actions-td">
-                            <div class="dropdown d-inline-block">
-                                <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
-                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
-                                    <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editUserModal{{ usuario.id }}"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar</button></li>
-                                    <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalResetPass{{ usuario.id }}"><i class="fa-solid fa-key me-2 text-warning"></i> Senha</button></li>
-                                    <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'usuarios_delete' band.slug usuario.id %}" data-item-type="o usuário" data-item-name="{{ usuario.first_name|default:usuario.username }}"><i class="fa-solid fa-trash me-2"></i> Excluir</button></li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-5">
-                            <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
-                                <i class="fa-solid fa-users-slash text-muted mb-3" style="font-size: 3rem;"></i>
-                                <h5 class="fw-bold text-dark mb-1">Nenhum usuário cadastrado</h5>
-                                <p class="text-muted small mb-4">Adicione membros da equipe para que eles tenham acesso ao sistema.</p>
-                                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                                    <i class="fa-solid fa-plus me-1"></i> Adicionar Usuário
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
+                                    <i class="fa-solid fa-users-slash text-muted mb-2 fs-1"></i>
+                                    <h6 class="fw-bold text-dark mb-1">Nenhum usuário cadastrado</h6>
+                                    <p class="text-muted small mb-3">Adicione membros da equipe para que eles tenham acesso ao sistema.</p>
+                                    <button type="button" class="btn btn-primary btn-header-action fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                        <i class="fa-solid fa-plus me-1"></i> Adicionar Usuário
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Modal <span class="d-none d-sm-inline">Novo </span>Usuário -->
+<!-- Modal Novo Usuário -->
 <div class="modal fade text-start" id="addUserModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <form action="{% url 'usuarios_add' band.slug %}" method="POST">
                 {% csrf_token %}
-                <div class="modal-header bg-light border-0">
-                    <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-user-plus me-2"></i><span class="d-none d-sm-inline">Novo </span>Usuário</h5>
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-user-plus me-2 text-primary"></i><span class="d-none d-sm-inline">Novo </span>Usuário</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4 text-wrap" style="white-space: normal;">
-                    <div class="row g-3">
+                <div class="modal-body p-3 p-md-4 text-wrap" style="white-space: normal;">
+                    <div class="row g-2">
                         <div class="col-6">
-                            <label class="form-label fw-bold small">Nome</label>
+                            <label class="form-label">Nome</label>
                             <input type="text" name="first_name" class="form-control" placeholder="Ex: Danniel" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-bold small">Sobrenome</label>
+                            <label class="form-label">Sobrenome</label>
                             <input type="text" name="last_name" class="form-control" placeholder="Ex: Vieira" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold small">Login</label>
+                            <label class="form-label">Login</label>
                             <input type="text" name="username" class="form-control" placeholder="Ex: danniel_v" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold small">E-mail</label>
+                            <label class="form-label">E-mail</label>
                             <input type="email" name="email" class="form-control" placeholder="email@exemplo.com">
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-bold small">Senha</label>
+                            <label class="form-label">Senha</label>
                             <input type="password" name="password" class="form-control" placeholder="Senha" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-bold small">Confirmar Senha</label>
+                            <label class="form-label">Confirmar Senha</label>
                             <input type="password" name="confirm_password" class="form-control" placeholder="Confirmar Senha" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold small">Perfil de Acesso</label>
+                            <label class="form-label">Perfil de Acesso</label>
                             <select name="role" class="form-select">
                                 <option value="INTEGRANTE">Integrante</option>
                                 <option value="PRODUTOR">Produtor</option>
                                 <option value="EMPRESARIO">Empresário</option>
                             </select>
                         </div>
-                        <div class="col-12 mt-3">
+                        <div class="col-12 mt-2">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserCreate" checked>
-                                <label class="form-check-label fw-bold small ms-2" for="isActiveUserCreate">Usuário Ativo</label>
+                                <label class="form-check-label fw-bold small ms-2" for="isActiveUserCreate" style="font-size: 13px;">Usuário Ativo</label>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-0 justify-content-center">
-                    <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm">Criar Usuário</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Criar Usuário</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-
 {% for usuario in usuarios %}
+<!-- Modal Resetar Senha -->
+<div class="modal fade text-start" id="modalResetPass{{ usuario.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-key me-2 text-warning"></i>Resetar Senha</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'usuarios_reset_password' band.slug usuario.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-3 p-md-4 text-wrap" style="white-space: normal;">
+                    <p class="text-muted small mb-3" style="font-size: 12px;">Atenção: Ao redefinir a senha, o usuário perderá o acesso com a senha antiga. Ele precisará usar esta nova senha para o próximo login.</p>
+                    <div class="mb-3">
+                        <label class="form-label">Nova Senha</label>
+                        <input type="password" name="new_password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmar Nova Senha</label>
+                        <input type="password" name="confirm_password" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-warning fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Senha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-
-                            <!-- Modal Resetar Senha -->
-                            <div class="modal fade text-start" id="modalResetPass{{ usuario.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content border-0 shadow">
-                                        <div class="modal-header bg-light border-0">
-                                            <h5 class="modal-title fw-bold text-warning"><i class="fa-solid fa-key me-2"></i>Resetar Senha</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <form method="POST" action="{% url 'usuarios_reset_password' band.slug usuario.id %}">
-                                            {% csrf_token %}
-                                            <div class="modal-body p-4 text-wrap" style="white-space: normal;">
-                                                <p class="text-muted small mb-4">Atenção: Ao redefinir a senha, o usuário perderá o acesso com a senha antiga. Ele precisará usar esta nova senha para o próximo login.</p>
-                                                <div class="mb-3">
-                                                    <label class="form-label fw-bold small">Nova Senha</label>
-                                                    <input type="password" name="new_password" class="form-control" required>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label fw-bold small">Confirmar Nova Senha</label>
-                                                    <input type="password" name="confirm_password" class="form-control" required>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer bg-light border-0 justify-content-center">
-                                                <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                                                <button type="submit" class="btn btn-warning fw-bold px-4 rounded-pill shadow-sm">Salvar Senha</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
+<!-- Modal Editar Usuário -->
+<div class="modal fade text-start" id="editUserModal{{ usuario.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <form action="{% url 'usuarios_edit' band.slug usuario.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-user-pen me-2 text-primary"></i>Editar Usuário</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 p-md-4 text-wrap" style="white-space: normal;">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label">Nome</label>
+                            <input type="text" name="first_name" class="form-control" value="{{ usuario.first_name }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Sobrenome</label>
+                            <input type="text" name="last_name" class="form-control" value="{{ usuario.last_name }}" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Login</label>
+                            <input type="text" name="username" class="form-control bg-light" value="{{ usuario.username }}" readonly>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" name="email" class="form-control" value="{{ usuario.email|default:'' }}">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Perfil de Acesso</label>
+                            <select name="role" class="form-select">
+                                <option value="INTEGRANTE" {% if usuario.role == 'INTEGRANTE' %}selected{% endif %}>Integrante</option>
+                                <option value="PRODUTOR" {% if usuario.role == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
+                                <option value="EMPRESARIO" {% if usuario.role == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
+                            </select>
+                        </div>
+                        <div class="col-6 d-flex align-items-end">
+                            <div class="form-check form-switch mb-2 d-flex align-items-center">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActive{{ usuario.id }}" {% if usuario.is_active %}checked{% endif %}>
+                                <label class="form-check-label fw-bold small ms-2" for="isActive{{ usuario.id }}" style="font-size: 13px;">Usuário Ativo</label>
                             </div>
-
-
-                            <!-- Modal Editar Usuário -->
-                            <div class="modal fade text-start" id="editUserModal{{ usuario.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content border-0 shadow">
-                                        <form action="{% url 'usuarios_edit' band.slug usuario.id %}" method="POST">
-                                            {% csrf_token %}
-                                            <div class="modal-header bg-light border-0">
-                                                <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-user-pen me-2"></i>Editar Usuário</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body p-4 text-wrap" style="white-space: normal;">
-                                                <div class="row g-3">
-                                                    <div class="col-6">
-                                                        <label class="form-label fw-bold small">Nome</label>
-                                                        <input type="text" name="first_name" class="form-control" value="{{ usuario.first_name }}" required>
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <label class="form-label fw-bold small">Sobrenome</label>
-                                                        <input type="text" name="last_name" class="form-control" value="{{ usuario.last_name }}" required>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <label class="form-label fw-bold small">Login</label>
-                                                        <input type="text" name="username" class="form-control bg-light" value="{{ usuario.username }}" readonly>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <label class="form-label fw-bold small">E-mail</label>
-                                                        <input type="email" name="email" class="form-control" value="{{ usuario.email|default:'' }}">
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <label class="form-label fw-bold small">Perfil de Acesso</label>
-                                                        <select name="role" class="form-select">
-                                                            <option value="INTEGRANTE" {% if usuario.role == 'INTEGRANTE' %}selected{% endif %}>Integrante</option>
-                                                            <option value="PRODUTOR" {% if usuario.role == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
-                                                            <option value="EMPRESARIO" {% if usuario.role == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-6 d-flex align-items-end">
-                                                        <div class="form-check form-switch mb-2 d-flex align-items-center">
-                                                            <input class="form-check-input" type="checkbox" name="is_active" id="isActive{{ usuario.id }}" {% if usuario.is_active %}checked{% endif %}>
-                                                            <label class="form-check-label fw-bold small ms-2" for="isActive{{ usuario.id }}">Usuário Ativo</label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer bg-light border-0 justify-content-center">
-                                                <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                                                <button type="submit" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm">Salvar Alterações</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endfor %}
 
 {% endblock %}

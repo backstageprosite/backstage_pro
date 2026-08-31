@@ -3,22 +3,22 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-danger" id="modalConfirmDeleteUniversalLabel">Confirmar Exclusão</h5>
+                <h5 class="modal-title fw-bold text-danger" id="modalConfirmDeleteUniversalLabel" style="font-size: 16px;">Confirmar Exclusão</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body pt-3 pb-2 text-dark" style="white-space: normal; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; min-width: 0;">
+            <div class="modal-body p-3 p-md-4 text-dark" style="white-space: normal; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; min-width: 0; font-size: 13px; line-height: 1.4;">
                 <span id="modalConfirmDeleteUniversalMessage">
                     Tem certeza que deseja excluir <span id="modalConfirmDeleteUniversalItemType"></span><strong><span id="modalConfirmDeleteUniversalItemName"></span></strong>?
                 </span>
                 <br>
-                <small class="text-muted" id="modalConfirmDeleteUniversalWarning">Esta ação não pode ser desfeita.</small>
+                <small class="text-muted" id="modalConfirmDeleteUniversalWarning" style="font-size: 12px;">Esta ação não pode ser desfeita.</small>
             </div>
-            <div class="modal-footer border-top-0 pt-2 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
+            <div class="modal-footer border-top-0 pt-0 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
                 <form method="post" id="modalConfirmDeleteUniversalForm" action="" class="d-inline m-0 p-0">
                     {% csrf_token %}
                     <div id="modalConfirmDeleteUniversalExtraFields"></div>
-                    <button type="submit" id="modalConfirmDeleteUniversalSubmitBtn" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">Excluir</button>
+                    <button type="submit" id="modalConfirmDeleteUniversalSubmitBtn" class="btn btn-danger fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Excluir</button>
                 </form>
             </div>
         </div>
