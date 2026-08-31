@@ -48,7 +48,6 @@
                 <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
                     <tr>
                         <th class="ps-4 py-3 border-0 rounded-start">NOME DO USUÁRIO</th>
-                        <th class="py-3 border-0">E-MAIL</th>
                         <th class="py-3 border-0">Banda Vinculada</th>
                         <th class="py-3 border-0">Perfil</th>
                         <th class="text-end pe-4 py-3 border-0 rounded-end">AÇÕES</th>
@@ -68,7 +67,6 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="text-muted">{{ u.email }}</td>
                         <td>
                             {% if u.band %}
                                 <span class="badge {{ u.band.name|band_color }} rounded-pill px-3 py-1">
@@ -109,7 +107,7 @@
                     
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
+                        <td colspan="4" class="text-center py-5 text-muted">
                             <i class="fa-solid fa-users-slash fa-3x mb-3 text-secondary opacity-50"></i>
                             <h5 class="fw-bold">Nenhum usuário</h5>
                         </td>

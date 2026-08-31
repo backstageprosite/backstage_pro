@@ -42,6 +42,11 @@ class AdminUserCreateForm(forms.ModelForm):
             'is_active': 'Usuário Ativo?',
         }
         
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'email' in self.fields:
+            self.fields['email'].required = False
+
     def clean(self):
         cleaned_data = super().clean()
         password = cleaned_data.get('password')
@@ -63,6 +68,11 @@ class AdminUserEditForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'username', 'email', 'band', 'role', 'is_active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'email' in self.fields:
+            self.fields['email'].required = False
 
 class AdminSubscriptionForm(forms.ModelForm):
     class Meta:

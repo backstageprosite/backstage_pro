@@ -129,12 +129,9 @@
                                     </li>
                                     {% if sub.status != 'CANCELADO' %}
                                     <li>
-                                        <form method="POST" action="{% url 'admin_painel:assinaturas_cancelar' sub.id %}" class="d-inline w-100">
-                                            {% csrf_token %}
-                                            <button type="submit" class="dropdown-item py-2 fw-medium text-danger" onclick="return confirm('Tem certeza que deseja cancelar esta assinatura?');">
-                                                <i class="fa-solid fa-trash text-danger me-2"></i>Excluir
-                                            </button>
-                                        </form>
+                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:assinaturas_cancelar' sub.id %}" data-modal-title="Excluir assinatura" data-item-type="a assinatura da banda" data-item-name="{{ sub.band.name }}" data-custom-warning="Esta ação não poderá ser desfeita." data-delete-btn-text="Excluir">
+                                            <i class="fa-solid fa-trash text-danger me-2"></i>Excluir
+                                        </button>
                                     </li>
                                     {% endif %}
                                 </ul>

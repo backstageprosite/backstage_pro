@@ -115,11 +115,6 @@
                                         </button>
                                     </li>
                                     {% endif %}
-                                    <li>
-                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'admin_painel:database_delete' contato.id %}" data-item-type="o contato" data-item-name="{{ contato.name }}" data-custom-message="Este contato deixará de aparecer no Banco de Dados Geral, mas continuará salvo na página Contatos da banda responsável." data-custom-warning="Deseja prosseguir com a remoção?" data-delete-btn-text="Remover do Banco Geral">
-                                            <i class="fa-solid fa-trash me-2 text-danger"></i> Remover do Banco
-                                        </button>
-                                    </li>
                                 </ul>
                             </div>
                         </td>
