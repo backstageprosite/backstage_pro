@@ -66,9 +66,11 @@
     }
 
     @media (max-width: 767.98px) {
-        .bp-files-page .search-input {
+        .bp-files-page .filter-control,
+        .bp-files-page input.form-control,
+        .bp-files-page select.form-select {
             font-size: 16px !important; /* Evita zoom no Safari/iOS */
-            height: 42px;
+            min-height: 40px;
         }
         .bp-files-page .btn-back {
             height: 40px;
@@ -89,10 +91,40 @@
         </div>
     </div>
 
-    <div class="mb-3">
-        <div class="input-group shadow-sm search-box">
-            <span class="input-group-text bg-white border-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-            <input type="text" id="searchInput" class="form-control border-0 search-input" placeholder="Buscar arquivos..." aria-label="Pesquisar por show, documento ou comprovante...">
+    <!-- Filtros Compactos BP-COMPACTO-01 -->
+    <div class="card shadow-sm border-0 mb-3" style="border-radius: 10px; background-color: #f8f9fa;">
+        <div class="card-body" style="padding: 12px 14px;">
+            <form id="filterForm" onsubmit="return false;" class="row g-2 align-items-end">
+                <div class="col-12 col-md-4">
+                    <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Buscar arquivo</label>
+                    <input type="text" id="filterSearch" class="form-control" placeholder="Buscar por nome..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Show / Evento</label>
+                    <select id="filterShow" class="form-select" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        <option value="">Todos</option>
+                        {% for s in shows %}
+                            <option value="{{ s.id }}">{{ s.title|default:"Sem título" }} ({{ s.date|date:"d/m/y"|default:"Sem data" }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Tipo de arquivo</label>
+                    <select id="filterType" class="form-select" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        <option value="">Todos</option>
+                        <option value="documento">Documentos do Show</option>
+                        <option value="comprovante">Comprovantes Financeiros</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-auto ms-md-auto mt-2 mt-md-0 text-end d-flex gap-2 justify-content-end">
+                    <a href="{% url 'arquivos' band.slug %}" id="btnLimpar" class="btn btn-sm btn-outline-secondary px-3" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 16px; border-radius: 4px; border: 1px solid #6C757D; color: #6C757D; background-color: transparent; display: inline-flex; align-items: center;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='#FFFFFF';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';">
+                        <i class="fa-solid fa-eraser me-1" style="font-size: 14px;"></i> Limpar
+                    </a>
+                    <button type="button" id="btnFiltrar" class="btn btn-sm btn-dark px-4" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 24px; border-radius: 4px; background-color: #212529; border: 1px solid #212529; color: #FFFFFF; display: inline-flex; align-items: center;" onmouseover="this.style.backgroundColor='#1C1F23'; this.style.borderColor='#1A1E21';" onmouseout="this.style.backgroundColor='#212529'; this.style.borderColor='#212529';">
+                        <i class="fa-solid fa-filter me-1" style="font-size: 14px;"></i> Filtrar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -101,7 +133,7 @@
             {% if shows %}
                 <div class="accordion" id="accordionArquivos">
                 {% for show in shows %}
-                    <div class="accordion-item shadow-sm border-0 mb-2 file-item-container" style="border-radius: 10px;">
+                    <div class="accordion-item shadow-sm border-0 mb-2 file-item-container" data-show-id="{{ show.id }}" style="border-radius: 10px;">
                         <h2 class="accordion-header" id="heading{{ show.id }}">
                             <button class="accordion-button collapsed bg-white fw-bold d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ show.id }}" aria-expanded="false" aria-controls="collapse{{ show.id }}">
                                 <div class="mb-1 mb-md-0">
@@ -121,7 +153,7 @@
                                 <ul class="list-group list-group-flush">
                                 <!-- Contratos e Documentos -->
                                 {% for doc in show.documents.all %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center file-item">
+                                <li class="list-group-item d-flex justify-content-between align-items-center file-item file-record" data-file-type="documento" data-file-name="{{ doc.description|default:'' }}">
                                     <div class="d-flex align-items-center">
                                         <div class="bg-light text-primary rounded d-flex justify-content-center align-items-center me-3 file-icon-box">
                                             <i class="fa-solid fa-file-contract"></i>
@@ -146,7 +178,7 @@
 
                                 <!-- Comprovantes Financeiros -->
                                 {% for receipt in show.receipts.all %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center file-item">
+                                <li class="list-group-item d-flex justify-content-between align-items-center file-item file-record" data-file-type="comprovante" data-file-name="{{ receipt.description|default:'' }}">
                                     <div class="d-flex align-items-center">
                                         <div class="bg-light text-success rounded d-flex justify-content-center align-items-center me-3 file-icon-box">
                                             <i class="fa-solid fa-file-invoice-dollar"></i>
@@ -173,6 +205,15 @@
                     </div>
                 </div>
             {% endfor %}
+            </div>
+
+            <!-- Mensagem quando a filtragem não encontrar resultados -->
+            <div id="noResultsFiltered" class="card shadow-sm border-0 d-none" style="border-radius: 10px;">
+                <div class="card-body text-center py-4">
+                    <i class="fa-solid fa-filter-circle-xmark text-muted mb-2 fs-3"></i>
+                    <h6 class="fw-bold text-dark mb-1">Nenhum arquivo encontrado com os filtros selecionados.</h6>
+                    <p class="text-muted small mb-0">Tente ajustar ou limpar os filtros de busca.</p>
+                </div>
             </div>
         {% else %}
             <div class="card shadow-sm border-0" style="border-radius: 12px;">
@@ -316,22 +357,100 @@
 {% block extra_js %}
 <script type="module">
 document.addEventListener("DOMContentLoaded", function() {
-    const searchInput = document.getElementById("searchInput");
-    if(searchInput) {
-        searchInput.addEventListener("keyup", function() {
-            const query = this.value.toLowerCase();
-            const items = document.querySelectorAll(".file-item-container");
+    const filterSearch = document.getElementById("filterSearch");
+    const filterShow = document.getElementById("filterShow");
+    const filterType = document.getElementById("filterType");
+    const btnFiltrar = document.getElementById("btnFiltrar");
+    const btnLimpar = document.getElementById("btnLimpar");
+    const noResultsFiltered = document.getElementById("noResultsFiltered");
 
-            items.forEach(function(item) {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(query)) {
-                    item.style.display = "";
+    function applyFilters() {
+        const query = filterSearch ? filterSearch.value.trim().toLowerCase() : "";
+        const selectedShow = filterShow ? filterShow.value.trim() : "";
+        const selectedType = filterType ? filterType.value.trim().toLowerCase() : "";
+
+        const showContainers = document.querySelectorAll(".file-item-container");
+        let totalVisibleFiles = 0;
+        let totalVisibleContainers = 0;
+
+        showContainers.forEach(function(container) {
+            const containerShowId = container.getAttribute("data-show-id") || "";
+            let matchShow = true;
+            if (selectedShow && selectedShow !== "" && containerShowId !== selectedShow) {
+                matchShow = false;
+            }
+
+            if (!matchShow) {
+                container.style.display = "none";
+                return;
+            }
+
+            const fileRecords = container.querySelectorAll(".file-record");
+            let visibleFilesInThisShow = 0;
+
+            fileRecords.forEach(function(record) {
+                const recordType = (record.getAttribute("data-file-type") || "").toLowerCase();
+                const recordName = (record.getAttribute("data-file-name") || record.textContent || "").toLowerCase();
+
+                let matchType = true;
+                if (selectedType && selectedType !== "" && recordType !== selectedType) {
+                    matchType = false;
+                }
+
+                let matchText = true;
+                if (query && !recordName.includes(query)) {
+                    matchText = false;
+                }
+
+                if (matchType && matchText) {
+                    record.style.display = "";
+                    visibleFilesInThisShow++;
+                    totalVisibleFiles++;
                 } else {
-                    item.style.display = "none";
+                    record.style.display = "none";
                 }
             });
+
+            // Se o show não possuir arquivos compatíveis, oculta o container do show
+            if (visibleFilesInThisShow > 0) {
+                container.style.display = "";
+                totalVisibleContainers++;
+            } else {
+                container.style.display = "none";
+            }
+        });
+
+        if (noResultsFiltered) {
+            if (showContainers.length > 0 && totalVisibleContainers === 0) {
+                noResultsFiltered.classList.remove("d-none");
+            } else {
+                noResultsFiltered.classList.add("d-none");
+            }
+        }
+    }
+
+    if (btnFiltrar) {
+        btnFiltrar.addEventListener("click", applyFilters);
+    }
+    if (filterSearch) {
+        filterSearch.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                applyFilters();
+            }
         });
     }
+    if (btnLimpar) {
+        btnLimpar.addEventListener("click", function(e) {
+            if (filterSearch) filterSearch.value = "";
+            if (filterShow) filterShow.value = "";
+            if (filterType) filterType.value = "";
+            applyFilters();
+        });
+    }
+
+    // Inicializa aplicando filtros caso venha preenchido
+    applyFilters();
 
     // PWA iOS File Fix
     const isIOSDevice =
