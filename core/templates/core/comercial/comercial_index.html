@@ -1,85 +1,195 @@
 {% extends 'core/base.html' %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para o módulo Comercial */
+    .bp-commercial-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-commercial-page .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-commercial-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-commercial-page .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-commercial-page .filter-input,
+    .bp-commercial-page .filter-select {
+        font-size: 14px;
+        min-height: 34px;
+        height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-commercial-page .btn-filter-action {
+        font-size: 13px;
+        height: 30px;
+        padding: 4px 14px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+    }
+    .bp-commercial-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 9px 12px;
+        text-transform: uppercase;
+    }
+    .bp-commercial-page .table tbody td {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .bp-commercial-page .proposal-name {
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .bp-commercial-page .btn-actions {
+        height: 30px;
+        padding: 3px 12px;
+        font-size: 13px;
+    }
+    .bp-commercial-page .phase-pill {
+        width: 88px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .bp-commercial-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-commercial-page .form-control,
+    .bp-commercial-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-commercial-page .form-text {
+        font-size: 12px;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-commercial-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-commercial-page .filter-input,
+        .bp-commercial-page .filter-select,
+        .bp-commercial-page .form-control,
+        .bp-commercial-page .form-select {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div class="d-flex align-items-center gap-3">
-        <h4 class="fw-bold m-0"><i class="fa-solid fa-handshake text-primary me-2"></i> Comercial</h4>
-    </div>
+<div class="bp-commercial-page">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <h4 class="page-title"><i class="fa-solid fa-handshake text-primary me-2"></i>Comercial</h4>
+        </div>
 
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3">
-            <i class="fa-solid fa-arrow-left me-1"></i>
-            Voltar
-        </a>
-        <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalProposal">
-            <i class="fa-solid fa-plus me-1"></i>
-            Novo Orçamento
-        </button>
-    </div>
-</div>
-
-<!-- Filtros -->
-<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; background-color: #f8f9fa;">
-    <div class="card-body p-3">
-        <form method="get" class="row g-2 align-items-end">
-            <div class="col-12 col-sm-6 col-md-3 col-xl">
-                <label class="form-label small text-muted fw-bold mb-1">Nome</label>
-                <input type="text" name="name" class="form-control form-control-sm" value="{{ request.GET.name }}" placeholder="Buscar nome...">
-            </div>
-            <div class="col-6 col-sm-6 col-md-2 col-xl">
-                <label class="form-label small text-muted fw-bold mb-1">Data</label>
-                <input type="date" name="date" class="form-control form-control-sm" value="{{ request.GET.date }}">
-            </div>
-            <div class="col-6 col-sm-6 col-md-2 col-xl">
-                <label class="form-label small text-muted fw-bold mb-1">Fase</label>
-                <select name="phase" class="form-select form-select-sm">
-                    <option value="TODAS" {% if request.GET.phase == 'TODAS' or not request.GET.phase %}selected{% endif %}>Todas</option>
-                    <option value="RESERVA" {% if request.GET.phase == 'RESERVA' %}selected{% endif %}>Reserva</option>
-                    <option value="FECHADO" {% if request.GET.phase == 'FECHADO' %}selected{% endif %}>Fechado</option>
-                    <option value="DESISTENCIA" {% if request.GET.phase == 'DESISTENCIA' %}selected{% endif %}>Desistência</option>
-                </select>
-            </div>
-            <div class="col-12 col-sm-6 col-md-3 col-xl">
-                <label class="form-label small text-muted fw-bold mb-1">Origem</label>
-                <input type="text" name="origin" class="form-control form-control-sm" value="{{ request.GET.origin }}" placeholder="Buscar origem...">
-            </div>
-
-            <div class="col-12 col-xl-auto ms-xl-auto d-flex gap-2 justify-content-end mt-2 mt-xl-0">
-                <a href="?" class="btn btn-sm btn-outline-secondary px-3" style="border-radius: 4px; font-family: Inter; font-size: 14px; font-weight: 400; padding: 4px 16px; height: 30px; display: inline-flex; align-items: center; border: 1px solid #6C757D;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';">
-                    <i class="fa-solid fa-eraser me-1" style="font-size: 14px;"></i> Limpar
-                </a>
-                <button type="submit" class="btn btn-sm btn-dark px-4" style="background-color: #212529; border-radius: 4px; font-family: Inter; font-size: 14px; font-weight: 400; padding: 4px 24px; height: 30px; display: inline-flex; align-items: center;" onmouseover="this.style.backgroundColor='#1C1F23';" onmouseout="this.style.backgroundColor='#212529';">
-                    <i class="fa-solid fa-filter me-1" style="font-size: 14px;"></i> Filtrar
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- SEÇÃO RESERVAS -->
-<div class="mb-5">
-    <div class="d-flex align-items-center mb-3">
-        <h5 class="fw-bold m-0"><i class="fa-regular fa-clock me-2 text-warning"></i>Reservas</h5>
-        <span class="badge bg-warning text-dark rounded-pill ms-2">{{ count_reservas }}</span>
-    </div>
-    <div class="card shadow-sm border-0" style="border-radius: 12px;">
-        <div class="card-body p-0">
-            {% include 'core/comercial/_tabela_fase.html' with proposals=reservas empty_message="Nenhuma solicitação em Reserva encontrada." %}
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalProposal">
+                <i class="fa-solid fa-plus me-1"></i> Novo Orçamento
+            </button>
         </div>
     </div>
-</div>
 
-<hr class="mb-5 text-muted">
+    <!-- Filtros -->
+    <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px; background-color: #f8f9fa;">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-12 col-sm-6 col-md-3 col-xl">
+                    <label class="filter-label">Nome</label>
+                    <input type="text" name="name" class="form-control filter-input" value="{{ request.GET.name }}" placeholder="Buscar nome...">
+                </div>
+                <div class="col-6 col-sm-6 col-md-2 col-xl">
+                    <label class="filter-label">Data</label>
+                    <input type="date" name="date" class="form-control filter-input" value="{{ request.GET.date }}">
+                </div>
+                <div class="col-6 col-sm-6 col-md-2 col-xl">
+                    <label class="filter-label">Fase</label>
+                    <select name="phase" class="form-select filter-select">
+                        <option value="TODAS" {% if request.GET.phase == 'TODAS' or not request.GET.phase %}selected{% endif %}>Todas</option>
+                        <option value="RESERVA" {% if request.GET.phase == 'RESERVA' %}selected{% endif %}>Reserva</option>
+                        <option value="FECHADO" {% if request.GET.phase == 'FECHADO' %}selected{% endif %}>Fechado</option>
+                        <option value="DESISTENCIA" {% if request.GET.phase == 'DESISTENCIA' %}selected{% endif %}>Desistência</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 col-xl">
+                    <label class="filter-label">Origem</label>
+                    <input type="text" name="origin" class="form-control filter-input" value="{{ request.GET.origin }}" placeholder="Buscar origem...">
+                </div>
 
-<!-- SEÇÃO FECHADOS E DESISTÊNCIAS -->
-<div class="mb-5">
-    <div class="d-flex align-items-center mb-3">
-        <h5 class="fw-bold m-0"><i class="fa-solid fa-check-double me-2 text-primary"></i>Fechados e Desistências</h5>
-        <span class="badge bg-primary text-white rounded-pill ms-2">{{ count_fd }}</span>
+                <div class="col-12 col-xl-auto ms-xl-auto d-flex gap-2 justify-content-end mt-2 mt-xl-0">
+                    <a href="?" class="btn btn-outline-secondary btn-filter-action">
+                        <i class="fa-solid fa-eraser me-1"></i> Limpar
+                    </a>
+                    <button type="submit" class="btn btn-dark btn-filter-action">
+                        <i class="fa-solid fa-filter me-1"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="card shadow-sm border-0" style="border-radius: 12px;">
-        <div class="card-body p-0">
-            {% include 'core/comercial/_tabela_fase.html' with proposals=fechados_desistencias empty_message="Nenhuma solicitação Fechada ou em Desistência encontrada." %}
+
+    <!-- SEÇÃO RESERVAS -->
+    <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+            <h5 class="section-title"><i class="fa-regular fa-clock me-2 text-warning"></i>Reservas</h5>
+            <span class="badge bg-warning text-dark rounded-pill ms-2" style="font-size: 11px;">{{ count_reservas }}</span>
+        </div>
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-body p-0">
+                {% include 'core/comercial/_tabela_fase.html' with proposals=reservas empty_message="Nenhuma solicitação em Reserva encontrada." %}
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4 text-muted">
+
+    <!-- SEÇÃO FECHADOS E DESISTÊNCIAS -->
+    <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+            <h5 class="section-title"><i class="fa-solid fa-check-double me-2 text-primary"></i>Fechados e Desistências</h5>
+            <span class="badge bg-primary text-white rounded-pill ms-2" style="font-size: 11px;">{{ count_fd }}</span>
+        </div>
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-body p-0">
+                {% include 'core/comercial/_tabela_fase.html' with proposals=fechados_desistencias empty_message="Nenhuma solicitação Fechada ou em Desistência encontrada." %}
+            </div>
         </div>
     </div>
 </div>

@@ -2,91 +2,179 @@
 {% load static %}
 {% block title %}Avisos da Banda - {{ band.name }}{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para o módulo de Avisos */
+    .bp-notices-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-notices-page .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-notices-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-notices-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 9px 12px;
+        text-transform: uppercase;
+    }
+    .bp-notices-page .table tbody td {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .bp-notices-page .btn-actions {
+        height: 30px;
+        padding: 3px 12px;
+        font-size: 13px;
+    }
+    .bp-notices-page .status-pill {
+        width: 88px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .bp-notices-page .notice-message {
+        font-size: 13px;
+        line-height: 1.35;
+        max-height: 80px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    .bp-notices-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-notices-page .form-control {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-notices-page .form-text {
+        font-size: 12px;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-notices-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-notices-page .form-control {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-bullhorn text-warning me-2"></i> Avisos da Banda</h4>
-    <div>
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
-        {% if request.user.is_produtor %}
-        <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalNovoAviso">
-            <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">Novo </span>Aviso
-        </button>
-        {% endif %}
-    </div>
-</div>
-
-<div class="card shadow-sm border-0">
-    <div class="card-header bg-white border-bottom pt-3 pb-3">
-        <h5 class="fw-bold m-0">Avisos Recentes</h5>
-    </div>
-    <div class="card-body p-0">
-        {% if notices %}
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="border-0 ps-4">Status</th>
-                        <th class="border-0">Mensagem</th>
-                        
-                        <th class="border-0 text-end pe-4">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for notice in notices %}
-                    <tr>
-                        <td class="ps-4" style="width: 200px;">
-                            {% if notice.sent_at %}
-                            <div class="badge bg-success text-white">
-                                <i class="fa-solid fa-check-double me-1"></i> Enviado
-                            </div>
-                            <small class="d-block text-muted mt-1">{{ notice.sent_at|date:"d/m/Y H:i" }}</small>
-                            {% else %}
-                            <div class="badge bg-warning text-dark">
-                                <i class="fa-regular fa-clock me-1"></i> Agendado
-                            </div>
-                            <small class="d-block text-muted mt-1">{{ notice.scheduled_at|date:"d/m/Y H:i" }}</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div style="max-height: 80px; overflow-y: auto; white-space: pre-wrap; font-size: 0.95rem;">{{ notice.message }}</div>
-                        </td>
-
-                        <td class="text-end pe-4">
-                            {% if request.user.is_produtor %}
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle fw-bold px-3 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
-                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.95rem;">
-                                    <li>
-                                        <a class="dropdown-item py-2 fw-medium" href="{% url 'band_notices_edit' band.slug notice.id %}">
-                                            <i class="fa-solid fa-pen text-primary me-2"></i> Editar
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'band_notices_delete' band.slug notice.id %}" data-item-type="o aviso" data-item-name="{{ notice.message|truncatechars:60 }}">
-                                            <i class="fa-solid fa-trash text-danger me-2"></i> Excluir
-                                        </button>
-                                    </li>
-                                </ul>
-                            </div>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="bp-notices-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h4 class="page-title"><i class="fa-solid fa-bullhorn text-warning me-2"></i>Avisos da Banda</h4>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+            {% if request.user.is_produtor %}
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalNovoAviso">
+                <i class="fa-solid fa-plus me-1"></i> <span class="d-none d-sm-inline">Novo </span>Aviso
+            </button>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="p-4 p-md-5 text-center text-muted empty-state-card">
-            <i class="fa-solid fa-inbox fs-1 mb-3 opacity-50"></i>
-            <h5 class="fw-bold mb-1">Nenhum aviso publicado.</h5>
-            <p class="mb-0">Clique em <span class="d-none d-sm-inline">Novo </span>Aviso para agendar uma notificação.</p>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px;">
+        <div class="card-header bg-white border-bottom py-2 px-3">
+            <h5 class="section-title">Avisos Recentes</h5>
         </div>
-        {% endif %}
+        <div class="card-body p-0">
+            {% if notices %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0 ps-4">Status</th>
+                            <th class="border-0">Mensagem</th>
+                            <th class="border-0 text-end pe-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for notice in notices %}
+                        <tr>
+                            <td class="ps-4" style="width: 170px;">
+                                {% if notice.sent_at %}
+                                <div class="badge bg-success text-white status-pill">
+                                    <i class="fa-solid fa-check-double me-1"></i> Enviado
+                                </div>
+                                <small class="d-block text-muted mt-1" style="font-size: 11px;">{{ notice.sent_at|date:"d/m/Y H:i" }}</small>
+                                {% else %}
+                                <div class="badge bg-warning text-dark status-pill">
+                                    <i class="fa-regular fa-clock me-1"></i> Agendado
+                                </div>
+                                <small class="d-block text-muted mt-1" style="font-size: 11px;">{{ notice.scheduled_at|date:"d/m/Y H:i" }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="notice-message">{{ notice.message }}</div>
+                            </td>
+
+                            <td class="text-end pe-4 text-nowrap">
+                                {% if request.user.is_produtor %}
+                                <div class="dropdown">
+                                    <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.95rem;">
+                                        <li>
+                                            <a class="dropdown-item py-2 fw-medium" href="{% url 'band_notices_edit' band.slug notice.id %}">
+                                                <i class="fa-solid fa-pen text-primary me-2"></i> Editar
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'band_notices_delete' band.slug notice.id %}" data-item-type="o aviso" data-item-name="{{ notice.message|truncatechars:60 }}">
+                                                <i class="fa-solid fa-trash text-danger me-2"></i> Excluir
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-4 p-md-5 text-center text-muted empty-state-card">
+                <i class="fa-solid fa-inbox fs-1 mb-3 opacity-50"></i>
+                <h5 class="fw-bold mb-1 fs-6">Nenhum aviso publicado.</h5>
+                <p class="mb-0 small">Clique em <span class="d-none d-sm-inline">Novo </span>Aviso para agendar uma notificação.</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 

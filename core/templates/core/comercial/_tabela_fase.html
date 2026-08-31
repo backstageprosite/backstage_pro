@@ -1,22 +1,22 @@
 {% load admin_tags %}
 <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
-        <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
+        <thead class="table-light text-uppercase text-muted">
             <tr>
-                <th class="ps-4 py-3">Nome</th>
-                <th class="py-3">Data</th>
-                <th class="py-3">Horário</th>
-                <th class="py-3 text-center">Fase</th>
-                <th class="py-3">Valor</th>
-                <th class="py-3">Origem</th>
-                <th class="pe-4 py-3 text-end">Ações</th>
+                <th class="ps-4">Nome</th>
+                <th>Data</th>
+                <th>Horário</th>
+                <th class="text-center">Fase</th>
+                <th>Valor</th>
+                <th>Origem</th>
+                <th class="pe-4 text-end">Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for prop in proposals %}
             <tr>
                 <td class="ps-4">
-                    <h6 class="mb-0 text-dark fw-bold">{{ prop.name }}</h6>
+                    <h6 class="mb-0 text-dark proposal-name">{{ prop.name }}</h6>
                     {% if prop.documents.all %}
                         <small class="text-muted"><i class="fa-solid fa-paperclip me-1"></i>{{ prop.documents.all|length }} anexo(s)</small>
                     {% endif %}
@@ -25,18 +25,18 @@
                 <td>{% if prop.time %}{{ prop.time|time:"H:i" }}{% else %}—{% endif %}</td>
                 <td class="text-center">
                     {% if prop.phase == 'RESERVA' %}
-                        <span class="badge rounded-pill" style="background-color: #ffc107; color: #000;">Reserva</span>
+                        <span class="badge phase-pill" style="background-color: #ffc107; color: #000;">Reserva</span>
                     {% elif prop.phase == 'FECHADO' %}
-                        <span class="badge rounded-pill" style="background-color: #198754; color: #fff;">Fechado</span>
+                        <span class="badge phase-pill" style="background-color: #198754; color: #fff;">Fechado</span>
                     {% elif prop.phase == 'DESISTENCIA' %}
-                        <span class="badge rounded-pill" style="background-color: #dc3545; color: #fff;">Desistência</span>
+                        <span class="badge phase-pill" style="background-color: #dc3545; color: #fff;">Desistência</span>
                     {% endif %}
                 </td>
                 <td class="fw-semibold text-dark">{% if prop.fee != None %}{{ prop.fee|brl_currency }}{% else %}—{% endif %}</td>
-                <td>{% if prop.origin %}<span class="badge bg-light text-dark border">{{ prop.origin }}</span>{% else %}—{% endif %}</td>
+                <td>{% if prop.origin %}<span class="badge bg-light text-dark border" style="font-size: 11px; padding: 3px 8px;">{{ prop.origin }}</span>{% else %}—{% endif %}</td>
                 <td class="pe-4 text-end">
                     <div class="dropdown">
-                        <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
+                        <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width: 160px; padding: 8px 0; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,.075); z-index: 1000;">

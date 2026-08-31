@@ -1,50 +1,112 @@
 {% extends 'core/base.html' %}
 
-{% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-    <div>
-        <h4 class="fw-bold m-0"><i class="fa-solid fa-headset text-primary me-2"></i> Fale Conosco</h4>
-    </div>
-    <div class="d-flex align-items-center gap-2">
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
-        <button type="button" class="btn fw-bold px-4 rounded-pill shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#newTicketModal" style="background-color: #6BD443;">
-            <i class="fa-solid fa-plus me-1"></i> Nova mensagem
-        </button>
-    </div>
-</div>
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para o Fale Conosco */
+    .bp-support-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-support-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-support-page .ticket-item {
+        padding: 12px 16px;
+    }
+    .bp-support-page .ticket-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+    .bp-support-page .ticket-meta {
+        font-size: 12px;
+    }
+    .bp-support-page .ticket-body-preview {
+        font-size: 13px;
+        line-height: 1.35;
+        margin-bottom: 2px;
+    }
+    .bp-support-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-support-page .form-control {
+        font-size: 14px;
+        padding: 6px 12px;
+        border-radius: 6px;
+    }
+    .bp-support-page .form-text {
+        font-size: 12px;
+    }
 
-{% if tickets %}
-    <div class="list-group shadow-sm" style="border-radius: 12px; overflow: hidden;">
-        {% for ticket in tickets %}
-            <a href="{% url 'support_detail' band.slug ticket.pk %}" class="list-group-item list-group-item-action p-4">
-                <div class="d-flex w-100 justify-content-between align-items-center mb-2">
-                    <h5 class="mb-1 fw-bold text-dark">
-                        {{ ticket.get_status_display }}
-                        {% if ticket.has_new_message %}
-                            <span class="badge bg-danger ms-2 rounded-pill">Nova resposta</span>
-                        {% endif %}
-                    </h5>
-                    <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>{{ ticket.last_message_at|date:"d/m/Y H:i" }}</small>
-                </div>
-                <p class="mb-1 text-muted text-truncate" style="max-width: 80%;">
-                    {% with first_msg=ticket.messages.first %}
-                        {{ first_msg.body|default:"(Sem mensagem)" }}
-                    {% endwith %}
-                </p>
-                <small class="text-muted">Aberto em {{ ticket.created_at|date:"d/m/Y" }} por {{ ticket.created_by.get_full_name|default:ticket.created_by.username }}</small>
+    @media (max-width: 767.98px) {
+        .bp-support-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-support-page .form-control {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bp-support-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <div>
+            <h4 class="page-title"><i class="fa-solid fa-headset text-primary me-2"></i>Fale Conosco</h4>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
             </a>
-        {% endfor %}
-    </div>
-{% else %}
-    <div class="card shadow-sm border-0" style="border-radius: 12px;">
-        <div class="card-body text-center py-4 py-md-5 empty-state-card">
-            <i class="fa-solid fa-envelope-open-text text-muted mb-3" style="font-size: 3rem; opacity: 0.5;"></i>
-            <h5 class="text-muted fw-bold">Você ainda não enviou nenhuma mensagem para a administração.</h5>
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#newTicketModal" style="background-color: #6BD443; border-color: #6BD443;">
+                <i class="fa-solid fa-plus me-1"></i> Nova mensagem
+            </button>
         </div>
     </div>
-{% endif %}
+
+    {% if tickets %}
+        <div class="list-group shadow-sm mb-3" style="border-radius: 12px; overflow: hidden;">
+            {% for ticket in tickets %}
+                <a href="{% url 'support_detail' band.slug ticket.pk %}" class="list-group-item list-group-item-action ticket-item">
+                    <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                        <h6 class="ticket-title text-dark">
+                            {{ ticket.get_status_display }}
+                            {% if ticket.has_new_message %}
+                                <span class="badge bg-danger ms-2 rounded-pill" style="font-size: 11px;">Nova resposta</span>
+                            {% endif %}
+                        </h6>
+                        <small class="text-muted ticket-meta"><i class="fa-regular fa-clock me-1"></i>{{ ticket.last_message_at|date:"d/m/Y H:i" }}</small>
+                    </div>
+                    <p class="text-muted text-truncate ticket-body-preview" style="max-width: 85%;">
+                        {% with first_msg=ticket.messages.first %}
+                            {{ first_msg.body|default:"(Sem mensagem)" }}
+                        {% endwith %}
+                    </p>
+                    <small class="text-muted ticket-meta">Aberto em {{ ticket.created_at|date:"d/m/Y" }} por {{ ticket.created_by.get_full_name|default:ticket.created_by.username }}</small>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px;">
+            <div class="card-body text-center py-4 py-md-5 empty-state-card">
+                <i class="fa-solid fa-envelope-open-text text-muted mb-3" style="font-size: 3rem; opacity: 0.5;"></i>
+                <h5 class="text-muted fw-bold fs-6">Você ainda não enviou nenhuma mensagem para a administração.</h5>
+            </div>
+        </div>
+    {% endif %}
+</div>
 
 <!-- Modal Nova Mensagem -->
 <div class="modal fade" id="newTicketModal" tabindex="-1" aria-labelledby="newTicketModalLabel" aria-hidden="true">

@@ -1,42 +1,92 @@
 {% extends 'core/base.html' %}
 
-{% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-pen text-warning me-2"></i> Editar Aviso da Banda</h4>
-    <div>
-        <a href="{% url 'band_notices_index' band.slug %}" class="btn btn-outline-secondary">
-            <i class="fa-solid fa-arrow-left me-1"></i> Cancelar
-        </a>
-    </div>
-</div>
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para edição de Avisos */
+    .bp-notices-form-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-notices-form-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-notices-form-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-notices-form-page .form-control {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-notices-form-page .btn-submit {
+        height: 36px;
+        font-size: 14px;
+        border-radius: 50rem;
+    }
 
-<div class="row">
-    <div class="col-md-6 mx-auto mb-4">
-        <div class="card shadow-sm border-0 border-top border-4 border-warning">
-            <div class="card-body">
-                {% if notice.sent_at %}
-                <div class="alert alert-info py-2 small mb-3">
-                    <i class="fa-solid fa-circle-info me-1"></i> Este aviso já foi enviado via notificação Push. A edição atualizará a mensagem no Dashboard, mas não gerará um novo alerta.
+    @media (max-width: 767.98px) {
+        .bp-notices-form-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-notices-form-page .form-control {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bp-notices-form-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h4 class="page-title"><i class="fa-solid fa-pen text-warning me-2"></i>Editar Aviso da Banda</h4>
+        <div>
+            <a href="{% url 'band_notices_index' band.slug %}" class="btn btn-outline-secondary btn-header-action fw-bold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Cancelar
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 col-lg-6 mx-auto mb-4">
+            <div class="card shadow-sm border-0 border-top border-4 border-warning" style="border-radius: 12px;">
+                <div class="card-body p-4">
+                    {% if notice.sent_at %}
+                    <div class="alert alert-info py-2 small mb-3" style="font-size: 12px;">
+                        <i class="fa-solid fa-circle-info me-1"></i> Este aviso já foi enviado via notificação Push. A edição atualizará a mensagem no Dashboard, mas não gerará um novo alerta.
+                    </div>
+                    {% endif %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Mensagem do Aviso</label>
+                            {{ form.message }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Data de Disparo</label>
+                            {{ form.date }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Horário de Disparo</label>
+                            {{ form.time }}
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100 fw-bold btn-submit shadow-sm mt-2">
+                            <i class="fa-solid fa-save me-1"></i> Salvar Alterações
+                        </button>
+                    </form>
                 </div>
-                {% endif %}
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label text-muted small fw-bold">Mensagem do Aviso</label>
-                        {{ form.message }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small fw-bold">Data de Disparo</label>
-                        {{ form.date }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small fw-bold">Horário de Disparo</label>
-                        {{ form.time }}
-                    </div>
-                    <button type="submit" class="btn btn-warning w-100 fw-bold">
-                        <i class="fa-solid fa-save me-1"></i> Salvar Alterações
-                    </button>
-                </form>
             </div>
         </div>
     </div>
