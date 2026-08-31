@@ -1,103 +1,170 @@
 {% extends 'core/base.html' %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos isolados para a página do Rider Técnico */
+    .bp-rider-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-rider-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-rider-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 9px 12px;
+        text-transform: uppercase;
+    }
+    .bp-rider-page .table tbody td {
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+    .bp-rider-page .rider-name {
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .bp-rider-page .btn-actions {
+        height: 30px;
+        padding: 3px 12px;
+        font-size: 13px;
+    }
+    .bp-rider-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-rider-page .form-control {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-rider-page .form-text {
+        font-size: 12px;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-rider-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-rider-page .form-control {
+            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-    <div>
-        <h4 class="fw-bold m-0"><i class="fa-solid fa-guitar text-primary me-2"></i> Rider</h4>
+<div class="bp-rider-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <div>
+            <h4 class="page-title"><i class="fa-solid fa-guitar text-primary me-2"></i>Rider</h4>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+            {% if request.user.is_produtor %}
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalAdicionarRider" style="background-color: #6BD443; border-color: #6BD443;">
+                <i class="fa-solid fa-plus me-1"></i> Adicionar Rider
+            </button>
+            {% endif %}
+        </div>
     </div>
-    <div class="d-flex flex-wrap gap-2">
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
-        {% if request.user.is_produtor %}
-        <button type="button" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalAdicionarRider" style="background-color: #6BD443;">
-            <i class="fa-solid fa-plus me-1"></i> Adicionar Rider
-        </button>
-        {% endif %}
-    </div>
-</div>
 
-<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
-    <div class="card-body p-0">
-        {% if riders %}
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
-                    <tr>
-                        <th class="ps-4 py-3">Nome do Arquivo</th>
-                        <th class="py-3">Data de Envio</th>
-                        <th class="pe-4 py-3 text-end">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for rider in riders %}
-                    <tr>
-                        <td class="ps-4 text-nowrap fw-bold text-dark">
-                            <i class="fa-solid fa-file-pdf text-danger me-2"></i>{{ rider.name }}
-                        </td>
-                        <td class="text-dark">{{ rider.created_at|date:"d/m/Y H:i" }}</td>
-                        <td class="pe-4 text-end text-nowrap">
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
-                                    <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
-                                    <li>
-                                        <a href="{% url 'file_viewer' band.slug 'rider' rider.pk %}" class="dropdown-item py-2 fw-medium">
-                                            <i class="fa-solid fa-eye text-primary me-2"></i> Visualizar
-                                        </a>
-                                    </li>
+    <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            {% if riders %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-uppercase text-muted">
+                        <tr>
+                            <th class="ps-4">Nome do Arquivo</th>
+                            <th>Data de Envio</th>
+                            <th class="pe-4 text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rider in riders %}
+                        <tr>
+                            <td class="ps-4 text-nowrap text-dark rider-name">
+                                <i class="fa-solid fa-file-pdf text-danger me-2"></i>{{ rider.name }}
+                            </td>
+                            <td class="text-dark">{{ rider.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="pe-4 text-end text-nowrap">
+                                <div class="dropdown">
+                                    <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
+                                        <li>
+                                            <a href="{% url 'file_viewer' band.slug 'rider' rider.pk %}" class="dropdown-item py-2 fw-medium">
+                                                <i class="fa-solid fa-eye text-primary me-2"></i> Visualizar
+                                            </a>
+                                        </li>
 
-                                    {% if request.user.is_produtor %}
-                                    <li>
-                                        <button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditarRider-{{ rider.id }}">
-                                            <i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="" data-item-type="o rider" data-item-name="{{ rider.name }}" data-extra-fields='{"rider_id": "{{ rider.id }}", "delete_rider": "1"}'>
-                                            <i class="fa-solid fa-trash text-danger me-2"></i> Excluir
-                                        </button>
-                                    </li>
-                                    {% endif %}
-                                </ul>
-                            </div>
+                                        {% if request.user.is_produtor %}
+                                        <li>
+                                            <button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditarRider-{{ rider.id }}">
+                                                <i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="" data-item-type="o rider" data-item-name="{{ rider.name }}" data-extra-fields='{"rider_id": "{{ rider.id }}", "delete_rider": "1"}'>
+                                                <i class="fa-solid fa-trash text-danger me-2"></i> Excluir
+                                            </button>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
 
-                            {% if request.user.is_produtor %}
-                            <!-- Modal Editar Rider -->
-                            <div class="modal fade text-start" id="modalEditarRider-{{ rider.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-                                        <div class="modal-header border-0 pb-0">
-                                            <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar Rider</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                {% if request.user.is_produtor %}
+                                <!-- Modal Editar Rider -->
+                                <div class="modal fade text-start" id="modalEditarRider-{{ rider.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                                            <div class="modal-header border-0 pb-0">
+                                                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar Rider</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <form method="post" enctype="multipart/form-data">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="rider_id" value="{{ rider.id }}">
+                                                <div class="modal-body pt-3 pb-3">
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold text-muted">Nome do Arquivo/Rider</label>
+                                                        <input type="text" name="name" class="form-control form-control-sm" value="{{ rider.name }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold text-muted">Substituir Arquivo (Opcional)</label>
+                                                        <input type="file" name="file" class="form-control form-control-sm" accept=".pdf">
+                                                        <div class="form-text small">Deixe em branco para manter o arquivo atual.</div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer border-0 pt-0">
+                                                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" name="edit_rider" class="btn btn-primary rounded-pill px-4 fw-bold">Salvar Alterações</button>
+                                                </div>
+                                            </form>
                                         </div>
-                                        <form method="post" enctype="multipart/form-data">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="rider_id" value="{{ rider.id }}">
-                                            <div class="modal-body pt-3 pb-3">
-                                                <div class="mb-3">
-                                                    <label class="form-label small fw-bold text-muted">Nome do Arquivo/Rider</label>
-                                                    <input type="text" name="name" class="form-control form-control-sm" value="{{ rider.name }}" required>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label small fw-bold text-muted">Substituir Arquivo (Opcional)</label>
-                                                    <input type="file" name="file" class="form-control form-control-sm" accept=".pdf">
-                                                    <div class="form-text small">Deixe em branco para manter o arquivo atual.</div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer border-0 pt-0">
-                                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                                                <button type="submit" name="edit_rider" class="btn btn-primary rounded-pill px-4 fw-bold">Salvar Alterações</button>
-                                            </div>
-                                        </form>
                                     </div>
                                 </div>
-                            </div>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -114,6 +181,7 @@
         </div>
         {% endif %}
     </div>
+</div>
 </div>
 
 {% if request.user.is_produtor %}
