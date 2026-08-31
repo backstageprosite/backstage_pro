@@ -202,12 +202,15 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <label for="{{ form_plans.plan_basic_monthly.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Mensal (R$)</label>
-                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_basic_monthly.name }}" id="{{ form_plans.plan_basic_monthly.id_for_label }}" class="form-control form-control-sm" value="{{ form_plans.plan_basic_monthly.value|stringformat:'.2f'|default:'19.90' }}" required>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_basic_monthly.name }}" id="{{ form_plans.plan_basic_monthly.id_for_label }}" class="form-control form-control-sm js-plan-input" value="{{ form_plans.plan_basic_monthly.value|stringformat:'.2f'|default:'19.90' }}" required>
                             </div>
                             <div class="col-6">
                                 <label for="{{ form_plans.plan_basic_annual.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Anual (R$)</label>
-                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_basic_annual.name }}" id="{{ form_plans.plan_basic_annual.id_for_label }}" class="form-control form-control-sm" value="{{ form_plans.plan_basic_annual.value|stringformat:'.2f'|default:'199.90' }}" required>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_basic_annual.name }}" id="{{ form_plans.plan_basic_annual.id_for_label }}" class="form-control form-control-sm js-plan-input" value="{{ form_plans.plan_basic_annual.value|stringformat:'.2f'|default:'199.90' }}" required>
                             </div>
+                        </div>
+                        <div class="mt-2 pt-1">
+                            <p class="text-success small fw-bold mb-0" id="preview-basic-calc"></p>
                         </div>
                     </div>
 
@@ -217,12 +220,15 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <label for="{{ form_plans.plan_advanced_monthly.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Mensal (R$)</label>
-                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_advanced_monthly.name }}" id="{{ form_plans.plan_advanced_monthly.id_for_label }}" class="form-control form-control-sm" value="{{ form_plans.plan_advanced_monthly.value|stringformat:'.2f'|default:'49.90' }}" required>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_advanced_monthly.name }}" id="{{ form_plans.plan_advanced_monthly.id_for_label }}" class="form-control form-control-sm js-plan-input" value="{{ form_plans.plan_advanced_monthly.value|stringformat:'.2f'|default:'49.90' }}" required>
                             </div>
                             <div class="col-6">
                                 <label for="{{ form_plans.plan_advanced_annual.id_for_label }}" class="form-label fw-semibold text-muted small mb-1">Anual (R$)</label>
-                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_advanced_annual.name }}" id="{{ form_plans.plan_advanced_annual.id_for_label }}" class="form-control form-control-sm" value="{{ form_plans.plan_advanced_annual.value|stringformat:'.2f'|default:'499.90' }}" required>
+                                <input type="number" step="0.01" min="0" name="{{ form_plans.plan_advanced_annual.name }}" id="{{ form_plans.plan_advanced_annual.id_for_label }}" class="form-control form-control-sm js-plan-input" value="{{ form_plans.plan_advanced_annual.value|stringformat:'.2f'|default:'499.90' }}" required>
                             </div>
+                        </div>
+                        <div class="mt-2 pt-1">
+                            <p class="text-success small fw-bold mb-0" id="preview-advanced-calc"></p>
                         </div>
                     </div>
                 </div>
@@ -238,6 +244,50 @@
 {% if open_modal %}
 <div class="modal-backdrop fade show"></div>
 {% endif %}
+<script>
+    function updatePlanPreviews() {
+        var basicMInput = document.getElementById('{{ form_plans.plan_basic_monthly.id_for_label }}');
+        var basicAInput = document.getElementById('{{ form_plans.plan_basic_annual.id_for_label }}');
+        var advMInput = document.getElementById('{{ form_plans.plan_advanced_monthly.id_for_label }}');
+        var advAInput = document.getElementById('{{ form_plans.plan_advanced_annual.id_for_label }}');
+
+        var prevBasic = document.getElementById('preview-basic-calc');
+        var prevAdv = document.getElementById('preview-advanced-calc');
+
+        function formatBRL(val) {
+            return 'R$ ' + Number(val).toFixed(2).replace('.', ',');
+        }
+
+        function calculatePreviewText(monthlyVal, annualVal) {
+            var m = parseFloat(monthlyVal) || 0;
+            var a = parseFloat(annualVal) || 0;
+            var equiv = a / 12.0;
+            var savings = (m * 12.0) - a;
+
+            var text = 'Equivale a ' + formatBRL(equiv) + '/mês';
+            if (savings > 0) {
+                text += ' (economia de ' + formatBRL(savings) + ')';
+            }
+            return text;
+        }
+
+        if (basicMInput && basicAInput && prevBasic) {
+            prevBasic.textContent = calculatePreviewText(basicMInput.value, basicAInput.value);
+        }
+        if (advMInput && advAInput && prevAdv) {
+            prevAdv.textContent = calculatePreviewText(advMInput.value, advAInput.value);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        updatePlanPreviews();
+        var planInputs = document.querySelectorAll('.js-plan-input');
+        planInputs.forEach(function(input) {
+            input.addEventListener('input', updatePlanPreviews);
+            input.addEventListener('change', updatePlanPreviews);
+        });
+    });
+</script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
