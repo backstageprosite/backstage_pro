@@ -11,75 +11,84 @@
             font-family: Arial, sans-serif;
             background-color: #fff;
             color: #000;
-            font-size: 11px;
+            font-size: 10px;
         }
         .pdf-container {
             max-width: 850px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 12px 15px;
         }
         .header-logo {
-            max-height: 75px;
-            max-width: 140px;
+            max-height: 60px;
+            max-width: 120px;
             object-fit: contain;
         }
         .page-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             text-transform: uppercase;
-            line-height: 1.2;
+            line-height: 1.15;
         }
         .band-subtitle {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             text-transform: uppercase;
             color: #333;
         }
         .year-header {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 800;
             color: #212529;
-            margin-top: 24px;
-            margin-bottom: 8px;
-            padding-bottom: 4px;
+            margin-top: 14px;
+            margin-bottom: 5px;
+            padding-bottom: 2px;
             border-bottom: 2px solid #212529;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            page-break-after: avoid;
         }
         .month-header {
             background-color: #f8f9fa;
-            padding: 6px 12px;
-            border-left: 4px solid #6c757d;
+            padding: 4px 8px;
+            border-left: 3px solid #6c757d;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
-            margin-top: 14px;
-            margin-bottom: 8px;
+            margin-top: 8px;
+            margin-bottom: 5px;
+            page-break-after: avoid;
         }
         .table-pdf {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
+        }
+        .table-pdf thead {
+            display: table-header-group;
+        }
+        .table-pdf tr {
+            page-break-inside: avoid;
         }
         .table-pdf th {
             background-color: #f1f3f5;
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: bold;
             text-transform: uppercase;
-            padding: 6px 8px;
-            border-bottom: 2px solid #dee2e6;
+            padding: 4px 6px;
+            border-bottom: 1.5px solid #dee2e6;
             color: #495057;
         }
         .table-pdf td {
-            padding: 6px 8px;
+            padding: 4px 6px;
             border-bottom: 1px solid #e9ecef;
             vertical-align: middle;
-            font-size: 10.5px;
+            font-size: 10px;
+            line-height: 1.2;
         }
         .badge-phase {
-            font-size: 9px;
-            padding: 3px 6px;
-            border-radius: 4px;
+            font-size: 8.5px;
+            padding: 2px 5px;
+            border-radius: 3px;
             font-weight: bold;
             display: inline-block;
             text-align: center;
@@ -106,14 +115,14 @@
             .no-print { display: none !important; }
             body { padding: 0; margin: 0; }
             .pdf-container { padding: 0; max-width: 100%; }
-            @page { margin: 1.2cm 1cm; }
+            @page { margin: 0.8cm 0.8cm 1.2cm 0.8cm; }
         }
     </style>
 </head>
 <body>
     <div class="pdf-container">
         <!-- Cabeçalho -->
-        <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+        <div class="d-flex align-items-center mb-2 pb-1 border-bottom">
             {% if pdf_logo_base64 %}
                 <img src="{{ pdf_logo_base64 }}" alt="{{ band.name }}" class="header-logo me-3">
             {% elif band.logo %}
