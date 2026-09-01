@@ -51,23 +51,10 @@
         background-color: #198754;
         color: #fff;
     }
-    .badge-ac {
-        background-color: #0dcaf0;
-        color: #ffffff;
-        padding: 1.5px 6px;
-        font-weight: bold;
-        font-size: 8px;
-        border-radius: 12px;
-        display: inline-block;
-        -webkit-print-color-adjust: exact !important;
-        color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-    .icon-snow {
-        width: 7.5px;
-        height: 7.5px;
+    .badge-ac-img {
+        height: 11px;
         vertical-align: middle;
-        margin-right: 2px;
+        display: inline-block;
     }
     .hotel-info-table {
         width: 100%;
@@ -184,8 +171,8 @@
                         <td style="width: 50%; padding: 4px 6px; vertical-align: top; border-bottom: 1px solid #ccc; {% if forloop.counter0|divisibleby:2 %}border-right: 1px solid #ccc;{% endif %} page-break-inside: avoid;">
                             <div style="font-size: 9.5px; margin-bottom: 2px; font-weight: bold;">
                                 Quarto {{ room.number_or_name|default:forloop.counter }} &middot; {{ room.get_type_display }}
-                                {% if room.has_ac %}
-                                    &nbsp;<span class="badge-ac">{% if snowflake_base64 %}<img src="{{ snowflake_base64 }}" class="icon-snow">{% endif %}Ar Cond.</span>
+                                {% if room.has_ac and badge_ac_base64 %}
+                                    &nbsp;<img src="{{ badge_ac_base64 }}" class="badge-ac-img">
                                 {% endif %}
                             </div>
                             <div style="padding-left: 6px;">
