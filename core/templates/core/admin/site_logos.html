@@ -198,7 +198,7 @@
                                             </div>
                                             <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                                                 <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                                                <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Salvar alterações</button>
+                                                <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar alterações</button>
                                             </div>
                                         </form>
                                     </div>
@@ -227,7 +227,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;" id="addLogoModalLabel"><i class="fa-solid fa-plus me-2 text-success"></i>Nova Logomarca</h5>
+                <h5 class="modal-title fw-bold" style="font-size: 16px; color: #198754;" id="addLogoModalLabel"><i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Nova Logomarca</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" {% if open_modal %}onclick="window.location.href='{% url 'admin_painel:site_logos' %}'"{% endif %}></button>
             </div>
             <form method="post" enctype="multipart/form-data" action="{% url 'admin_painel:site_logos' %}">
@@ -254,7 +254,7 @@
                 </div>
                 <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                     <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;" {% if open_modal %}onclick="window.location.href='{% url 'admin_painel:site_logos' %}'"{% endif %}>Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-3 shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443; height: 34px; font-size: 13px;">Salvar logo</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar logo</button>
                 </div>
             </form>
         </div>
@@ -266,7 +266,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;" id="modalPlansPricingLabel"><i class="fa-solid fa-tags me-2 text-warning"></i>Valores dos Planos</h5>
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;" id="modalPlansPricingLabel"><i class="fa-solid fa-tags me-2 text-primary"></i>Valores dos Planos</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" action="{% url 'admin_painel:site_plans_update' %}">
@@ -310,7 +310,7 @@
                 </div>
                 <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                     <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Salvar alterações</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar alterações</button>
                 </div>
             </form>
         </div>

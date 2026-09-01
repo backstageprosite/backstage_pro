@@ -78,7 +78,10 @@
                             {% endif %}
                         </div>
 
-                        <button type="submit" class="btn btn-primary btn-submit fw-bold px-4 w-100 shadow-sm mt-2">Continuar</button>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'room_list_index' request.band.slug %}" class="btn btn-light border fw-bold rounded-pill px-4" style="height: 34px; font-size: 13px;">Cancelar</a>
+                            <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Continuar</button>
+                        </div>
                     </form>
                 </div>
             </div>

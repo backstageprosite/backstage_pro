@@ -136,7 +136,7 @@
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
                                             <div class="modal-header border-0 pb-0">
-                                                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar Rider</h5>
+                                                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar Rider</h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
                                             <form method="post" enctype="multipart/form-data">
@@ -153,9 +153,9 @@
                                                         <div class="form-text small">Deixe em branco para manter o arquivo atual.</div>
                                                     </div>
                                                 </div>
-                                                <div class="modal-footer border-0 pt-0">
-                                                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                                                    <button type="submit" name="edit_rider" class="btn btn-primary rounded-pill px-4 fw-bold">Salvar Alterações</button>
+                                                <div class="modal-footer border-0 pt-0 justify-content-end gap-2">
+                                                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                                                    <button type="submit" name="edit_rider" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
                                                 </div>
                                             </form>
                                         </div>
@@ -190,7 +190,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-plus-circle text-success me-2"></i> Adicionar Rider</h5>
+                <h5 class="modal-title fw-bold" style="font-size: 16px; color: #198754;"><i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Adicionar Rider</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" enctype="multipart/form-data">
@@ -206,9 +206,9 @@
                         <div class="form-text small">Apenas arquivos PDF são recomendados.</div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" name="add_rider" class="btn rounded-pill px-4 fw-bold shadow-sm text-dark" style="background-color: #6BD443;">
+                <div class="modal-footer border-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" name="add_rider" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">
                         <i class="fa-solid fa-upload me-1"></i> Enviar
                     </button>
                 </div>

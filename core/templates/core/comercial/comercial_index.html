@@ -199,7 +199,7 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow" style="border-radius: 16px;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" id="modalProposalLabel">Informações da Solicitação de Show</h5>
+                <h5 class="modal-title fw-bold" id="modalProposalLabel" style="font-size: 16px; color: #198754;"><i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Informações da Solicitação de Show</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="formProposal" method="post" enctype="multipart/form-data" action="{% url 'commercial_create' band.slug %}">
@@ -268,9 +268,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fw-medium" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" id="btnSubmitProposal" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">Salvar Solicitação</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" id="btnSubmitProposal" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Solicitação</button>
                 </div>
             </form>
         </div>

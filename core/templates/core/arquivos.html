@@ -307,8 +307,8 @@
                 {% csrf_token %}
                 <input type="hidden" name="action" value="add_file_global">
                 <div class="modal-header bg-light border-0 py-3 px-4">
-                    <h5 class="modal-title fw-bold text-primary" id="modalNovoArquivoGlobalLabel" style="font-size: 16px;">
-                        <i class="fa-solid fa-cloud-arrow-up me-2"></i>Adicionar Arquivo
+                    <h5 class="modal-title fw-bold" id="modalNovoArquivoGlobalLabel" style="font-size: 16px; color: #198754;">
+                        <i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Adicionar Arquivo
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -353,29 +353,25 @@
                         </div>
                     </div>
 
-                    <!-- Descrição (100% de largura) -->
+                    <!-- Descrição e Upload do Arquivo -->
                     <div class="row g-3 mb-3">
                         <div class="col-12">
                             <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Descrição *</label>
-                            <input type="text" name="description" class="form-control" required placeholder="Ex: Contrato Assinado, Recibo Van, Nota Fiscal..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                            <input type="text" name="description" class="form-control" required placeholder="Ex: Contrato assinado, Comprovante de Transferência..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
                         </div>
-                    </div>
-
-                    <!-- Arquivo -->
-                    <div class="row g-3 mb-3">
                         <div class="col-12">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Arquivo (PDF, Imagem) *</label>
-                            <input type="file" name="file" class="form-control" required accept=".pdf, .jpg, .jpeg, .png, .gif, .webp, application/pdf, image/jpeg, image/png, image/gif, image/webp" style="font-size: 14px; padding: 5px 10px; border-radius: 6px;">
-                            <div class="form-text" style="font-size: 12px;">Formatos aceitos: PDF, JPG, PNG, GIF, WEBP.</div>
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Arquivo *</label>
+                            <input type="file" name="file" class="form-control" required accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx" style="font-size: 14px; padding: 5px 10px; border-radius: 6px;">
+                            <div class="form-text" style="font-size: 12px;">Formatos aceitos: PDF, JPG, PNG, WEBP, DOCX, XLSX (máx. 10 MB).</div>
                         </div>
                     </div>
 
-                    <!-- Informações de Uso de Armazenamento do Show -->
-                    <div class="alert alert-info py-2 px-3 mb-0 shadow-sm" id="modalStorageInfoBox" style="border-radius: 8px; font-size: 13px; background-color: #e7f3ff; border-color: #b6d4fe;">
-                        <div class="d-flex align-items-center mb-1 text-primary">
-                            <i class="fa-solid fa-hard-drive me-2"></i> <strong>Uso de Armazenamento do Show</strong>
-                        </div>
-                        <div id="modalStorageInitialPrompt" class="text-muted small mb-1" style="padding-left: 1.5rem; font-size: 12px;">
+                    <!-- Bloco Informativo de Armazenamento -->
+                    <div class="p-3 bg-light rounded-3 border">
+                        <h6 class="fw-bold text-dark mb-2 d-flex align-items-center" style="font-size: 13px;">
+                            <i class="fa-solid fa-hard-drive me-2 text-secondary"></i> Uso de Armazenamento do Show
+                        </h6>
+                        <div class="small text-muted mb-1" id="modalStoragePlaceholderText" style="padding-left: 1.5rem;">
                             Selecione um show para visualizar o uso de armazenamento.
                         </div>
                         <ul class="mb-0 small text-dark d-none" id="modalStorageMetricsList" style="list-style-type: none; padding-left: 1.5rem; line-height: 1.5;">
@@ -389,7 +385,7 @@
                 </div>
                 <div class="modal-footer bg-light border-0 justify-content-end gap-2 py-2 px-4">
                     <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Adicionar Arquivo</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Adicionar Arquivo</button>
                 </div>
             </form>
         </div>
@@ -422,9 +418,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light border-0 justify-content-center">
-                        <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm">Salvar Alterações</button>
+                    <div class="modal-footer bg-light border-0 justify-content-end gap-2">
+                        <button type="button" class="btn btn-light border fw-bold px-3 rounded-pill" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                        <button type="submit" class="btn btn-success fw-bold px-4 rounded-pill shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
                     </div>
                 </form>
             </div>
@@ -468,9 +464,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light border-0 justify-content-center">
-                        <button type="button" class="btn btn-light border fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm">Salvar Alterações</button>
+                    <div class="modal-footer bg-light border-0 justify-content-end gap-2">
+                        <button type="button" class="btn btn-light border fw-bold px-3 rounded-pill" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                        <button type="submit" class="btn btn-success fw-bold px-4 rounded-pill shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
                     </div>
                 </form>
             </div>

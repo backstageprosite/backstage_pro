@@ -64,9 +64,9 @@
         <h4 class="page-title"><i class="fa-solid fa-bed text-primary me-2"></i>Listas de Hospedagem</h4>
         <div class="d-flex flex-wrap gap-2">
             <a href="{% url 'relatorios_index' request.band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
-            <a href="{% url 'room_list_select_show' request.band.slug %}" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;">
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalSelectShowHospedagem" style="background-color: #6BD443; border-color: #6BD443;">
                 <i class="fa-solid fa-plus me-1"></i> Hospedagem
-            </a>
+            </button>
         </div>
     </div>
 
@@ -136,11 +136,166 @@
             <i class="fa-solid fa-bed fa-3x mb-3 text-secondary opacity-50"></i>
             <h5 class="fw-bold text-dark fs-6">Nenhuma lista de hospedagem encontrada</h5>
             <p class="small text-muted mb-3">Comece criando a primeira lista de hospedagem para os shows da banda.</p>
-            <a href="{% url 'room_list_select_show' request.band.slug %}" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;">
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalSelectShowHospedagem" style="background-color: #6BD443; border-color: #6BD443;">
                 <i class="fa-solid fa-plus me-1"></i> Nova Hospedagem
-            </a>
+            </button>
         </div>
     </div>
     {% endif %}
 </div>
+
+<!-- Modal 1: Selecionar Show para Hospedagem -->
+<div class="modal fade text-start" id="modalSelectShowHospedagem" tabindex="-1" aria-labelledby="modalSelectShowHospedagemLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalSelectShowHospedagemLabel" style="font-size: 16px; color: #198754;">
+                    <i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Criar Lista de Hospedagem
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 p-md-4 text-start">
+                <div class="mb-3">
+                    <label for="selectShowForModal" class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Selecionar Show *</label>
+                    <select id="selectShowForModal" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;" required>
+                        <option value="" disabled selected>-- Selecione o show para hospedagem --</option>
+                        {% for show_choice in select_show_form.fields.show_id.queryset %}
+                            <option value="{{ show_choice.id }}" data-show-title="{{ show_choice.title|default:'Show' }}" data-show-city="{{ show_choice.city|default:'' }}" data-show-date="{{ show_choice.date|date:'d/m/Y' }}">
+                                {{ show_choice.city|default:"Sem Cidade" }} - {{ show_choice.date|date:"d/m/Y" }}{% if show_choice.title %} ({{ show_choice.title }}){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                <button type="button" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" id="btnContinuarHospedagem" style="height: 34px; font-size: 13px;">Continuar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Formulário Criar Lista de Hospedagem -->
+<div class="modal fade text-start" id="modalFormCriarHospedagem" tabindex="-1" aria-labelledby="modalFormCriarHospedagemLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalFormCriarHospedagemLabel" style="font-size: 16px; color: #198754;">
+                    <i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Criar Lista de Hospedagem
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formCriarHospedagemModal" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-body p-3 p-md-4 text-start">
+                    <div class="alert alert-light border py-2 px-3 mb-3 d-flex align-items-center" style="border-radius: 8px; font-size: 13px;">
+                        <i class="fa-solid fa-calendar-check text-success me-2 fs-6"></i>
+                        <span>Show selecionado: <strong id="modalShowInfoText">-</strong></span>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome do Hotel *</label>
+                            <input type="text" name="hotel_name" id="modal_hotel_name" class="form-control" placeholder="Ex: Hotel Ibis" required style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Cidade</label>
+                            <input type="text" name="city" id="modal_city" class="form-control" placeholder="Ex: Salvador" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Endereço</label>
+                        <input type="text" name="address" id="modal_address" class="form-control" placeholder="Ex: Av. Tancredo Neves, 1000" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Check-in</label>
+                            <input type="datetime-local" name="check_in" id="modal_check_in" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Check-out</label>
+                            <input type="datetime-local" name="check_out" id="modal_check_out" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Contato no Hotel</label>
+                            <input type="text" name="contact" id="modal_contact" class="form-control" placeholder="Ex: Recepção / Mariana" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Telefone</label>
+                            <input type="text" name="phone" id="modal_phone" class="form-control" placeholder="Ex: (71) 3333-0000" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Código da Reserva</label>
+                            <input type="text" name="reservation_code" id="modal_reservation_code" class="form-control" placeholder="Ex: RES-9821" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Observações</label>
+                        <textarea name="notes" id="modal_notes" class="form-control" rows="3" placeholder="Informações adicionais para a equipe..." style="font-size: 14px; padding: 5px 10px; border-radius: 6px;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Hospedagem</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnContinuar = document.getElementById('btnContinuarHospedagem');
+    const selectShow = document.getElementById('selectShowForModal');
+    const modalSelectEl = document.getElementById('modalSelectShowHospedagem');
+    const modalFormEl = document.getElementById('modalFormCriarHospedagem');
+    const formCriarHospedagem = document.getElementById('formCriarHospedagemModal');
+    const modalShowInfoText = document.getElementById('modalShowInfoText');
+    const modalCityInput = document.getElementById('modal_city');
+
+    if (btnContinuar && selectShow) {
+        btnContinuar.addEventListener('click', function() {
+            const selectedOption = selectShow.options[selectShow.selectedIndex];
+            const showId = selectShow.value;
+
+            if (!showId) {
+                selectShow.classList.add('is-invalid');
+                selectShow.focus();
+                return;
+            }
+            selectShow.classList.remove('is-invalid');
+
+            const showDate = selectedOption.getAttribute('data-show-date') || '';
+            const showCity = selectedOption.getAttribute('data-show-city') || '';
+            const showTitle = selectedOption.getAttribute('data-show-title') || '';
+
+            modalShowInfoText.textContent = `${showCity ? showCity + ' - ' : ''}${showDate}${showTitle ? ' (' + showTitle + ')' : ''}`;
+            if (showCity && modalCityInput && !modalCityInput.value) {
+                modalCityInput.value = showCity;
+            }
+
+            // Define action URL para a view existente room_list_create
+            const createUrl = "{% url 'room_list_create' band_slug=request.band.slug show_id=0 %}".replace('/0/', '/' + showId + '/');
+            formCriarHospedagem.action = createUrl;
+
+            // Fechar Modal 1 e abrir Modal 2
+            const bsModal1 = bootstrap.Modal.getInstance(modalSelectEl) || new bootstrap.Modal(modalSelectEl);
+            bsModal1.hide();
+
+            setTimeout(() => {
+                const bsModal2 = new bootstrap.Modal(modalFormEl);
+                bsModal2.show();
+            }, 350);
+        });
+    }
+});
+</script>
 {% endblock %}

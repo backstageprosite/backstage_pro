@@ -3906,9 +3906,13 @@ def room_list_produtor_required(view_func):
 @advanced_plan_required
 def room_list_index(request, band_slug):
     room_lists = RoomList.objects.filter(band=request.band).select_related('show').order_by('show__date')
+    select_show_form = RoomListSelectShowForm(band=request.band)
+    room_list_form = RoomListForm()
     return render(request, 'core/room_list/room_list_index.html', {
         'band': request.band,
-        'room_lists': room_lists
+        'room_lists': room_lists,
+        'select_show_form': select_show_form,
+        'room_list_form': room_list_form,
     })
 
 @room_list_produtor_required

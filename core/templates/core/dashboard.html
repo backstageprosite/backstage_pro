@@ -361,11 +361,11 @@
 
 {% if request.user.is_produtor %}
 <!-- Add Pending Modal -->
-<div class="modal fade" id="addPendingModal" tabindex="-1" aria-labelledby="addPendingModalLabel" aria-hidden="true">
+<div class="modal fade text-start" id="addPendingModal" tabindex="-1" aria-labelledby="addPendingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 12px; border: none;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" id="addPendingModalLabel">Adicionar Pendência</h5>
+                <h5 class="modal-title fw-bold" id="addPendingModalLabel" style="font-size: 16px; color: #198754;"><i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Adicionar Pendência</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" action="{% url 'add_dashboard_pending_item' band.slug %}">
@@ -384,9 +384,9 @@
                         {{ pending_item_form.due_date }}
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-2">
-                    <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Adicionar Pendência</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;" onclick="this.disabled=true; this.form.submit();">Adicionar Pendência</button>
                 </div>
             </form>
         </div>

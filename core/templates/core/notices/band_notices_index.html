@@ -179,18 +179,18 @@
 </div>
 
 {% if request.user.is_produtor %}
-<!-- Modal <span class="d-none d-sm-inline">Novo </span>Aviso -->
+<!-- Modal Novo Aviso -->
 <div class="modal fade" id="modalNovoAviso" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 12px; border: none;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-bullhorn text-warning me-2"></i> <span class="d-none d-sm-inline">Novo </span>Aviso</h5>
+                <h5 class="modal-title fw-bold" style="font-size: 16px; color: #198754;"><i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Novo Aviso</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{% url 'band_notices_create' band.slug %}" method="post">
                 <div class="modal-body pt-3 pb-2">
                     {% csrf_token %}
-                                        <div class="mb-3">
+                    <div class="mb-3">
                         <label class="form-label text-muted small fw-bold">Mensagem do Aviso</label>
                         {{ form.message }}
                     </div>
@@ -229,9 +229,9 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
                 </div>
-                <div class="modal-footer border-top-0 pt-2">
-                    <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;" onclick="this.disabled=true; this.form.submit();">
                         <i class="fa-solid fa-paper-plane me-1"></i> Publicar Aviso
                     </button>
                 </div>

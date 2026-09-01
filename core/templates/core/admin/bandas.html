@@ -214,10 +214,9 @@
                                                 <input class="form-check-input" type="checkbox" name="is_active" id="isActiveEdit{{ b.id }}" {% if b.is_active %}checked{% endif %}>
                                                 <label class="form-check-label fw-bold small ms-2" for="isActiveEdit{{ b.id }}" style="font-size: 13px;">Acesso Liberado</label>
                                             </div>
-                                        </div>
-                                        <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                                                                               <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                                             <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                                            <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
+                                            <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
                                         </div>
                                     </form>
                                 </div>
@@ -254,7 +253,6 @@
                                 </div>
                             </div>
                         </div>
-
                         {% empty %}
                         <tr>
                             <td colspan="6" class="text-center py-4 text-muted">
@@ -276,7 +274,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" id="modalCreateBandLabel" style="font-size: 16px;"><i class="fa-solid fa-plus me-2 text-primary"></i>Nova Banda</h5>
+                <h5 class="modal-title fw-bold" id="modalCreateBandLabel" style="font-size: 16px; color: #198754;"><i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Nova Banda</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="{% url 'admin_painel:bandas_nova' %}" enctype="multipart/form-data">
@@ -310,7 +308,7 @@
                 </div>
                 <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                     <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">Cadastrar Banda</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Cadastrar Banda</button>
                 </div>
             </form>
         </div>

@@ -203,9 +203,9 @@
                                             <input type="text" name="pix_key" class="form-control" value="{{ item.pix_key|default:'' }}" style="border-radius: 8px;">
                                         </div>
                                     </div>
-                                    <div class="modal-footer border-top-0 pt-2">
-                                        <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                                        <button type="submit" class="btn btn-primary fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Salvar</button>
+                                    <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                                        <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                                        <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;" onclick="this.disabled=true; this.form.submit();">Salvar</button>
                                     </div>
                                 </form>
                             </div>
@@ -235,7 +235,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 12px; border: none;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark">Adicionar Integrante</h5>
+                <h5 class="modal-title fw-bold" style="font-size: 16px; color: #198754;"><i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Adicionar Integrante</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" action="{% url 'integrantes_list' band.slug %}">
@@ -279,9 +279,9 @@
                         {{ add_form.pix_key }}
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-2">
-                    <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-medium shadow-sm" style="border-radius: 8px;" onclick="this.disabled=true; this.form.submit();">Adicionar Integrante</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;" onclick="this.disabled=true; this.form.submit();">Adicionar Integrante</button>
                 </div>
             </form>
         </div>

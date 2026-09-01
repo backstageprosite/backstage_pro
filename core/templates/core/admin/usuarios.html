@@ -203,71 +203,65 @@
 </div>
 
 <!-- Modal Create User -->
-<div class="modal fade text-start" id="modalCreateUser" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade text-start" id="modalCreateUser" tabindex="-1" aria-labelledby="modalCreateUserLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalCreateUserLabel" style="font-size: 16px; color: #198754;"><i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Novo Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
             <form method="POST" action="{% url 'admin_painel:usuarios_novo' %}">
                 {% csrf_token %}
-                <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-user-plus me-2 text-primary"></i>Novo Usuário</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-3 p-md-4 text-start">
-                    <div class="row g-3 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">Nome</label>
-                            <input type="text" name="first_name" class="form-control" placeholder="Ex: Danniel" required>
+                <div class="modal-body p-3 p-md-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome</label>
+                            <input type="text" name="first_name" class="form-control" placeholder="Nome" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">Sobrenome</label>
-                            <input type="text" name="last_name" class="form-control" placeholder="Ex: Vieira" required>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Sobrenome</label>
+                            <input type="text" name="last_name" class="form-control" placeholder="Sobrenome" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Login</label>
-                        <input type="text" name="username" class="form-control" placeholder="Ex: danniel_v" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">E-mail</label>
-                        <input type="email" name="email" class="form-control" placeholder="email@exemplo.com">
-                    </div>
-                    <div class="row g-3 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">Senha</label>
-                            <input type="password" name="password" class="form-control" placeholder="Senha" required>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome de Usuário (Login)</label>
+                            <input type="text" name="username" class="form-control" placeholder="username" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">Confirmar Senha</label>
-                            <input type="password" name="confirm_password" class="form-control" placeholder="Confirmar Senha" required>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">E-mail</label>
+                            <input type="email" name="email" class="form-control" placeholder="email@exemplo.com" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Perfil de Acesso</label>
-                        <select name="role" class="form-select" required>
-                            <option value="INTEGRANTE">Integrante</option>
-                            <option value="PRODUTOR">Produtor</option>
-                            <option value="EMPRESARIO">Empresário</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Banda Vinculada</label>
-                        <select name="band" class="form-select" required>
-                            <option value="">-- Selecione uma banda --</option>
-                            {% for band in form_create.fields.band.queryset %}
-                                <option value="{{ band.id }}">{{ band.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mt-2">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserCreate" checked>
-                            <label class="form-check-label fw-bold small ms-1" for="isActiveUserCreate" style="font-size: 13px;">Usuário Ativo</label>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Senha Inicial</label>
+                            <input type="password" name="password" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Tipo de Perfil</label>
+                            <select name="role" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                                <option value="INTEGRANTE">Integrante</option>
+                                <option value="PRODUTOR">Produtor</option>
+                                <option value="EMPRESARIO">Empresário</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Vincular à Banda</label>
+                            <select name="band_id" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                                <option value="">Nenhuma / Sem Vínculo</option>
+                                {% for b in bandas %}
+                                    <option value="{{ b.id }}">{{ b.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_staff" id="isStaffCreate">
+                                <label class="form-check-label fw-bold small ms-2" for="isStaffCreate" style="font-size: 13px;">Acesso ao Painel Admin Geral (Staff)</label>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                     <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm btn-loading" style="height: 34px; font-size: 13px;">Criar Usuário</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Criar Usuário</button>
                 </div>
             </form>
         </div>
@@ -330,7 +324,7 @@
                 </div>
                 <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                     <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-3 shadow-sm btn-loading" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm btn-loading" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
                 </div>
             </form>
         </div>
