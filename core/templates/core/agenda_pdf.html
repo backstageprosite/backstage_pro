@@ -92,24 +92,32 @@
         }
         .badge {
             font-size: 8px;
-            padding: 2px 5px;
+            padding: 2.5px 0;
             font-weight: bold;
             border-radius: 3px;
             -webkit-print-color-adjust: exact !important;
             color-adjust: exact !important;
             print-color-adjust: exact !important;
             display: inline-block;
+            width: 72px;
+            text-align: center;
+            color: #ffffff !important;
         }
         .past-show td {
             opacity: 0.6;
         }
+        .bg-success { background-color: #198754 !important; color: #ffffff !important; }
+        .bg-danger { background-color: #dc3545 !important; color: #ffffff !important; }
+        .bg-warning { background-color: #ffc107 !important; color: #ffffff !important; }
+        .bg-secondary { background-color: #6c757d !important; color: #ffffff !important; }
+
         @media print {
             .print-only { display: block !important; }
             #print-footer { display: flex !important; }
-            .bg-success { background-color: #198754 !important; color: white !important; }
-            .bg-danger { background-color: #dc3545 !important; color: white !important; }
-            .bg-warning { background-color: #ffc107 !important; color: black !important; }
-            .bg-secondary { background-color: #6c757d !important; color: white !important; }
+            .bg-success { background-color: #198754 !important; color: #ffffff !important; }
+            .bg-danger { background-color: #dc3545 !important; color: #ffffff !important; }
+            .bg-warning { background-color: #ffc107 !important; color: #ffffff !important; }
+            .bg-secondary { background-color: #6c757d !important; color: #ffffff !important; }
 
             .no-print { display: none !important; }
             body { padding: 0; margin: 0; }
@@ -173,7 +181,7 @@
                             {% if show.status == 'CANCELADO' %}
                                 <span class="badge bg-danger">CANCELADO</span>
                             {% elif show.status == 'PRE_RESERVADO' %}
-                                <span class="badge bg-warning text-dark">RESERVA</span>
+                                <span class="badge bg-warning">RESERVA</span>
                             {% elif show.status == 'CONFIRMADO' %}
                                 {% if show.date < today %}
                                     <span class="badge bg-secondary">CONCLUÍDO</span>
