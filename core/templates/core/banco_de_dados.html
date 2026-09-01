@@ -117,11 +117,11 @@
     <div class="card shadow-sm border-0 mb-3 filter-card">
         <div class="card-body">
             <form method="get" class="row g-2 align-items-end">
-                <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                <div class="col-12 col-sm-6 col-md-3 col-xl-3">
                     <label class="filter-label">Nome</label>
                     <input type="text" name="q" class="form-control filter-control" placeholder="Buscar por nome..." value="{{ search_query|default:'' }}">
                 </div>
-                <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                <div class="col-6 col-sm-3 col-md-2 col-xl-2">
                     <label class="filter-label">Tipo</label>
                     <select name="tipo" class="form-select filter-control">
                         <option value="">Todos</option>
@@ -130,15 +130,15 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-6 col-md-2 col-lg-2">
+                <div class="col-6 col-sm-3 col-md-2 col-xl-2">
                     <label class="filter-label">Local</label>
                     <input type="text" name="local" class="form-control filter-control" placeholder="Buscar por local..." value="{{ search_location|default:'' }}">
                 </div>
-                <div class="col-6 col-md-2 col-lg-2">
+                <div class="col-6 col-sm-4 col-md-2 col-xl-2">
                     <label class="filter-label">Banda</label>
                     <input type="text" name="banda" class="form-control filter-control" placeholder="Buscar por banda..." value="{{ search_band|default:'' }}">
                 </div>
-                <div class="col-12 col-lg-auto ms-lg-auto mt-2 mt-lg-0 text-end d-flex gap-2 justify-content-end">
+                <div class="col-12 col-sm-8 col-md-3 col-xl-3 ms-md-auto mt-2 mt-md-0 text-end d-flex gap-2 justify-content-end align-items-end">
                     <a href="{% url 'banco_de_dados_global' %}" class="btn btn-sm btn-outline-secondary px-3 btn-filter-action" style="border: 1px solid #6C757D;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
                     <button type="submit" class="btn btn-sm btn-dark px-4 btn-filter-action" style="background-color: #212529;" onmouseover="this.style.backgroundColor='#1C1F23';" onmouseout="this.style.backgroundColor='#212529';"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
                 </div>

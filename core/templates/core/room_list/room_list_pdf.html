@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 
 <html lang="pt-BR">
 
@@ -7,432 +7,238 @@
 <meta charset="UTF-8">
 
 <style>
-
     @page {
-
         size: A4;
-
-        margin: 1cm;
-
-        margin-bottom: 1.5cm;
-
+        margin: 0.8cm 0.8cm 1.2cm 0.8cm;
         @frame footer {
-
             -pdf-frame-content: footer_content;
-
-            left: 1cm; width: 19cm; top: 27.8cm; height: 1cm;
-
+            left: 0.8cm; width: 19.4cm; top: 28.2cm; height: 0.8cm;
         }
-
     }
-
     body {
-
         font-family: Helvetica, Arial, sans-serif;
-
-        font-size: 11px;
-
-        color: #000;
-
-    }
-
-    .header-table {
-
-        width: 100%;
-
-        border-bottom: 2px solid #000;
-
-        margin-bottom: 12px;
-
-        padding-bottom: 4px;
-
-    }
-
-    .logo-img {
-
-        max-width: 140px;
-
-        max-height: 50px;
-
-    }
-
-    
-
-    .main-table {
-
-        width: 100%;
-
-        border: 1px solid #ccc;
-
-        border-collapse: collapse;
-
-        margin-bottom: 12px;
-
-    }
-
-    .main-table td {
-
-        padding: 3px 6px;
-
         font-size: 10px;
-
+        color: #111;
+    }
+    .header-table {
+        width: 100%;
+        border-bottom: 2px solid #000;
+        margin-bottom: 8px;
+        padding-bottom: 4px;
+    }
+    .logo-img {
+        max-width: 130px;
+        max-height: 46px;
+    }
+    .main-table {
+        width: 100%;
+        border: 1px solid #ccc;
+        border-collapse: collapse;
+        margin-bottom: 8px;
+    }
+    .main-table td {
+        padding: 2.5px 5px;
+        font-size: 9.5px;
         vertical-align: top;
-
     }
-
     .main-table .header-td {
-
-        padding: 4px 6px;
-
-        font-size: 11px;
-
+        padding: 3.5px 5px;
+        font-size: 10px;
         font-weight: bold;
-
         border-bottom: 1px solid #ccc;
-
     }
-
-    
-
-    .bg-cyan {
-
-        background-color: #0dcaf0;
-
-        color: #000;
-
-    }
-
     .bg-green {
-
         background-color: #198754;
-
         color: #fff;
-
     }
-
-    
-
     .badge-ac {
-
         background-color: #0dcaf0;
-
-        color: #000;
-
-        padding: 2px 4px;
-
+        color: #ffffff;
+        padding: 1.5px 6px;
         font-weight: bold;
-
-        font-size: 9px;
-
+        font-size: 8px;
+        border-radius: 12px;
+        display: inline-block;
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
-
-
-
+    .hotel-info-table {
+        width: 100%;
+        border: 1px solid #dee2e6;
+        border-collapse: collapse;
+        margin-bottom: 8px;
+        background-color: #ffffff;
+    }
+    .hotel-info-table td {
+        padding: 3px 6px;
+        font-size: 9px;
+        border-bottom: 1px solid #f1f3f5;
+        vertical-align: middle;
+        line-height: 1.25;
+    }
+    .hotel-info-table a {
+        color: #0d6efd;
+        text-decoration: underline;
+    }
     #footer_content {
-
         border-top: 1px solid #ccc;
-
-        padding-top: 4px;
-
-        font-size: 9px;
-
+        padding-top: 3px;
+        font-size: 8px;
         color: #666;
-
     }
-
 </style>
-
 </head>
-
 <body>
 
-
-
 <div id="footer_content">
-
     <table style="width: 100%; font-size: 8px;">
-
         <tr>
-
             <td style="width: 33%; text-align: left;"><strong>Documento:</strong> [{{ show_date|date:"d-m-Y"|default:room_list.show.title }}] Room List</td>
-
             <td style="width: 34%; text-align: center;">Desenvolvido por Backstage Pro<br>@backstagepro.site</td>
-
             <td style="width: 33%; text-align: right;"><strong>Gerado em:</strong> {% now "d/m/Y H:i" %}</td>
-
         </tr>
-
     </table>
-
 </div>
 
-
-
 <table class="header-table">
-
     <tr>
-
-        <td style="width: 150px; text-align: left; vertical-align: middle;">
-
+        <td style="width: 140px; text-align: left; vertical-align: middle;">
             {% if room_list.band.logo %}
-
                 {% if pdf_logo_base64 %}<img src="{{ pdf_logo_base64 }}" class="logo-img">{% endif %}
-
             {% else %}
-
-                <div style="font-weight:900; font-size:16px; color:#000;">LOGO DA<br>BANDA</div>
-
+                <div style="font-weight:900; font-size:15px; color:#000;">LOGO DA<br>BANDA</div>
             {% endif %}
-
         </td>
-
         <td style="text-align: center; vertical-align: middle;">
-
             <div style="font-size: 14px; font-weight: bold; margin-bottom: 2px;">Room List: {{ room_list.show.title }}</div>
-
-            <div style="font-size: 11px; color: #555;">{{ room_list.show.event_name|default:room_list.show.title }} - {{ room_list.show.city }} ({{ room_list.show.date|date:"d/m/Y" }})</div>
-
+            <div style="font-size: 10.5px; color: #555;">{{ room_list.show.event_name|default:room_list.show.title }} - {{ room_list.show.city }} ({{ room_list.show.date|date:"d/m/Y" }})</div>
         </td>
-
-        <td style="width: 150px;"></td>
-
+        <td style="width: 140px;"></td>
     </tr>
-
 </table>
 
-
-
-<table class="main-table">
-
+<!-- Cabeçalho Informativo do Hotel (Fundo Branco Limpo) -->
+<table class="hotel-info-table">
     <tr>
-
-        <td class="header-td bg-cyan">
-
-            Hotel: {{ room_list.hotel_name }}
-
+        <td style="width: 50%;">
+            <strong>Hotel:</strong> {{ room_list.hotel_name|default:"Não informado" }}
         </td>
-
-    </tr>
-
-    <tr>
-
-        <td style="border-bottom: 1px solid #ccc;">
-
-            <strong>Cidade:</strong> {{ room_list.city }}
-
+        <td style="width: 50%;">
+            <strong>Cidade:</strong> {{ room_list.city|default:"Não informada" }}
         </td>
-
     </tr>
-
-    {% if room_list.address %}
-
     <tr>
-
-        <td style="{% if room_list.contact or room_list.phone or room_list.reservation_code %}border-bottom: 1px solid #ccc;{% endif %}">
-
-            <strong>Endereço:</strong> {{ room_list.address }}
-
+        <td style="width: 50%;">
+            <strong>Check-in:</strong> {% if room_list.check_in %}{% if room_list.check_in|date:"H:i" == "00:00" %}{{ room_list.check_in|date:"d/m/Y" }}{% else %}{{ room_list.check_in|date:"d/m/Y H:i" }}{% endif %}{% else %}&mdash;{% endif %}
         </td>
-
+        <td style="width: 50%;">
+            <strong>Check-out:</strong> {% if room_list.check_out %}{% if room_list.check_out|date:"H:i" == "00:00" %}{{ room_list.check_out|date:"d/m/Y" }}{% else %}{{ room_list.check_out|date:"d/m/Y H:i" }}{% endif %}{% else %}&mdash;{% endif %}
+        </td>
     </tr>
-
-    {% endif %}
-
-    {% if room_list.contact or room_list.phone %}
-
     <tr>
-
-        <td style="{% if room_list.reservation_code %}border-bottom: 1px solid #ccc;{% endif %}">
-
+        <td colspan="2">
+            <strong>Endereço:</strong>
+            {% if room_list.address %}
+                {% if room_list.map_link %}
+                    <a href="{{ room_list.map_link }}">{{ room_list.address }}</a>
+                {% else %}
+                    {{ room_list.address }}
+                {% endif %}
+            {% else %}
+                &mdash;
+            {% endif %}
+        </td>
+    </tr>
+    {% if room_list.contact or room_list.phone or room_list.reservation_code %}
+    <tr>
+        <td colspan="2" style="border-bottom: none; color: #444;">
             {% if room_list.contact %}<strong>Contato:</strong> {{ room_list.contact }}{% endif %}
-
             {% if room_list.contact and room_list.phone %} | {% endif %}
-
             {% if room_list.phone %}<strong>Tel:</strong> {{ room_list.phone }}{% endif %}
-
+            {% if room_list.reservation_code %}{% if room_list.contact or room_list.phone %} | {% endif %}<strong>Reserva:</strong> {{ room_list.reservation_code }}{% endif %}
         </td>
-
     </tr>
-
     {% endif %}
-
-    {% if room_list.reservation_code %}
-
-    <tr>
-
-        <td>
-
-            <strong>Reserva:</strong> {{ room_list.reservation_code }}
-
-        </td>
-
-    </tr>
-
-    {% endif %}
-
 </table>
 
-
-
 <table class="main-table">
-
     <tr>
-
         <td colspan="2" class="header-td bg-green">
-
             Quartos e Ocupantes
-
         </td>
-
     </tr>
-
     <tr>
-
         <td colspan="2" style="padding: 0;">
-
             <table style="width: 100%; border-collapse: collapse;">
-
                 {% for room in rooms %}
-
                     {% if forloop.counter0|divisibleby:2 %}
-
                     <tr>
-
                     {% endif %}
-
                         
-
-                        <td style="width: 50%; padding: 6px; vertical-align: top; border-bottom: 1px solid #ccc; {% if forloop.counter0|divisibleby:2 %}border-right: 1px solid #ccc;{% endif %}">
-
-                            <div style="font-size: 10px; margin-bottom: 4px; font-weight: bold;">
-
-                                Quarto {{ room.number_or_name|default:forloop.counter }} &middot; {{ room.get_type_display }} 
-
-                                &nbsp;
-
+                        <td style="width: 50%; padding: 4px 6px; vertical-align: top; border-bottom: 1px solid #ccc; {% if forloop.counter0|divisibleby:2 %}border-right: 1px solid #ccc;{% endif %} page-break-inside: avoid;">
+                            <div style="font-size: 9.5px; margin-bottom: 2px; font-weight: bold;">
+                                Quarto {{ room.number_or_name|default:forloop.counter }} &middot; {{ room.get_type_display }}
                                 {% if room.has_ac %}
-
-                                    <span class="badge-ac">Ar-Cond.</span>
-
-                                {% else %}
-
-                                    <span style="color:#666; font-size:9px; font-weight:normal;">&middot; Sem Ar-Cond.</span>
-
+                                    &nbsp;<span class="badge-ac">Ar Cond.</span>
                                 {% endif %}
-
                             </div>
-
-                            <div style="padding-left: 8px;">
-
+                            <div style="padding-left: 6px;">
                                 {% for part in room.participants.all %}
-
-                                    <div style="font-size: 9.5px; padding: 1.5px 0;">
-
+                                    <div style="font-size: 9px; padding: 1px 0; line-height: 1.2;">
                                         &bull; <strong>{{ part.snapshot_name }}</strong>{% if part.snapshot_role %} &mdash; {{ part.snapshot_role }}{% endif %}&mdash; CPF: {% if part.snapshot_cpf %}{{ part.formatted_cpf }}{% else %}não informado{% endif %}
-
                                     </div>
-
                                 {% empty %}
-
-                                    <div style="color: #888; font-style: italic; font-size: 9.5px;">Quarto vazio</div>
-
+                                    <div style="color: #888; font-style: italic; font-size: 9px;">Quarto vazio</div>
                                 {% endfor %}
-
                             </div>
-
                         </td>
 
-
-
                     {% if forloop.counter|divisibleby:2 or forloop.last %}
-
                         {% if forloop.last and not forloop.counter|divisibleby:2 %}
-
-                            <td style="width: 50%; padding: 6px; vertical-align: top; border-bottom: 1px solid #ccc;"></td>
-
+                            <td style="width: 50%; padding: 4px 6px; vertical-align: top; border-bottom: 1px solid #ccc;"></td>
                         {% endif %}
-
                     </tr>
-
                     {% endif %}
-
                 {% empty %}
-
                 <tr>
-
-                    <td style="padding: 8px; color: #888; font-style: italic;">
-
+                    <td style="padding: 6px; color: #888; font-style: italic;">
                         Nenhum quarto configurado nesta Room List.
-
                     </td>
-
                 </tr>
-
                 {% endfor %}
-
             </table>
-
         </td>
-
     </tr>
-
 </table>
-
-
 
 <table class="main-table">
-
     <tr>
-
-        <td style="width: 50%; border-right: 1px solid #ccc; font-weight: bold; font-size: 10px;">
-
+        <td style="width: 50%; border-right: 1px solid #ccc; font-weight: bold; font-size: 9.5px; padding: 3px 6px;">
             Total de Quartos: {{ rooms|length }}
-
         </td>
-
-        <td style="width: 50%; font-weight: bold; font-size: 10px; text-align: right;">
-
+        <td style="width: 50%; font-weight: bold; font-size: 9.5px; text-align: right; padding: 3px 6px;">
             Total de Integrantes Hospedados: {{ participants|length }}
-
         </td>
-
     </tr>
-
 </table>
-
-
 
 {% if room_list.observations and room_list.observations.strip %}
-
-<table class="main-table" style="margin-top: 15px; page-break-inside: avoid;">
-
+<table class="main-table" style="margin-top: 8px; page-break-inside: avoid;">
     <tr>
-
-        <td class="header-td bg-cyan">
+        <td class="header-td" style="background-color: #f1f3f5; color: #333;">
             OBSERVAÇÕES
         </td>
-
     </tr>
-
     <tr>
-
-        <td style="padding: 10px;">
-
-            <div style="font-size: 10px; line-height: 1.4;">
-
+        <td style="padding: 6px 8px;">
+            <div style="font-size: 9px; line-height: 1.35;">
                 {{ room_list.observations|escape|linebreaksbr }}
-
             </div>
-
         </td>
-
     </tr>
-
 </table>
-
 {% endif %}
-
-
 
 </body>
 

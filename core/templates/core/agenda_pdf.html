@@ -11,66 +11,98 @@
             font-family: Arial, sans-serif;
             background-color: #fff;
             color: #000;
-            font-size: 10px; /* Fonte base reduzida para 10px */
+            font-size: 10px;
         }
         .pdf-container {
-            max-width: 800px;
+            max-width: 850px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 12px 15px;
         }
         .header-logo {
-            max-height: 90px; /* Logo maior */
-            margin-bottom: 10px;
+            max-height: 60px;
+            max-width: 120px;
+            object-fit: contain;
         }
         .page-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             text-transform: uppercase;
+            line-height: 1.15;
         }
         .month-header {
             background-color: #f8f9fa;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-left: 4px solid #000;
             font-weight: bold;
-            font-size: 12px;
-            text-transform: capitalize;
-            margin-top: 15px;
-            margin-bottom: 5px;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-top: 10px;
+            margin-bottom: 4px;
+            page-break-after: avoid;
         }
-        .show-item {
-            border-bottom: 1px solid #eee;
-            padding: 5px 0; /* Padding reduzido */
+        .table-agenda {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+        }
+        .table-agenda thead {
+            display: table-header-group;
+        }
+        .table-agenda tr {
             page-break-inside: avoid;
         }
-        .show-item:last-child {
-            border-bottom: none;
-        }
-        .show-date {
-            font-weight: bold;
-            min-width: 100px;
-            font-size: 10px;
-        }
-        .show-title {
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-        .show-details {
+        .table-agenda th {
+            background-color: #f1f3f5;
             font-size: 9px;
-            margin-bottom: 0;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 3px 5px;
+            border-bottom: 1.5px solid #dee2e6;
+            color: #495057;
+        }
+        .table-agenda td {
+            padding: 3.5px 5px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+            font-size: 9.5px;
+            line-height: 1.2;
+        }
+        .show-date-cell {
+            font-weight: bold;
+            white-space: nowrap;
+            width: 15%;
+        }
+        .show-city-cell {
+            font-weight: 600;
+            color: #212529;
+            width: 18%;
+        }
+        .show-venue-cell {
+            color: #495057;
+            width: 22%;
+        }
+        .show-name-cell {
+            font-weight: bold;
+            color: #111;
+            width: 32%;
+        }
+        .show-status-cell {
+            text-align: right;
+            white-space: nowrap;
+            width: 13%;
         }
         .badge {
             font-size: 8px;
-            padding: 3px 5px;
+            padding: 2px 5px;
+            font-weight: bold;
+            border-radius: 3px;
             -webkit-print-color-adjust: exact !important;
             color-adjust: exact !important;
             print-color-adjust: exact !important;
+            display: inline-block;
         }
-        .past-show {
-            opacity: 0.5;
-        }
-        .past-show .show-title {
-            color: #555;
+        .past-show td {
+            opacity: 0.6;
         }
         @media print {
             .print-only { display: block !important; }
@@ -83,24 +115,24 @@
             .no-print { display: none !important; }
             body { padding: 0; margin: 0; }
             .pdf-container { padding: 0; max-width: 100%; }
-            @page { margin: 1cm; } /* Margens menores na página A4 */
+            @page { margin: 0.8cm 0.8cm 1.2cm 0.8cm; }
         }
     </style>
 </head>
 <body>
     <div class="pdf-container">
         <!-- Cabeçalho com Logo -->
-        <div class="text-start mb-4 d-flex align-items-center">
+        <div class="text-start mb-2 d-flex align-items-center">
             {% if pdf_logo_base64 %}
-                <img src="{{ pdf_logo_base64 }}" alt="{{ band.name }}" class="header-logo me-4">
+                <img src="{{ pdf_logo_base64 }}" alt="{{ band.name }}" class="header-logo me-3">
             {% elif band.logo %}
-                <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="header-logo me-4">
+                <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="header-logo me-3">
             {% else %}
-                <div style="font-weight: bold; font-size: 16px; margin-right: 20px;">{{ band.name }}</div>
+                <div style="font-weight: bold; font-size: 15px; margin-right: 15px;">{{ band.name }}</div>
             {% endif %}
             <div>
                 <div class="page-title">Agenda de Shows - {{ band.name }}</div>
-                <div class="text-muted" style="font-size: 10px;">Gerado em {% now "d/m/Y \a\s H:i" %}</div>
+                <div class="text-muted" style="font-size: 9.5px;">Gerado em {% now "d/m/Y \a\s H:i" %}</div>
             </div>
         </div>
 
@@ -110,38 +142,55 @@
         {% for month in shows_by_month %}
             <h4 class="month-header">{{ month.grouper }}</h4>
 
-            {% for show in month.list %}
-                <div class="show-item d-flex align-items-center {% if show.date < today %}past-show{% endif %}">
-                    <div class="show-date">
-                        {{ show.date|date:"d/m/Y (D)" }}
-                        {% if show.time_show %}
-                            <br><small class="text-muted"><i class="fa-regular fa-clock"></i> {{ show.time_show|time:"H:i" }}</small>
-                        {% endif %}
-                    </div>
-                    <div class="ms-3">
-                        <div class="show-title">{{ show.title }}</div>
-                        <p class="show-details text-muted">
-                            <i class="fa-solid fa-location-dot"></i> {{ show.city }} - {{ show.state }}
-                            {% if show.venue %}| {{ show.venue }}{% endif %}
-                        </p>
-                    </div>
-                    <div class="ms-auto text-end">
-                        {% if show.status == 'CANCELADO' %}
-                            <span class="badge bg-danger">CANCELADO</span>
-                        {% elif show.status == 'PRE_RESERVADO' %}
-                            <span class="badge bg-warning text-dark">RESERVA</span>
-                        {% elif show.status == 'CONFIRMADO' %}
-                            {% if show.date < today %}
-                                <span class="badge bg-secondary">CONCLUÍDO</span>
-                            {% else %}
-                                <span class="badge bg-success">CONFIRMADO</span>
+            <table class="table-agenda">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Data</th>
+                        <th style="width: 18%;">Cidade</th>
+                        <th style="width: 22%;">Local</th>
+                        <th style="width: 32%;">Nome do Evento</th>
+                        <th style="width: 13%; text-align: right;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for show in month.list %}
+                    <tr class="{% if show.date < today %}past-show{% endif %}">
+                        <td class="show-date-cell">
+                            {{ show.date|date:"d/m/Y (D)" }}
+                            {% if show.time_show %}
+                                <br><small class="text-muted" style="font-weight: normal;"><i class="fa-regular fa-clock"></i> {{ show.time_show|time:"H:i" }}</small>
                             {% endif %}
-                        {% endif %}
-                    </div>
-                </div>
-            {% empty %}
-                <p>Nenhum show cadastrado neste mês.</p>
-            {% endfor %}
+                        </td>
+                        <td class="show-city-cell">
+                            {{ show.city|default:"-" }}
+                        </td>
+                        <td class="show-venue-cell">
+                            {{ show.venue|default:"-" }}
+                        </td>
+                        <td class="show-name-cell">
+                            {{ show.event_name|default:show.title|default:"-" }}
+                        </td>
+                        <td class="show-status-cell">
+                            {% if show.status == 'CANCELADO' %}
+                                <span class="badge bg-danger">CANCELADO</span>
+                            {% elif show.status == 'PRE_RESERVADO' %}
+                                <span class="badge bg-warning text-dark">RESERVA</span>
+                            {% elif show.status == 'CONFIRMADO' %}
+                                {% if show.date < today %}
+                                    <span class="badge bg-secondary">CONCLUÍDO</span>
+                                {% else %}
+                                    <span class="badge bg-success">CONFIRMADO</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-2 text-muted">Nenhum show cadastrado neste mês.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
 
         {% empty %}
             <p class="text-center mt-5 text-muted">Nenhum show cadastrado na agenda.</p>
