@@ -316,58 +316,60 @@
 <!-- Modal Exportar PDF -->
 <div class="modal fade" id="exportPdfModal" tabindex="-1" aria-labelledby="exportPdfModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
       <div class="modal-header border-bottom-0 pb-0">
-        <h5 class="modal-title fw-bold" id="exportPdfModalLabel"><i class="fa-solid fa-file-pdf text-danger me-2"></i> Exportar Agenda</h5>
+        <h5 class="modal-title fw-bold" id="exportPdfModalLabel" style="font-size: 16px;">
+            <i class="fa-solid fa-file-pdf me-2" style="color: #212529;"></i>Exportar Agenda
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form action="{% url 'agenda_pdf' band.slug %}" method="GET" target="_blank">
-          <div class="modal-body">
-            <p class="text-muted small mb-2">Filtre os shows por período (opcional):</p>
-            <div class="row mb-3">
+          <div class="modal-body py-3">
+            <p class="text-muted small mb-2 fw-semibold">Filtre os shows por período (opcional):</p>
+            <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label for="data_inicio_pdf" class="form-label small fw-bold text-muted mb-1">De:</label>
+                    <label for="data_inicio_pdf" class="form-label small fw-bold text-muted mb-1">Data inicial:</label>
                     <input type="date" class="form-control form-control-sm" name="data_inicio" id="data_inicio_pdf">
                 </div>
                 <div class="col-6">
-                    <label for="data_fim_pdf" class="form-label small fw-bold text-muted mb-1">Até:</label>
+                    <label for="data_fim_pdf" class="form-label small fw-bold text-muted mb-1">Data final:</label>
                     <input type="date" class="form-control form-control-sm" name="data_fim" id="data_fim_pdf">
                 </div>
             </div>
-            
-            <p class="text-muted small mb-2">Selecione os status dos eventos que deseja incluir no PDF:</p>
-            
+
+            <p class="text-muted small mb-2 fw-semibold">Selecione os status dos eventos que deseja incluir no PDF:</p>
+
             <div class="form-check mb-2">
               <input class="form-check-input" type="checkbox" name="status" value="CONFIRMADO" id="chkConfirmado" checked>
               <label class="form-check-label fw-bold" for="chkConfirmado">
-                <span class="badge bg-success me-1" style="font-size: 0.8rem;">CONFIRMADO</span>
+                <span class="badge bg-success text-white me-1" style="font-size: 0.8rem;">CONFIRMADO</span>
               </label>
             </div>
-            
+
             <div class="form-check mb-2">
               <input class="form-check-input" type="checkbox" name="status" value="CONCLUIDO" id="chkConcluido">
               <label class="form-check-label fw-bold" for="chkConcluido">
-                <span class="badge bg-secondary me-1" style="font-size: 0.8rem;">CONCLUÍDO</span>
+                <span class="badge bg-secondary text-white me-1" style="font-size: 0.8rem;">CONCLUÍDO</span>
               </label>
             </div>
-            
+
             <div class="form-check mb-2">
               <input class="form-check-input" type="checkbox" name="status" value="PRE_RESERVADO" id="chkReserva">
               <label class="form-check-label fw-bold" for="chkReserva">
                 <span class="badge bg-warning text-dark me-1" style="font-size: 0.8rem;">RESERVA</span>
               </label>
             </div>
-            
+
             <div class="form-check mb-3">
               <input class="form-check-input" type="checkbox" name="status" value="CANCELADO" id="chkCancelado">
               <label class="form-check-label fw-bold" for="chkCancelado">
-                <span class="badge bg-danger me-1" style="font-size: 0.8rem;">CANCELADO</span>
+                <span class="badge bg-danger text-white me-1" style="font-size: 0.8rem;">CANCELADO</span>
               </label>
             </div>
           </div>
           <div class="modal-footer border-top-0 pt-0 flex-column flex-md-row w-100">
             <button type="button" class="btn btn-light rounded-pill px-4 w-100 mb-2 mb-md-0" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold w-100">Gerar PDF</button>
+            <button type="submit" class="btn rounded-pill px-4 fw-bold w-100 text-white" style="background-color: #198754; border-color: #198754;">Gerar PDF</button>
           </div>
       </form>
     </div>
