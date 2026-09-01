@@ -66,10 +66,12 @@
     }
 
     .bp-files-page .btn-new-file {
-        font-size: 16px;
+        font-family: Inter, sans-serif;
+        font-size: 14px;
         font-weight: 700;
-        height: 38px;
-        padding: 6px 24px;
+        height: 35px;
+        line-height: 1.25;
+        padding: 5px 14px;
         border-radius: 50rem;
         background-color: #6BD443;
         color: #212529;
@@ -81,6 +83,14 @@
     .bp-files-page .btn-new-file:hover {
         background-color: #5ec437;
         color: #111;
+    }
+    .bp-files-page .btn-back {
+        height: 35px;
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        display: inline-flex;
+        align-items: center;
     }
     .bp-files-page .filter-row {
         display: flex;
@@ -142,12 +152,12 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
         <h4 class="page-title"><i class="fa-solid fa-folder-open text-primary me-2"></i>Gerenciador de Arquivos</h4>
         <div class="d-flex gap-2 align-items-center">
-            <button type="button" class="btn btn-new-file shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoArquivoGlobal">
-                <i class="fa-solid fa-plus me-1" style="font-size: 16px; color: #212529;"></i> Novo Arquivo
-            </button>
             <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-back fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
             </a>
+            <button type="button" class="btn btn-new-file shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoArquivoGlobal">
+                <i class="fa-solid fa-plus me-1" style="font-size: 14px; color: #212529;"></i> Novo Arquivo
+            </button>
         </div>
     </div>
 
@@ -492,7 +502,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script type="module">
+<script>
 document.addEventListener("DOMContentLoaded", function() {
     // Lógica do Modal de Novo Arquivo Global
     const modalShowMonthFilter = document.getElementById("modalShowMonthFilter");
