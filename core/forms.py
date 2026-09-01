@@ -572,6 +572,9 @@ class CommercialProposalForm(forms.ModelForm):
         from core.models import CommercialProposal
         model = CommercialProposal
         fields = ['name', 'date', 'time', 'contact_name', 'contact', 'location', 'origin', 'fee', 'phase']
+        labels = {
+            'name': 'Show',
+        }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Show de Réveillon, Aniversário de Cidade'}),
             'date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
