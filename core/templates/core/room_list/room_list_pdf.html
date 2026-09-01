@@ -51,30 +51,6 @@
         background-color: #198754;
         color: #fff;
     }
-    .pill-ac-table {
-        background-color: #0dcaf0;
-        border-radius: 10px;
-        padding: 1px 4px;
-        vertical-align: middle;
-    }
-    .pill-ac-table td {
-        padding: 0 !important;
-        border: none !important;
-        vertical-align: middle !important;
-        line-height: 1 !important;
-        white-space: nowrap !important;
-    }
-    .pill-ac-text {
-        font-size: 7.5px !important;
-        font-weight: bold !important;
-        color: #ffffff !important;
-        padding-left: 2px !important;
-    }
-    .snow-icon {
-        width: 7.5px;
-        height: 7.5px;
-        vertical-align: middle;
-    }
     .hotel-info-table {
         width: 100%;
         border: 1px solid #dee2e6;
@@ -188,27 +164,9 @@
                     {% endif %}
                         
                         <td style="width: 50%; padding: 4px 6px; vertical-align: top; border-bottom: 1px solid #ccc; {% if forloop.counter0|divisibleby:2 %}border-right: 1px solid #ccc;{% endif %} page-break-inside: avoid;">
-                            <table style="width: 100%; margin-bottom: 2px;">
-                                <tr>
-                                    <td style="font-size: 9.5px; font-weight: bold; border: none; padding: 0; vertical-align: middle;">
-                                        Quarto {{ room.number_or_name|default:forloop.counter }} &middot; {{ room.get_type_display }}
-                                    </td>
-                                    {% if room.has_ac and snowflake_base64 %}
-                                    <td style="width: 54px; text-align: right; border: none; padding: 0; vertical-align: middle;">
-                                        <table class="pill-ac-table" style="width: 52px; float: right;">
-                                            <tr>
-                                                <td style="width: 10px; text-align: center; vertical-align: middle;">
-                                                    <img src="{{ snowflake_base64 }}" class="snow-icon">
-                                                </td>
-                                                <td class="pill-ac-text" style="vertical-align: middle; text-align: center;">
-                                                    Ar Cond.
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                    {% endif %}
-                                </tr>
-                            </table>
+                            <div style="font-size: 9.5px; margin-bottom: 2px; font-weight: bold;">
+                                Quarto {{ room.number_or_name|default:forloop.counter }} &middot; {{ room.get_type_display }}{% if room.has_ac and ac_badge_base64 %}&nbsp;<img src="{{ ac_badge_base64 }}" style="width: 48px; height: 11px; vertical-align: middle; display: inline;">{% endif %}
+                            </div>
                             <div style="padding-left: 6px;">
                                 {% for part in room.participants.all %}
                                     <div style="font-size: 9px; padding: 1px 0; line-height: 1.2;">

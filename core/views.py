@@ -4592,7 +4592,7 @@ def room_list_pdf_view(request, band_slug, pk):
     context = {
         'band': request.band,
         'pdf_logo_base64': get_image_base64(request.band.logo),
-        'snowflake_base64': get_static_image_base64('img/snowflake-white.png'),
+        'ac_badge_base64': get_static_image_base64('img/room-ac-badge.png'),
         'current_datetime': __import__('django.utils.timezone').utils.timezone.localtime().strftime('%d/%m/%Y às %H:%M'),
         'room_list': room_list,
         'rooms': room_list.rooms.all(),
@@ -4635,7 +4635,7 @@ def room_list_hotel_pdf_view(request, band_slug, pk):
     context = {
         'band': request.band,
         'pdf_logo_base64': get_image_base64(request.band.logo),
-        'snowflake_base64': get_static_image_base64('img/snowflake-white.png'),
+        'ac_badge_base64': get_static_image_base64('img/room-ac-badge.png'),
         'current_datetime': __import__('django.utils.timezone').utils.timezone.localtime().strftime('%d/%m/%Y às %H:%M'),
         'room_list': room_list,
         'rooms': room_list.rooms.all(),
