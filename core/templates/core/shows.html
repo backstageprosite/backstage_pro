@@ -107,12 +107,12 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
         <h4 class="page-title"><i class="fa-solid fa-microphone-lines text-primary me-2"></i>Gerenciador de Shows</h4>
         <div class="d-flex gap-2 flex-wrap">
-            <a href="{% url 'shows_add' band.slug %}" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443;">
-                <i class="fa-solid fa-plus me-1"></i> Novo Show
-            </a>
             <button type="button" class="btn btn-dark btn-header-action shadow-sm fw-bold transition-hover" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
                 <i class="fa-solid fa-file-pdf me-1"></i> PDF Agenda
             </button>
+            <a href="{% url 'shows_add' band.slug %}" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443;">
+                <i class="fa-solid fa-plus me-1"></i> Novo Show
+            </a>
         </div>
     </div>
 
