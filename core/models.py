@@ -1593,10 +1593,6 @@ class RoomList(models.Model):
     def map_link(self):
         if self.show and self.show.accommodation_link:
             return self.show.accommodation_link
-        if self.address:
-            import urllib.parse
-            query = f"{self.address}, {self.city}" if self.city else self.address
-            return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(query)}"
         return None
 
     def clean(self):

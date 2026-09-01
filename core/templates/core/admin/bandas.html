@@ -114,6 +114,7 @@
                             <th class="border-0">Slug</th>
                             <th class="border-0">Plano</th>
                             <th class="border-0">Status</th>
+                            <th class="text-center border-0">Link</th>
                             <th class="text-end pe-4 border-0 rounded-end">Ações</th>
                         </tr>
                     </thead>
@@ -151,6 +152,15 @@
                                     <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 status-pill">
                                         <i class="fa-solid fa-ban me-1"></i> Suspensa
                                     </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if b.slug %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 btn-copy-band-link" data-url="{% url 'login' b.slug %}" title="Copiar link de login" style="height: 28px; width: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-copy" style="font-size: 12px;"></i>
+                                </button>
+                                {% else %}
+                                &mdash;
                                 {% endif %}
                             </td>
                             <td class="text-end pe-4">
@@ -314,5 +324,80 @@
         </div>
     </div>
 </div>
-</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function showToast(message) {
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3 mt-5 mt-lg-0';
+            toastContainer.style.zIndex = '1100';
+            document.body.appendChild(toastContainer);
+        }
+
+        const toastEl = document.createElement('div');
+        toastEl.className = 'toast align-items-center text-bg-success border-0 shadow-lg';
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        toastEl.setAttribute('data-bs-delay', '3000');
+
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body fw-medium fs-6">
+                    <i class="fa-solid fa-circle-check me-2"></i> ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+
+        toastContainer.appendChild(toastEl);
+        const bsToast = new bootstrap.Toast(toastEl);
+        bsToast.show();
+
+        toastEl.addEventListener('hidden.bs.toast', function() {
+            toastEl.remove();
+        });
+    }
+
+    document.querySelectorAll('.btn-copy-band-link').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const path = btn.getAttribute('data-url');
+            if (!path) return;
+
+            const fullUrl = window.location.origin + path;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(fullUrl).then(function() {
+                    showToast('Link de login copiado!');
+                }).catch(function() {
+                    fallbackCopy(fullUrl);
+                });
+            } else {
+                fallbackCopy(fullUrl);
+            }
+        });
+    });
+
+    function fallbackCopy(text) {
+        const tempInput = document.createElement('input');
+        tempInput.value = text;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        try {
+            document.execCommand('copy');
+            showToast('Link de login copiado!');
+        } catch (err) {
+            alert('Não foi possível copiar automaticamente: ' + text);
+        }
+        document.body.removeChild(tempInput);
+    }
+});
+</script>
 {% endblock %}

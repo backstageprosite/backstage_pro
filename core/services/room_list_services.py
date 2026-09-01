@@ -450,6 +450,12 @@ def create_room_list(show_id, band_id, user, hotel_name, city, **kwargs):
     }
     filtered_kwargs = {k: v for k, v in kwargs.items() if k in allowed_fields}
 
+    if 'accommodation_link' in kwargs:
+        new_link = kwargs.get('accommodation_link') or None
+        if locked_show.accommodation_link != new_link:
+            locked_show.accommodation_link = new_link
+            locked_show.save(update_fields=['accommodation_link'])
+
     default_obs = ""
     if hasattr(band, 'lodging_template'):
         default_obs = band.lodging_template.default_observations
@@ -562,6 +568,12 @@ def update_room_list(room_list_id, user, **kwargs):
         'hotel_name', 'city', 'address', 'contact', 'phone',
         'reservation_code', 'check_in', 'check_out', 'notes', 'observations'
     }
+
+    if 'accommodation_link' in kwargs and locked_rl.show:
+        new_link = kwargs.get('accommodation_link') or None
+        if locked_rl.show.accommodation_link != new_link:
+            locked_rl.show.accommodation_link = new_link
+            locked_rl.show.save(update_fields=['accommodation_link'])
 
     changed = False
     for key, value in kwargs.items():

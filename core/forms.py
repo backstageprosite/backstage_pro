@@ -358,16 +358,23 @@ class RoomListSelectShowForm(forms.Form):
         ).exclude(id__in=shows_with_room_list).order_by('date')
 
 class RoomListForm(forms.ModelForm):
+    accommodation_link = forms.URLField(
+        label='Localização',
+        required=False,
+        widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Cole o link do Google Maps (https://maps.google.com/...)'})
+    )
+
     class Meta:
         model = RoomList
         fields = [
-            'hotel_name', 'city', 'address', 'check_in', 'check_out',
+            'hotel_name', 'city', 'address', 'accommodation_link', 'check_in', 'check_out',
             'contact', 'phone', 'notes', 'reservation_code'
         ]
         labels = {
             'hotel_name': 'Nome do hotel',
             'city': 'Cidade',
             'address': 'Endereço',
+            'accommodation_link': 'Localização',
             'check_in': 'Check-in',
             'check_out': 'Check-out',
             'contact': 'Contato',
@@ -386,6 +393,19 @@ class RoomListForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'reservation_code': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.show:
+            self.fields['accommodation_link'].initial = self.instance.show.accommodation_link
+
+    def clean_accommodation_link(self):
+        link = self.cleaned_data.get('accommodation_link')
+        if link:
+            link = link.strip()
+            if not (link.startswith('http://') or link.startswith('https://')):
+                raise forms.ValidationError("Informe uma URL válida iniciando com http:// ou https://.")
+        return link
 
     def clean(self):
         cleaned_data = super().clean()

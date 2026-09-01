@@ -63,6 +63,12 @@
         color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
+    .icon-snow {
+        width: 7.5px;
+        height: 7.5px;
+        vertical-align: middle;
+        margin-right: 2px;
+    }
     .hotel-info-table {
         width: 100%;
         border: 1px solid #dee2e6;
@@ -137,14 +143,13 @@
         </td>
     </tr>
     <tr>
-        <td colspan="2">
-            <strong>Endereço:</strong>
-            {% if room_list.address %}
-                {% if room_list.map_link %}
-                    <a href="{{ room_list.map_link }}">{{ room_list.address }}</a>
-                {% else %}
-                    {{ room_list.address }}
-                {% endif %}
+        <td style="width: 50%;">
+            <strong>Endereço:</strong> {{ room_list.address|default:"&mdash;" }}
+        </td>
+        <td style="width: 50%;">
+            <strong>Localização:</strong>
+            {% if room_list.map_link %}
+                <a href="{{ room_list.map_link }}">Abrir Local no Maps</a>
             {% else %}
                 &mdash;
             {% endif %}
@@ -180,7 +185,7 @@
                             <div style="font-size: 9.5px; margin-bottom: 2px; font-weight: bold;">
                                 Quarto {{ room.number_or_name|default:forloop.counter }} &middot; {{ room.get_type_display }}
                                 {% if room.has_ac %}
-                                    &nbsp;<span class="badge-ac">Ar Cond.</span>
+                                    &nbsp;<span class="badge-ac">{% if snowflake_base64 %}<img src="{{ snowflake_base64 }}" class="icon-snow">{% endif %}Ar Cond.</span>
                                 {% endif %}
                             </div>
                             <div style="padding-left: 6px;">
