@@ -77,8 +77,8 @@
     }
 </style>
 
-<div class="card calendar-card px-2 py-3 p-md-4 mb-4 shadow-sm border-0" style="border-radius: 12px;">
-    <div class="card-body p-0 p-md-3">
+<div class="card calendar-card px-2 py-3 p-md-3 mb-2 mb-lg-3 shadow-sm border-0" style="border-radius: 12px;">
+    <div class="card-body p-0 p-md-2">
         <style>
             /* Capitaliza a primeira letra do Mês sem quebrar as outras (Ex: "agosto de 2026" vira "Agosto de 2026") */
             .fc-toolbar-title::first-letter {
@@ -383,11 +383,25 @@
     document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
 
+        function calculateAvailableHeight() {
+            if (!calendarEl) return null;
+            if (window.innerWidth < 992) {
+                return 'auto';
+            }
+            var rect = calendarEl.getBoundingClientRect();
+            var top = rect.top;
+            var bottomGap = 16;
+            var available = window.innerHeight - top - bottomGap;
+            var minHeight = 480;
+            return Math.max(available, minHeight);
+        }
+
         function getCompactConfig() {
             return {
                 height: 'auto',
                 contentHeight: 'auto',
-                aspectRatio: 1, 
+                aspectRatio: 1,
+                expandRows: false,
                 fixedWeekCount: false,
                 dayMaxEvents: 2,
                 dayHeaderFormat: { weekday: 'short' },
@@ -404,6 +418,7 @@
                 height: 'auto',
                 contentHeight: 'auto',
                 aspectRatio: 1,
+                expandRows: false,
                 fixedWeekCount: false,
                 dayMaxEvents: 3,
                 dayHeaderFormat: { weekday: 'short' },
@@ -416,11 +431,13 @@
         }
 
         function getDesktopConfig() {
+            var calcHeight = calculateAvailableHeight() || 'auto';
             return {
-                height: undefined,
+                height: calcHeight,
                 contentHeight: undefined,
-                aspectRatio: 1.6,
-                fixedWeekCount: true,
+                aspectRatio: undefined,
+                expandRows: true,
+                fixedWeekCount: false,
                 dayMaxEvents: true,
                 dayHeaderFormat: { weekday: 'long' },
                 headerToolbar: {
@@ -433,6 +450,23 @@
 
         let currentMode = null;
         let calendar = null;
+
+        function updateDesktopHeight() {
+            if (!calendar || currentMode !== 'desktop') return;
+            var currentView = calendar.view ? calendar.view.type : 'dayGridMonth';
+            if (currentView === 'dayGridMonth') {
+                var newHeight = calculateAvailableHeight();
+                if (newHeight) {
+                    calendar.setOption('height', newHeight);
+                    calendar.setOption('expandRows', true);
+                    calendar.updateSize();
+                }
+            } else {
+                calendar.setOption('height', 'auto');
+                calendar.setOption('expandRows', false);
+                calendar.updateSize();
+            }
+        }
 
         function applyModeToCalendar(width) {
             let newMode = 'desktop';
@@ -447,24 +481,27 @@
                     calendar.setOption('height', config.height);
                     calendar.setOption('contentHeight', config.contentHeight);
                     calendar.setOption('aspectRatio', config.aspectRatio);
+                    calendar.setOption('expandRows', config.expandRows);
                     calendar.setOption('fixedWeekCount', config.fixedWeekCount);
                     calendar.setOption('dayMaxEvents', config.dayMaxEvents);
                     calendar.setOption('dayHeaderFormat', config.dayHeaderFormat);
                     calendar.setOption('headerToolbar', config.headerToolbar);
                     
                     requestAnimationFrame(function() {
-                        calendar.updateSize();
-                        requestAnimationFrame(function() {
+                        if (newMode === 'desktop') {
+                            updateDesktopHeight();
+                        } else {
                             calendar.updateSize();
-                        });
+                        }
                     });
                 } else {
-                    return config; // Return initial config if not initialized
+                    return config;
                 }
+            } else if (newMode === 'desktop') {
+                updateDesktopHeight();
             }
         }
 
-        // Determine initial config based on wrapper width, or fallback to window.innerWidth if wrapper has no width yet
         var initialWidth = calendarEl.parentElement.offsetWidth || window.innerWidth;
         var initialConfig = applyModeToCalendar(initialWidth) || getDesktopConfig();
         
@@ -524,6 +561,7 @@
             aspectRatio: initialConfig.aspectRatio,
             height: initialConfig.height,
             contentHeight: initialConfig.contentHeight,
+            expandRows: initialConfig.expandRows,
             fixedWeekCount: initialConfig.fixedWeekCount,
             dayMaxEvents: initialConfig.dayMaxEvents,
             headerToolbar: initialConfig.headerToolbar,
@@ -763,6 +801,20 @@
                     titleText = titleText.charAt(0).toUpperCase() + titleText.slice(1);
                     titleEl.textContent = titleText;
                 }
+
+                // Ao navegar entre meses ou alternar entre Month e List view, atualiza altura se estiver em desktop
+                if (currentMode === 'desktop') {
+                    if (info.view.type === 'dayGridMonth') {
+                        var newHeight = calculateAvailableHeight();
+                        if (newHeight) {
+                            calendar.setOption('height', newHeight);
+                            calendar.setOption('expandRows', true);
+                        }
+                    } else {
+                        calendar.setOption('height', 'auto');
+                        calendar.setOption('expandRows', false);
+                    }
+                }
             },
             
             eventClick: function(info) {
@@ -771,7 +823,7 @@
             }
         });
 
-        // Initialize ResizeObserver to watch calendar wrapper width
+        // Initialize ResizeObserver to watch calendar wrapper width and recalculate
         var resizeTimer;
         var ro = new ResizeObserver(entries => {
             clearTimeout(resizeTimer);
@@ -779,11 +831,28 @@
                 for (let entry of entries) {
                     applyModeToCalendar(entry.contentRect.width);
                 }
-            }, 150);
+            }, 100);
         });
         ro.observe(calendarEl.parentElement);
 
+        // Window resize listener para capturar mudanças de altura do viewport, zoom e redimensionamento de janela
+        var windowResizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(windowResizeTimer);
+            windowResizeTimer = setTimeout(function() {
+                var currentWidth = calendarEl.parentElement.offsetWidth || window.innerWidth;
+                applyModeToCalendar(currentWidth);
+            }, 100);
+        });
+
         calendar.render();
+
+        // Ajuste imediato pós-render inicial para garantir o layout sem scroll no desktop
+        requestAnimationFrame(function() {
+            if (currentMode === 'desktop') {
+                updateDesktopHeight();
+            }
+        });
     });
 </script>
 {% endblock %}
