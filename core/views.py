@@ -1425,20 +1425,24 @@ def commercial_index_view(request, band_slug):
     # Ordenação cronológica com horário nulo no final
     qs = qs.order_by('date', F('time').asc(nulls_last=True), 'id')
 
-    reservas_qs = qs.filter(phase=CommercialProposal.Phase.RESERVA)
-    fd_qs = qs.filter(phase__in=[CommercialProposal.Phase.FECHADO, CommercialProposal.Phase.DESISTENCIA])
+    proposals_orcamento = qs.filter(phase=CommercialProposal.Phase.RESERVA)
+    proposals_fechados = qs.filter(phase=CommercialProposal.Phase.FECHADO)
+    proposals_desistencias = qs.filter(phase=CommercialProposal.Phase.DESISTENCIA)
 
-    count_reservas = reservas_qs.count()
-    count_fd = fd_qs.count()
+    count_orcamento = proposals_orcamento.count()
+    count_fechados = proposals_fechados.count()
+    count_desistencias = proposals_desistencias.count()
 
     form = CommercialProposalForm()
 
     context = {
         'band': band,
-        'reservas': reservas_qs,
-        'fechados_desistencias': fd_qs,
-        'count_reservas': count_reservas,
-        'count_fd': count_fd,
+        'proposals_orcamento': proposals_orcamento,
+        'proposals_fechados': proposals_fechados,
+        'proposals_desistencias': proposals_desistencias,
+        'count_orcamento': count_orcamento,
+        'count_fechados': count_fechados,
+        'count_desistencias': count_desistencias,
         'form': form,
     }
     return render(request, 'core/comercial/comercial_index.html', context)
@@ -1506,6 +1510,7 @@ def commercial_save_view(request, band_slug, pk=None):
                     show_time=old_show.show_time,
                     status=old_show.status,
                     fee=old_show.fee,
+                    venue=old_show.venue,
                     notification_revision=old_show.notification_revision
                 )
                 new_show = old_show
@@ -1515,6 +1520,8 @@ def commercial_save_view(request, band_slug, pk=None):
                 new_show.status = target_status
                 new_show.fee = proposal.fee
                 new_show.contractor_phone = proposal.contact
+                if proposal.phase == CommercialProposal.Phase.FECHADO and proposal.location:
+                    new_show.venue = proposal.location
                 new_show.save()
                 schedule_show_notifications(old_show=old_show_snapshot, new_show=new_show, actor=request.user, is_creation=False)
             else:
@@ -1526,6 +1533,7 @@ def commercial_save_view(request, band_slug, pk=None):
                     show_time=proposal.time,
                     status=target_status,
                     fee=proposal.fee,
+                    venue=proposal.location if (proposal.phase == CommercialProposal.Phase.FECHADO and proposal.location) else None,
                     contractor_phone=proposal.contact
                 )
                 proposal.show = new_show
@@ -1544,6 +1552,7 @@ def commercial_save_view(request, band_slug, pk=None):
                         show_time=old_show.show_time,
                         status=old_show.status,
                         fee=old_show.fee,
+                        venue=old_show.venue,
                         notification_revision=old_show.notification_revision
                     )
                     old_show.status = 'CANCELADO'
@@ -1567,6 +1576,119 @@ def commercial_save_view(request, band_slug, pk=None):
     msg = "Solicitação atualizada com sucesso!" if not is_new_proposal else "Solicitação cadastrada com sucesso!"
     messages.success(request, msg)
     return JsonResponse({'ok': True, 'redirect_url': reverse('commercial_index', args=[band.slug])})
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def commercial_pdf_view(request, band_slug):
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem exportar a agenda comercial.")
+
+    band = request.band
+    from core.models import CommercialProposal
+    from django.db.models import F
+    from datetime import datetime
+
+    data_inicio = request.GET.get('data_inicio', '').strip()
+    data_fim = request.GET.get('data_fim', '').strip()
+    selected_phases = request.GET.getlist('phase')
+
+    # Validação: Se nenhuma fase foi selecionada
+    if not selected_phases:
+        messages.error(request, "Selecione ao menos um status para gerar o PDF.")
+        return redirect('commercial_index', band_slug=band.slug)
+
+    # Mapeamento seguro de fases
+    phase_filter_values = []
+    for ph in selected_phases:
+        if ph in ['ORCAMENTO', 'RESERVA']:
+            phase_filter_values.append(CommercialProposal.Phase.RESERVA)
+        elif ph == 'FECHADO':
+            phase_filter_values.append(CommercialProposal.Phase.FECHADO)
+        elif ph == 'DESISTENCIA':
+            phase_filter_values.append(CommercialProposal.Phase.DESISTENCIA)
+
+    if not phase_filter_values:
+        messages.error(request, "Selecione ao menos um status para gerar o PDF.")
+        return redirect('commercial_index', band_slug=band.slug)
+
+    qs = CommercialProposal.objects.filter(band=band, phase__in=phase_filter_values)
+
+    if data_inicio:
+        try:
+            inicio = datetime.strptime(data_inicio, '%Y-%m-%d').date()
+            qs = qs.filter(date__gte=inicio)
+        except ValueError:
+            pass
+
+    if data_fim:
+        try:
+            fim = datetime.strptime(data_fim, '%Y-%m-%d').date()
+            qs = qs.filter(date__lte=fim)
+        except ValueError:
+            pass
+
+    # Ordenação cronológica por data e hora
+    proposals = qs.order_by('date', F('time').asc(nulls_last=True), 'id')
+
+    # Se nenhum resultado for retornado
+    if not proposals.exists():
+        messages.warning(request, "Nenhum registro comercial encontrado para os filtros selecionados.")
+        return redirect('commercial_index', band_slug=band.slug)
+
+    # Estruturação com agrupamento hierárquico determinístico: ANO -> MÊS (em Português)
+    MESES_PT_BR = {
+        1: 'JANEIRO',
+        2: 'FEVEREIRO',
+        3: 'MARÇO',
+        4: 'ABRIL',
+        5: 'MAIO',
+        6: 'JUNHO',
+        7: 'JULHO',
+        8: 'AGOSTO',
+        9: 'SETEMBRO',
+        10: 'OUTUBRO',
+        11: 'NOVEMBRO',
+        12: 'DEZEMBRO'
+    }
+
+    from collections import defaultdict
+    years_dict = defaultdict(lambda: defaultdict(list))
+
+    for prop in proposals:
+        ano = prop.date.year
+        mes = prop.date.month
+        years_dict[ano][mes].append(prop)
+
+    # Construir lista ordenada hierárquica final
+    grouped_years = []
+    for ano in sorted(years_dict.keys()):
+        months_list = []
+        for mes in sorted(years_dict[ano].keys()):
+            months_list.append({
+                'month_num': mes,
+                'month_name': MESES_PT_BR.get(mes, f"MÊS {mes}"),
+                'proposals': years_dict[ano][mes]
+            })
+        if months_list:
+            grouped_years.append({
+                'year': ano,
+                'months': months_list
+            })
+
+    user_name = request.user.get_full_name() or request.user.username
+
+    context = {
+        'band': band,
+        'grouped_years': grouped_years,
+        'proposals': proposals,
+        'count_fechados': proposals.filter(phase=CommercialProposal.Phase.FECHADO).count(),
+        'count_desistencias': proposals.filter(phase=CommercialProposal.Phase.DESISTENCIA).count(),
+        'pdf_logo_base64': get_image_base64(band.logo),
+        'user_name': user_name,
+    }
+    return render(request, 'core/comercial/pdf_comercial.html', context)
 
 
 @login_required

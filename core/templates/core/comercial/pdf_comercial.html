@@ -1,0 +1,200 @@
+{% load static admin_tags %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>[{% now "H:i_d-m-Y" %}] - AGENDA COMERCIAL {{ band.name|upper }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+            color: #000;
+            font-size: 11px;
+        }
+        .pdf-container {
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header-logo {
+            max-height: 75px;
+            max-width: 140px;
+            object-fit: contain;
+        }
+        .page-title {
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+        .band-subtitle {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #333;
+        }
+        .year-header {
+            font-size: 16px;
+            font-weight: 800;
+            color: #212529;
+            margin-top: 24px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 2px solid #212529;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .month-header {
+            background-color: #f8f9fa;
+            padding: 6px 12px;
+            border-left: 4px solid #6c757d;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-top: 14px;
+            margin-bottom: 8px;
+        }
+        .table-pdf {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        .table-pdf th {
+            background-color: #f1f3f5;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 6px 8px;
+            border-bottom: 2px solid #dee2e6;
+            color: #495057;
+        }
+        .table-pdf td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+            font-size: 10.5px;
+        }
+        .badge-phase {
+            font-size: 9px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block;
+            text-align: center;
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .badge-orcamento {
+            background-color: #ffc107 !important;
+            color: #000 !important;
+        }
+        .badge-fechado {
+            background-color: #198754 !important;
+            color: #fff !important;
+        }
+        .badge-desistencia {
+            background-color: #dc3545 !important;
+            color: #fff !important;
+        }
+
+        @media print {
+            .print-only { display: block !important; }
+            #print-footer { display: flex !important; }
+            .no-print { display: none !important; }
+            body { padding: 0; margin: 0; }
+            .pdf-container { padding: 0; max-width: 100%; }
+            @page { margin: 1.2cm 1cm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="pdf-container">
+        <!-- Cabeçalho -->
+        <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+            {% if pdf_logo_base64 %}
+                <img src="{{ pdf_logo_base64 }}" alt="{{ band.name }}" class="header-logo me-3">
+            {% elif band.logo %}
+                <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="header-logo me-3">
+            {% endif %}
+            <div>
+                <div class="page-title">AGENDA COMERCIAL</div>
+                <div class="band-subtitle">{{ band.name }}</div>
+            </div>
+        </div>
+
+        <!-- Agrupamento Hierárquico: ANO -> MÊS -> TABELA -->
+        {% for y in grouped_years %}
+            <div class="year-header">{{ y.year }}</div>
+
+            {% for m in y.months %}
+                <div class="month-header">{{ m.month_name }}</div>
+
+                <table class="table-pdf">
+                    <thead>
+                        <tr>
+                            <th style="width: 12%;">Data</th>
+                            <th style="width: 28%;">Nome do Contato</th>
+                            <th style="width: 22%;">Local</th>
+                            <th style="width: 15%;">Valor</th>
+                            <th style="width: 13%;">Origem</th>
+                            <th style="width: 10%; text-align: center;">Fase</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prop in m.proposals %}
+                        <tr>
+                            <td class="fw-bold">{{ prop.date|date:"d/m/Y" }}</td>
+                            <td>{% if prop.contact_name %}{{ prop.contact_name }}{% else %}—{% endif %}</td>
+                            <td>{% if prop.location %}{{ prop.location }}{% else %}—{% endif %}</td>
+                            <td class="fw-semibold">{% if prop.fee != None %}{{ prop.fee|brl_currency }}{% else %}—{% endif %}</td>
+                            <td>{% if prop.origin %}{{ prop.origin }}{% else %}—{% endif %}</td>
+                            <td class="text-center">
+                                {% if prop.phase == 'RESERVA' %}
+                                    <span class="badge-phase badge-orcamento">Orçamento</span>
+                                {% elif prop.phase == 'FECHADO' %}
+                                    <span class="badge-phase badge-fechado">Fechado</span>
+                                {% elif prop.phase == 'DESISTENCIA' %}
+                                    <span class="badge-phase badge-desistencia">Desistência</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
+        {% empty %}
+            <p class="text-center mt-5 text-muted">Nenhum registro comercial encontrado.</p>
+        {% endfor %}
+
+        <!-- Botões de Ação na visualização prévia -->
+        <div class="text-center mt-4 no-print">
+            <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print me-2"></i> Imprimir / Salvar PDF</button>
+            <button onclick="window.close()" class="btn btn-outline-secondary ms-2">Fechar aba</button>
+        </div>
+    </div>
+
+    <!-- Rodapé Exclusivo de Impressão -->
+    <div id="print-footer" class="print-only" style="border-top: 1px solid #dee2e6; padding-top: 6px; font-size: 10px; position: fixed; bottom: 0; left: 0; width: 100%; display: none; background: white;">
+        <div class="d-flex w-100 justify-content-between align-items-center px-1">
+            <span style="flex: 1; text-align: left;">Gerado por: {{ user_name }}</span>
+            <span style="flex: 1; text-align: center;">Desenvolvido por Backstage Pro<br>@backstagepro.site</span>
+            <span style="flex: 1; text-align: right;">Gerado em: {% now "d/m/Y H:i" %}</span>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            Promise.all(Array.from(document.images).filter(img => !img.complete).map(img => new Promise(resolve => { img.onload = img.onerror = resolve; }))).then(() => {
+                document.fonts.ready.then(function() {
+                    setTimeout(function() {
+                        window.print();
+                    }, 300);
+                });
+            });
+        };
+    </script>
+</body>
+</html>

@@ -15,6 +15,7 @@
     }
     .bp-commercial-page .btn-header-action {
         font-size: 14px;
+        font-weight: 700;
         padding: 5px 14px;
         line-height: 1.25;
         height: 35px;
@@ -94,6 +95,13 @@
         font-size: 12px;
     }
 
+    /* Evitar clipping do dropdown sem quebrar o scroll em telas pequenas */
+    @media (min-width: 992px) {
+        .bp-commercial-page .card .table-responsive {
+            overflow: visible !important;
+        }
+    }
+
     @media (max-width: 767.98px) {
         .bp-commercial-page .btn-header-action {
             height: 40px;
@@ -121,6 +129,9 @@
             <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
             </a>
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm" style="background-color: #212529; color: #FFFFFF;" data-bs-toggle="modal" data-bs-target="#modalPdfComercial">
+                <i class="fa-solid fa-file-pdf me-1" style="color: #FFFFFF; font-size: 14px;"></i> Gerar PDF
+            </button>
             <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalProposal">
                 <i class="fa-solid fa-plus me-1"></i> Novo Orçamento
             </button>
@@ -143,7 +154,7 @@
                     <label class="filter-label">Fase</label>
                     <select name="phase" class="form-select filter-select">
                         <option value="TODAS" {% if request.GET.phase == 'TODAS' or not request.GET.phase %}selected{% endif %}>Todas</option>
-                        <option value="RESERVA" {% if request.GET.phase == 'RESERVA' %}selected{% endif %}>Reserva</option>
+                        <option value="RESERVA" {% if request.GET.phase == 'RESERVA' %}selected{% endif %}>Orçamento</option>
                         <option value="FECHADO" {% if request.GET.phase == 'FECHADO' %}selected{% endif %}>Fechado</option>
                         <option value="DESISTENCIA" {% if request.GET.phase == 'DESISTENCIA' %}selected{% endif %}>Desistência</option>
                     </select>
@@ -165,30 +176,45 @@
         </div>
     </div>
 
-    <!-- SEÇÃO RESERVAS -->
+    <!-- SEÇÃO 1: ORÇAMENTOS -->
     <div class="mb-4">
         <div class="d-flex align-items-center mb-3">
-            <h5 class="section-title"><i class="fa-regular fa-clock me-2 text-warning"></i>Reservas</h5>
-            <span class="badge bg-warning text-dark rounded-pill ms-2" style="font-size: 11px;">{{ count_reservas }}</span>
+            <h5 class="section-title"><i class="fa-regular fa-clock me-2 text-warning"></i>Orçamentos</h5>
+            <span class="badge bg-warning text-dark rounded-pill ms-2" style="font-size: 11px;">{{ count_orcamento }}</span>
         </div>
         <div class="card shadow-sm border-0" style="border-radius: 12px;">
             <div class="card-body p-0">
-                {% include 'core/comercial/_tabela_fase.html' with proposals=reservas empty_message="Nenhuma solicitação em Reserva encontrada." %}
+                {% include 'core/comercial/_tabela_fase.html' with proposals=proposals_orcamento empty_message="Nenhum orçamento encontrado." %}
             </div>
         </div>
     </div>
 
     <hr class="my-4 text-muted">
 
-    <!-- SEÇÃO FECHADOS E DESISTÊNCIAS -->
+    <!-- SEÇÃO 2: FECHADOS -->
     <div class="mb-4">
         <div class="d-flex align-items-center mb-3">
-            <h5 class="section-title"><i class="fa-solid fa-check-double me-2 text-primary"></i>Fechados e Desistências</h5>
-            <span class="badge bg-primary text-white rounded-pill ms-2" style="font-size: 11px;">{{ count_fd }}</span>
+            <h5 class="section-title"><i class="fa-solid fa-circle-check me-2 text-success"></i>Fechados</h5>
+            <span class="badge bg-success text-white rounded-pill ms-2" style="font-size: 11px;">{{ count_fechados }}</span>
         </div>
         <div class="card shadow-sm border-0" style="border-radius: 12px;">
             <div class="card-body p-0">
-                {% include 'core/comercial/_tabela_fase.html' with proposals=fechados_desistencias empty_message="Nenhuma solicitação Fechada ou em Desistência encontrada." %}
+                {% include 'core/comercial/_tabela_fase.html' with proposals=proposals_fechados empty_message="Nenhuma solicitação fechada encontrada." %}
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4 text-muted">
+
+    <!-- SEÇÃO 3: DESISTÊNCIAS -->
+    <div class="mb-4">
+        <div class="d-flex align-items-center mb-3">
+            <h5 class="section-title"><i class="fa-solid fa-circle-xmark me-2 text-danger"></i>Desistências</h5>
+            <span class="badge bg-danger text-white rounded-pill ms-2" style="font-size: 11px;">{{ count_desistencias }}</span>
+        </div>
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-body p-0">
+                {% include 'core/comercial/_tabela_fase.html' with proposals=proposals_desistencias empty_message="Nenhuma desistência encontrada." %}
             </div>
         </div>
     </div>
@@ -207,7 +233,6 @@
                 <input type="hidden" id="proposal_id" name="proposal_id" value="">
 
                 <div class="modal-body py-3">
-                    <!-- Alerta de Conflito de Data -->
                     <div id="conflictAlert" class="alert alert-warning d-none align-items-center mb-3" role="alert">
                         <i class="fa-solid fa-triangle-exclamation me-2 fs-5"></i>
                         <div>
@@ -231,177 +256,341 @@
                             <label for="id_time" class="form-label fw-bold small text-muted">Horário</label>
                             <input type="time" name="time" id="id_time" class="form-control">
                         </div>
+                        <div class="col-12 col-md-6">
+                            <label for="id_location" class="form-label fw-bold small text-muted">Local</label>
+                            <input type="text" name="location" id="id_location" class="form-control" placeholder="Ex: Clube Atlético, Parque de Exposições">
+                        </div>
 
+                        <div class="col-12 col-md-6">
+                            <label for="id_contact_name" class="form-label fw-bold small text-muted">Nome do Contato</label>
+                            <input type="text" name="contact_name" id="id_contact_name" class="form-control" placeholder="Ex: João Silva, Maria Produções">
+                        </div>
                         <div class="col-12 col-md-6">
                             <label for="id_contact" class="form-label fw-bold small text-muted">Contato (Telefone)</label>
                             <input type="text" name="contact" id="id_contact" class="form-control" placeholder="Ex: (11) 99999-9999">
                         </div>
-                        <div class="col-12 col-md-6">
+
+                        <div class="col-12 col-md-4">
                             <label for="id_origin" class="form-label fw-bold small text-muted">Origem</label>
                             <input type="text" name="origin" id="id_origin" class="form-control" placeholder="Ex: Indicação, Instagram, Produtor Fulano">
                         </div>
-
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-md-4">
                             <label for="id_fee" class="form-label fw-bold small text-muted">Valor do Cachê</label>
                             <input type="text" name="fee" id="id_fee" class="form-control money-mask" placeholder="R$ 0,00">
                         </div>
-                        <div class="col-12 col-md-6">
+                        <div class="col-12 col-md-4">
                             <label for="id_phase" class="form-label fw-bold small text-muted">Fase do Orçamento <span class="text-danger">*</span></label>
                             <select name="phase" id="id_phase" class="form-select" required>
-                                <option value="RESERVA">Reserva</option>
+                                <option value="RESERVA">Orçamento</option>
                                 <option value="FECHADO">Fechado</option>
                                 <option value="DESISTENCIA">Desistência</option>
                             </select>
                         </div>
 
-                        <!-- Seção de Anexos -->
                         <div class="col-12 border-top pt-3 mt-3">
                             <label class="form-label fw-bold small text-muted">Documentos Anexados</label>
 
-                            <!-- Lista de Documentos já anexados (no modo edição) -->
-                            <div id="existingDocumentsContainer" class="mb-2 d-none">
-                                <ul class="list-group list-group-flush border rounded mb-2" id="existingDocumentsList"></ul>
+                            <div id="existingDocsContainer" class="mb-3 d-none">
+                                <ul class="list-group list-group-flush border rounded-3" id="existingDocsList">
+                                </ul>
                             </div>
 
                             <input type="file" name="documents" id="id_documents" class="form-control" multiple>
-                            <div class="form-text small text-muted">Extensões permitidas: PDF, Imagens, DOCX, XLSX (máx. 10MB por arquivo).</div>
+                            <div class="form-text text-muted">Formatos aceitos: PDF, Imagens, DOC, XLS. Máx 15MB por arquivo.</div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
-                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                    <button type="submit" id="btnSubmitProposal" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Solicitação</button>
+
+                <div class="modal-footer border-top-0 pt-0 flex-column flex-md-row w-100">
+                    <button type="button" class="btn btn-light rounded-pill px-4 w-100 mb-2 mb-md-0" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" id="btnSubmitProposal" class="btn rounded-pill px-4 fw-bold w-100 text-white" style="background-color: #198754; border-color: #198754;">Salvar Orçamento</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modal Confirmação de Exclusão de Anexo Comercial -->
-<div class="modal fade" id="modalDeleteCommercialDoc" tabindex="-1" aria-labelledby="modalDeleteCommercialDocLabel" aria-hidden="true">
+<!-- Modal Exportar PDF Comercial -->
+<div class="modal fade" id="modalPdfComercial" tabindex="-1" aria-labelledby="modalPdfComercialLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-danger" id="modalDeleteCommercialDocLabel">Confirmar Exclusão</h5>
+                <h5 class="modal-title fw-bold" id="modalPdfComercialLabel" style="font-size: 16px;">
+                    <i class="fa-solid fa-file-pdf me-2" style="color: #212529;"></i>Gerar PDF — Agenda Comercial
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body pt-3 pb-2 text-dark" style="white-space: normal; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; min-width: 0;">
-                Tem certeza que deseja excluir este anexo?<br>
-                <small class="text-muted">Esta ação não pode ser desfeita.</small>
-            </div>
-            <div class="modal-footer border-top-0 pt-2 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-light fw-medium" data-bs-dismiss="modal" style="border-radius: 8px;">Cancelar</button>
-                <button type="button" id="btnConfirmDeleteDoc" class="btn btn-danger fw-medium shadow-sm" style="border-radius: 8px;">Excluir</button>
+            <form id="formPdfComercial" action="{% url 'commercial_pdf' band.slug %}" method="GET" target="_blank">
+                <div class="modal-body py-3">
+                    <div id="pdfValidationAlert" class="alert alert-danger d-none mb-3 py-2 px-3 small" role="alert">
+                        Selecione ao menos um status para gerar o PDF.
+                    </div>
+
+                    <p class="text-muted small mb-2 fw-semibold">Filtre os shows por período (opcional):</p>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="data_inicio_pdf" class="form-label small fw-bold text-muted mb-1">Data inicial:</label>
+                            <input type="date" class="form-control form-control-sm" name="data_inicio" id="data_inicio_pdf">
+                        </div>
+                        <div class="col-6">
+                            <label for="data_fim_pdf" class="form-label small fw-bold text-muted mb-1">Data final:</label>
+                            <input type="date" class="form-control form-control-sm" name="data_fim" id="data_fim_pdf">
+                        </div>
+                    </div>
+
+                    <p class="text-muted small mb-2 fw-semibold">Selecione os status dos eventos que deseja incluir no PDF:</p>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input js-pdf-phase-chk" type="checkbox" name="phase" value="ORCAMENTO" id="chkPdfOrcamento" checked>
+                        <label class="form-check-label fw-bold" for="chkPdfOrcamento">
+                            <span class="badge bg-warning text-dark me-1" style="font-size: 0.8rem;">Orçamento</span>
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input js-pdf-phase-chk" type="checkbox" name="phase" value="FECHADO" id="chkPdfFechado" checked>
+                        <label class="form-check-label fw-bold" for="chkPdfFechado">
+                            <span class="badge bg-success text-white me-1" style="font-size: 0.8rem;">Fechados</span>
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input js-pdf-phase-chk" type="checkbox" name="phase" value="DESISTENCIA" id="chkPdfDesistencia" checked>
+                        <label class="form-check-label fw-bold" for="chkPdfDesistencia">
+                            <span class="badge bg-danger text-white me-1" style="font-size: 0.8rem;">Desistências</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 flex-column flex-md-row w-100">
+                    <button type="button" class="btn btn-light rounded-pill px-4 w-100 mb-2 mb-md-0" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" id="btnSubmitPdfComercial" class="btn rounded-pill px-4 fw-bold w-100 text-white" style="background-color: #198754; border-color: #198754;">Gerar PDF</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmação de Exclusão de Anexo -->
+<div class="modal fade" id="modalDeleteDocConfirm" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+            <div class="modal-body text-center p-4">
+                <i class="fa-solid fa-triangle-exclamation text-danger fs-1 mb-3"></i>
+                <h6 class="fw-bold mb-2">Excluir anexo?</h6>
+                <p class="text-muted small mb-4">Esta ação não pode ser desfeita.</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-3 w-50" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnConfirmDeleteDoc" class="btn btn-danger rounded-pill px-3 w-50 fw-bold">Excluir</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Modal Universal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalConfirmDeleteUniversal" tabindex="-1" aria-labelledby="modalConfirmDeleteUniversalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="modalConfirmDeleteUniversalLabel">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="mb-0 text-dark">
+                    Tem certeza de que deseja excluir <span id="modalDeleteItemType" class="fw-bold">este registro</span>:
+                    <strong id="modalDeleteItemName" class="text-danger"></strong>?
+                </p>
+                <small class="text-muted d-block mt-2">Esta ação é irreversível e removerá também o show vinculado no calendário (caso exista).</small>
+            </div>
+            <div class="modal-footer border-top-0 pt-0 flex-column flex-md-row w-100">
+                <button type="button" class="btn btn-light rounded-pill px-4 w-100 mb-2 mb-md-0" data-bs-dismiss="modal">Cancelar</button>
+                <form id="formDeleteUniversal" method="post" action="" class="w-100 m-0 p-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold w-100">Confirmar Exclusão</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Máscara monetária
+    const moneyInputs = document.querySelectorAll('.money-mask');
+    moneyInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value === '') {
+                e.target.value = '';
+                return;
+            }
+            value = (parseInt(value, 10) / 100).toFixed(2) + '';
+            value = value.replace('.', ',');
+            value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+            e.target.value = 'R$ ' + value;
+        });
+    });
+
     const modalProposalEl = document.getElementById('modalProposal');
     const formProposal = document.getElementById('formProposal');
-    const inputDate = document.getElementById('id_date');
     const proposalIdInput = document.getElementById('proposal_id');
     const conflictAlert = document.getElementById('conflictAlert');
     const conflictDetails = document.getElementById('conflictDetails');
     const formErrorsAlert = document.getElementById('formErrorsAlert');
-    const existingDocsContainer = document.getElementById('existingDocumentsContainer');
-    const existingDocsList = document.getElementById('existingDocumentsList');
+    const dateInput = document.getElementById('id_date');
+    const existingDocsContainer = document.getElementById('existingDocsContainer');
+    const existingDocsList = document.getElementById('existingDocsList');
+    const modalDeleteDocEl = document.getElementById('modalDeleteDocConfirm');
+    const modalConfirmDeleteUniversalEl = document.getElementById('modalConfirmDeleteUniversal');
+    const formDeleteUniversal = document.getElementById('formDeleteUniversal');
+    const modalDeleteItemType = document.getElementById('modalDeleteItemType');
+    const modalDeleteItemName = document.getElementById('modalDeleteItemName');
 
-    const checkConflictUrl = "{% url 'commercial_check_conflict' band.slug %}";
-    const createUrl = "{% url 'commercial_create' band.slug %}";
+    const formPdfComercial = document.getElementById('formPdfComercial');
+    const pdfValidationAlert = document.getElementById('pdfValidationAlert');
+
+    // Validação do formulário de PDF Comercial
+    if (formPdfComercial) {
+        formPdfComercial.addEventListener('submit', function(e) {
+            const chks = formPdfComercial.querySelectorAll('.js-pdf-phase-chk:checked');
+            if (chks.length === 0) {
+                e.preventDefault();
+                if (pdfValidationAlert) {
+                    pdfValidationAlert.classList.remove('d-none');
+                }
+            } else {
+                if (pdfValidationAlert) {
+                    pdfValidationAlert.classList.add('d-none');
+                }
+            }
+        });
+
+        // Limpar alerta ao marcar qualquer checkbox
+        formPdfComercial.querySelectorAll('.js-pdf-phase-chk').forEach(chk => {
+            chk.addEventListener('change', function() {
+                const chks = formPdfComercial.querySelectorAll('.js-pdf-phase-chk:checked');
+                if (chks.length > 0 && pdfValidationAlert) {
+                    pdfValidationAlert.classList.add('d-none');
+                }
+            });
+        });
+    }
+
+    let bsModalDeleteDoc = null;
+    if (modalDeleteDocEl) {
+        bsModalDeleteDoc = new bootstrap.Modal(modalDeleteDocEl);
+    }
 
     let pendingDocDeleteUrl = null;
     let pendingDocId = null;
-    const modalDeleteDocEl = document.getElementById('modalDeleteCommercialDoc');
-    const bsModalDeleteDoc = modalDeleteDocEl ? new bootstrap.Modal(modalDeleteDocEl) : null;
 
-    // Checagem assíncrona de conflito de agenda
-    function checkDateConflict() {
-        const dateVal = inputDate.value;
-        const currentPropId = proposalIdInput.value;
-        if (!dateVal) {
-            conflictAlert.classList.add('d-none');
-            return;
-        }
+    // Configuração do Modal Universal de Exclusão
+    if (modalConfirmDeleteUniversalEl) {
+        modalConfirmDeleteUniversalEl.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            if (!button) return;
 
-        fetch(`${checkConflictUrl}?date=${encodeURIComponent(dateVal)}&proposal_id=${encodeURIComponent(currentPropId)}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.has_conflict) {
-                    conflictAlert.classList.remove('d-none');
-                    conflictAlert.classList.add('d-flex');
-                    if (data.conflicts && data.conflicts.length > 0) {
-                        conflictDetails.innerHTML = data.conflicts.map(c => `• ${c.title} às ${c.time} (${c.status})`).join('<br>');
-                    } else {
-                        conflictDetails.innerHTML = '';
-                    }
-                } else {
-                    conflictAlert.classList.add('d-none');
-                    conflictAlert.classList.remove('d-flex');
-                }
-            })
-            .catch(err => console.error('Erro ao verificar conflito:', err));
+            const deleteUrl = button.getAttribute('data-delete-url');
+            const itemType = button.getAttribute('data-item-type') || 'este registro';
+            const itemName = button.getAttribute('data-item-name') || '';
+
+            if (formDeleteUniversal) formDeleteUniversal.action = deleteUrl;
+            if (modalDeleteItemType) modalDeleteItemType.textContent = itemType;
+            if (modalDeleteItemName) modalDeleteItemName.textContent = itemName ? `"${itemName}"` : '';
+        });
     }
 
-    inputDate.addEventListener('change', checkDateConflict);
-
-    // Reset do modal ao abrir para "Novo Orçamento"
+    // Reset do modal ao abrir para criação
     modalProposalEl.addEventListener('show.bs.modal', function(event) {
-        const button = event.relatedTarget;
-        formErrorsAlert.classList.add('d-none');
-        formErrorsAlert.innerHTML = '';
-        conflictAlert.classList.add('d-none');
-
-        // Se clicou no botão "Novo Orçamento"
-        if (!button || !button.classList.contains('js-btn-edit-proposal')) {
-            document.getElementById('modalProposalLabel').textContent = 'Informações da Solicitação de Show';
-            formProposal.action = createUrl;
+        if (!event.relatedTarget || event.relatedTarget.getAttribute('data-bs-target') !== '#modalProposal') {
+            return;
+        }
+        // Apenas para o botão "Novo Orçamento"
+        if (!event.relatedTarget.classList.contains('js-btn-edit-proposal')) {
+            document.getElementById('modalProposalLabel').innerHTML = '<i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Informações da Solicitação de Show';
+            formProposal.action = "{% url 'commercial_create' band.slug %}";
             proposalIdInput.value = '';
             formProposal.reset();
+            conflictAlert.classList.add('d-none');
+            formErrorsAlert.classList.add('d-none');
             existingDocsContainer.classList.add('d-none');
             existingDocsList.innerHTML = '';
         }
     });
 
-    // Submissão assíncrona do formulário com tratamento de erros sem perder dados
+    // Verificação AJAX de conflito de datas
+    function checkDateConflict() {
+        const dateVal = dateInput.value;
+        const propId = proposalIdInput.value;
+
+        if (!dateVal) {
+            conflictAlert.classList.add('d-none');
+            return;
+        }
+
+        const conflictUrl = `{% url 'commercial_check_conflict' band.slug %}?date=${encodeURIComponent(dateVal)}&proposal_id=${encodeURIComponent(propId)}`;
+
+        fetch(conflictUrl, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.has_conflict) {
+                let detailsText = '';
+                data.conflicts.forEach(c => {
+                    detailsText += `<div>• ${c.title} às ${c.time} (${c.status})</div>`;
+                });
+                conflictDetails.innerHTML = detailsText;
+                conflictAlert.classList.remove('d-none');
+            } else {
+                conflictAlert.classList.add('d-none');
+            }
+        })
+        .catch(err => console.error('Erro na checagem de conflitos:', err));
+    }
+
+    dateInput.addEventListener('change', checkDateConflict);
+
+    // Submissão do formulário via AJAX
     formProposal.addEventListener('submit', function(e) {
         e.preventDefault();
+        formErrorsAlert.classList.add('d-none');
+        formErrorsAlert.innerHTML = '';
+
         const submitBtn = document.getElementById('btnSubmitProposal');
-        submitBtn.disabled = true;
         const originalBtnText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Salvando...';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Salvando...';
 
         const formData = new FormData(formProposal);
 
         fetch(formProposal.action, {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
-        .then(response => {
-            return response.json().then(data => ({ status: response.status, body: data }));
-        })
-        .then(({ status, body }) => {
+        .then(res => res.json())
+        .then(data => {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
-
-            if (body.ok) {
-                window.location.href = body.redirect_url;
+            if (data.ok) {
+                window.location.reload();
             } else {
                 formErrorsAlert.classList.remove('d-none');
                 let errHtml = '<ul class="mb-0 ps-3">';
-                if (body.errors) {
-                    for (const field in body.errors) {
-                        body.errors[field].forEach(msg => {
+                if (data.errors) {
+                    for (const field in data.errors) {
+                        data.errors[field].forEach(msg => {
                             errHtml += `<li><strong>${field}:</strong> ${msg}</li>`;
                         });
                     }
-                } else if (body.message) {
-                    errHtml += `<li>${body.message}</li>`;
+                } else if (data.message) {
+                    errHtml += `<li>${data.message}</li>`;
                 } else {
                     errHtml += '<li>Ocorreu um erro ao salvar a solicitação.</li>';
                 }
@@ -413,46 +602,77 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Erro na requisição:', err);
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalBtnText;
-            alert('Erro de comunicação ao salvar a solicitação. Tente novamente.');
+            formErrorsAlert.classList.remove('d-none');
+            formErrorsAlert.innerHTML = 'Erro de comunicação ao salvar a solicitação. Tente novamente.';
         });
     });
 
-    // Delegação para abertura de Edição
+    // Delegação para abertura de Edição segura
     document.addEventListener('click', function(e) {
         const btnEdit = e.target.closest('.js-btn-edit-proposal');
         if (!btnEdit) return;
 
-        const propData = JSON.parse(btnEdit.getAttribute('data-proposal'));
+        const propId = btnEdit.getAttribute('data-prop-id') || '';
+        const propName = btnEdit.getAttribute('data-prop-name') || '';
+        const propDate = btnEdit.getAttribute('data-prop-date') || '';
+        const propTime = btnEdit.getAttribute('data-prop-time') || '';
+        const propLocation = btnEdit.getAttribute('data-prop-location') || '';
+        const propContactName = btnEdit.getAttribute('data-prop-contact-name') || '';
+        const propContact = btnEdit.getAttribute('data-prop-contact') || '';
+        const propOrigin = btnEdit.getAttribute('data-prop-origin') || '';
+        const propFee = btnEdit.getAttribute('data-prop-fee') || '';
+        const propPhase = btnEdit.getAttribute('data-prop-phase') || 'RESERVA';
         const editUrl = btnEdit.getAttribute('data-edit-url');
 
-        document.getElementById('modalProposalLabel').textContent = 'Informações da Solicitação de Show';
+        document.getElementById('modalProposalLabel').innerHTML = '<i class="fa-solid fa-file-pen me-2" style="color: #198754;"></i>Informações da Solicitação de Show';
         formProposal.action = editUrl;
-        proposalIdInput.value = propData.id;
+        proposalIdInput.value = propId;
 
-        document.getElementById('id_name').value = propData.name;
-        document.getElementById('id_date').value = propData.date;
-        document.getElementById('id_time').value = propData.time;
-        document.getElementById('id_contact').value = propData.contact;
-        document.getElementById('id_origin').value = propData.origin;
-        document.getElementById('id_fee').value = propData.fee;
-        document.getElementById('id_phase').value = propData.phase;
+        document.getElementById('id_name').value = propName;
+        document.getElementById('id_date').value = propDate;
+        document.getElementById('id_time').value = propTime;
+        document.getElementById('id_location').value = propLocation;
+        document.getElementById('id_contact_name').value = propContactName;
+        document.getElementById('id_contact').value = propContact;
+        document.getElementById('id_origin').value = propOrigin;
+
+        // Formata o cachê caso exista
+        if (propFee) {
+            let num = parseFloat(propFee);
+            if (!isNaN(num)) {
+                let formatted = num.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+                document.getElementById('id_fee').value = 'R$ ' + formatted;
+            } else {
+                document.getElementById('id_fee').value = propFee;
+            }
+        } else {
+            document.getElementById('id_fee').value = '';
+        }
+
+        document.getElementById('id_phase').value = propPhase;
 
         // Renderiza lista de documentos existentes
         existingDocsList.innerHTML = '';
-        if (propData.documents && propData.documents.length > 0) {
+        const docSpans = document.querySelectorAll(`.js-doc-item-${propId}`);
+        if (docSpans && docSpans.length > 0) {
             existingDocsContainer.classList.remove('d-none');
-            propData.documents.forEach(doc => {
+            docSpans.forEach(span => {
+                const docId = span.getAttribute('data-doc-id');
+                const docName = span.getAttribute('data-doc-name');
+                const downloadUrl = span.getAttribute('data-download-url');
+                const deleteUrl = span.getAttribute('data-delete-url');
+
                 const li = document.createElement('li');
                 li.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-3';
-                li.id = `doc-row-${doc.id}`;
+                li.id = `doc-row-${docId}`;
                 li.innerHTML = `
                     <div class="d-flex align-items-center text-truncate me-2">
                         <i class="fa-regular fa-file-lines me-2 text-primary"></i>
-                        <span class="text-truncate">${doc.name}</span>
+                        <span class="text-truncate">${docName}</span>
                     </div>
                     <div class="d-flex align-items-center gap-1">
-                        <a href="${doc.download_url}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-circle" title="Download"><i class="fa-solid fa-download"></i></a>
-                        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle js-btn-delete-doc" data-delete-url="${doc.delete_url}" data-doc-id="${doc.id}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                        <a href="${downloadUrl}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-circle" title="Download"><i class="fa-solid fa-download"></i></a>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle js-btn-delete-doc" data-delete-url="${deleteUrl}" data-doc-id="${docId}" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 `;
                 existingDocsList.appendChild(li);
@@ -466,47 +686,38 @@ document.addEventListener('DOMContentLoaded', function() {
         checkDateConflict();
     });
 
-    // Delegação para exclusão de anexo individual
+    // Exclusão de anexos
     document.addEventListener('click', function(e) {
-        const btnDeleteDoc = e.target.closest('.js-btn-delete-doc');
-        if (!btnDeleteDoc) return;
-
-        pendingDocDeleteUrl = btnDeleteDoc.getAttribute('data-delete-url');
-        pendingDocId = btnDeleteDoc.getAttribute('data-doc-id');
-        if (bsModalDeleteDoc) {
-            bsModalDeleteDoc.show();
-        }
+        const btnDelete = e.target.closest('.js-btn-delete-doc');
+        if (!btnDelete) return;
+        pendingDocDeleteUrl = btnDelete.getAttribute('data-delete-url');
+        pendingDocId = btnDelete.getAttribute('data-doc-id');
+        if (bsModalDeleteDoc) bsModalDeleteDoc.show();
     });
 
-    const btnConfirmDeleteDoc = document.getElementById('btnConfirmDeleteDoc');
-    if (btnConfirmDeleteDoc) {
-        btnConfirmDeleteDoc.addEventListener('click', function() {
-            if (!pendingDocDeleteUrl) return;
-
-            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            fetch(pendingDocDeleteUrl, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrftoken,
-                    'X-Requested-With': 'XMLHttpRequest'
+    document.getElementById('btnConfirmDeleteDoc').addEventListener('click', function() {
+        if (!pendingDocDeleteUrl) return;
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        fetch(pendingDocDeleteUrl, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken, 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) {
+                const row = document.getElementById(`doc-row-${pendingDocId}`);
+                if (row) row.remove();
+                if (existingDocsList && existingDocsList.children.length === 0) {
+                    existingDocsContainer.classList.add('d-none');
                 }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.ok) {
-                    const row = document.getElementById(`doc-row-${pendingDocId}`);
-                    if (row) row.remove();
-                    if (existingDocsList && existingDocsList.children.length === 0) {
-                        existingDocsContainer.classList.add('d-none');
-                    }
-                    if (bsModalDeleteDoc) bsModalDeleteDoc.hide();
-                } else {
-                    alert(data.message || 'Erro ao excluir anexo.');
-                }
-            })
-            .catch(err => console.error('Erro ao excluir anexo:', err));
-        });
-    }
+                if (bsModalDeleteDoc) bsModalDeleteDoc.hide();
+            } else {
+                formErrorsAlert.classList.remove('d-none');
+                formErrorsAlert.innerHTML = data.message || 'Erro ao excluir anexo.';
+            }
+        })
+        .catch(err => console.error('Erro ao excluir anexo:', err));
+    });
 });
 </script>
 {% endblock %}

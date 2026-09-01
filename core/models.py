@@ -470,8 +470,10 @@ class CommercialProposal(models.Model):
     name = models.CharField(max_length=200, verbose_name='Nome da Solicitação')
     date = models.DateField(verbose_name='Data do Show')
     time = models.TimeField(blank=True, null=True, verbose_name='Horário do Show')
+    contact_name = models.CharField(max_length=255, blank=True, null=True, verbose_name='Nome do Contato')
     contact = models.CharField(max_length=200, blank=True, null=True, verbose_name='Contato')
     normalized_contact = models.CharField(max_length=50, blank=True, null=True, verbose_name='Contato Normalizado')
+    location = models.CharField(max_length=255, blank=True, null=True, verbose_name='Local')
     origin = models.CharField(max_length=200, blank=True, null=True, verbose_name='Origem')
     fee = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name='Valor do Cachê (R$)')
     phase = models.CharField(

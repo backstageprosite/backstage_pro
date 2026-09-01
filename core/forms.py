@@ -571,12 +571,14 @@ class CommercialProposalForm(forms.ModelForm):
     class Meta:
         from core.models import CommercialProposal
         model = CommercialProposal
-        fields = ['name', 'date', 'time', 'contact', 'origin', 'fee', 'phase']
+        fields = ['name', 'date', 'time', 'contact_name', 'contact', 'location', 'origin', 'fee', 'phase']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Show de Réveillon, Aniversário de Cidade'}),
             'date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'time': forms.TimeInput(format='%H:%M', attrs={'class': 'form-control', 'type': 'time'}),
+            'contact_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: João Silva, Maria Produções'}),
             'contact': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: (11) 99999-9999'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Clube Atlético, Parque de Exposições'}),
             'origin': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Indicação, Instagram, Produtor Fulano'}),
             'phase': forms.Select(attrs={'class': 'form-select'}),
         }
@@ -587,11 +589,23 @@ class CommercialProposalForm(forms.ModelForm):
             raise forms.ValidationError('O nome da solicitação é obrigatório.')
         return name.strip()
 
+    def clean_contact_name(self):
+        contact_name = self.cleaned_data.get('contact_name')
+        if not contact_name or not contact_name.strip():
+            return None
+        return contact_name.strip()
+
     def clean_contact(self):
         contact = self.cleaned_data.get('contact')
         if not contact or not contact.strip():
             return None
         return contact.strip()
+
+    def clean_location(self):
+        location = self.cleaned_data.get('location')
+        if not location or not location.strip():
+            return None
+        return location.strip()
 
     def clean_origin(self):
         origin = self.cleaned_data.get('origin')

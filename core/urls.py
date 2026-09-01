@@ -51,6 +51,7 @@ urlpatterns = [
 
     # Comercial
     path('relatorios/comercial/', views.commercial_index_view, name='commercial_index'),
+    path('relatorios/comercial/pdf/', views.commercial_pdf_view, name='commercial_pdf'),
     path('relatorios/comercial/novo/', views.commercial_save_view, name='commercial_create'),
     path('relatorios/comercial/<int:pk>/editar/', views.commercial_save_view, name='commercial_edit'),
     path('relatorios/comercial/<int:pk>/excluir/', views.commercial_delete_view, name='commercial_delete'),

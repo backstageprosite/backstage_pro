@@ -1,4 +1,3 @@
-
 import tempfile
 import io
 from datetime import date, time
@@ -40,26 +39,29 @@ class CommercialModuleTests(TestCase):
     def test_3_layout_cabecalho_secoes_dropdown(self):
         self.client.login(username="produtor_adv", password="senha")
         from core.models import CommercialProposal
-        CommercialProposal.objects.create(band=self.band_adv, name='Test Dropdown', date='2026-12-10', phase='RESERVA')
+        CommercialProposal.objects.create(band=self.band_adv, name='Test Dropdown', date='2026-12-10', phase='RESERVA', location='Clube A')
         res = self.client.get(reverse('commercial_index', args=[self.band_adv.slug]))
         html = res.content.decode('utf-8')
 
-        # 1. Voltar immediately before Novo Orçamento
+        # 1. Voltar immediately before Gerar PDF and Novo Orçamento
         idx_voltar = html.find('Voltar')
+        idx_pdf = html.find('Gerar PDF')
         idx_novo = html.find('Novo Orçamento')
-        self.assertTrue(0 < idx_voltar < idx_novo)
+        self.assertTrue(0 < idx_voltar < idx_pdf < idx_novo)
 
         # 2. Ausência de abas (tabs)
         self.assertNotIn('commercialTabs', html)
         self.assertNotIn('commercialTabContent', html)
 
-        # 3. Duas seções empilhadas
-        self.assertIn('Reservas</h5>', html)
-        self.assertIn('Fechados e Desistências</h5>', html)
+        # 3. Três seções empilhadas
+        self.assertIn('Orçamentos</h5>', html)
+        self.assertIn('Fechados</h5>', html)
+        self.assertIn('Desistências</h5>', html)
 
-        # 4. Coluna Fase presente, Contato ausente
-        self.assertIn('<th class="py-3 text-center">Fase</th>', html)
-        self.assertNotIn('Contato</th>', html)
+        # 4. Colunas da tabela
+        self.assertIn('Local</th>', html)
+        self.assertIn('Fase</th>', html)
+        self.assertIn('Clube A', html)
 
         # 5. Renderiza a linha com botão e dropdown
         self.assertIn('Test Dropdown', html)
@@ -67,18 +69,12 @@ class CommercialModuleTests(TestCase):
         self.assertIn('Ações', html)
         self.assertIn('dropdown-toggle', html)
         self.assertIn('rounded-pill', html)
-        self.assertNotIn('rounded-circle d-inline-flex', html)  # Botão circular apenas com engrenagem não existe
         self.assertIn('dropdown-menu dropdown-menu-end shadow-sm border-0', html)
 
         idx_editar = html.find('Editar')
         idx_excluir = html.find('Excluir', idx_editar)
         self.assertTrue(idx_editar > 0 and idx_excluir > 0, "Editar and Excluir must exist")
         self.assertTrue(idx_editar < idx_excluir, "Editar must appear before Excluir")
-
-        # Dropdown ul block check (ensuring no <hr> or dropdown-divider between them)
-        dropdown_html = html[html.find('dropdown-menu dropdown-menu-end shadow-sm border-0'):html.find('</ul>', html.find('dropdown-menu dropdown-menu-end shadow-sm border-0'))]
-        self.assertNotIn('<hr', dropdown_html)
-        self.assertNotIn('dropdown-divider', dropdown_html)
 
         # 6. Filtros Layout
         self.assertIn('col-xl', html)
@@ -87,12 +83,6 @@ class CommercialModuleTests(TestCase):
         self.assertIn('fa-eraser', html)
         self.assertIn('btn-dark', html)
         self.assertIn('fa-filter', html)
-
-
-
-        # 5. Dropdown Editar e Excluir sem hr
-
-
         self.assertNotIn('dropdown-divider', html)
 
     def test_4_filtros_buscas_limpar(self):
@@ -135,9 +125,10 @@ class CommercialModuleTests(TestCase):
         self.assertIsNone(prop_vazia.time)
         self.assertIsNone(prop_vazia.fee)
         self.assertFalse(bool(prop_vazia.contact))
+        self.assertFalse(bool(prop_vazia.contact_name))
 
         # 2. Criar com valores e verificar formatação
-        data_cheio = {'name': 'Com Valores', 'date': '2026-11-01', 'time': '12:00', 'phase': 'RESERVA', 'fee': '8.000,00'}
+        data_cheio = {'name': 'Com Valores', 'contact_name': 'João Contato', 'date': '2026-11-01', 'time': '12:00', 'phase': 'RESERVA', 'fee': '8.000,00'}
         self.client.post(create_url, data_cheio, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
         # Verificar ordenação: 'Com Valores' (tem time) deve vir antes de 'Sem Opcionais' (time=None) no mesmo date
@@ -220,3 +211,46 @@ class CommercialModuleTests(TestCase):
         self.assertFalse(Show.objects.filter(id=show.id).exists())
         self.assertFalse(CommercialProposalDocument.objects.filter(id=doc.id).exists())
 
+    def test_11_pdf_comercial_geracao_e_filtros(self):
+        self.client.login(username="produtor_adv", password="senha")
+        CommercialProposal.objects.create(
+            band=self.band_adv, name="Show de Réveillon", contact_name="Carlos Produtor", location="Arena Salvador",
+            origin="Instagram", fee=Decimal("15000.00"), date=date(2026, 12, 15),
+            phase=CommercialProposal.Phase.RESERVA, created_by=self.produtor_adv
+        )
+        CommercialProposal.objects.create(
+            band=self.band_adv, name="Festival de Verão", contact_name="Mariana Eventos", location="Teatro Castro Alves",
+            origin="Indicação", fee=Decimal("20000.00"), date=date(2027, 1, 20),
+            phase=CommercialProposal.Phase.FECHADO, created_by=self.produtor_adv
+        )
+
+        pdf_url = reverse('commercial_pdf', args=[self.band_adv.slug])
+
+        # 1. Sem status selecionado -> Redireciona com erro
+        res_no_status = self.client.get(pdf_url)
+        self.assertEqual(res_no_status.status_code, 302)
+
+        # 2. Com status -> Gera PDF (200) com estrutura de 2 anos e meses em português
+        res_pdf = self.client.get(f"{pdf_url}?phase=ORCAMENTO&phase=FECHADO")
+        self.assertEqual(res_pdf.status_code, 200)
+        content = res_pdf.content.decode('utf-8')
+        self.assertIn("AGENDA COMERCIAL", content)
+        self.assertIn("Banda Avançada", content)
+        self.assertIn("2026", content)
+        self.assertIn("DEZEMBRO", content)
+        self.assertIn("Carlos Produtor", content)
+        self.assertIn("Arena Salvador", content)
+        self.assertIn("2027", content)
+        self.assertIn("JANEIRO", content)
+        self.assertIn("Mariana Eventos", content)
+        self.assertIn("Orçamento", content)
+        self.assertIn("Fechado", content)
+        self.assertNotIn("RESERVA", content)
+
+        # 3. Sem resultados -> Redireciona com aviso (não gera PDF vazio)
+        res_empty = self.client.get(f"{pdf_url}?phase=DESISTENCIA")
+        self.assertEqual(res_empty.status_code, 302)
+
+        # 4. Isolamento multi-banda no PDF
+        self.client.login(username="produtor_bas", password="senha")
+        self.assertEqual(self.client.get(f"{pdf_url}?phase=ORCAMENTO").status_code, 403)

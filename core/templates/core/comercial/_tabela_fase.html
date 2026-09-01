@@ -6,6 +6,7 @@
                 <th class="ps-4">Nome</th>
                 <th>Data</th>
                 <th>Horário</th>
+                <th>Local</th>
                 <th class="text-center">Fase</th>
                 <th>Valor</th>
                 <th>Origem</th>
@@ -23,9 +24,10 @@
                 </td>
                 <td>{{ prop.date|date:"d/m/Y" }}</td>
                 <td>{% if prop.time %}{{ prop.time|time:"H:i" }}{% else %}—{% endif %}</td>
+                <td>{% if prop.location %}{{ prop.location }}{% else %}—{% endif %}</td>
                 <td class="text-center">
                     {% if prop.phase == 'RESERVA' %}
-                        <span class="badge phase-pill" style="background-color: #ffc107; color: #000;">Reserva</span>
+                        <span class="badge phase-pill" style="background-color: #ffc107; color: #000;">Orçamento</span>
                     {% elif prop.phase == 'FECHADO' %}
                         <span class="badge phase-pill" style="background-color: #198754; color: #fff;">Fechado</span>
                     {% elif prop.phase == 'DESISTENCIA' %}
@@ -36,16 +38,32 @@
                 <td>{% if prop.origin %}<span class="badge bg-light text-dark border" style="font-size: 11px; padding: 3px 8px;">{{ prop.origin }}</span>{% else %}—{% endif %}</td>
                 <td class="pe-4 text-end">
                     <div class="dropdown">
-                        <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
                             <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width: 160px; padding: 8px 0; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,.075); z-index: 1000;">
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width: 160px; padding: 8px 0; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,.075); z-index: 1050;">
                             <li>
                                 <button type="button" class="dropdown-item d-flex align-items-center py-2 px-3 text-primary js-btn-edit-proposal" 
                                     data-edit-url="{% url 'commercial_edit' band.slug prop.id %}"
-                                    data-proposal='{"id": {{ prop.id }}, "name": "{{ prop.name|escapejs }}", "date": "{{ prop.date|date:"Y-m-d" }}", "time": "{% if prop.time %}{{ prop.time|time:"H:i" }}{% endif %}", "contact": "{% if prop.contact %}{{ prop.contact|escapejs }}{% endif %}", "origin": "{% if prop.origin %}{{ prop.origin|escapejs }}{% endif %}", "fee": "{% if prop.fee != None %}{{ prop.fee }}{% endif %}", "phase": "{{ prop.phase }}", "documents": [{% for doc in prop.documents.all %}{"id": {{ doc.id }}, "name": "{{ doc.original_name|escapejs }}", "download_url": "{% url "download_commercial_document" band.slug doc.id %}", "delete_url": "{% url "commercial_delete_document" band.slug prop.id doc.id %}"}{% if not forloop.last %},{% endif %}{% endfor %}]}'>
+                                    data-prop-id="{{ prop.id }}"
+                                    data-prop-name="{{ prop.name }}"
+                                    data-prop-date="{{ prop.date|date:'Y-m-d' }}"
+                                    data-prop-time="{% if prop.time %}{{ prop.time|time:'H:i' }}{% endif %}"
+                                    data-prop-location="{% if prop.location %}{{ prop.location }}{% endif %}"
+                                    data-prop-contact-name="{% if prop.contact_name %}{{ prop.contact_name }}{% endif %}"
+                                    data-prop-contact="{% if prop.contact %}{{ prop.contact }}{% endif %}"
+                                    data-prop-origin="{% if prop.origin %}{{ prop.origin }}{% endif %}"
+                                    data-prop-fee="{% if prop.fee != None %}{{ prop.fee }}{% endif %}"
+                                    data-prop-phase="{{ prop.phase }}">
                                     <i class="fa-solid fa-file-pen me-2"></i> Editar
                                 </button>
+                                {% for doc in prop.documents.all %}
+                                <span class="d-none js-doc-item-{{ prop.id }}"
+                                    data-doc-id="{{ doc.id }}"
+                                    data-doc-name="{{ doc.original_name }}"
+                                    data-download-url="{% url 'download_commercial_document' band.slug doc.id %}"
+                                    data-delete-url="{% url 'commercial_delete_document' band.slug prop.id doc.id %}"></span>
+                                {% endfor %}
                             </li>
                             <li>
                                 <button type="button" class="dropdown-item d-flex align-items-center py-2 px-3 text-danger"
@@ -62,7 +80,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="text-center py-5 text-muted">
+                <td colspan="8" class="text-center py-5 text-muted">
                     <i class="fa-solid fa-handshake fs-1 mb-3 opacity-50"></i>
                     <p class="mb-0">{{ empty_message }}</p>
                 </td>
