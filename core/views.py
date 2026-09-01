@@ -1722,6 +1722,15 @@ def arquivos_view(request, band_slug):
             return redirect('arquivos', band_slug=band.slug)
 
         try:
+            from core.file_policy import validate_file_size_and_type, check_show_limits, MAX_SHOW_FILES, MAX_FILE_SIZE_MB, MAX_SHOW_STORAGE_MB
+            from django.core.exceptions import ValidationError
+
+            # 1. Valida tamanho individual e tipo/extensão
+            validate_file_size_and_type(uploaded_file)
+
+            # 2. Valida quota por show (quantidade e tamanho total em MB)
+            check_show_limits(show, [uploaded_file.size])
+
             if category_type == 'comprovante':
                 file_date = request.POST.get('date') or None
                 raw_value = request.POST.get('value', '0').replace('.', '').replace(',', '.').strip()
@@ -1750,12 +1759,21 @@ def arquivos_view(request, band_slug):
                 doc.full_clean()
                 doc.save()
                 messages.success(request, f"Documento adicionado com sucesso ao show {show.title or 'selecionado'}!")
+        except ValidationError as e:
+            messages.error(request, e.message if hasattr(e, 'message') else str(e))
         except Exception as e:
             messages.error(request, f"Erro ao salvar arquivo: {str(e)}")
 
         return redirect('arquivos', band_slug=band.slug)
 
+    from core.file_policy import get_show_files_info, MAX_SHOW_FILES, MAX_FILE_SIZE_MB, MAX_SHOW_STORAGE_MB
+
     all_band_shows = Show.objects.filter(band=band).order_by('-date', 'title')
+    for s in all_band_shows:
+        f_count, f_size = get_show_files_info(s)
+        s.storage_files_count = f_count
+        s.storage_files_size_mb = round(f_size / (1024 * 1024), 2) if f_size else 0
+
     shows_with_files = Show.objects.filter(band=band).prefetch_related('documents', 'receipts')
     shows_list = [show for show in shows_with_files if show.documents.exists() or show.receipts.exists()]
 
@@ -1763,6 +1781,9 @@ def arquivos_view(request, band_slug):
         'band': band,
         'shows': shows_list,
         'all_band_shows': all_band_shows,
+        'max_show_files': MAX_SHOW_FILES,
+        'max_file_size_mb': MAX_FILE_SIZE_MB,
+        'max_show_storage_mb': MAX_SHOW_STORAGE_MB,
     }
     return render(request, 'core/arquivos.html', context)
 

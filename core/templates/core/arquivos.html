@@ -298,6 +298,101 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Modal Adicionar Novo Arquivo Global -->
+<div class="modal fade text-start" id="modalNovoArquivoGlobal" tabindex="-1" aria-labelledby="modalNovoArquivoGlobalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <form action="{% url 'arquivos' band.slug %}" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_file_global">
+                <div class="modal-header bg-light border-0 py-3 px-4">
+                    <h5 class="modal-title fw-bold text-primary" id="modalNovoArquivoGlobalLabel" style="font-size: 16px;">
+                        <i class="fa-solid fa-cloud-arrow-up me-2"></i>Adicionar Arquivo
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 p-md-4 text-wrap" style="white-space: normal;">
+                    <!-- Seleção de Show com Filtro por Mês -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Mês / Período (Filtro)</label>
+                            <input type="month" id="modalShowMonthFilter" class="form-control" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Selecionar Show *</label>
+                            <select name="show_id" id="modalShowSelect" class="form-select" required style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                                <option value="">-- Selecione o Show --</option>
+                                {% for s in all_band_shows %}
+                                    <option value="{{ s.id }}" data-show-date="{{ s.date|date:'Y-m'|default:'' }}" data-files-count="{{ s.storage_files_count }}" data-files-size="{{ s.storage_files_size_mb }}">{{ s.title|default:"Sem título" }} &bull; {{ s.date|date:"d/m/Y"|default:"Sem data" }}{% if s.city %} &bull; {{ s.city }}{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text" style="font-size: 12px;">Selecione o evento ao qual este arquivo será anexado.</div>
+                        </div>
+                    </div>
+
+                    <!-- Categoria e Dados -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Categoria *</label>
+                            <select name="category_type" id="modalCategorySelect" class="form-select" required style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                                <option value="documento" selected>Documentos do Show</option>
+                                <option value="comprovante">Comprovantes Financeiros</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6" id="modalFieldDateContainer">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Data</label>
+                            <input type="date" name="date" class="form-control" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-8">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Descrição *</label>
+                            <input type="text" name="description" class="form-control" required placeholder="Ex: Contrato Assinado, Recibo Van, Nota Fiscal..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-12 col-md-4 d-none" id="modalFieldValueContainer">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Valor (R$)</label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="font-size: 13px; height: 34px; padding: 5px 10px;">R$</span>
+                                <input type="text" name="value" id="modalInputValue" class="form-control money-mask" placeholder="0,00" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 0 6px 6px 0;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Arquivo -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Arquivo (PDF, Imagem) *</label>
+                            <input type="file" name="file" class="form-control" required accept=".pdf, .jpg, .jpeg, .png, .gif, .webp, application/pdf, image/jpeg, image/png, image/gif, image/webp" style="font-size: 14px; padding: 5px 10px; border-radius: 6px;">
+                            <div class="form-text" style="font-size: 12px;">Formatos aceitos: PDF, JPG, PNG, GIF, WEBP.</div>
+                        </div>
+                    </div>
+
+                    <!-- Informações de Uso de Armazenamento do Show -->
+                    <div class="alert alert-info py-2 px-3 mb-0 shadow-sm" id="modalStorageInfoBox" style="border-radius: 8px; font-size: 13px; background-color: #e7f3ff; border-color: #b6d4fe;">
+                        <div class="d-flex align-items-center mb-1 text-primary">
+                            <i class="fa-solid fa-hard-drive me-2"></i> <strong>Uso de Armazenamento do Show</strong>
+                        </div>
+                        <div id="modalStorageInitialPrompt" class="text-muted small mb-1" style="padding-left: 1.5rem; font-size: 12px;">
+                            Selecione um show para visualizar o uso de armazenamento.
+                        </div>
+                        <ul class="mb-0 small text-dark d-none" id="modalStorageMetricsList" style="list-style-type: none; padding-left: 1.5rem; line-height: 1.5;">
+                            <li>Arquivos: <strong id="modalStorageFilesCount">0</strong> de {{ max_show_files|default:"7" }}</li>
+                            <li>Espaço utilizado: <strong id="modalStorageFilesSize">0</strong> de {{ max_show_storage_mb|default:"35" }} MB</li>
+                        </ul>
+                        <div style="padding-left: 1.5rem; font-size: 12px; color: #495057;">
+                            Máximo por arquivo: <strong>{{ max_file_size_mb|default:"10" }} MB</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 justify-content-end gap-2 py-2 px-4">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Adicionar Arquivo</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Modals for Document/Receipt Deletion and Edition -->
@@ -320,7 +415,7 @@
                                 <input type="text" name="description" class="form-control" value="{{ doc.description }}" required>
                             </div>
                             <div class="col-12">
-                                <label class="form-label fw-bold small">Arquivo (PDF, Imagem)</label>
+                                <label class="form-label fw-bold small">Substituir Arquivo (PDF, Imagem)</label>
                                 <input type="file" name="file" class="form-control">
                                 <div class="form-text">Deixe em branco para manter o arquivo atual.</div>
                             </div>
@@ -337,6 +432,7 @@
     {% endfor %}
 
     {% for receipt in show.receipts.all %}
+    <!-- Modal Editar Comprovante -->
     <div class="modal fade text-start" id="editReceiptModal{{ receipt.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -354,7 +450,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small">Data</label>
-                                <input type="date" name="date" class="form-control" value="{{ receipt.date|date:'Y-m-d' }}" required>
+                                <input type="date" name="date" class="form-control" value="{{ receipt.date|date:'Y-m-d' }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small">Categoria</label>
@@ -420,83 +516,6 @@
             </div>
         </div>
     </div>
-<!-- Modal Adicionar Novo Arquivo Global -->
-<div class="modal fade text-start" id="modalNovoArquivoGlobal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
-            <form action="{% url 'arquivos' band.slug %}" method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="add_file_global">
-                <div class="modal-header bg-light border-0 py-3 px-4">
-                    <h5 class="modal-title fw-bold text-primary" style="font-size: 16px;">
-                        <i class="fa-solid fa-cloud-arrow-up me-2"></i>Adicionar Arquivo
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-3 p-md-4 text-wrap" style="white-space: normal;">
-                    <!-- Seleção de Show com Filtro por Mês -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-4">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Mês / Período (Filtro)</label>
-                            <input type="month" id="modalShowMonthFilter" class="form-control" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
-                        </div>
-                        <div class="col-12 col-md-8">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Selecionar Show *</label>
-                            <select name="show_id" id="modalShowSelect" class="form-select" required style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
-                                <option value="">-- Selecione o Show --</option>
-                                {% for s in all_band_shows %}
-                                    <option value="{{ s.id }}" data-show-date="{{ s.date|date:'Y-m'|default:'' }}">{{ s.title|default:"Sem título" }} &bull; {{ s.date|date:"d/m/Y"|default:"Sem data" }}{% if s.city %} &bull; {{ s.city }}{% endif %}</option>
-                                {% endfor %}
-                            </select>
-                            <div class="form-text" style="font-size: 12px;">Selecione o evento ao qual este arquivo será anexado.</div>
-                        </div>
-                    </div>
-
-                    <!-- Categoria e Dados -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-6">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Categoria *</label>
-                            <select name="category_type" id="modalCategorySelect" class="form-select" required style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
-                                <option value="documento" selected>Documentos do Show</option>
-                                <option value="comprovante">Comprovantes Financeiros</option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6" id="modalFieldDateContainer">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Data</label>
-                            <input type="date" name="date" class="form-control" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-8">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Descrição *</label>
-                            <input type="text" name="description" class="form-control" required placeholder="Ex: Contrato Assinado, Recibo Van, Nota Fiscal..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
-                        </div>
-                        <div class="col-12 col-md-4 d-none" id="modalFieldValueContainer">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Valor (R$)</label>
-                            <div class="input-group">
-                                <span class="input-group-text" style="font-size: 13px; height: 34px; padding: 5px 10px;">R$</span>
-                                <input type="text" name="value" id="modalInputValue" class="form-control money-mask" placeholder="0,00" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 0 6px 6px 0;">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Arquivo -->
-                    <div class="row g-3 mb-2">
-                        <div class="col-12">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Arquivo (PDF, Imagem) *</label>
-                            <input type="file" name="file" class="form-control" required style="font-size: 14px; padding: 5px 10px; border-radius: 6px;">
-                            <div class="form-text" style="font-size: 12px;">Formatos aceitos: PDF, JPG, PNG, GIF, WEBP.</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light border-0 justify-content-end gap-2 py-2 px-4">
-                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Adicionar Arquivo</button>
-                </div>
-            </form>
-        </div>
-    </div>
 </div>
 
 {% endblock %}
@@ -509,6 +528,30 @@ document.addEventListener("DOMContentLoaded", function() {
     const modalShowSelect = document.getElementById("modalShowSelect");
     const modalCategorySelect = document.getElementById("modalCategorySelect");
     const modalFieldValueContainer = document.getElementById("modalFieldValueContainer");
+    const modalStorageInitialPrompt = document.getElementById("modalStorageInitialPrompt");
+    const modalStorageMetricsList = document.getElementById("modalStorageMetricsList");
+    const modalStorageFilesCount = document.getElementById("modalStorageFilesCount");
+    const modalStorageFilesSize = document.getElementById("modalStorageFilesSize");
+
+    function updateModalStorageInfo() {
+        if (!modalShowSelect) return;
+        const selectedOpt = modalShowSelect.options[modalShowSelect.selectedIndex];
+        if (selectedOpt && selectedOpt.value) {
+            const count = selectedOpt.getAttribute("data-files-count") || "0";
+            const size = selectedOpt.getAttribute("data-files-size") || "0";
+            if (modalStorageFilesCount) modalStorageFilesCount.textContent = count;
+            if (modalStorageFilesSize) modalStorageFilesSize.textContent = size;
+            if (modalStorageInitialPrompt) modalStorageInitialPrompt.classList.add("d-none");
+            if (modalStorageMetricsList) modalStorageMetricsList.classList.remove("d-none");
+        } else {
+            if (modalStorageInitialPrompt) modalStorageInitialPrompt.classList.remove("d-none");
+            if (modalStorageMetricsList) modalStorageMetricsList.classList.add("d-none");
+        }
+    }
+
+    if (modalShowSelect) {
+        modalShowSelect.addEventListener("change", updateModalStorageInfo);
+    }
 
     if (modalShowMonthFilter && modalShowSelect) {
         modalShowMonthFilter.addEventListener("change", function() {
@@ -529,6 +572,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const currentSelected = modalShowSelect.options[modalShowSelect.selectedIndex];
             if (currentSelected && currentSelected.style.display === "none") {
                 modalShowSelect.value = "";
+                updateModalStorageInfo();
             }
         });
     }
