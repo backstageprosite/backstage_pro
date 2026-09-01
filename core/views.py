@@ -4122,6 +4122,9 @@ def room_list_edit(request, band_slug, pk):
                     **form.cleaned_data
                 )
                 messages.success(request, "Room List atualizada com sucesso.")
+                next_url = request.GET.get('next') or request.POST.get('next')
+                if next_url:
+                    return redirect(next_url)
                 return redirect('room_list_manage', band_slug=band_slug, pk=room_list.id)
             except Exception as e:
                 messages.error(request, str(e))

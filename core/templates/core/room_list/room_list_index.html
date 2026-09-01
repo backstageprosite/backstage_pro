@@ -110,7 +110,7 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
                                         <li><a class="dropdown-item py-2 fw-medium" href="{% url 'room_list_manage' request.band.slug room_list.id %}"><i class="fa-solid fa-bed text-primary me-2"></i> Gerenciar</a></li>
-                                        <li><a class="dropdown-item py-2 fw-medium" href="{% url 'room_list_edit' request.band.slug room_list.id %}"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar</a></li>
+                                        <li><a class="dropdown-item py-2 fw-medium btn-edit-hospedagem" href="#" data-bs-toggle="modal" data-bs-target="#modalEditHospedagem" data-edit-url="{% url 'room_list_edit' request.band.slug room_list.id %}?next={% url 'room_list_index' request.band.slug %}" data-show-info="{{ room_list.city|default:'' }}{% if room_list.city and room_list.show.date %} - {% endif %}{{ room_list.show.date|date:'d/m/Y' }}{% if room_list.show.title %} ({{ room_list.show.title }}){% endif %}" data-hotel-name="{{ room_list.hotel_name|default:'' }}" data-city="{{ room_list.city|default:'' }}" data-address="{{ room_list.address|default:'' }}" data-accommodation-link="{{ room_list.show.accommodation_link|default:'' }}" data-check-in="{{ room_list.check_in|date:'Y-m-d\TH:i'|default:'' }}" data-check-out="{{ room_list.check_out|date:'Y-m-d\TH:i'|default:'' }}" data-contact="{{ room_list.contact|default:'' }}" data-phone="{{ room_list.phone|default:'' }}" data-reservation-code="{{ room_list.reservation_code|default:'' }}" data-notes="{{ room_list.notes|default:'' }}"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Editar</a></li>
                                         {% if room_list.status == 'ARQUIVADA' %}
                                         <li>
                                             <form method="post" action="{% url 'room_list_reactivate' request.band.slug room_list.id %}">
@@ -204,9 +204,15 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Endereço</label>
-                        <input type="text" name="address" id="modal_address" class="form-control" placeholder="Ex: Av. Tancredo Neves, 1000" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Endereço</label>
+                            <input type="text" name="address" id="modal_address" class="form-control" placeholder="Ex: Av. Tancredo Neves, 1000" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Localização</label>
+                            <input type="url" name="accommodation_link" id="modal_accommodation_link" class="form-control" placeholder="Cole o link do Google Maps" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
                     </div>
 
                     <div class="row g-3 mb-3">
@@ -238,6 +244,86 @@
                     <div class="mb-3">
                         <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Observações</label>
                         <textarea name="notes" id="modal_notes" class="form-control" rows="3" placeholder="Informações adicionais para a equipe..." style="font-size: 14px; padding: 5px 10px; border-radius: 6px;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Hospedagem</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 3: Formulário Editar Lista de Hospedagem -->
+<div class="modal fade text-start" id="modalEditHospedagem" tabindex="-1" aria-labelledby="modalEditHospedagemLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalEditHospedagemLabel" style="font-size: 16px; color: #198754;">
+                    <i class="fa-solid fa-pen-to-square me-2" style="color: #198754;"></i>Editar Lista de Hospedagem
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formEditHospedagemModal" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-body p-3 p-md-4 text-start">
+                    <div class="alert alert-light border py-2 px-3 mb-3 d-flex align-items-center" style="border-radius: 8px; font-size: 13px;">
+                        <i class="fa-solid fa-calendar-check text-success me-2 fs-6"></i>
+                        <span>Show: <strong id="modalEditShowInfoText">-</strong></span>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome do Hotel *</label>
+                            <input type="text" name="hotel_name" id="edit_hotel_name" class="form-control" placeholder="Ex: Hotel Ibis" required style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Cidade</label>
+                            <input type="text" name="city" id="edit_city" class="form-control" placeholder="Ex: Salvador" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Endereço</label>
+                            <input type="text" name="address" id="edit_address" class="form-control" placeholder="Ex: Av. Tancredo Neves, 1000" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Localização</label>
+                            <input type="url" name="accommodation_link" id="edit_accommodation_link" class="form-control" placeholder="Cole o link do Google Maps" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Check-in</label>
+                            <input type="datetime-local" name="check_in" id="edit_check_in" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Check-out</label>
+                            <input type="datetime-local" name="check_out" id="edit_check_out" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Contato no Hotel</label>
+                            <input type="text" name="contact" id="edit_contact" class="form-control" placeholder="Ex: Recepção / Mariana" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Telefone</label>
+                            <input type="text" name="phone" id="edit_phone" class="form-control" placeholder="Ex: (71) 3333-0000" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Código da Reserva</label>
+                            <input type="text" name="reservation_code" id="edit_reservation_code" class="form-control" placeholder="Ex: RES-9821" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Observações</label>
+                        <textarea name="notes" id="edit_notes" class="form-control" rows="3" placeholder="Informações adicionais para a equipe..." style="font-size: 14px; padding: 5px 10px; border-radius: 6px;"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
@@ -296,6 +382,40 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 350);
         });
     }
+
+    // Modal de Edição de Hospedagem
+    const formEditHospedagem = document.getElementById('formEditHospedagemModal');
+    const editShowInfoText = document.getElementById('modalEditShowInfoText');
+    const editHotelName = document.getElementById('edit_hotel_name');
+    const editCity = document.getElementById('edit_city');
+    const editAddress = document.getElementById('edit_address');
+    const editAccommodationLink = document.getElementById('edit_accommodation_link');
+    const editCheckIn = document.getElementById('edit_check_in');
+    const editCheckOut = document.getElementById('edit_check_out');
+    const editContact = document.getElementById('edit_contact');
+    const editPhone = document.getElementById('edit_phone');
+    const editReservationCode = document.getElementById('edit_reservation_code');
+    const editNotes = document.getElementById('edit_notes');
+
+    document.querySelectorAll('.btn-edit-hospedagem').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const editUrl = btn.getAttribute('data-edit-url') || '';
+            formEditHospedagem.action = editUrl;
+
+            editShowInfoText.textContent = btn.getAttribute('data-show-info') || '-';
+            editHotelName.value = btn.getAttribute('data-hotel-name') || '';
+            editCity.value = btn.getAttribute('data-city') || '';
+            editAddress.value = btn.getAttribute('data-address') || '';
+            editAccommodationLink.value = btn.getAttribute('data-accommodation-link') || '';
+            editCheckIn.value = btn.getAttribute('data-check-in') || '';
+            editCheckOut.value = btn.getAttribute('data-check-out') || '';
+            editContact.value = btn.getAttribute('data-contact') || '';
+            editPhone.value = btn.getAttribute('data-phone') || '';
+            editReservationCode.value = btn.getAttribute('data-reservation-code') || '';
+            editNotes.value = btn.getAttribute('data-notes') || '';
+        });
+    });
 });
 </script>
 {% endblock %}
