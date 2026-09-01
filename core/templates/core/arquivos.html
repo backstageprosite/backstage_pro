@@ -316,7 +316,7 @@
                     <!-- Seleção de Show com Filtro por Mês -->
                     <div class="row g-3 mb-3">
                         <div class="col-12 col-md-4">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Mês / Período (Filtro)</label>
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Filtrar por mês</label>
                             <input type="month" id="modalShowMonthFilter" class="form-control" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
                         </div>
                         <div class="col-12 col-md-8">
@@ -344,19 +344,20 @@
                             <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Data</label>
                             <input type="date" name="date" class="form-control" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
                         </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-8">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Descrição *</label>
-                            <input type="text" name="description" class="form-control" required placeholder="Ex: Contrato Assinado, Recibo Van, Nota Fiscal..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
-                        </div>
-                        <div class="col-12 col-md-4 d-none" id="modalFieldValueContainer">
+                        <div class="col-12 d-none" id="modalFieldValueContainer">
                             <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Valor (R$)</label>
                             <div class="input-group">
                                 <span class="input-group-text" style="font-size: 13px; height: 34px; padding: 5px 10px;">R$</span>
                                 <input type="text" name="value" id="modalInputValue" class="form-control money-mask" placeholder="0,00" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 0 6px 6px 0;">
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Descrição (100% de largura) -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Descrição *</label>
+                            <input type="text" name="description" class="form-control" required placeholder="Ex: Contrato Assinado, Recibo Van, Nota Fiscal..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
                         </div>
                     </div>
 
