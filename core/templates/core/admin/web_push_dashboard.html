@@ -112,8 +112,12 @@
                     <input type="number" name="stale_sending_minutes" id="stale_sending_minutes" class="form-control" min="5" max="10080" value="{{ current_stale_sending }}">
                 </div>
                 <div class="col-12 col-md-3 ms-md-auto text-end d-flex gap-2 justify-content-end">
-                    <a href="{% url 'admin_painel:admin_web_push_dashboard' %}" class="btn btn-light border px-3" style="height: 34px; font-size: 13px; display: inline-flex; align-items: center;"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
-                    <button type="submit" class="btn btn-dark px-3" style="height: 34px; font-size: 13px; display: inline-flex; align-items: center;"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                    <a href="{% url 'admin_painel:admin_web_push_dashboard' %}" class="btn btn-sm btn-outline-secondary px-3" style="font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 400; height: 30px; padding: 4px 16px; border-radius: 4px; display: inline-flex; align-items: center; border: 1px solid #6C757D; color: #6C757D; text-decoration: none;">
+                        <i class="fa-solid fa-eraser me-1" style="font-size: 14px; font-weight: 900;"></i> Limpar
+                    </a>
+                    <button type="submit" class="btn btn-sm btn-dark px-4" style="font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 400; height: 30px; padding: 4px 24px; border-radius: 4px; display: inline-flex; align-items: center; background-color: #212529; border: 1px solid #212529; color: #FFFFFF;">
+                        <i class="fa-solid fa-filter me-1" style="font-size: 14px; font-weight: 900;"></i> Filtrar
+                    </button>
                 </div>
             </form>
         </div>
