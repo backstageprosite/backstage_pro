@@ -334,6 +334,28 @@
 </div>
 {% endif %}
 
+<!-- Modal Aviso Selecionar Integrante -->
+<div class="modal fade" id="modalAvisoSemIntegrantes" tabindex="-1" aria-labelledby="modalAvisoSemIntegrantesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-0 pb-0 pt-3 px-3 d-flex align-items-center justify-content-between">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center" id="modalAvisoSemIntegrantesLabel" style="font-size: 16px;">
+                    <i class="fa-solid fa-circle-exclamation text-warning me-2"></i> Atenção
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3 px-3 text-dark" style="font-size: 14px; line-height: 1.4;">
+                Por favor, selecione ao menos um integrante para gerar o PDF.
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-3 px-3 justify-content-end">
+                <button type="button" class="btn btn-dark fw-medium px-4" data-bs-dismiss="modal" style="height: 34px; font-size: 13px; border-radius: 6px;">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -345,7 +367,8 @@
     function gerarPDF() {
         const checkboxes = document.querySelectorAll('.integrante-checkbox:checked');
         if (checkboxes.length === 0) {
-            alert('Por favor, selecione ao menos um integrante para gerar o PDF.');
+            const avisoModal = new bootstrap.Modal(document.getElementById('modalAvisoSemIntegrantes'));
+            avisoModal.show();
             return;
         }
 
