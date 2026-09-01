@@ -105,9 +105,13 @@
                         <option value="ocultos" {% if search_situacao == 'ocultos' %}selected{% endif %}>Ocultos</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-2 text-end d-flex gap-2 justify-content-end">
-                    <a href="{% url 'admin_painel:database_list' %}" class="btn btn-light border px-3" style="height: 34px; font-size: 13px; display: inline-flex; align-items: center;"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
-                    <button type="submit" class="btn btn-dark px-3" style="height: 34px; font-size: 13px; display: inline-flex; align-items: center;"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                <div class="col-12 col-md-2 text-end d-flex gap-2 justify-content-end align-items-center">
+                    <a href="{% url 'admin_painel:database_list' %}" class="btn btn-sm btn-outline-secondary px-3" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 16px; border-radius: 4px; border: 1px solid #6C757D; color: #6C757D; background-color: transparent; display: inline-flex; align-items: center; white-space: nowrap;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='#FFFFFF';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';">
+                        <i class="fa-solid fa-eraser me-1" style="font-size: 14px; font-weight: 900;"></i> Limpar
+                    </a>
+                    <button type="submit" class="btn btn-sm btn-dark px-4" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 24px; border-radius: 4px; background-color: #212529; border: 1px solid #212529; color: #FFFFFF; display: inline-flex; align-items: center; white-space: nowrap;" onmouseover="this.style.backgroundColor='#1C1F23'; this.style.borderColor='#1A1E21';" onmouseout="this.style.backgroundColor='#212529'; this.style.borderColor='#212529';">
+                        <i class="fa-solid fa-filter me-1" style="font-size: 14px; font-weight: 900;"></i> Filtrar
+                    </button>
                 </div>
             </form>
         </div>
