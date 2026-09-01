@@ -2092,8 +2092,18 @@ def show_create_view(request, band_slug):
             return redirect('calendario', band_slug=band.slug)
 
     else:
+        initial_data = {}
+        date_param = request.GET.get('date')
+        if date_param:
+            import datetime
+            try:
+                # Valida se a data fornecida é estritamente no formato YYYY-MM-DD
+                parsed_date = datetime.date.fromisoformat(date_param)
+                initial_data['date'] = parsed_date
+            except (ValueError, TypeError):
+                pass
 
-        form = ShowForm()
+        form = ShowForm(initial=initial_data)
         if not band.is_advanced:
             for f in ['contractor_name', 'contractor_phone', 'contract_type', 'fee', 'payment_status']:
                 form.fields.pop(f, None)

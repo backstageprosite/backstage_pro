@@ -163,6 +163,19 @@
                 }
             }
             
+            /* Número da data clicável para novo show */
+            {% if request.user.is_produtor or request.user.is_superuser %}
+            .fc-daygrid-day-number {
+                cursor: pointer !important;
+                transition: opacity 0.15s ease, color 0.15s ease;
+                border-radius: 4px;
+            }
+            .fc-daygrid-day-number:hover {
+                opacity: 0.75;
+                text-decoration: underline !important;
+            }
+            {% endif %}
+
             /* Links +N */
             .fc-daygrid-more-link {
                 font-size: 0.75rem !important;
@@ -791,6 +804,20 @@
                 }
             },
             
+            dayCellDidMount: function(arg) {
+                {% if request.user.is_produtor or request.user.is_superuser %}
+                var dayNumberEl = arg.el.querySelector('.fc-daygrid-day-number');
+                if (dayNumberEl) {
+                    var d = arg.date;
+                    var dateFormatted = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+                    dayNumberEl.setAttribute('title', 'Adicionar show em ' + dateFormatted);
+                    dayNumberEl.setAttribute('aria-label', 'Adicionar show em ' + dateFormatted);
+                    dayNumberEl.setAttribute('tabindex', '0');
+                    dayNumberEl.setAttribute('role', 'button');
+                }
+                {% endif %}
+            },
+
             datesSet: function(info) {
                 var titleEl = document.querySelector('.fc-toolbar-title');
                 if (titleEl) {
@@ -822,6 +849,41 @@
                 window.openEventDetails(info.event);
             }
         });
+
+        {% if request.user.is_produtor or request.user.is_superuser %}
+        // Event delegation para clique nos números das datas (somente .fc-daygrid-day-number)
+        var newShowBaseUrl = "{% url 'shows_add' band.slug %}";
+        function handleDayNumberTrigger(target) {
+            var dayCell = target.closest('.fc-daygrid-day');
+            if (dayCell) {
+                var isoDate = dayCell.getAttribute('data-date');
+                if (isoDate) {
+                    window.location.href = newShowBaseUrl + '?date=' + encodeURIComponent(isoDate);
+                }
+            }
+        }
+
+        calendarEl.addEventListener('click', function(e) {
+            var dayNumberEl = e.target.closest('.fc-daygrid-day-number');
+            if (dayNumberEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDayNumberTrigger(dayNumberEl);
+            }
+        });
+
+        // Suporte a acessibilidade via teclado (Enter / Space) no número do dia
+        calendarEl.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                var dayNumberEl = e.target.closest('.fc-daygrid-day-number');
+                if (dayNumberEl) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDayNumberTrigger(dayNumberEl);
+                }
+            }
+        });
+        {% endif %}
 
         // Initialize ResizeObserver to watch calendar wrapper width and recalculate
         var resizeTimer;
