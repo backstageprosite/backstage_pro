@@ -72,19 +72,19 @@
             white-space: nowrap;
             width: 15%;
         }
-        .show-city-cell {
-            font-weight: 600;
-            color: #212529;
-            width: 18%;
+        .show-name-cell {
+            font-weight: bold;
+            color: #111;
+            width: 32%;
         }
         .show-venue-cell {
             color: #495057;
             width: 22%;
         }
-        .show-name-cell {
-            font-weight: bold;
-            color: #111;
-            width: 32%;
+        .show-city-cell {
+            font-weight: 600;
+            color: #212529;
+            width: 18%;
         }
         .show-status-cell {
             text-align: right;
@@ -146,9 +146,9 @@
                 <thead>
                     <tr>
                         <th style="width: 15%;">Data</th>
-                        <th style="width: 18%;">Cidade</th>
-                        <th style="width: 22%;">Local</th>
                         <th style="width: 32%;">Nome do Evento</th>
+                        <th style="width: 22%;">Local</th>
+                        <th style="width: 18%;">Cidade</th>
                         <th style="width: 13%; text-align: right;">Status</th>
                     </tr>
                 </thead>
@@ -161,14 +161,14 @@
                                 <br><small class="text-muted" style="font-weight: normal;"><i class="fa-regular fa-clock"></i> {{ show.time_show|time:"H:i" }}</small>
                             {% endif %}
                         </td>
-                        <td class="show-city-cell">
-                            {{ show.city|default:"-" }}
+                        <td class="show-name-cell">
+                            {{ show.event_name|default:show.title|default:"-" }}
                         </td>
                         <td class="show-venue-cell">
                             {{ show.venue|default:"-" }}
                         </td>
-                        <td class="show-name-cell">
-                            {{ show.event_name|default:show.title|default:"-" }}
+                        <td class="show-city-cell">
+                            {{ show.city|default:"-" }}
                         </td>
                         <td class="show-status-cell">
                             {% if show.status == 'CANCELADO' %}
