@@ -121,12 +121,12 @@
             <strong>Check-in:</strong> {% if room_list.check_in %}{% if room_list.check_in|date:"H:i" == "00:00" %}{{ room_list.check_in|date:"d/m/Y" }}{% else %}{{ room_list.check_in|date:"d/m/Y H:i" }}{% endif %}{% else %}&mdash;{% endif %}
         </td>
         <td style="width: 50%;">
-            <strong>Check-out:</strong> {% if room_list.check_out %}{% if room_list.check_out|date:"H:i" == "00:00" %}{{ room_list.check_out|date:"d/m/Y" }}{% else %}{{ room_list.check_out|date:"d/m/Y H:i" }}{% endif %}{% else %}&mdash;{% endif %}
+            <strong>Endereço:</strong> {{ room_list.address|default:"&mdash;" }}
         </td>
     </tr>
     <tr>
         <td style="width: 50%;">
-            <strong>Endereço:</strong> {{ room_list.address|default:"&mdash;" }}
+            <strong>Check-out:</strong> {% if room_list.check_out %}{% if room_list.check_out|date:"H:i" == "00:00" %}{{ room_list.check_out|date:"d/m/Y" }}{% else %}{{ room_list.check_out|date:"d/m/Y H:i" }}{% endif %}{% else %}&mdash;{% endif %}
         </td>
         <td style="width: 50%;">
             <strong>Localização:</strong>
