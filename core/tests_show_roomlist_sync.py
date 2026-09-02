@@ -86,3 +86,20 @@ class ShowRoomListSyncTests(TestCase):
         self.assertEqual(rl.hotel_name, 'Hotel Fiesta Bahia')
         self.assertEqual(rl.city, 'Salvador (Itaigara)')
         self.assertEqual(rl.address, 'Av. ACM, 711')
+
+    def test_show_accommodation_responsible_and_pdf(self):
+        self.show.accommodation_responsible = "Mariana Souza"
+        self.show.accommodation_contact = "(71) 99999-9999"
+        self.show.save()
+
+        self.client.force_login(self.produtor)
+        pdf_url = reverse('show_pdf', kwargs={'band_slug': self.band.slug, 'pk': self.show.pk})
+        res = self.client.get(pdf_url)
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        self.assertIn('Mariana Souza', html)
+        self.assertIn('(71) 99999-9999', html)
+        self.assertIn('https://wa.me/5571999999999', html)
+        self.assertIn('Hotel Fasano', html)
+        # Check order: Mariana Souza appears before Hotel Fasano
+        self.assertTrue(html.index('Mariana Souza') < html.index('Hotel Fasano'))

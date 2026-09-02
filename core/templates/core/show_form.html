@@ -327,6 +327,14 @@
                     <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Hospedagem</h5>
                     <div class="row g-2 mb-3">
                         <div class="col-md-6">
+                            <label class="form-label">{{ form.accommodation_responsible.label }}</label>
+                            {{ form.accommodation_responsible }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.accommodation_contact.label }}</label>
+                            {{ form.accommodation_contact }}
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label">{{ form.accommodation.label }}</label>
                             {{ form.accommodation }}
                         </div>
@@ -341,10 +349,6 @@
                         <div class="col-md-6">
                             <label class="form-label">{{ form.accommodation_link.label }}</label>
                             {{ form.accommodation_link }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.accommodation_contact.label }}</label>
-                            {{ form.accommodation_contact }}
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">{{ form.checkout_time.label }}</label>

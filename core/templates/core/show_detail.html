@@ -230,14 +230,15 @@
                         </div>
                         {% endif %}
 
-                        {% if show.accommodation %}
+                        {% if show.accommodation or show.accommodation_responsible or show.accommodation_contact %}
                         <div class="col-md-6">
                             <h6 class="card-section-title text-muted"><i class="fa-solid fa-bed me-1"></i> Hospedagem</h6>
                             <p class="mb-1">
-                                <strong>{{ show.accommodation }}</strong>
+                                {% if show.accommodation_responsible %}<span class="text-muted">Responsável:</span> <strong>{{ show.accommodation_responsible }}</strong><br>{% endif %}
+                                {% if show.accommodation_contact %}<span class="text-info" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.accommodation_contact|cut:' '|cut:'-'|cut:'('|cut:')'|cut:'.' }}" target="_blank" class="text-info text-decoration-none">{{ show.accommodation_contact }}</a></span><br>{% endif %}
+                                {% if show.accommodation %}<strong>{{ show.accommodation }}</strong>{% endif %}
                                 {% if show.accommodation_city %}<br><span class="text-muted">Cidade:</span> {{ show.accommodation_city }}{% endif %}
                                 {% if show.accommodation_address %}<br><span class="text-muted">Endereço:</span> {{ show.accommodation_address }}{% endif %}
-                                {% if show.accommodation_contact %}<br><span class="text-info" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="#" class="whatsapp-link text-info text-decoration-none" data-phone="{{ show.accommodation_contact }}">{{ show.accommodation_contact }}</a></span>{% endif %}
                             </p>
                             {% if show.checkout_time %}
                             <p class="mb-1 text-muted" style="font-size: 0.9em;">
