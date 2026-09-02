@@ -162,7 +162,8 @@
                         {% for show_choice in select_show_form.fields.show_id.queryset %}
                             <option value="{{ show_choice.id }}"
                                     data-show-title="{{ show_choice.title|default:'Show' }}"
-                                    data-show-city="{{ show_choice.accommodation_city|default:show_choice.city|default:'' }}"
+                                    data-show-city="{{ show_choice.city|default:'' }}"
+                                    data-show-acc-city="{{ show_choice.accommodation_city|default:'' }}"
                                     data-show-hotel="{{ show_choice.accommodation|default:'' }}"
                                     data-show-address="{{ show_choice.accommodation_address|default:'' }}"
                                     data-show-link="{{ show_choice.accommodation_link|default:'' }}"
@@ -348,24 +349,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const showDate = selectedOption.getAttribute('data-show-date') || '';
             const showCity = selectedOption.getAttribute('data-show-city') || '';
+            const showAccCity = selectedOption.getAttribute('data-show-acc-city') || '';
             const showHotel = selectedOption.getAttribute('data-show-hotel') || '';
             const showAddress = selectedOption.getAttribute('data-show-address') || '';
             const showLink = selectedOption.getAttribute('data-show-link') || '';
             const showTitle = selectedOption.getAttribute('data-show-title') || '';
 
             modalShowInfoText.textContent = `${showCity ? showCity + ' - ' : ''}${showDate}${showTitle ? ' (' + showTitle + ')' : ''}`;
-            if (showHotel && modalHotelName) {
-                modalHotelName.value = showHotel;
-            }
-            if (showCity && modalCityInput) {
-                modalCityInput.value = showCity;
-            }
-            if (showAddress && modalAddress) {
-                modalAddress.value = showAddress;
-            }
-            if (showLink && modalAccommodationLink) {
-                modalAccommodationLink.value = showLink;
-            }
+            if (modalHotelName) modalHotelName.value = showHotel || '';
+            if (modalCityInput) modalCityInput.value = showAccCity || showCity || '';
+            if (modalAddress) modalAddress.value = showAddress || '';
+            if (modalAccommodationLink) modalAccommodationLink.value = showLink || '';
 
             // Define action URL para a view existente room_list_create
             const createUrl = "{% url 'room_list_create' band_slug=request.band.slug show_id=0 %}".replace('/0/', '/' + showId + '/');

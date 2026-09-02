@@ -103,3 +103,40 @@ class ShowRoomListSyncTests(TestCase):
         self.assertIn('Hotel Fasano', html)
         # Check order: Mariana Souza appears before Hotel Fasano
         self.assertTrue(html.index('Mariana Souza') < html.index('Hotel Fasano'))
+
+    def test_create_room_list_empty_when_show_has_no_accommodation(self):
+        show_empty = Show.objects.create(
+            band=self.band,
+            title='Show Sem Hospedagem',
+            date=timezone.now().date(),
+            city='Feira de Santana/BA'
+        )
+        rl = room_list_services.create_room_list(
+            show_id=show_empty.id,
+            band_id=self.band.id,
+            user=self.produtor,
+            hotel_name='Hotel Novo'
+        )
+        self.assertEqual(rl.hotel_name, 'Hotel Novo')
+        self.assertEqual(rl.city, 'Feira de Santana/BA')
+        self.assertFalse(rl.address)
+
+    def test_room_list_index_modal_contains_correct_data_attributes(self):
+        show_empty = Show.objects.create(
+            band=self.band,
+            title='Show FURDUNÇO Vazio',
+            date=timezone.now().date(),
+            city='Salvador/BA'
+        )
+        self.client.force_login(self.produtor)
+        url = reverse('room_list_index', kwargs={'band_slug': self.band.slug})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        html = res.content.decode('utf-8')
+        # Check show with accommodation
+        self.assertIn('data-show-hotel="Hotel Fasano"', html)
+        self.assertIn('data-show-acc-city="Salvador/BA"', html)
+        # Check empty show does NOT contain Hotel Fasano or Hotel x
+        self.assertIn(f'value="{show_empty.id}"', html)
+        self.assertNotIn('Hotel x', html)
+        self.assertNotIn('Itanagra/Ba', html)
