@@ -218,17 +218,5 @@
             <span style="flex: 1; text-align: right;"><strong>Gerado em:</strong> {% now "d/m/Y \a\s H:i" %}</span>
         </div>
     </div>
-
-    <script>
-        window.onload = function() {
-            Promise.all(Array.from(document.images).filter(img => !img.complete).map(img => new Promise(resolve => { img.onload = img.onerror = resolve; }))).then(() => {
-                document.fonts.ready.then(function() {
-                    setTimeout(function() {
-                        window.print();
-                    }, 300);
-                });
-            });
-        };
-    </script>
 </body>
 </html>

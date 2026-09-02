@@ -72,13 +72,20 @@
     }
 
     @media (max-width: 767.98px) {
+        .bp-show-form-page .page-title {
+            font-size: 18px !important;
+        }
         .bp-show-form-page .form-control,
         .bp-show-form-page .form-select,
         .bp-show-form-page textarea.form-control {
             font-size: 16px !important; /* Evita zoom automático no Safari/iOS */
             min-height: 40px;
         }
-        .bp-show-form-page .btn-header-action,
+        .bp-show-form-page .btn-header-action {
+            height: 34px;
+            padding: 4px 14px;
+            font-size: 13px;
+        }
         .bp-show-form-page .btn-footer-action {
             height: 40px;
             padding: 8px 16px;
@@ -96,17 +103,17 @@
 
 {% block content %}
 <div class="bp-show-form-page">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
-        <h4 class="page-title text-center text-md-start">
+    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+        <h4 class="page-title text-start mb-0">
             <i class="fa-solid {% if is_edit %}fa-pen-to-square{% else %}fa-plus-circle{% endif %} text-primary me-2"></i>
             {% if is_edit %}Editar Show{% else %}Adicionar Show{% endif %}
         </h4>
-        <div class="d-flex flex-wrap justify-content-center gap-2">
+        <div class="d-flex flex-wrap justify-content-end gap-2 align-items-center">
             {% if is_edit %}
-            <a href="{% url 'show_pdf' band.slug form.instance.id %}" target="_blank" class="btn btn-dark text-white border-dark btn-header-action fw-bold shadow-sm" style="color: white !important;">
+            <a href="{% url 'show_pdf' band.slug form.instance.id %}" target="_blank" class="btn btn-dark text-white border-dark btn-header-action fw-bold shadow-sm d-none d-sm-inline-flex" style="color: white !important;">
                 <i class="fa-solid fa-file-pdf me-1"></i> PDF Show
             </a>
-            <button type="button" class="btn btn-outline-danger btn-header-action fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'shows_delete' band.slug form.instance.id %}" data-item-type="o show" data-item-name="{{ form.instance.title|default:'Sem Título' }}">
+            <button type="button" class="btn btn-outline-danger btn-header-action fw-bold shadow-sm d-none d-sm-inline-flex" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'shows_delete' band.slug form.instance.id %}" data-item-type="o show" data-item-name="{{ form.instance.title|default:'Sem Título' }}">
                 Excluir
             </button>
             {% endif %}

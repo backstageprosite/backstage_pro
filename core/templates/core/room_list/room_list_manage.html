@@ -170,21 +170,19 @@
                 {% endif %}
             </div>
         </div>
-    </div>
-
-    <div class="row">
+     <div class="row g-3">
         <div class="col-7 col-md-8 col-xl-9">
-            <h4>Quartos</h4>
+            <h4 class="fw-bold mb-3" style="font-size: 1.15rem;">Quartos</h4>
             {% if rooms %}
-                <div class="row">
+                <div class="row g-2 g-md-3">
                 {% for room in rooms %}
-                    <div class="col-12 col-md-6 col-xl-4 mb-3">
-                        <div class="card shadow-sm h-100">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <strong>{{ room.number_or_name }}</strong>
+                    <div class="col-12 col-md-6 col-xl-4 mb-2 mb-md-3">
+                        <div class="card shadow-sm h-100 room-card" style="border-radius: 10px;">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 px-3 border-bottom">
+                                <strong class="text-dark" style="font-size: 14px;">{{ room.number_or_name }}</strong>
                                 {% if room_list.status == 'RASCUNHO' %}
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.85rem;">
+                                    <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 12px; height: 28px;">
                                         <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
@@ -205,167 +203,69 @@
                                 {% endif %}
                             </div>
 
-                            <div class="card-body drop-zone" data-room-id="{{ room.id }}" style="min-height: 100px; background-color: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 5px;">
+                            <div class="card-body drop-zone p-2 p-md-3" data-room-id="{{ room.id }}" style="min-height: 80px; background-color: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 0 0 10px 10px;">
+                                <p class="mb-2 text-muted" style="font-size: 12px;"><small>Tipo: <strong>{{ room.get_type_display }}</strong> ({{ room.participants.count }}/{{ room.capacity }})</small></p>
 
-                                <p class="mb-1 text-muted"><small>Tipo: {{ room.get_type_display }} (Lotação: {{ room.participants.count }} / {{ room.capacity }})</small></p>
-
-
-
+                                <div class="d-flex flex-wrap gap-1">
                                 {% for p in room.participants.all %}
-
-                                    <div class="badge bg-primary draggable-participant p-2 m-1  text-start"
-
-
-
+                                    <div class="badge bg-primary draggable-participant p-1 px-2 text-start d-inline-flex align-items-center justify-content-between"
                                          data-participant-id="{{ p.id }}"
-
                                          data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
-
                                          data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
-
-                                         style="cursor: move;">
-
-                                         <div class="d-flex justify-content-between align-items-center ">
-
-                                              {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-2 px-2 py-1" style="cursor: grab; touch-action: none; opacity: 0.8; font-size: 1.1rem;"></i>{% endif %} <span>{{ p.snapshot_name }}</span>
-
-                                              {% if room_list.status == 'RASCUNHO' %}
-                                              <button type="button" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover do quarto" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}" data-modal-title="Remover integrante do quarto" data-custom-message="Deseja remover <strong>{{ p.snapshot_name }}</strong> deste quarto?" data-custom-warning="O integrante será movido para “Não Alocados” e continuará disponível nesta Room List." data-delete-btn-text="Remover do quarto">
-                                                  <i class="fa-solid fa-xmark text-white"></i>
-                                              </button>
-                                              {% endif %}
-                                          </div>
-
-
-
-                                        <!-- Mobile select fallback (No JS required) -->
-
-                                        {% if room_list.status == 'RASCUNHO' %}
-
-                                        <div class="mt-2 d-md-none">
-
-                                            <form method="post" action="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}">
-
-                                                {% csrf_token %}
-
-                                                <button type="submit" class="bp-btn bp-btn-danger">Remover Quarto</button>
-
-                                            </form>
-
-                                        </div>
-
-                                        {% endif %}
-
+                                         style="cursor: move; min-height: 30px; font-size: 12px; border-radius: 6px; font-weight: 500; max-width: 100%;">
+                                         <div class="d-flex align-items-center text-truncate">
+                                              {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-1 px-1 py-1" style="cursor: grab; touch-action: none; opacity: 0.8; font-size: 0.95rem;"></i>{% endif %}
+                                              <span class="text-truncate">{{ p.snapshot_name }}</span>
+                                         </div>
+                                         {% if room_list.status == 'RASCUNHO' %}
+                                         <button type="button" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2 flex-shrink-0" title="Remover do quarto" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}" data-modal-title="Remover integrante do quarto" data-custom-message="Deseja remover <strong>{{ p.snapshot_name }}</strong> deste quarto?" data-custom-warning="O integrante será movido para “Não Alocados” e continuará disponível nesta Room List." data-delete-btn-text="Remover do quarto">
+                                             <i class="fa-solid fa-xmark text-white" style="font-size: 12px;"></i>
+                                         </button>
+                                         {% endif %}
                                     </div>
-
                                 {% endfor %}
-
+                                </div>
                             </div>
-
                         </div>
-
                     </div>
-
                 {% endfor %}
-
                 </div>
-
             {% else %}
-
                 <div class="alert alert-secondary">Nenhum quarto adicionado.</div>
-
             {% endif %}
-
         </div>
-
-
 
         <div class="col-5 col-md-4 col-xl-3">
-
-            <h4>Não Alocados</h4>
-
-            <div class="card shadow-sm p-3 drop-zone sticky-md-top" data-room-id="" style="min-height: 200px; background-color: #fff3cd; border: 2px dashed #ffe69c; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto;">
-
+            <h4 class="fw-bold mb-3" style="font-size: 1.15rem;">Não Alocados</h4>
+            <div class="card shadow-sm p-2 p-md-3 drop-zone sticky-top" data-room-id="" style="min-height: 180px; background-color: #fff3cd; border: 2px dashed #ffe69c; border-radius: 10px; top: 75px; max-height: calc(100vh - 90px); overflow-y: auto;">
                 {% if participants %}
-
+                    <div class="d-flex flex-column gap-1">
                     {% for p in participants %}
-
                         {% if not p.room %}
-
-                            <div class="badge bg-warning text-dark draggable-participant p-2 m-1  text-start"
-
-
-
+                            <div class="badge bg-warning text-dark draggable-participant p-1 px-2 text-start d-flex align-items-center justify-content-between"
                                  data-participant-id="{{ p.id }}"
-
                                  data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
-
                                  data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
-
-                                 style="cursor: move;">
-
-                                  <div class="d-flex justify-content-between align-items-center ">
-
-                                      {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-2 px-2 py-1" style="cursor: grab; touch-action: none; opacity: 0.8; font-size: 1.1rem;"></i>{% endif %} <span>{{ p.snapshot_name }}</span>
-
-                                      {% if room_list.status == 'RASCUNHO' %}
-                                      <button type="button" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2" title="Remover da lista" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" data-modal-title="Remover integrante da lista" data-custom-message="Deseja realmente remover <strong>{{ p.snapshot_name }}</strong> desta lista?" data-custom-warning="(Ele poderá ser adicionado novamente em “Sincronizar”.)" data-delete-btn-text="Remover da lista">
-                                          <i class="fa-solid fa-xmark text-dark"></i>
-                                      </button>
-                                      {% endif %}
+                                 style="cursor: move; min-height: 30px; font-size: 12px; border-radius: 6px; font-weight: 500;">
+                                  <div class="d-flex align-items-center text-truncate">
+                                      {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-1 px-1 py-1" style="cursor: grab; touch-action: none; opacity: 0.8; font-size: 0.95rem;"></i>{% endif %}
+                                      <span class="text-truncate">{{ p.snapshot_name }}</span>
                                   </div>
-
-
-
-                                <!-- Mobile select fallback (No JS required) -->
-
-                                {% if room_list.status == 'RASCUNHO' %}
-
-                                <div class="mt-2 d-md-none">
-
-                                    <form method="post" action="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}" class="d-flex">
-
-                                        {% csrf_token %}
-
-                                        <select name="room_id" class="form-select form-select-sm me-1" required>
-
-                                            <option value="" disabled selected>Alocar em...</option>
-
-                                            {% for r in rooms %}
-
-                                                <option value="{{ r.id }}">{{ r.number_or_name }}</option>
-
-                                            {% endfor %}
-
-                                        </select>
-
-                                        <button type="submit" class="btn btn-sm btn-light border">Ok</button>
-
-                                    </form>
-
-                                </div>
-
-                                {% endif %}
-
+                                  {% if room_list.status == 'RASCUNHO' %}
+                                  <button type="button" class="btn btn-sm p-0 m-0 border-0 bg-transparent ms-2 flex-shrink-0" title="Remover da lista" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'room_list_participant_delete' request.band.slug room_list.id p.id %}" data-modal-title="Remover integrante da lista" data-custom-message="Deseja realmente remover <strong>{{ p.snapshot_name }}</strong> desta lista?" data-custom-warning="(Ele poderá ser adicionado novamente em “Sincronizar”.)" data-delete-btn-text="Remover da lista">
+                                      <i class="fa-solid fa-xmark text-dark" style="font-size: 12px;"></i>
+                                  </button>
+                                  {% endif %}
                             </div>
-
                         {% endif %}
-
                     {% endfor %}
-
+                    </div>
                 {% else %}
-
-                    <p class="text-muted mb-0">Nenhum integrante sincronizado.</p>
-
+                    <p class="text-muted mb-0 small">Nenhum integrante sincronizado.</p>
                 {% endif %}
-
             </div>
-
         </div>
-
     </div>
-
-</div>
 
 
 

@@ -471,17 +471,6 @@
         const now = new Date();
         const formattedDate = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         document.getElementById('current-datetime').textContent = formattedDate;
-
-        // Dispara a impressão aguardando imagens e fontes
-        window.onload = function() {
-            Promise.all(Array.from(document.images).filter(img => !img.complete).map(img => new Promise(resolve => { img.onload = img.onerror = resolve; }))).then(() => {
-                document.fonts.ready.then(function() {
-                    setTimeout(function() {
-                        window.print();
-                    }, 300);
-                });
-            });
-        };
     </script>
 </body>
 </html>

@@ -18,10 +18,12 @@
             <p class="text-muted mb-0">Configure os quartos padrão que serão aplicados automaticamente ao criar uma nova hospedagem.</p>
         </div>
         <div class="col-12 col-md-6 mt-3 mt-md-0 d-flex flex-wrap align-items-center gap-2 justify-content-md-end">
-            <button type="button" class="bp-btn bp-btn-neutral" data-bs-toggle="modal" data-bs-target="#modalObservacoesPadrao">
+            <button type="button" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#modalObservacoesPadrao" style="height: 34px; font-size: 13px;">
                 <i class="fa-solid fa-note-sticky me-1"></i> Observações
             </button>
-            <button type="button" class="bp-btn bp-btn-create" data-bs-toggle="modal" data-bs-target="#modalAdicionarQuarto">Adicionar Quarto</button>
+            <button type="button" class="btn rounded-pill px-3 fw-bold text-dark d-inline-flex align-items-center shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAdicionarQuarto" style="background-color: #6BD443; border-color: #6BD443; height: 34px; font-size: 13px;">
+                <i class="fa-solid fa-plus me-1"></i> Adicionar Quarto
+            </button>
         </div>
     </div>
 </div>
@@ -36,12 +38,16 @@
         {% else %}
             <div class="d-flex flex-column gap-3">
                 {% for room in template.rooms.all %}
-                <div class="card border-dashed shadow-sm">
-                    <div class="card-header bg-white border-bottom-dashed d-flex justify-content-between align-items-center py-2">
+                <div class="card border-dashed shadow-sm" style="border-radius: 10px;">
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-2 px-3">
                         <strong class="text-dark fs-5">{{ room.number_or_name|default:"Sem número" }}</strong>
                         <div class="d-flex gap-2">
-                            <button type="button" class="bp-btn bp-btn-edit bp-btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditarQuarto{{ room.id }}">Editar</button>
-                            <button type="button" class="bp-btn bp-btn-danger bp-btn-sm" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'lodging_template_room_delete' request.band.slug template.id room.id %}" data-item-type="o quarto" data-item-name="{{ room.number_or_name|default:'Sem número' }}" data-custom-warning="O quarto será removido do modelo padrão.">Excluir</button>
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#modalEditarQuarto{{ room.id }}" style="height: 30px; font-size: 12px;">
+                                <i class="fa-solid fa-pen-to-square me-1"></i> Editar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-semibold text-white d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'lodging_template_room_delete' request.band.slug template.id room.id %}" data-item-type="o quarto" data-item-name="{{ room.number_or_name|default:'Sem número' }}" data-custom-warning="O quarto será removido do modelo padrão." style="height: 30px; font-size: 12px;">
+                                <i class="fa-solid fa-trash me-1"></i> Excluir
+                            </button>
                         </div>
                     </div>
                     <div class="card-body p-3 bg-light rounded-bottom">
@@ -92,9 +98,9 @@
                                         <label class="form-check-label" for="has_ac_{{ room.id }}">Possui ar-condicionado</label>
                                     </div>
                                 </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="bp-btn bp-btn-neutral" data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="submit" class="bp-btn bp-btn-confirm">Salvar Alterações</button>
+                                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
                                 </div>
                             </form>
                         </div>
@@ -109,16 +115,16 @@
 <!-- Modal Adicionar Quarto -->
 <div class="modal fade" id="modalAdicionarQuarto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
             <form method="post" action="{% url 'lodging_template_room_create' request.band.slug template.id %}">
                 {% csrf_token %}
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Adicionar Quarto ao Modelo</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-plus me-2 text-success"></i>Adicionar Quarto ao Modelo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Quantidade de quartos a adicionar</label>
+                        <label class="form-label fw-bold small text-secondary">Quantidade de quartos a adicionar</label>
                         <select name="quantity" class="form-select">
                             {% for i in '12345678901234567890'|make_list %}
                                 <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
@@ -126,11 +132,11 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Número do quarto (opcional)</label>
+                        <label class="form-label fw-bold small text-secondary">Número do quarto (opcional)</label>
                         <input type="text" name="number_or_name" class="form-control" placeholder="Deixe em branco para 'Sem número'">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Tipo</label>
+                        <label class="form-label fw-bold small text-secondary">Tipo</label>
                         <select name="type" class="form-select" required>
                             <option value="INDIVIDUAL">Individual (1 pessoa)</option>
                             <option value="CASAL">Casal (2 pessoas)</option>
@@ -141,21 +147,21 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Capacidade</label>
+                        <label class="form-label fw-bold small text-secondary">Capacidade</label>
                         <input type="number" name="capacity" class="form-control" value="1" min="1" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Configuração das camas (opcional)</label>
+                        <label class="form-label fw-bold small text-secondary">Configuração das camas (opcional)</label>
                         <input type="text" name="beds_config" class="form-control" placeholder="Ex: 1 casal, 2 solteiro">
                     </div>
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" name="has_ac" id="has_ac" checked>
-                        <label class="form-check-label" for="has_ac">Possui ar-condicionado</label>
+                        <label class="form-check-label small text-secondary fw-semibold" for="has_ac">Possui ar-condicionado</label>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="bp-btn bp-btn-neutral" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="bp-btn bp-btn-confirm">Salvar</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px; background-color: #198754; border-color: #198754;">Salvar</button>
                 </div>
             </form>
         </div>
@@ -165,23 +171,23 @@
 <!-- Modal Observações Padrão -->
 <div class="modal fade" id="modalObservacoesPadrao" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
             <form action="{% url 'lodging_template_observations_update' band.slug %}" method="POST">
                 {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Observações padrão do Room List</h5>
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;"><i class="fa-solid fa-note-sticky me-2 text-primary"></i>Observações padrão do Room List</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted mb-3">Este texto será inserido automaticamente nas novas hospedagens e poderá ser editado individualmente.</p>
+                    <p class="text-muted mb-3 small">Este texto será inserido automaticamente nas novas hospedagens e poderá ser editado individualmente.</p>
                     <textarea name="default_observations" class="form-control" rows="5" maxlength="2000" id="defaultObsTextarea">{{ template.default_observations|default:'' }}</textarea>
                     <div class="text-end text-muted small mt-1">
                         <span id="defaultObsCounter">0</span>/2000 caracteres
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="bp-btn bp-btn-neutral" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="bp-btn bp-btn-confirm">Salvar Observações Padrão</button>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Observações Padrão</button>
                 </div>
             </form>
         </div>

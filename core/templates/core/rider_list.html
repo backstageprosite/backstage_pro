@@ -54,9 +54,13 @@
     }
 
     @media (max-width: 767.98px) {
+        .bp-rider-page .page-title {
+            font-size: 18px !important;
+        }
         .bp-rider-page .btn-header-action {
-            height: 40px;
-            padding: 8px 16px;
+            height: 34px !important;
+            padding: 4px 10px !important;
+            font-size: 13px !important;
         }
         .bp-rider-page .form-control {
             font-size: 16px !important; /* Evita zoom no Safari/iOS */
@@ -68,11 +72,11 @@
 
 {% block content %}
 <div class="bp-rider-page">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
-            <h4 class="page-title"><i class="fa-solid fa-guitar text-primary me-2"></i>Rider</h4>
+            <h4 class="page-title mb-0"><i class="fa-solid fa-guitar text-primary me-2"></i>Rider</h4>
         </div>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
             <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
             </a>
