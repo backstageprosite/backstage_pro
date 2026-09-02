@@ -70,8 +70,8 @@
         }
         
         /* Ajuste de textos brancos/claros no modo claro para evitar que sumam */
-        html[data-bs-theme="light"] .text-light,
-        html[data-bs-theme="light"] .text-white {
+        html[data-bs-theme="light"] .text-light:not(.badge):not(.status-pill):not(.btn),
+        html[data-bs-theme="light"] .text-white:not(.badge):not(.status-pill):not(.btn):not(.bg-success):not(.bg-danger):not(.bg-secondary):not(.bg-dark):not(.bg-primary) {
             color: #212529 !important;
         }
         html[data-bs-theme="light"] .btn-outline-light {

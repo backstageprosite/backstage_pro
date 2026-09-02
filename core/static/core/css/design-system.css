@@ -310,3 +310,34 @@
     color: #6C757D;
     line-height: 1;
 }
+
+/* Status Pills */
+.status-pill {
+    font-family: Inter, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    line-height: 1.1;
+    border-radius: 50rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.status-pill.bg-success,
+.status-pill.bg-secondary,
+.status-pill.bg-danger,
+.status-pill.bg-primary,
+.badge.bg-success,
+.badge.bg-secondary,
+.badge.bg-danger,
+.badge.bg-primary {
+    color: #ffffff !important;
+}
+
+.status-pill.bg-warning,
+.badge.bg-warning {
+    color: #212529 !important;
+}
