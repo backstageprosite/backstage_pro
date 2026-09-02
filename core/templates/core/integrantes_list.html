@@ -63,9 +63,27 @@
             font-size: 18px !important;
         }
         .bp-members-page .btn-header-action {
-            height: 34px !important;
-            padding: 4px 10px !important;
+            height: 32px !important;
+            padding: 3px 8px !important;
+            font-size: 12px !important;
+        }
+        .bp-members-page .member-item-row {
+            padding: 5px 8px !important;
+        }
+        .bp-members-page .member-name {
             font-size: 13px !important;
+            line-height: 1.2 !important;
+        }
+        .bp-members-page .member-role {
+            font-size: 11px !important;
+            line-height: 1.1 !important;
+            margin-top: -2px !important;
+            padding-bottom: 2px !important;
+        }
+        .bp-members-page .btn-actions {
+            height: 26px !important;
+            padding: 2px 8px !important;
+            font-size: 11px !important;
         }
         .bp-members-page .form-label,
         .modal .form-label {
@@ -125,10 +143,10 @@
     <div class="card shadow-sm border-0" style="border-radius: 12px;">
         <div class="card-body p-0">
             {% if integrantes %}
-            <div class="mb-2 px-3 pt-2">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="selectAllAbove" onclick="toggleAll(this)">
-                    <label class="form-check-label fw-bold" for="selectAllAbove" style="font-size: 13px;">Selecionar Todos</label>
+            <div class="px-3 pt-2 pb-1 border-bottom">
+                <div class="form-check m-0 d-flex align-items-center">
+                    <input type="checkbox" class="form-check-input my-0 me-2" id="selectAllAbove" onclick="toggleAll(this)">
+                    <label class="form-check-label fw-bold small text-dark" for="selectAllAbove">Selecionar Todos</label>
                 </div>
             </div>
             <div class="table-responsive" style="overflow: visible;">
@@ -145,18 +163,18 @@
                     </thead>
                     <tbody id="sortableList">
                         {% for item in integrantes %}
-                        <tr data-id="{{ item.id }}" style="cursor: grab;" class="d-flex flex-wrap d-md-table-row align-items-center border-bottom bg-white p-2 p-md-0">
-                            <td class="ps-2 ps-md-4 border-0 col-auto col-md-auto">
-                                <input type="checkbox" class="form-check-input integrante-checkbox" value="{{ item.id }}">
+                        <tr data-id="{{ item.id }}" style="cursor: grab;" class="d-flex flex-wrap d-md-table-row align-items-center border-bottom bg-white member-item-row p-1 px-2 p-md-0">
+                            <td class="ps-1 ps-md-4 border-0 col-auto col-md-auto py-1 d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input integrante-checkbox my-0" value="{{ item.id }}">
                             </td>
-                            <td class="py-2 px-2 px-md-4 text-dark fw-medium border-0 col col-md-auto text-truncate member-name" style="min-width: 0;">
-                                <i class="fa-solid fa-grip-vertical text-muted me-2 drag-handle"></i>
-                                {{ item.name }}
+                            <td class="py-1 px-1 px-md-4 text-dark fw-medium border-0 col col-md-auto text-truncate member-name d-flex align-items-center" style="min-width: 0;">
+                                <i class="fa-solid fa-grip-vertical text-muted me-1 me-md-2 drag-handle"></i>
+                                <span class="text-truncate">{{ item.name }}</span>
                             </td>
-                            <td class="py-1 px-2 ms-4 ms-md-0 text-muted member-role border-0 col-12 col-md-auto order-4 order-md-3 mt-n2 mt-md-0 pb-2 pb-md-auto">{{ item.role }}</td>
+                            <td class="py-0 px-1 ms-4 ms-md-0 text-muted member-role border-0 col-12 col-md-auto order-4 order-md-3 mt-n1 mt-md-0 pb-1 pb-md-auto">{{ item.role }}</td>
 
                             {% if request.user.is_produtor %}
-                            <td class="py-2 px-2 px-md-4 border-0 col-auto col-md-auto order-3 order-md-4 text-end ms-auto">
+                            <td class="py-1 px-1 px-md-4 border-0 col-auto col-md-auto order-3 order-md-4 text-end ms-auto">
                                 <div class="dropdown d-flex justify-content-end">
                                     <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações

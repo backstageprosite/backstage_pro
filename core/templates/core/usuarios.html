@@ -99,7 +99,7 @@
         .bp-users-page .mobile-cards-table.table-responsive {
             border: none !important;
             overflow: visible !important;
-            padding-bottom: 4px;
+            padding-bottom: 2px;
         }
         .bp-users-page .mobile-cards-table table,
         .bp-users-page .mobile-cards-table thead,
@@ -113,17 +113,18 @@
             display: none !important;
         }
         .bp-users-page .mobile-cards-table tr {
-            margin-bottom: 8px !important;
+            margin-bottom: 6px !important;
             border-radius: 8px !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
             border: 1px solid #e9ecef !important;
-            padding: 8px 10px !important;
+            padding: 6px 8px !important;
             background-color: #fff !important;
             position: relative !important;
         }
         .bp-users-page .mobile-cards-table td {
             border: none !important;
-            padding: 1px 0 !important;
+            padding: 0 !important;
+            margin-bottom: 2px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
@@ -134,18 +135,19 @@
         }
         .bp-users-page .mobile-cards-table td.actions-td {
             border-top: 1px solid #f1f3f5 !important;
-            margin-top: 4px !important;
-            padding-top: 4px !important;
+            margin-top: 3px !important;
+            padding-top: 3px !important;
+            margin-bottom: 0 !important;
             justify-content: flex-end !important;
         }
         .bp-users-page .mobile-cards-table td[data-label]::before {
             content: attr(data-label);
             font-weight: 600;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             color: #6c757d;
             text-transform: uppercase;
             margin-right: auto;
-            padding-right: 6px;
+            padding-right: 4px;
         }
         .bp-users-page .mobile-cards-table td > * {
             text-align: right;
@@ -153,7 +155,8 @@
         .bp-users-page .mobile-cards-table td.full-row {
             flex-direction: row !important;
             justify-content: flex-start !important;
-            padding-bottom: 2px !important;
+            padding-bottom: 1px !important;
+            margin-bottom: 2px !important;
         }
         .bp-users-page .mobile-cards-table td.full-row::before {
             display: none !important;
@@ -162,21 +165,21 @@
             text-align: left;
         }
         .bp-users-page .user-avatar {
-            width: 32px !important;
-            height: 32px !important;
-            font-size: 13px !important;
+            width: 28px !important;
+            height: 28px !important;
+            font-size: 11px !important;
         }
         .bp-users-page .role-pill,
         .bp-users-page .status-pill {
-            height: 22px;
-            font-size: 10px;
-            padding: 1px 6px;
-            line-height: 1.1;
+            height: 20px;
+            font-size: 9.5px;
+            padding: 1px 5px;
+            line-height: 1;
         }
         .bp-users-page .btn-actions {
-            height: 26px;
+            height: 24px;
             font-size: 11px;
-            padding: 1px 8px;
+            padding: 1px 7px;
         }
     }
 </style>
@@ -221,13 +224,13 @@
                                             {{ usuario.first_name|default:usuario.username|make_list|first|upper }}
                                         </div>
                                         <div>
-                                            <h6 class="mb-0 fw-bold text-dark lh-sm" style="font-size: 13px;">{{ usuario.first_name }} {{ usuario.last_name }}</h6>
-                                            <small class="text-muted lh-1" style="font-size: 11px;">@{{ usuario.username }}</small>
+                                            <h6 class="mb-0 fw-bold text-dark lh-sm" style="font-size: 12.5px;">{{ usuario.first_name }} {{ usuario.last_name }}</h6>
+                                            <small class="text-muted lh-1" style="font-size: 10.5px;">@{{ usuario.username }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="text-muted d-block d-md-table-cell" data-label="E-mail" style="font-size: 12px;">{{ usuario.email|default:"Sem e-mail" }}</td>
+                            <td class="text-muted d-block d-md-table-cell" data-label="E-mail" style="font-size: 11px;">{{ usuario.email|default:"Sem e-mail" }}</td>
                             <td data-label="Perfil">
                                 {% if usuario.is_superuser %}
                                     <span class="badge bg-dark role-pill"><i class="fa-solid fa-shield me-1"></i> Admin Geral</span>
