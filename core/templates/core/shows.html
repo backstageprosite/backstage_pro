@@ -91,12 +91,21 @@
     @media (max-width: 767.98px) {
         .bp-shows-page .filter-control {
             font-size: 16px !important; /* Evita zoom no iOS Safari */
-            height: 40px;
-            min-height: 40px;
+            height: 38px;
+            min-height: 38px;
+        }
+        .bp-shows-page .page-title {
+            font-size: 17px !important;
         }
         .bp-shows-page .btn-header-action {
-            height: 40px;
-            padding: 8px 16px;
+            height: 32px !important;
+            padding: 3px 8px !important;
+            font-size: 11px !important;
+            line-height: 1.2 !important;
+        }
+        .bp-shows-page .btn-header-action i {
+            font-size: 11px !important;
+            margin-right: 3px !important;
         }
     }
 </style>
@@ -104,13 +113,13 @@
 
 {% block content %}
 <div class="bp-shows-page">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
-        <h4 class="page-title"><i class="fa-solid fa-microphone-lines text-primary me-2"></i>Gerenciador de Shows</h4>
-        <div class="d-flex gap-2 flex-wrap">
-            <button type="button" class="btn btn-dark btn-header-action shadow-sm fw-bold transition-hover" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-nowrap gap-2">
+        <h4 class="page-title mb-0 text-nowrap"><i class="fa-solid fa-microphone-lines text-primary me-2"></i>Shows</h4>
+        <div class="d-flex gap-2 flex-nowrap ms-auto align-items-center">
+            <button type="button" class="btn btn-dark btn-header-action shadow-sm fw-bold transition-hover text-nowrap" data-bs-toggle="modal" data-bs-target="#exportPdfModal">
                 <i class="fa-solid fa-file-pdf me-1"></i> PDF Agenda
             </button>
-            <a href="{% url 'shows_add' band.slug %}" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443;">
+            <a href="{% url 'shows_add' band.slug %}" class="btn btn-header-action fw-bold shadow-sm text-dark text-nowrap" style="background-color: #6BD443;">
                 <i class="fa-solid fa-plus me-1"></i> Novo Show
             </a>
         </div>

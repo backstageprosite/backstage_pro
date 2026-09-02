@@ -4602,15 +4602,21 @@ def room_list_pdf_view(request, band_slug, pk):
         'participants': room_list.participants.filter(room__isnull=False),
         'unallocated': room_list.participants.filter(room__isnull=True),
     }
-    html_string = render_to_string('core/room_list/room_list_pdf.html', context, request=request)
-    result = io.BytesIO()
-    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
-    if not pdf.err:
-        response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
-        response['Cache-Control'] = 'private, no-store'
-        return response
-    return HttpResponse('Erro ao gerar PDF', status=500)
+
+    # Se solicitado explicitamente como download/binário
+    if request.GET.get('format') == 'pdf':
+        html_string = render_to_string('core/room_list/room_list_pdf.html', context, request=request)
+        result = io.BytesIO()
+        pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
+            response['Cache-Control'] = 'private, no-store'
+            return response
+        return HttpResponse('Erro ao gerar PDF', status=500)
+
+    # Padrão: Preview HTML consistente com controles padronizados [Imprimir / Salvar PDF] [Fechar aba]
+    return render(request, 'core/room_list/room_list_preview.html', context)
 
 
 @login_required

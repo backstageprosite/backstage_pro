@@ -50,9 +50,18 @@
     }
 
     @media (max-width: 767.98px) {
+        .bp-hosting-page .page-title {
+            font-size: 17px !important;
+        }
         .bp-hosting-page .btn-header-action {
-            height: 40px;
-            padding: 8px 16px;
+            height: 32px !important;
+            padding: 3px 8px !important;
+            font-size: 11px !important;
+            line-height: 1.2 !important;
+        }
+        .bp-hosting-page .btn-header-action i {
+            font-size: 11px !important;
+            margin-right: 3px !important;
         }
     }
 </style>
@@ -60,11 +69,11 @@
 
 {% block content %}
 <div class="bp-hosting-page">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
-        <h4 class="page-title"><i class="fa-solid fa-bed text-primary me-2"></i>Listas de Hospedagem</h4>
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{% url 'relatorios_index' request.band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
-            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalSelectShowHospedagem" style="background-color: #6BD443; border-color: #6BD443;">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-nowrap gap-2">
+        <h4 class="page-title mb-0 text-nowrap"><i class="fa-solid fa-bed text-primary me-2"></i>Hospedagens</h4>
+        <div class="d-flex gap-2 flex-nowrap ms-auto align-items-center">
+            <a href="{% url 'relatorios_index' request.band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold text-nowrap"><i class="fa-solid fa-arrow-left me-1"></i> Voltar</a>
+            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark text-nowrap" data-bs-toggle="modal" data-bs-target="#modalSelectShowHospedagem" style="background-color: #6BD443; border-color: #6BD443;">
                 <i class="fa-solid fa-plus me-1"></i> Hospedagem
             </button>
         </div>

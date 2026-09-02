@@ -100,16 +100,6 @@
 </head>
 <body>
 
-    <!-- Botões de Ação (não aparecem na impressão) -->
-    <div class="no-print d-flex justify-content-center gap-3 mb-4">
-        <button type="button" class="btn btn-secondary px-4 fw-bold shadow-sm" onclick="window.close()">
-            <i class="fa-solid fa-xmark me-2"></i> Fechar Aba
-        </button>
-        <button type="button" class="btn btn-dark px-4 fw-bold shadow-sm" onclick="window.print()">
-            <i class="fa-solid fa-print me-2"></i> Imprimir / Salvar PDF
-        </button>
-    </div>
-
     <div class="header-section">
         <div>
             {% if band.logo %}
@@ -151,6 +141,12 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Botões de Ação na visualização prévia (padrão Comercial) -->
+    <div class="text-center mt-4 mb-4 no-print">
+        <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print me-2"></i> Imprimir / Salvar PDF</button>
+        <button onclick="window.close()" class="btn btn-outline-secondary ms-2">Fechar aba</button>
+    </div>
 
     <div class="footer">
         <div style="flex: 1; text-align: left;"><strong>Publicado:</strong> {% now "d/m/Y H:i" %}</div>

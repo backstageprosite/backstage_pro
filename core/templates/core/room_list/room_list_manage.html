@@ -562,6 +562,44 @@ function toggleAllIntegrantes(source) {
 
 
 
+<!-- Modal Alocar Integrante (Mobile Touch) -->
+<div class="modal fade" id="modalAlocarTouch" tabindex="-1" aria-labelledby="modalAlocarTouchLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <form method="post" id="formAlocarTouch" action="">
+                {% csrf_token %}
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="modalAlocarTouchLabel" style="font-size: 16px; color: #198754;">
+                        <i class="fa-solid fa-bed me-2" style="color: #198754;"></i><span id="touchModalActionTitle">Alocar Integrante</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 p-md-4 text-start">
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Integrante</label>
+                        <div id="touchParticipantName" class="fw-bold fs-6 text-dark p-2 bg-light rounded border"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Escolha o Quarto de Destino</label>
+                        <select name="room_id" id="touchRoomSelect" class="form-select" required style="font-size: 14px; min-height: 38px; border-radius: 6px;">
+                            <option value="" disabled selected>Selecione um quarto...</option>
+                            {% for r in rooms %}
+                                <option value="{{ r.id }}" {% if r.participants.count >= r.capacity %}disabled style="color: #dc3545; font-weight: 600;"{% endif %}>
+                                    {{ r.number_or_name|default:"Quarto" }} &mdash; {{ r.get_type_display }} ({{ r.participants.count }}/{{ r.capacity }}){% if r.participants.count >= r.capacity %} &mdash; LOTADO{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px; background-color: #198754; border-color: #198754;">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Observações Individuais -->
 
 <div class="modal fade" id="modalObservacoes" tabindex="-1" aria-hidden="true">

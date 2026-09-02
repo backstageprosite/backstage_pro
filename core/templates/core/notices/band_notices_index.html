@@ -160,10 +160,10 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'band_notices_delete' band.slug notice.id %}" data-item-type="o aviso" data-item-name="{{ notice.message|truncatechars:60 }}">
+                                            <button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'band_notices_delete' band.slug notice.id %}" data-item-type="o aviso " data-item-name="{{ notice.message|truncatechars:60 }}">
                                                 <i class="fa-solid fa-trash text-danger me-2"></i> Excluir
                                             </button>
-                                        </li></li>
+                                        </li>
                                     </ul>
                                 </div>
                                 {% endif %}

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="bp-calendar-page">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2 gap-md-3">
-        <h2 class="mb-0 text-uppercase fw-bold text-center text-md-start agenda-title" style="font-size: 20px !important;">Agenda de Shows - {{ band.name }}</h2>
+        <h2 class="mb-0 text-uppercase fw-bold text-center text-md-start agenda-title">Agenda de Shows - {{ band.name }}</h2>
         
         {% if request.user.is_produtor or request.user.is_superuser %}
         <div class="d-flex flex-wrap justify-content-center justify-content-md-end gap-2 action-buttons-container">
@@ -46,6 +46,7 @@
     }
     
     @media (max-width: 767.98px) {
+        .bp-calendar-page .agenda-title,
         .agenda-title {
             white-space: normal;
             font-size: 16px !important;
@@ -53,24 +54,29 @@
             text-align: center;
             max-width: 100%;
         }
+        .bp-calendar-page .action-buttons-container,
         .action-buttons-container {
+            display: flex !important;
             flex-wrap: nowrap !important;
-            gap: 8px !important;
+            gap: 6px !important;
             width: 100%;
             justify-content: center;
         }
+        .bp-calendar-page .action-btn-mobile,
         .action-btn-mobile {
-            height: 35px !important;
-            padding: 4px 10px !important;
-            font-size: 13px !important;
+            height: 33px !important;
+            min-height: 33px !important;
+            padding: 3px 8px !important;
+            font-size: 12px !important;
             white-space: nowrap !important;
             flex: 1 1 50%;
             justify-content: center;
             align-items: center;
+            line-height: 1.2;
         }
         .action-btn-mobile i {
             margin-right: 4px !important;
-            font-size: 13px !important;
+            font-size: 12px !important;
         }
         .action-btn-mobile span {
             display: inline-block;
