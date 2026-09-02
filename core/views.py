@@ -4573,6 +4573,37 @@ def integrantes_pdf_view(request, band_slug):
 @login_required
 @band_required
 @advanced_plan_required
+def room_list_preview_view(request, band_slug, pk):
+    from core.models import RoomList
+    from django.core.exceptions import PermissionDenied
+
+    try:
+        room_list = RoomList.objects.select_related('show', 'band').prefetch_related(
+            'rooms__participants__original_integrante'
+        ).get(pk=pk, show__band=request.band)
+    except RoomList.DoesNotExist:
+        raise Http404("Room List não encontrada.")
+
+    is_produtor = request.user.is_produtor()
+    if not is_produtor and room_list.status == RoomList.StatusChoices.RASCUNHO:
+        raise PermissionDenied("Acesso restrito. Room List em rascunho.")
+
+    context = {
+        'band': request.band,
+        'pdf_logo_base64': get_image_base64(request.band.logo),
+        'ac_badge_base64': get_static_image_base64('img/room-ac-badge.png'),
+        'current_datetime': __import__('django.utils.timezone').utils.timezone.localtime().strftime('%d/%m/%Y às %H:%M'),
+        'room_list': room_list,
+        'rooms': room_list.rooms.all(),
+        'participants': room_list.participants.filter(room__isnull=False),
+        'unallocated': room_list.participants.filter(room__isnull=True),
+    }
+    return render(request, 'core/room_list/room_list_preview.html', context)
+
+
+@login_required
+@band_required
+@advanced_plan_required
 def room_list_pdf_view(request, band_slug, pk):
     from core.models import RoomList
     from django.core.exceptions import PermissionDenied
@@ -4602,21 +4633,15 @@ def room_list_pdf_view(request, band_slug, pk):
         'participants': room_list.participants.filter(room__isnull=False),
         'unallocated': room_list.participants.filter(room__isnull=True),
     }
-
-    # Se solicitado explicitamente como download/binário
-    if request.GET.get('format') == 'pdf':
-        html_string = render_to_string('core/room_list/room_list_pdf.html', context, request=request)
-        result = io.BytesIO()
-        pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
-        if not pdf.err:
-            response = HttpResponse(result.getvalue(), content_type='application/pdf')
-            response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
-            response['Cache-Control'] = 'private, no-store'
-            return response
-        return HttpResponse('Erro ao gerar PDF', status=500)
-
-    # Padrão: Preview HTML consistente com controles padronizados [Imprimir / Salvar PDF] [Fechar aba]
-    return render(request, 'core/room_list/room_list_preview.html', context)
+    html_string = render_to_string('core/room_list/room_list_pdf.html', context, request=request)
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
+        response['Cache-Control'] = 'private, no-store'
+        return response
+    return HttpResponse('Erro ao gerar PDF', status=500)
 
 
 @login_required
