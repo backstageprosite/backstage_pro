@@ -262,8 +262,10 @@
                             {% endif %}
                         </h6>
                         <p class="mb-1">
-                            {{ show.accommodation|linebreaksbr }}
-                            {% if show.accommodation_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.accommodation_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.accommodation_contact }}</a></span>{% endif %}
+                            <strong>{{ show.accommodation }}</strong>
+                            {% if show.accommodation_city %}<br><span class="text-muted">Cidade:</span> {{ show.accommodation_city }}{% endif %}
+                            {% if show.accommodation_address %}<br><span class="text-muted">Endereço:</span> {{ show.accommodation_address }}{% endif %}
+                            {% if show.accommodation_contact %}<br><span class="text-info" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.accommodation_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.accommodation_contact }}</a></span>{% endif %}
                         </p>
                         {% if show.checkout_time %}
                         <p class="mb-1">

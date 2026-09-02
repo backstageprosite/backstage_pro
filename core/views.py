@@ -2237,6 +2237,9 @@ def show_edit_view(request, band_slug, pk):
                 if doc_formset:
                     doc_formset.save()
 
+                from core.services import room_list_services
+                room_list_services.sync_room_list_from_show(show_to_edit)
+
 
 
                 if has_relevant_event:

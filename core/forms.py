@@ -192,13 +192,19 @@ class ShowForm(forms.ModelForm):
             'departure_location', 'departure_location_link', 'departure_time', 'arrival_time',
             'travel_time', 'distance_km', 'soundcheck_time', 'soundcheck_end_time', 'show_time', 'show_end_time', 'duration',
             'transport', 'flight_number', 'airline', 'transport_contact', 'boarding_time',
-            'accommodation', 'accommodation_link', 'accommodation_contact', 'checkout_time',
+            'accommodation', 'accommodation_city', 'accommodation_address', 'accommodation_link', 'accommodation_contact', 'checkout_time',
             'dressing_room', 'dressing_room_contact', 'catering', 'wardrobe', 'transfer', 'transfer_contact',
             'sound_system', 'sound_contact', 'lighting_system', 'lighting_contact', 'led_system', 'led_contact',
             'backline', 'backline_contact', 'pyrotechnics', 'pyrotechnics_contact', 'generator_system', 'generator_contact',
             'loaders_system', 'loaders_contact', 'local_production', 'local_production_contact',
             'internal_notes', 'band_notes'
         ]
+        labels = {
+            'accommodation': 'Nome do Hotel',
+            'accommodation_city': 'Cidade',
+            'accommodation_address': 'Endereço',
+            'accommodation_link': 'Link de Localização',
+        }
         widgets = {
             # Principal
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome da Turnê ou Show principal'}),
@@ -229,20 +235,22 @@ class ShowForm(forms.ModelForm):
             'show_end_time': forms.TimeInput(format='%H:%M', attrs={'class': 'form-control', 'type': 'time'}),
             'duration': forms.TextInput(attrs={'class': 'form-control'}),
             # Logística
-            'transport': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'transport': forms.Textarea(attrs={'class': 'form-control', 'rows': 1, 'placeholder': 'Ex: Van executiva 15 lugares...'}),
             'flight_number': forms.TextInput(attrs={'class': 'form-control'}),
             'airline': forms.TextInput(attrs={'class': 'form-control'}),
             'transport_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
             'boarding_time': forms.TimeInput(format='%H:%M', attrs={'class': 'form-control', 'type': 'time'}),
-            'accommodation': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'accommodation_link': forms.URLInput(attrs={'class': 'form-control'}),
+            'accommodation': forms.Textarea(attrs={'class': 'form-control', 'rows': 1, 'placeholder': 'Ex: Hotel Fasano Salvador'}),
+            'accommodation_city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Salvador/BA'}),
+            'accommodation_address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Praça Castro Alves, 5'}),
+            'accommodation_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Cole o link do Google Maps'}),
             'accommodation_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
             'checkout_time': forms.TimeInput(format='%H:%M', attrs={'class': 'form-control', 'type': 'time'}),
-            'dressing_room': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'dressing_room': forms.Textarea(attrs={'class': 'form-control', 'rows': 1, 'placeholder': 'Ex: Camarim principal climatizado...'}),
             'dressing_room_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            'catering': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'wardrobe': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'transfer': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'catering': forms.Textarea(attrs={'class': 'form-control', 'rows': 1, 'placeholder': 'Ex: Almoço às 12h, Jantar após o show...'}),
+            'wardrobe': forms.Textarea(attrs={'class': 'form-control', 'rows': 1, 'placeholder': 'Ex: Traje preto/estilizado...'}),
+            'transfer': forms.Textarea(attrs={'class': 'form-control', 'rows': 1, 'placeholder': 'Ex: Saída do hotel às 19h...'}),
             'transfer_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
 
             # Técnica
@@ -359,39 +367,35 @@ class RoomListSelectShowForm(forms.Form):
 
 class RoomListForm(forms.ModelForm):
     accommodation_link = forms.URLField(
-        label='Localização',
+        label='Link de Localização',
         required=False,
-        widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Cole o link do Google Maps (https://maps.google.com/...)'})
+        widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Cole o link do Google Maps'})
     )
 
     class Meta:
         model = RoomList
         fields = [
             'hotel_name', 'city', 'address', 'accommodation_link', 'check_in', 'check_out',
-            'contact', 'phone', 'notes', 'reservation_code'
+            'notes', 'reservation_code'
         ]
         labels = {
-            'hotel_name': 'Nome do hotel',
+            'hotel_name': 'Nome do Hotel',
             'city': 'Cidade',
             'address': 'Endereço',
-            'accommodation_link': 'Localização',
+            'accommodation_link': 'Link de Localização',
             'check_in': 'Check-in',
             'check_out': 'Check-out',
-            'contact': 'Contato',
-            'phone': 'Telefone',
             'notes': 'Observações',
-            'reservation_code': 'Código da reserva',
+            'reservation_code': 'Código da Reserva',
         }
         widgets = {
-            'hotel_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'city': forms.TextInput(attrs={'class': 'form-control'}),
-            'address': forms.TextInput(attrs={'class': 'form-control'}),
+            'hotel_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Hotel Ibis'}),
+            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Salvador/BA'}),
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Av. Tancredo Neves, 1000'}),
             'check_in': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'check_out': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
-            'contact': forms.TextInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'reservation_code': forms.TextInput(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Informações adicionais para a equipe...'}),
+            'reservation_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: RES-9821'}),
         }
 
     def __init__(self, *args, **kwargs):

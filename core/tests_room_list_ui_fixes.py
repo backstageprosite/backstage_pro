@@ -237,6 +237,6 @@ class RoomListUIFixesTests(TestCase):
         self.assertEqual(res.status_code, 200)
         html = res.content.decode('utf-8')
         delete_url = reverse('room_list_delete', kwargs={'band_slug': self.band.slug, 'pk': self.room_list.pk})
-        self.assertIn('data-bs-target="#deleteModal', html)
-        self.assertIn(f'action="{delete_url}"', html)
+        self.assertIn('data-bs-target="#modalConfirmDeleteUniversal"', html)
+        self.assertIn(f'data-delete-url="{delete_url}"', html)
 

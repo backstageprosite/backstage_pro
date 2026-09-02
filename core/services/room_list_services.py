@@ -409,12 +409,39 @@ def validate_room_list_for_publication(room_list):
     return get_pending_issues(room_list)
 
 
+def sync_room_list_from_show(show):
+    """
+    Sincroniza os dados de hospedagem do Show para a RoomList ativa vinculada (se existir).
+    Não gera recursão.
+    """
+    active_rl = RoomList.objects.filter(
+        show=show,
+        status__in=[RoomList.StatusChoices.RASCUNHO, RoomList.StatusChoices.PUBLICADA]
+    ).first()
+    if active_rl:
+        rl_updates = []
+        if show.accommodation and active_rl.hotel_name != show.accommodation:
+            active_rl.hotel_name = show.accommodation
+            rl_updates.append('hotel_name')
+        if show.accommodation_city and active_rl.city != show.accommodation_city:
+            active_rl.city = show.accommodation_city
+            rl_updates.append('city')
+        if show.accommodation_address is not None and active_rl.address != show.accommodation_address:
+            active_rl.address = show.accommodation_address
+            rl_updates.append('address')
+        if rl_updates:
+            active_rl.content_revision += 1
+            rl_updates.extend(['content_revision', 'updated_at'])
+            active_rl.save(update_fields=rl_updates)
+    return active_rl
+
+
 # ============================================================
 # COMANDOS DE ROOM LIST
 # ============================================================
 
 @transaction.atomic
-def create_room_list(show_id, band_id, user, hotel_name, city, **kwargs):
+def create_room_list(show_id, band_id, user, hotel_name=None, city=None, **kwargs):
     """
     Cria Room List e popula participantes a partir da escala do show.
 
@@ -444,17 +471,38 @@ def create_room_list(show_id, band_id, user, hotel_name, city, **kwargs):
             "Já existe uma Room List ativa (rascunho ou publicada) para este show."
         )
 
+    # Preencher a partir do Show se não informados explicitamente
+    resolved_hotel_name = hotel_name or locked_show.accommodation or ''
+    resolved_city = city or locked_show.accommodation_city or locked_show.city or ''
+    resolved_address = kwargs.get('address') or locked_show.accommodation_address or ''
+
     allowed_fields = {
         'address', 'contact', 'phone', 'reservation_code',
         'check_in', 'check_out', 'notes'
     }
     filtered_kwargs = {k: v for k, v in kwargs.items() if k in allowed_fields}
+    if 'address' not in filtered_kwargs and resolved_address:
+        filtered_kwargs['address'] = resolved_address
 
+    # Sincronização com o Show
+    show_updates = []
+    if resolved_hotel_name and locked_show.accommodation != resolved_hotel_name:
+        locked_show.accommodation = resolved_hotel_name
+        show_updates.append('accommodation')
+    if resolved_city and locked_show.accommodation_city != resolved_city:
+        locked_show.accommodation_city = resolved_city
+        show_updates.append('accommodation_city')
+    if resolved_address and locked_show.accommodation_address != resolved_address:
+        locked_show.accommodation_address = resolved_address
+        show_updates.append('accommodation_address')
     if 'accommodation_link' in kwargs:
         new_link = kwargs.get('accommodation_link') or None
         if locked_show.accommodation_link != new_link:
             locked_show.accommodation_link = new_link
-            locked_show.save(update_fields=['accommodation_link'])
+            show_updates.append('accommodation_link')
+
+    if show_updates:
+        locked_show.save(update_fields=show_updates)
 
     default_obs = ""
     if hasattr(band, 'lodging_template'):
@@ -463,8 +511,8 @@ def create_room_list(show_id, band_id, user, hotel_name, city, **kwargs):
     room_list = RoomList(
         band=band,
         show=locked_show,
-        hotel_name=hotel_name,
-        city=city,
+        hotel_name=resolved_hotel_name,
+        city=resolved_city,
         observations=default_obs,
         **filtered_kwargs
     )
@@ -569,11 +617,30 @@ def update_room_list(room_list_id, user, **kwargs):
         'reservation_code', 'check_in', 'check_out', 'notes', 'observations'
     }
 
-    if 'accommodation_link' in kwargs:
-        new_link = kwargs.pop('accommodation_link') or None
-        if locked_rl.show and locked_rl.show.accommodation_link != new_link:
-            locked_rl.show.accommodation_link = new_link
-            locked_rl.show.save(update_fields=['accommodation_link'])
+    # Sincronização com o Show vinculado
+    if locked_rl.show:
+        show_updates = []
+        if 'hotel_name' in kwargs and kwargs['hotel_name'] != locked_rl.show.accommodation:
+            locked_rl.show.accommodation = kwargs['hotel_name']
+            show_updates.append('accommodation')
+        if 'city' in kwargs and kwargs['city'] != locked_rl.show.accommodation_city:
+            locked_rl.show.accommodation_city = kwargs['city']
+            show_updates.append('accommodation_city')
+        if 'address' in kwargs and kwargs['address'] != locked_rl.show.accommodation_address:
+            locked_rl.show.accommodation_address = kwargs['address']
+            show_updates.append('accommodation_address')
+        if 'accommodation_link' in kwargs:
+            new_link = kwargs.pop('accommodation_link') or None
+            if locked_rl.show.accommodation_link != new_link:
+                locked_rl.show.accommodation_link = new_link
+                show_updates.append('accommodation_link')
+        else:
+            kwargs.pop('accommodation_link', None)
+
+        if show_updates:
+            locked_rl.show.save(update_fields=show_updates)
+    else:
+        kwargs.pop('accommodation_link', None)
 
     changed = False
     for key, value in kwargs.items():

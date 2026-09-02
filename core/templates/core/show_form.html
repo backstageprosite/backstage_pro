@@ -54,8 +54,9 @@
         border-radius: 6px;
     }
     .bp-show-form-page textarea.form-control {
-        min-height: 60px;
-        padding: 6px 10px;
+        min-height: 34px;
+        padding: 5px 10px;
+        resize: vertical;
     }
     .bp-show-form-page .nav-tabs .nav-link {
         font-size: 13px;
@@ -325,19 +326,27 @@
 
                     <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Hospedagem</h5>
                     <div class="row g-2 mb-3">
-                        <div class="col-12">
+                        <div class="col-md-6">
                             <label class="form-label">{{ form.accommodation.label }}</label>
                             {{ form.accommodation }}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.accommodation_city.label }}</label>
+                            {{ form.accommodation_city }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.accommodation_address.label }}</label>
+                            {{ form.accommodation_address }}
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label">{{ form.accommodation_link.label }}</label>
                             {{ form.accommodation_link }}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">{{ form.accommodation_contact.label }}</label>
                             {{ form.accommodation_contact }}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">{{ form.checkout_time.label }}</label>
                             {{ form.checkout_time }}
                         </div>
