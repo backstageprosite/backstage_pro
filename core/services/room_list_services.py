@@ -569,9 +569,9 @@ def update_room_list(room_list_id, user, **kwargs):
         'reservation_code', 'check_in', 'check_out', 'notes', 'observations'
     }
 
-    if 'accommodation_link' in kwargs and locked_rl.show:
-        new_link = kwargs.get('accommodation_link') or None
-        if locked_rl.show.accommodation_link != new_link:
+    if 'accommodation_link' in kwargs:
+        new_link = kwargs.pop('accommodation_link') or None
+        if locked_rl.show and locked_rl.show.accommodation_link != new_link:
             locked_rl.show.accommodation_link = new_link
             locked_rl.show.save(update_fields=['accommodation_link'])
 
