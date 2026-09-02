@@ -113,14 +113,14 @@
     </div>
 
     <!-- Barra de Filtros -->
-    <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px; background-color: #f8f9fa;">
+    <div class="card shadow-sm border-0 mb-3 filter-card" style="border-radius: 12px; background-color: #f8f9fa;">
         <div class="card-body p-3">
             <form method="get" class="row g-2 align-items-end">
-                <div class="col-6 col-md-3 col-lg-3">
+                <div class="col-12 col-sm-6 col-md-4 col-xl-4">
                     <label class="filter-label">Nome</label>
                     <input type="text" name="nome" class="form-control filter-control" placeholder="Buscar por nome..." value="{{ search_name|default:'' }}">
                 </div>
-                <div class="col-6 col-md-3 col-lg-3">
+                <div class="col-6 col-sm-6 col-md-4 col-xl-2">
                     <label class="filter-label">Tipo</label>
                     <select name="tipo" class="form-select filter-control">
                         <option value="">Todos</option>
@@ -129,11 +129,11 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-6 col-md-3 col-lg-3">
+                <div class="col-6 col-sm-6 col-md-4 col-xl-3">
                     <label class="filter-label">Local</label>
                     <input type="text" name="local" class="form-control filter-control" placeholder="Buscar por local..." value="{{ search_local|default:'' }}">
                 </div>
-                <div class="col-6 col-md-3 col-lg-3 text-end d-flex gap-2 justify-content-end align-items-center">
+                <div class="col-12 col-xl-3 ms-xl-auto mt-2 mt-xl-0 text-end d-flex gap-2 justify-content-end align-items-center">
                     <a href="{% url 'contatos_list' band.slug %}" class="btn btn-sm btn-outline-secondary px-3" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 16px; border-radius: 4px; border: 1px solid #6C757D; color: #6C757D; background-color: transparent; display: inline-flex; align-items: center; white-space: nowrap;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='#FFFFFF';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';">
                         <i class="fa-solid fa-eraser me-1" style="font-size: 14px; font-weight: 900;"></i> Limpar
                     </a>
