@@ -49,7 +49,7 @@ class ContractDocumentForm(forms.ModelForm):
         model = ContractDocument
         fields = ['description', 'file']
         widgets = {
-            'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Contrato Assinado, Alvará'}),
+            'description': forms.TextInput(attrs={'class': 'form-control'}),
             'file': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
@@ -209,19 +209,19 @@ class ShowForm(forms.ModelForm):
         }
         widgets = {
             # Principal
-            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome da Turnê ou Show principal'}),
-            'event_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Festival de Verão'}),
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'event_name': forms.TextInput(attrs={'class': 'form-control'}),
             'date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             # Localização
             'city': forms.TextInput(attrs={'class': 'form-control'}),
-            'venue': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Parque de Exposições'}),
+            'venue': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.TextInput(attrs={'class': 'form-control'}),
             'address_link': forms.URLInput(attrs={'class': 'form-control'}),
-            'attractions': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'attractions': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
             # Financeiro
             'contractor_name': forms.TextInput(attrs={'class': 'form-control'}),
             'contractor_phone': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            'contract_type': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Bilheteria, Prefeitura'}),
+            'contract_type': forms.TextInput(attrs={'class': 'form-control'}),
             'fee': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'payment_status': forms.Select(attrs={'class': 'form-select'}),
             # Cronograma
@@ -282,8 +282,8 @@ class ShowForm(forms.ModelForm):
             'loaders_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
 
             # Observações
-            'internal_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'band_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'internal_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
+            'band_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
         }
 
 # Formsets para a aba de Anexos

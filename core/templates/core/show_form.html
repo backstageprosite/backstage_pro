@@ -57,6 +57,8 @@
         min-height: 34px;
         padding: 5px 10px;
         resize: vertical;
+        overflow-y: hidden;
+        line-height: 1.4;
     }
     .bp-show-form-page .nav-tabs .nav-link {
         font-size: 13px;
@@ -813,6 +815,49 @@
             durationField.addEventListener('input', updateShowEndTime);
             durationField.addEventListener('change', updateShowEndTime);
         }
+
+        // Auto-resize para textareas preservando expansão manual
+        function autoResizeTextarea(textarea) {
+            if (!textarea) return;
+            // Se o elemento estiver oculto (aba inativa), offsetHeight será 0
+            if (textarea.offsetParent === null) return;
+
+            // Salva altura antes de testar scrollHeight
+            const currentHeight = textarea.offsetHeight;
+            textarea.style.height = 'auto';
+            const newHeight = textarea.scrollHeight;
+
+            // Ajusta a altura apenas quando o conteúdo requer mais espaço que o atual,
+            // ou restaura para o mínimo/scrollHeight se o usuário apagou texto
+            // Garantindo que não fique menor que o scrollHeight necessário
+            textarea.style.height = (newHeight > 34 ? newHeight : 34) + 'px';
+        }
+
+        const autoTextareas = document.querySelectorAll('.bp-show-form-page textarea');
+        autoTextareas.forEach(function(ta) {
+            // Ajusta inicialmente se visível
+            autoResizeTextarea(ta);
+
+            // Ajusta conforme digita
+            ta.addEventListener('input', function() {
+                autoResizeTextarea(ta);
+            });
+        });
+
+        // Quando uma aba do formulário for exibida, recalcular textareas contidos nela
+        document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(function(btn) {
+            btn.addEventListener('shown.bs.tab', function(e) {
+                const targetSelector = e.target.getAttribute('data-bs-target');
+                if (targetSelector) {
+                    const targetPane = document.querySelector(targetSelector);
+                    if (targetPane) {
+                        targetPane.querySelectorAll('textarea').forEach(function(ta) {
+                            autoResizeTextarea(ta);
+                        });
+                    }
+                }
+            });
+        });
 
     });
 </script>
