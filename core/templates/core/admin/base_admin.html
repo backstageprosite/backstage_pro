@@ -202,6 +202,21 @@
             .mobile-cards-table td.full-row::before { display: none !important; }
             .mobile-cards-table td.full-row > * { text-align: left; }
         }
+
+        /* SCROLL HORIZONTAL MOBILE PADRONIZADO PARA TABELAS ADMIN */
+        .bp-admin-table-scroll {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-x pan-y !important;
+        }
+        @media (max-width: 767.98px) {
+            .bp-admin-table-scroll table {
+                min-width: 600px;
+            }
+        }
 </style>
     {% block extra_head %}{% endblock %}
 </head>

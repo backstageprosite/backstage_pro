@@ -54,6 +54,7 @@
         justify-content: center;
         text-align: center;
         white-space: nowrap;
+        color: #212529 !important;
     }
     .bp-admin-site-page .btn-actions {
         font-size: 13px;
@@ -65,14 +66,41 @@
     }
 
     @media (max-width: 767.98px) {
+        .bp-admin-site-page .site-header-wrapper {
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            flex-wrap: nowrap !important;
+            gap: 4px !important;
+            margin-bottom: 0.75rem !important;
+        }
+        .bp-admin-site-page .page-title {
+            font-size: 17px !important;
+            margin-bottom: 0 !important;
+            white-space: nowrap !important;
+        }
+        .bp-admin-site-page .header-buttons-container {
+            flex-wrap: nowrap !important;
+            gap: 4px !important;
+            justify-content: flex-end !important;
+        }
         .bp-admin-site-page .btn-header-action {
-            height: 40px;
-            padding: 8px 16px;
+            height: 30px !important;
+            min-height: 30px !important;
+            padding: 2px 7px !important;
+            font-size: 11px !important;
+            white-space: nowrap !important;
+            line-height: 1.1 !important;
+        }
+        .bp-admin-site-page .btn-header-action i {
+            margin-right: 3px !important;
+            font-size: 11px !important;
         }
         .bp-admin-site-page .form-control,
         .bp-admin-site-page .form-select {
             font-size: 16px !important;
-            min-height: 40px;
+            min-height: 36px;
+            height: 36px;
         }
     }
 </style>
@@ -80,11 +108,11 @@
 
 {% block content %}
 <div class="bp-admin-site-page">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mb-3 site-header-wrapper">
         <div>
             <h4 class="page-title"><i class="fa-solid fa-globe text-primary me-2"></i>Site</h4>
         </div>
-        <div class="d-flex gap-2 flex-wrap">
+        <div class="d-flex gap-2 flex-nowrap align-items-center header-buttons-container">
             <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
             </a>
@@ -99,13 +127,12 @@
 
     <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px;">
         <div class="card-body p-0">
-            <div class="table-responsive" style="overflow: visible;">
-                <table class="table table-hover align-middle mb-0 table-hover-premium">
+            <div class="table-responsive bp-admin-table-scroll">
+                <table class="table table-hover align-middle mb-0 table-hover-premium" style="min-width: 500px;">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4" style="width: 120px;">Prévia</th>
-                            <th>Banda ou Artista</th>
-                            <th class="text-center">Data de Cadastro</th>
+                            <th class="ps-4" style="width: 80px;">Prévia</th>
+                            <th>Banda</th>
                             <th class="text-center">Status</th>
                             <th class="pe-4 text-end">Ações</th>
                         </tr>
@@ -114,7 +141,7 @@
                         {% for logo in logos %}
                             <tr class="align-middle border-bottom" data-id="{{ logo.pk }}">
                                 <td class="ps-4 py-2">
-                                    <div style="width: 80px; height: 34px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 2px; overflow: hidden;">
+                                    <div style="width: 48px; height: 26px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; display: flex; align-items: center; justify-content: center; padding: 1px; overflow: hidden;">
                                         <img src="{% url 'landing_logo_image' logo.pk %}" alt="{{ logo.name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                     </div>
                                 </td>
@@ -122,15 +149,14 @@
                                     <i class="fa-solid fa-grip-vertical text-muted me-2" style="cursor: grab; font-size: 12px;"></i>
                                     {{ logo.name }}
                                 </td>
-                                <td class="text-center text-muted" style="font-size: 12px;">{{ logo.created_at|date:"d/m/Y H:i" }}</td>
                                 <td class="text-center">
                                     {% if logo.is_active %}
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 status-pill">
-                                            <i class="fa-solid fa-circle-check me-1"></i> Ativo
+                                        <span class="badge bg-success bg-opacity-10 text-dark border border-success border-opacity-25 status-pill">
+                                            <i class="fa-solid fa-circle-check text-success me-1"></i> Ativo
                                         </span>
                                     {% else %}
-                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 status-pill">
-                                            <i class="fa-solid fa-ban me-1"></i> Desativado
+                                        <span class="badge bg-danger bg-opacity-10 text-dark border border-danger border-opacity-25 status-pill">
+                                            <i class="fa-solid fa-ban text-danger me-1"></i> Desativado
                                         </span>
                                     {% endif %}
                                 </td>

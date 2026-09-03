@@ -169,21 +169,25 @@ class RoomListPdfAndHotelTests(TestCase):
         pdf_url = reverse('room_list_pdf', args=[self.band.slug, self.room_list.pk])
         self.assertNotIn(pdf_url, content_utf8)
 
-    # ==== Botão Voltar (Room List Form e Manage) ====
+    # ==== Botão Ver Hotel (Show Detail — Produtor / Superuser) ====
 
-    def test_botao_voltar_form_e_manage(self):
-        """Botão Voltar em Form e Manage aponta para room_list_index."""
+    def test_ver_hotel_visivel_com_room_list(self):
+        """Produtor vê botão 'Ver Hotel' quando o show possui Room List vinculada."""
         self.client.login(username='produtor', password='123')
-        index_url = reverse('room_list_index', args=[self.band.slug])
-
-        response = self.client.get(reverse('room_list_edit', args=[self.band.slug, self.room_list.pk]))
+        response = self.client.get(reverse('show_detail', args=[self.band.slug, self.show.pk]))
+        self.assertEqual(response.status_code, 200)
         content_utf8 = response.content.decode('utf-8', errors='ignore')
-        self.assertIn(index_url, content_utf8)
+        manage_url = reverse('room_list_manage', args=[self.band.slug, self.room_list.pk])
+        self.assertIn(manage_url, content_utf8)
+        self.assertIn('Ver Hotel', content_utf8)
 
-        response = self.client.get(reverse('room_list_manage', args=[self.band.slug, self.room_list.pk]))
+    def test_ver_hotel_oculto_sem_room_list(self):
+        """Produtor NÃO vê botão 'Ver Hotel' quando o show NÃO possui Room List vinculada."""
+        show_sem_hospedagem = Show.objects.create(band=self.band, title='Show Sem Hotel', date=timezone.now().date())
+        self.client.login(username='produtor', password='123')
+        response = self.client.get(reverse('show_detail', args=[self.band.slug, show_sem_hospedagem.pk]))
+        self.assertEqual(response.status_code, 200)
         content_utf8 = response.content.decode('utf-8', errors='ignore')
-        self.assertIn(index_url, content_utf8)
-
-    # ==== Link no PDF do Show ====
-
-    
+        self.assertNotIn('Ver Hotel', content_utf8)
+        create_url = reverse('room_list_create', args=[self.band.slug, show_sem_hospedagem.pk])
+        self.assertNotIn(create_url, content_utf8)
