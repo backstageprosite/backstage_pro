@@ -432,14 +432,73 @@
 
             const toastElList = document.querySelectorAll('.toast');
             const toastList = [...toastElList].map(toastEl => new bootstrap.Toast(toastEl));
-            toastList.forEach(toast => toast.show());
+            // Teleport-to-body engine for all table dropdowns in admin:
+            // When opening, detach menu and place it in document.body with fixed coordinates so NO parent container can ever clip or confine it.
+            document.addEventListener('show.bs.dropdown', function (e) {
+                const toggle = e.target;
+                const dropdown = toggle.closest('.dropdown');
+                if (!dropdown) return;
+                const menu = dropdown.querySelector('.dropdown-menu');
+                if (!menu) return;
 
-            // Initialize Bootstrap dropdowns in tables with dynamic strategy so they float free of scroll containers
-            const tableDropdownToggles = document.querySelectorAll('.bp-admin-table-scroll [data-bs-toggle="dropdown"], .table-responsive [data-bs-toggle="dropdown"]');
-            tableDropdownToggles.forEach(function(toggle) {
-                if (!toggle.getAttribute('data-bs-display')) {
-                    toggle.setAttribute('data-bs-display', 'dynamic');
+                // Only apply to table dropdowns or elements inside scroll containers
+                if (dropdown.closest('.bp-admin-table-scroll, .table-responsive, table')) {
+                    menu._originalParent = dropdown;
+                    document.body.appendChild(menu);
+                    menu.style.position = 'fixed';
+                    menu.style.zIndex = '999999';
+                    menu.style.display = 'block';
+
+                    const updatePosition = () => {
+                        const rect = toggle.getBoundingClientRect();
+                        const menuWidth = menu.offsetWidth || 160;
+                        const menuHeight = menu.offsetHeight || 120;
+
+                        let top = rect.bottom + 4;
+                        let left = rect.right - menuWidth;
+
+                        // Check bottom overflow
+                        if (top + menuHeight > window.innerHeight && rect.top - menuHeight > 0) {
+                            top = rect.top - menuHeight - 4;
+                        }
+
+                        // Check horizontal boundaries
+                        if (left < 10) left = 10;
+                        if (left + menuWidth > window.innerWidth - 10) {
+                            left = window.innerWidth - menuWidth - 10;
+                        }
+
+                        menu.style.top = top + 'px';
+                        menu.style.left = left + 'px';
+                    };
+
+                    updatePosition();
+                    menu._scrollHandler = updatePosition;
+                    window.addEventListener('scroll', updatePosition, true);
+                    window.addEventListener('resize', updatePosition);
                 }
+            });
+
+            document.addEventListener('hidden.bs.dropdown', function (e) {
+                const toggle = e.target;
+                const dropdown = toggle.closest('.dropdown') || (toggle.parentElement && toggle.parentElement.classList.contains('dropdown') ? toggle.parentElement : null);
+
+                document.querySelectorAll('body > .dropdown-menu').forEach(function(menu) {
+                    if (menu._originalParent) {
+                        menu.style.position = '';
+                        menu.style.top = '';
+                        menu.style.left = '';
+                        menu.style.zIndex = '';
+                        menu.style.display = '';
+                        if (menu._scrollHandler) {
+                            window.removeEventListener('scroll', menu._scrollHandler, true);
+                            window.removeEventListener('resize', menu._scrollHandler);
+                            menu._scrollHandler = null;
+                        }
+                        menu._originalParent.appendChild(menu);
+                        menu._originalParent = null;
+                    }
+                });
             });
         });
     </script>
