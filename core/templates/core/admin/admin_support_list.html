@@ -148,7 +148,7 @@
                             <td class="ps-4 fw-bold text-dark" style="font-size: 13px;">#{{ ticket.id }}</td>
                             <td class="fw-semibold text-dark" style="font-size: 13px;">{{ ticket.band.name }}</td>
                             <td class="text-center">
-                                <span class="badge {% if ticket.status == 'RESOLVED' or ticket.status == 'ARCHIVED' %}bg-secondary{% elif ticket.status == 'WAITING_ADMIN' or ticket.status == 'NEW' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} status-pill">
+                                <span class="badge {% if ticket.status == 'RESOLVED' or ticket.status == 'ARCHIVED' %}bg-secondary bg-opacity-10 text-dark border border-secondary border-opacity-25{% elif ticket.status == 'WAITING_ADMIN' or ticket.status == 'NEW' %}bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25{% else %}bg-info bg-opacity-10 text-dark border border-info border-opacity-25{% endif %} status-pill">
                                     {{ ticket.get_status_display }}
                                 </span>
                                 {% if ticket.has_new_message %}

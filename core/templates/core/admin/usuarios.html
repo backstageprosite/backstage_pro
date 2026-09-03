@@ -62,6 +62,7 @@
         justify-content: center;
         text-align: center;
         white-space: nowrap;
+        color: #212529 !important;
     }
 
     @media (max-width: 767.98px) {
@@ -163,21 +164,21 @@
                                         {{ u.band.name }}
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-secondary rounded-pill" style="font-size: 11px;">Sem Banda</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-dark border border-secondary border-opacity-25 rounded-pill px-3 py-1" style="font-size: 11px;">Sem Banda</span>
                                 {% endif %}
                             </td>
                             <td class="text-center">
                                 {% if u.is_superuser %}
                                     <span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 role-pill">
-                                        <i class="fa-solid fa-shield me-1"></i> Admin Geral
+                                        <i class="fa-solid fa-shield text-dark me-1"></i> Admin Geral
                                     </span>
                                 {% elif u.is_produtor %}
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 role-pill">
-                                        <i class="fa-solid fa-crown me-1"></i> Produtor
+                                    <span class="badge bg-primary bg-opacity-10 text-dark border border-primary border-opacity-25 role-pill">
+                                        <i class="fa-solid fa-crown text-primary me-1"></i> Produtor
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 role-pill">
-                                        <i class="fa-solid fa-guitar me-1"></i> Integrante
+                                    <span class="badge bg-secondary bg-opacity-10 text-dark border border-secondary border-opacity-25 role-pill">
+                                        <i class="fa-solid fa-guitar text-secondary me-1"></i> Integrante
                                     </span>
                                 {% endif %}
                             </td>
