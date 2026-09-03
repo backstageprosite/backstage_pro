@@ -277,12 +277,12 @@
                             </td>
                             <td class="text-center">
                                 {% if sub.status == 'ATIVO' %}
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 status-pill">
-                                        <i class="fa-solid fa-circle-check me-1"></i> Ativa
+                                    <span class="badge bg-success bg-opacity-10 text-dark border border-success border-opacity-25 status-pill">
+                                        <i class="fa-solid fa-circle-check text-success me-1"></i> Ativa
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 status-pill">
-                                        <i class="fa-solid fa-ban me-1"></i> Suspensa
+                                    <span class="badge bg-danger bg-opacity-10 text-dark border border-danger border-opacity-25 status-pill">
+                                        <i class="fa-solid fa-ban text-danger me-1"></i> Suspensa
                                     </span>
                                 {% endif %}
                             </td>
@@ -475,10 +475,11 @@
                     </div>
 
                     <div class="row g-3 mb-3">
-                        <input type="hidden" name="plan_name" value="Mensal">
+                        <input type="hidden" name="plan_name" value="">
                         <div class="col-6 col-md-4">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Plano</label>
-                            <select name="billing_cycle" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <select name="billing_cycle" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                                <option value="">-- Selecione --</option>
                                 {% for val, display in form_create.fields.billing_cycle.choices %}
                                     <option value="{{ val }}">{{ display }}</option>
                                 {% endfor %}
@@ -486,13 +487,13 @@
                         </div>
                         <div class="col-6 col-md-4">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Valor Contratado</label>
-                            <input type="number" step="0.01" name="contracted_value" class="form-control" value="300.00" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="number" step="0.01" name="contracted_value" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-12 col-md-4">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Status Inicial</label>
                             <select name="status" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                                 {% for val, display in form_create.fields.status.choices %}
-                                    <option value="{{ val }}">{{ display }}</option>
+                                    <option value="{{ val }}" {% if val == 'ATIVO' %}selected{% endif %}>{{ display }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -527,6 +528,7 @@
                         <div class="col-6 col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Método Pgt.</label>
                             <select name="payment_method_preference" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                                <option value="">-- Selecione --</option>
                                 {% for val, display in form_create.fields.payment_method_preference.choices %}
                                     <option value="{{ val }}">{{ display }}</option>
                                 {% endfor %}
@@ -534,7 +536,7 @@
                         </div>
                         <div class="col-6 col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Tel. Cobrança</label>
-                            <input type="text" name="billing_phone" class="form-control whatsapp-mask" placeholder="Ex: (71) 99999-8888" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="text" name="billing_phone" class="form-control whatsapp-mask" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                     </div>
 

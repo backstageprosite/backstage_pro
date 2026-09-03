@@ -392,6 +392,14 @@
             const toastElList = document.querySelectorAll('.toast');
             const toastList = [...toastElList].map(toastEl => new bootstrap.Toast(toastEl));
             toastList.forEach(toast => toast.show());
+
+            // Initialize Bootstrap dropdowns in tables with dynamic strategy so they float free of scroll containers
+            const tableDropdownToggles = document.querySelectorAll('.bp-admin-table-scroll [data-bs-toggle="dropdown"], .table-responsive [data-bs-toggle="dropdown"]');
+            tableDropdownToggles.forEach(function(toggle) {
+                if (!toggle.getAttribute('data-bs-display')) {
+                    toggle.setAttribute('data-bs-display', 'dynamic');
+                }
+            });
         });
     </script>
 

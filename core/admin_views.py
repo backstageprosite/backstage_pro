@@ -303,7 +303,10 @@ class AdminShowListView(AdminRequiredMixin, ListView):
     model = Show
     template_name = 'core/admin/shows.html'
     context_object_name = 'shows'
-    ordering = ['-date']
+
+    def get_queryset(self):
+        today = timezone.localdate()
+        return Show.objects.filter(date__gte=today).select_related('band').order_by('date', 'show_time', 'id')
 
 class AdminAssinaturasView(AdminRequiredMixin, ListView):
     model = BandSubscription

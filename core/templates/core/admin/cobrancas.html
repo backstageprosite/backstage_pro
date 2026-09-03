@@ -335,21 +335,18 @@
                                                         {% endfor %}
                                                     </select>
                                                 </div>
-                                            </div>
-
                                             <div class="mb-3">
                                                 <label class="form-label">Comprovante</label>
                                                 <input type="file" name="proof_file" class="form-control">
                                             </div>
-
                                             <div class="mb-3">
                                                 <label class="form-label">Observações</label>
                                                 <textarea name="notes" class="form-control" rows="2">{{ rec.notes|default:'' }}</textarea>
                                             </div>
-                                        </div>
-                                        <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
-                                            <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                                            <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
+                                            <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                                                <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                                                <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
+                                            </div>
                                         </div>
                                     </form>
                                 </div>
@@ -357,7 +354,7 @@
                         </div>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <i class="fa-solid fa-file-circle-xmark fa-3x mb-3 text-secondary opacity-50"></i>
                                 <p class="mb-0">Nenhuma fatura encontrada com os filtros selecionados.</p>
                             </td>
@@ -406,11 +403,11 @@
                     <div class="row g-3 mb-3">
                         <div class="col-6 col-md-6">
                             <label class="form-label">Período Referência</label>
-                            <input type="text" name="reference_period" class="form-control" placeholder="Ex: Setembro/2026" required>
+                            <input type="text" name="reference_period" class="form-control" required>
                         </div>
                         <div class="col-6 col-md-6">
                             <label class="form-label">Valor da Fatura</label>
-                            <input type="number" step="0.01" name="amount" class="form-control" value="300.00" required>
+                            <input type="number" step="0.01" name="amount" class="form-control" required>
                         </div>
                     </div>
 
@@ -423,7 +420,7 @@
                             <label class="form-label">Status Atual</label>
                             <select name="status" class="form-select">
                                 {% for val, display in form_create.fields.status.choices %}
-                                    <option value="{{ val }}">{{ display }}</option>
+                                    <option value="{{ val }}" {% if val == 'PENDENTE' %}selected{% endif %}>{{ display }}</option>
                                 {% endfor %}
                             </select>
                         </div>
