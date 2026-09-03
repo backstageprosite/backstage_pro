@@ -235,6 +235,29 @@
             z-index: 1060 !important;
             box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
         }
+
+        /* 3. Trava dos Modais: Garante layout flexível com rolagem no body e footer sempre visível */
+        .modal-dialog-scrollable .modal-content {
+            max-height: calc(100dvh - 3.5rem);
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        .modal-dialog-scrollable form {
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+        }
+        .modal-dialog-scrollable .modal-body {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+        }
+        .modal-dialog-scrollable .modal-footer {
+            flex-shrink: 0 !important;
+        }
 </style>
     {% block extra_head %}{% endblock %}
 </head>
