@@ -479,6 +479,24 @@
                 }
             });
 
+            // Ensure modal trigger buttons inside dropdown menus work reliably when clicked
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-bs-toggle="modal"]');
+                if (btn && btn.closest('.dropdown-menu')) {
+                    const targetSelector = btn.getAttribute('data-bs-target');
+                    if (targetSelector) {
+                        const modalEl = document.querySelector(targetSelector);
+                        if (modalEl) {
+                            // Let the click bubble, but make sure the modal instance is shown
+                            setTimeout(function() {
+                                const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+                                modalInstance.show();
+                            }, 50);
+                        }
+                    }
+                }
+            }, true);
+
             document.addEventListener('hidden.bs.dropdown', function (e) {
                 const toggle = e.target;
                 const dropdown = toggle.closest('.dropdown') || (toggle.parentElement && toggle.parentElement.classList.contains('dropdown') ? toggle.parentElement : null);
