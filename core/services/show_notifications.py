@@ -84,8 +84,8 @@ def schedule_show_notifications(old_show, new_show, actor, is_creation=False):
                 event_key=f"show:{new_show.id}:new"
             ))
     else:
-        # 1. Cancelamento
-        if old_show and old_show.status != 'CANCELADO' and new_show.status == 'CANCELADO':
+        # 1. Cancelamento (apenas se o show estava confirmado, não notifica cancelamento de reservas)
+        if old_show and old_show.status == 'CONFIRMADO' and new_show.status == 'CANCELADO':
             date_str = new_show.date.strftime('%d/%m/%Y') if new_show.date else "data não informada"
             msg = f'O show "{show_name}" de {date_str} foi cancelado.'
             events.append(EventPayload(

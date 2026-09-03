@@ -2219,7 +2219,7 @@ def show_edit_view(request, band_slug, pk):
 
                     (old_show_time != new_show_time) or
 
-                    (old_status != 'CANCELADO' and new_status == 'CANCELADO') or
+                    (old_status == 'CONFIRMADO' and new_status == 'CANCELADO') or
 
                     (old_status != 'CONFIRMADO' and new_status == 'CONFIRMADO')
 

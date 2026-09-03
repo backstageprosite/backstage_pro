@@ -31,7 +31,7 @@ def send_show_notification(sender, instance, created, **kwargs):
         if not old_show:
             return
             
-        if old_show.status != 'CANCELADO' and instance.status == 'CANCELADO':
+        if old_show.status == 'CONFIRMADO' and instance.status == 'CANCELADO':
             action = "Show Cancelado"
             changes_text = "Atenção: O status deste show mudou para CANCELADO."
         else:

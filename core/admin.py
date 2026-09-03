@@ -288,7 +288,8 @@ class ShowAdmin(admin.ModelAdmin):
         has_relevant_event = (
             (old_obj.date != obj.date) or
             (old_obj.show_time != obj.show_time) or
-            (old_obj.status != 'CANCELADO' and obj.status == 'CANCELADO')
+            (old_obj.status == 'CONFIRMADO' and obj.status == 'CANCELADO') or
+            (old_obj.status != 'CONFIRMADO' and obj.status == 'CONFIRMADO')
         )
         
         if has_relevant_event:

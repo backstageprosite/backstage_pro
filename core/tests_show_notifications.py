@@ -209,3 +209,19 @@ class ShowNotificationsTests(TestCase):
         notifs = Notification.objects.filter(related_show_id=show.id, event_type='NEW_SHOW')
         self.assertTrue(notifs.exists())
         self.assertEqual(notifs.first().actor, self.admin_user)
+
+    def test_canceling_reservation_does_not_notify(self):
+        """Show que passa de RESERVA (PRE_RESERVADO) para CANCELADO não deve gerar notificação de cancelamento nem incrementar revisão."""
+        show = Show.objects.create(band=self.band, title='Show Reserva', status='PRE_RESERVADO', date=date(2026, 10, 1))
+        url = reverse('shows_edit', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        data = {
+            'title': 'Show Reserva', 'status': 'CANCELADO', 'payment_status': 'PENDENTE', 'date': '2026-10-01',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+
+        show.refresh_from_db()
+        self.assertEqual(show.notification_revision, 0)
+        self.assertEqual(Notification.objects.filter(related_show_id=show.id).count(), 0)
