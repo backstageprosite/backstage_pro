@@ -394,23 +394,23 @@
                                                     <input type="text" name="financial_responsible_name" class="form-control" value="{{ sub.financial_responsible_name|default:'' }}">
                                                 </div>
                                                 <div class="col-6 col-md-6">
-                                                    <label class="form-label">Método de Pagamento</label>
+                                                    <label class="form-label">E-mail de Cobrança</label>
+                                                    <input type="email" name="billing_email" class="form-control" value="{{ sub.billing_email|default:'' }}">
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-6 col-md-6">
+                                                    <label class="form-label">Método Pgt.</label>
                                                     <select name="payment_method_preference" class="form-select">
                                                         {% for val, display in form_create.fields.payment_method_preference.choices %}
                                                             <option value="{{ val }}" {% if sub.payment_method_preference == val %}selected{% endif %}>{{ display }}</option>
                                                         {% endfor %}
                                                     </select>
                                                 </div>
-                                            </div>
-
-                                            <div class="row g-3 mb-3">
                                                 <div class="col-6 col-md-6">
-                                                    <label class="form-label">WhatsApp de Cobrança</label>
+                                                    <label class="form-label">Tel. Cobrança</label>
                                                     <input type="text" name="billing_phone" class="form-control whatsapp-mask" value="{{ sub.billing_phone|default:'' }}" placeholder="Ex: (71) 99999-8888">
-                                                </div>
-                                                <div class="col-6 col-md-6">
-                                                    <label class="form-label">E-mail de Cobrança</label>
-                                                    <input type="email" name="billing_email" class="form-control" value="{{ sub.billing_email|default:'' }}">
                                                 </div>
                                             </div>
 
@@ -518,23 +518,23 @@
                             <input type="text" name="financial_responsible_name" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-6 col-md-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Método de Pagamento</label>
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">E-mail de Cobrança</label>
+                            <input type="email" name="billing_email" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6 col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Método Pgt.</label>
                             <select name="payment_method_preference" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                                 {% for val, display in form_create.fields.payment_method_preference.choices %}
                                     <option value="{{ val }}">{{ display }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
                         <div class="col-6 col-md-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">WhatsApp de Cobrança</label>
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Tel. Cobrança</label>
                             <input type="text" name="billing_phone" class="form-control whatsapp-mask" placeholder="Ex: (71) 99999-8888" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
-                        </div>
-                        <div class="col-6 col-md-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">E-mail de Cobrança</label>
-                            <input type="email" name="billing_email" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                     </div>
 
