@@ -52,6 +52,7 @@
         justify-content: center;
         text-align: center;
         white-space: nowrap;
+        color: #212529 !important;
     }
 
     @media (max-width: 767.98px) {
@@ -73,6 +74,14 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h4 class="page-title"><i class="fa-solid fa-database text-primary me-2"></i>Banco de Dados (Geral)</h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+            <a href="{% url 'admin_painel:database_create' %}" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;">
+                <i class="fa-solid fa-plus me-1"></i> Novo Contato
+            </a>
         </div>
     </div>
 
@@ -155,12 +164,12 @@
                             </td>
                             <td class="text-center">
                                 {% if contato.is_hidden %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 status-pill">
-                                    <i class="fa-solid fa-eye-slash me-1"></i> Oculto
+                                <span class="badge bg-danger bg-opacity-10 text-dark border border-danger border-opacity-25 status-pill">
+                                    <i class="fa-solid fa-eye-slash text-danger me-1"></i> Oculto
                                 </span>
                                 {% else %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 status-pill">
-                                    <i class="fa-solid fa-circle-check me-1"></i> Visível
+                                <span class="badge bg-success bg-opacity-10 text-dark border border-success border-opacity-25 status-pill">
+                                    <i class="fa-solid fa-circle-check text-success me-1"></i> Visível
                                 </span>
                                 {% endif %}
                             </td>
