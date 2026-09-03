@@ -217,6 +217,24 @@
                 min-width: 600px;
             }
         }
+
+        /* TRAVAS GLOBAIS DEFINITIVAS DO PAINEL ADMINISTRATIVO GERAL */
+        /* 1. Trava das Pills/Badges: Garante texto escuro legível em todas as badges do admin */
+        .bp-admin-table-scroll .badge,
+        .table .status-pill,
+        .table .role-pill,
+        .table .plan-pill,
+        .table .cycle-pill {
+            color: #212529 !important;
+            font-weight: 600 !important;
+        }
+
+        /* 2. Trava dos Dropdowns: Garante camada flutuante sem confinamento ou corte */
+        .bp-admin-table-scroll .dropdown-menu,
+        .table .dropdown-menu {
+            z-index: 1060 !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+        }
 </style>
     {% block extra_head %}{% endblock %}
 </head>
