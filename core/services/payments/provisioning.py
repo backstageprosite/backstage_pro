@@ -63,6 +63,20 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             return True, "JA_PROVISIONADO", order.band
 
         # 2. Criar a Band
+        # Extrair data de efetivação financeira (paymentDate / clientPaymentDate / confirmedDate) com fallback para hoje
+        raw_paid = (
+            payment_data.get('paymentDate')
+            or payment_data.get('clientPaymentDate')
+            or payment_data.get('confirmedDate')
+            or timezone.localdate()
+        )
+        if isinstance(raw_paid, str):
+            import datetime
+            raw_paid = datetime.date.fromisoformat(raw_paid)
+
+        financial_start_date = raw_paid
+        next_due = calculate_next_billing_date(financial_start_date, order.billing_cycle, 1)
+
         band_slug = generate_unique_band_slug(order.band_name)
         band = Band.objects.create(
             name=order.band_name,
@@ -71,13 +85,12 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             is_active=True,
             subscription_plan=order.billing_cycle,
             subscription_status='CONFIRMADO',
-            subscription_due_date=calculate_next_billing_date(timezone.localdate(), order.billing_cycle, 1)
+            subscription_due_date=next_due
         )
 
         # 3. Criar BandSubscription oficial
-        cycle_name = 'Anual' if order.billing_cycle == 'ANUAL' else 'Mensal'
-        plan_display = f"{'Avançado' if order.plan_type == 'AVANCADO' else 'Básico'} {cycle_name}"
-        next_due = calculate_next_billing_date(timezone.localdate(), order.billing_cycle, 1)
+        # O nome do plano deve ser estritamente 'Básico' ou 'Avançado' (o ciclo e exibido separadamente)
+        plan_display = 'Avançado' if order.plan_type == 'AVANCADO' else 'Básico'
         is_annual = (order.billing_cycle == 'ANUAL')
 
         # Para ANUAL (INSTALLMENT): nao ha recorrencia automatica no gateway (auto_renew=False)
@@ -89,7 +102,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             plan_name=plan_display,
             billing_cycle=order.billing_cycle,
             contracted_value=order.amount,
-            start_date=timezone.localdate(),
+            start_date=financial_start_date,
             next_due_date=next_due,
             auto_renew=auto_renew_val,
             status='ATIVO',
@@ -112,10 +125,10 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
         }
         if is_annual:
-            ref_period = f"Vigência {today.strftime('%d/%m/%Y')} a {next_due.strftime('%d/%m/%Y')}"
+            ref_period = f"Vigência {financial_start_date.strftime('%d/%m/%Y')} a {next_due.strftime('%d/%m/%Y')}"
             record_notes = "Compra Anual parcelável aprovada via Checkout Asaas (vigência de 12 meses)"
         else:
-            ref_period = f"{month_names[today.month]}/{today.year}"
+            ref_period = f"{month_names[financial_start_date.month]}/{financial_start_date.year}"
             record_notes = "Primeiro pagamento aprovado via Checkout Asaas"
 
         BillingRecord.objects.create(
@@ -125,8 +138,8 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             plan_name=plan_display,
             billing_cycle=order.billing_cycle,
             amount=order.amount,
-            due_date=today,
-            paid_date=today,
+            due_date=financial_start_date,
+            paid_date=financial_start_date,
             status='PAGO',
             payment_method='CARTAO',
             notes=record_notes,

@@ -3403,3 +3403,190 @@ class AsaasFoundationTests(TestCase):
             self.assertFalse(band.has_active_subscription)
             sub.refresh_from_db()
             self.assertEqual(sub.status, 'DESATIVADO')
+
+    def test_etapa_2b_annual_installment_lifecycle_and_ui_display(self):
+        """
+        ASAAS-10 ETAPA 2B:
+        Testes A a I:
+        A. Card PLANO ATUAL exibe estritamente 'Básico' ou 'Avançado' (sem 'Anual').
+        B. Card CICLO exibe 'Anual'.
+        C. start_date derivado da data de aprovação financeira (paymentDate).
+        D. next_due_date = start_date + 1 ano.
+        E. Segundo CHECKOUT_PAID não duplica vigência (idempotência).
+        F. PAYMENT_CONFIRMED para parcelas 2..5 não estende next_due_date nem altera auto_renew.
+        G. PAYMENT_RECEIVED para parcelas 2..5 não estende next_due_date nem altera auto_renew.
+        H. Plano anual não cria Subscription no Asaas (gateway_subscription_id is None).
+        I. Plano mensal preserva ciclo e renovação automática (auto_renew=True).
+        """
+        from core.services.payments.provisioning import process_checkout_paid_event
+        from core.services.payments.asaas.webhooks import reconcile_and_update_billing_record
+
+        # 1. Cria SignupOrder para compra anual
+        order = SignupOrder.objects.create(
+            band_name='Banda Etapa 2B Anual',
+            responsible_name='Resp 2B',
+            email='resp2b@example.com',
+            plan_type='BASICO',
+            billing_cycle='ANUAL',
+            amount=Decimal('199.90'),
+            status='PENDENTE',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_2b_anual',
+            gateway_checkout_id='chk_2b_anual_001',
+            external_reference='bp-2b-anual-001'
+        )
+
+        approval_date_str = '2026-09-04'
+        approval_date = date(2026, 9, 4)
+        expected_next_due = calculate_next_billing_date(approval_date, 'ANUAL', 1)
+
+        payload_chk_paid = {
+            'id': 'evt_2b_paid_001',
+            'event': 'CHECKOUT_PAID',
+            'checkout': {
+                'id': 'chk_2b_anual_001',
+                'customer': 'cus_2b_anual',
+                'externalReference': 'bp-2b-anual-001',
+                'status': 'PAID',
+                'subscription': None
+            },
+            'payment': {
+                'id': 'pay_2b_installment_1',
+                'status': 'CONFIRMED',
+                'value': 39.98,
+                'paymentDate': approval_date_str
+            }
+        }
+
+        # Provisiona compra anual
+        ok, msg, band = process_checkout_paid_event(payload_chk_paid)
+        self.assertTrue(ok)
+        self.assertEqual(msg, 'PROVISIONADO')
+
+        sub = band.subscriptions.first()
+        self.assertIsNotNone(sub)
+
+        # Teste H: gateway_subscription_id deve ser None
+        self.assertIsNone(sub.gateway_subscription_id)
+        self.assertFalse(sub.auto_renew)
+
+        # Teste C: start_date derivado da data financeira
+        self.assertEqual(sub.start_date, approval_date)
+
+        # Teste D: next_due_date = start_date + 1 ano
+        self.assertEqual(sub.next_due_date, expected_next_due)
+
+        # Testes A e B: Validar exibição da UI em minha_assinatura
+        user = User.objects.create_user(
+            username='user_2b_test',
+            password='secretpassword',
+            band=band,
+            role='PRODUTOR'
+        )
+        c = Client()
+        c.force_login(user)
+        resp = c.get(f'/{band.slug}/relatorios/assinatura/')
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode('utf-8')
+
+        # Teste A: Card PLANO ATUAL exibe estritamente 'Básico' e não 'Básico Anual'
+        self.assertIn('<p class="kpi-label">Plano Atual</p>', html)
+        self.assertIn('<h3 class="kpi-value text-dark">Básico</h3>', html)
+        self.assertNotIn('<h3 class="kpi-value text-dark">Básico Anual</h3>', html)
+        self.assertNotIn('<h3 class="kpi-value text-dark">Básico (Anual)</h3>', html)
+
+        # Teste B: Card CICLO exibe 'Anual'
+        self.assertIn('<p class="kpi-label">Ciclo</p>', html)
+        self.assertIn('<h3 class="kpi-value text-dark">Anual</h3>', html)
+
+        # Teste E: Segundo CHECKOUT_PAID (idempotência) não estende vigência
+        ok_dup, msg_dup, _ = process_checkout_paid_event(payload_chk_paid)
+        self.assertTrue(ok_dup)
+        self.assertEqual(msg_dup, 'JA_PROVISIONADO')
+        sub.refresh_from_db()
+        self.assertEqual(sub.next_due_date, expected_next_due)
+
+        # Teste F: PAYMENT_CONFIRMED para parcela 2 (com vencimento futuro da parcela)
+        payload_installment_2 = {
+            'id': 'evt_pay_conf_p2',
+            'event': 'PAYMENT_CONFIRMED',
+            'payment': {
+                'id': 'pay_2b_installment_2',
+                'customer': 'cus_2b_anual',
+                'externalReference': 'bp-2b-anual-001',
+                'status': 'CONFIRMED',
+                'value': 39.98,
+                'dueDate': '2026-10-04',
+                'paymentDate': '2026-10-04'
+            }
+        }
+        ok_p2, msg_p2 = reconcile_and_update_billing_record(payload_installment_2, 'PAYMENT_CONFIRMED')
+        self.assertTrue(ok_p2)
+        sub.refresh_from_db()
+        # Não alterou next_due_date nem auto_renew
+        self.assertEqual(sub.next_due_date, expected_next_due)
+        self.assertFalse(sub.auto_renew)
+        self.assertEqual(sub.status, 'ATIVO')
+
+        # Teste G: PAYMENT_RECEIVED para parcela 3
+        payload_installment_3 = {
+            'id': 'evt_pay_rec_p3',
+            'event': 'PAYMENT_RECEIVED',
+            'payment': {
+                'id': 'pay_2b_installment_3',
+                'customer': 'cus_2b_anual',
+                'externalReference': 'bp-2b-anual-001',
+                'status': 'RECEIVED',
+                'value': 39.98,
+                'dueDate': '2026-11-04',
+                'paymentDate': '2026-11-04'
+            }
+        }
+        ok_p3, msg_p3 = reconcile_and_update_billing_record(payload_installment_3, 'PAYMENT_RECEIVED')
+        self.assertTrue(ok_p3)
+        sub.refresh_from_db()
+        # Não alterou next_due_date nem auto_renew
+        self.assertEqual(sub.next_due_date, expected_next_due)
+        self.assertFalse(sub.auto_renew)
+        self.assertEqual(sub.status, 'ATIVO')
+
+        # Teste I: Plano mensal preserva ciclo e auto_renew=True
+        order_monthly = SignupOrder.objects.create(
+            band_name='Banda Mensal 2B',
+            responsible_name='Resp Mensal',
+            email='mensal@example.com',
+            plan_type='AVANCADO',
+            billing_cycle='MENSAL',
+            amount=Decimal('49.90'),
+            status='PENDENTE',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_2b_mensal',
+            gateway_checkout_id='chk_2b_mensal_001',
+            gateway_subscription_id='sub_2b_mensal_001',
+            external_reference='bp-2b-mensal-001'
+        )
+        payload_monthly = {
+            'id': 'evt_monthly_paid_001',
+            'event': 'CHECKOUT_PAID',
+            'checkout': {
+                'id': 'chk_2b_mensal_001',
+                'customer': 'cus_2b_mensal',
+                'externalReference': 'bp-2b-mensal-001',
+                'status': 'PAID',
+                'subscription': 'sub_2b_mensal_001'
+            },
+            'payment': {
+                'id': 'pay_monthly_001',
+                'status': 'CONFIRMED',
+                'value': 49.90,
+                'paymentDate': '2026-09-04'
+            }
+        }
+        ok_m, msg_m, band_m = process_checkout_paid_event(payload_monthly)
+        self.assertTrue(ok_m)
+        sub_m = band_m.subscriptions.first()
+        self.assertEqual(sub_m.plan_name, 'Avançado')
+        self.assertEqual(sub_m.billing_cycle, 'MENSAL')
+        self.assertTrue(sub_m.auto_renew)
+        self.assertEqual(sub_m.gateway_subscription_id, 'sub_2b_mensal_001')
+        self.assertEqual(sub_m.next_due_date, date(2026, 10, 4))

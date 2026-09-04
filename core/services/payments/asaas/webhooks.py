@@ -344,8 +344,14 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                     return False, f'ANCHOR_SYNC_FALHOU_{sync_msg}'
 
             # Sincronizacao remota concluida (ou desnecessaria por tolerancia):
-            # agora aplica o novo ciclo local.
-            sub.apply_payment_success(paid_date=record.paid_date)
+            # Para planos ANUAIS nao recorrentes (compra anual parcelada), parcelas subsequentes
+            # apenas liquidam seu respectivo BillingRecord e nao avancam next_due_date nem alteram auto_renew.
+            # Apenas chama apply_payment_success se nao for ANUAL ativo sem auto_renew, ou se for regularizacao.
+            is_annual_installment = (sub.billing_cycle == 'ANUAL' and not sub.auto_renew)
+            if is_annual_installment and sub.status == 'ATIVO' and not was_suspended:
+                logger.info("Parcela de plano anual recebida para sub %s. Billing liquidado sem estender vigencia.", sub.id)
+            else:
+                sub.apply_payment_success(paid_date=record.paid_date)
 
     elif event_type in ('PAYMENT_OVERDUE',):
         if record.status != 'PAGO':
