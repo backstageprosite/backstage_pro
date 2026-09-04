@@ -4,8 +4,6 @@ from django.views import View
 from django.db import transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
 from core.services.payments.activation import verify_activation_token
 
 logger = logging.getLogger(__name__)
@@ -64,15 +62,10 @@ class ActivateAccountView(View):
         # 2. Validação de Senha
         if not password:
             errors.append("O campo Senha é obrigatório.")
+        elif not confirm_password:
+            errors.append("Confirme sua senha.")
         elif password != confirm_password:
-            errors.append("As senhas digitadas não coincidem. Tente novamente.")
-        else:
-            # Validação padrão de senha do Django (respeitando settings/regras mínimas)
-            try:
-                temp_user = User(username=username, email=activation.email)
-                validate_password(password, user=temp_user)
-            except ValidationError as ve:
-                errors.extend(ve.messages)
+            errors.append("As senhas não coincidem.")
 
         if errors:
             return render(request, self.template_name, {
@@ -108,17 +101,17 @@ class ActivateAccountView(View):
                     'band': band,
                 })
 
-            # Verificar idempotência: se o SignupOrder já possuir usuário inicial vinculado
-            if activation.signup_order and activation.signup_order.band:
-                existing_users = User.objects.filter(band=band, role='PRODUTOR')
-                if existing_users.exists():
-                    activation.used_at = timezone.now()
-                    activation.save(update_fields=['used_at'])
-                    return render(request, self.template_name, {
-                        'success': True,
-                        'band': band,
-                        'login_url': f"/{band.slug}/login/",
-                    })
+            # Verificar idempotência: se o usuário para este email/banda já foi criado
+            existing_user = User.objects.filter(band=band, email__iexact=activation.email, role='PRODUTOR').first()
+            if existing_user:
+                activation.used_at = timezone.now()
+                activation.save(update_fields=['used_at'])
+                return render(request, self.template_name, {
+                    'success': True,
+                    'band': band,
+                    'username': existing_user.username,
+                    'login_url': f"/{band.slug}/login/",
+                })
 
             # Criar User como PRODUTOR vinculado à Band
             user = User.objects.create_user(

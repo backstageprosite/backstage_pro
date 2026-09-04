@@ -1252,25 +1252,25 @@ class AsaasFoundationTests(TestCase):
         # 5b. Senhas diferentes
         resp_post_diff = client.post(f'/ativar-conta/{raw2}/', {
             'username': 'produtor_novo',
-            'password': 'Password123!',
-            'confirm_password': 'Password999!'
+            'password': '123',
+            'confirm_password': '456'
         })
-        self.assertContains(resp_post_diff, 'As senhas digitadas não coincidem.')
+        self.assertContains(resp_post_diff, 'As senhas não coincidem.')
 
         # 5c. Login duplicado (criar usuário existente)
         User.objects.create_user(username='produtor_existente', email='outro@example.com', password='pwd')
         resp_post_dup = client.post(f'/ativar-conta/{raw2}/', {
             'username': 'produtor_existente',
-            'password': 'Password123!',
-            'confirm_password': 'Password123!'
+            'password': '123',
+            'confirm_password': '123'
         })
         self.assertContains(resp_post_dup, 'Este login já está em uso. Escolha outro.')
 
-        # 6. POST com sucesso
+        # 6. POST com sucesso (aceita senha simples/numérica como '1234')
         resp_post_success = client.post(f'/ativar-conta/{raw2}/', {
             'username': 'produtor_real',
-            'password': 'MinhaSenhaSegura123!',
-            'confirm_password': 'MinhaSenhaSegura123!'
+            'password': '1234',
+            'confirm_password': '1234'
         })
         self.assertEqual(resp_post_success.status_code, 200)
         self.assertContains(resp_post_success, 'Conta criada com sucesso')
@@ -1282,7 +1282,7 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(created_user.email, 'produtor-ativacao@example.com')
         self.assertEqual(created_user.band, band)
         self.assertEqual(created_user.role, 'PRODUTOR')
-        self.assertTrue(created_user.check_password('MinhaSenhaSegura123!'))
+        self.assertTrue(created_user.check_password('1234'))
 
         # 8. Validar token liquidado (used_at)
         act2.refresh_from_db()
@@ -1291,8 +1291,8 @@ class AsaasFoundationTests(TestCase):
         # 9. Retentativa com mesmo token -> Bloqueada (já utilizado)
         resp_post_reuse = client.post(f'/ativar-conta/{raw2}/', {
             'username': 'produtor_outro',
-            'password': 'Password123!',
-            'confirm_password': 'Password123!'
+            'password': '1234',
+            'confirm_password': '1234'
         })
         self.assertContains(resp_post_reuse, 'Link Já Utilizado')
         # Nenhum segundo usuário criado
@@ -1342,3 +1342,28 @@ class AsaasFoundationTests(TestCase):
         self.assertIn('LINK DE ATIVACAO GERADO COM SUCESSO', out_val)
         self.assertIn('https://backstage-pro-web-homologacao.up.railway.app/ativar-conta/', out_val)
         self.assertIn('Banda Sem Produtor', out_val)
+
+    def test_band_logo_fallback_rendering(self):
+        """ASAAS-07 Passo 2: Fallback de logo para backstage-pro-logo.png quando a banda nao possui logo."""
+        from django.test import Client
+        client = Client()
+
+        # 1. Banda sem logo
+        band_no_logo = Band.objects.create(name='Banda Sem Imagem', slug='semimagem')
+        act, raw = create_band_activation_token(
+            band=band_no_logo,
+            email='contato@semimagem.com',
+            responsible_name='Artista'
+        )
+
+        # Na tela de ativacao: deve renderizar backstage-pro-logo.png e o nome da banda
+        resp_act = client.get(f'/ativar-conta/{raw}/')
+        self.assertEqual(resp_act.status_code, 200)
+        self.assertContains(resp_act, 'backstage-pro-logo.png')
+        self.assertContains(resp_act, 'Banda Sem Imagem')
+
+        # Na tela de login: deve renderizar backstage-pro-logo.png e o nome da banda
+        resp_login = client.get(f'/{band_no_logo.slug}/login/')
+        self.assertEqual(resp_login.status_code, 200)
+        self.assertContains(resp_login, 'backstage-pro-logo.png')
+        self.assertContains(resp_login, 'Banda Sem Imagem')
