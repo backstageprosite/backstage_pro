@@ -585,6 +585,16 @@ class BandSubscription(models.Model):
     billing_email = models.EmailField(blank=True, null=True, verbose_name='E-mail de Cobrança')
     internal_notes = models.TextField(blank=True, null=True, verbose_name='Observações Internas')
 
+    # Gateway fields (Asaas / integração)
+    gateway_provider = models.CharField(max_length=30, blank=True, null=True, default=None, verbose_name='Provedor do Gateway')
+    gateway_customer_id = models.CharField(max_length=100, blank=True, null=True, default=None, db_index=True, verbose_name='ID do Cliente no Gateway')
+    gateway_subscription_id = models.CharField(max_length=100, blank=True, null=True, default=None, db_index=True, verbose_name='ID da Assinatura no Gateway')
+    gateway_checkout_id = models.CharField(max_length=100, blank=True, null=True, default=None, db_index=True, verbose_name='ID do Checkout no Gateway')
+    gateway_external_reference = models.CharField(max_length=100, blank=True, null=True, default=None, db_index=True, verbose_name='Referência Externa do Gateway')
+    cancel_at_period_end = models.BooleanField(default=False, verbose_name='Cancelar ao fim do período')
+    canceled_at = models.DateTimeField(null=True, blank=True, verbose_name='Data de Cancelamento')
+    grace_period_started_at = models.DateTimeField(null=True, blank=True, verbose_name='Início da Tolerância')
+
     is_deleted = models.BooleanField(default=False, verbose_name='Excluída')
     deleted_at = models.DateTimeField(null=True, blank=True, verbose_name='Data de Exclusão')
 
@@ -595,6 +605,18 @@ class BandSubscription(models.Model):
         verbose_name = 'Assinatura SaaS'
         verbose_name_plural = 'Assinaturas SaaS'
         ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['gateway_provider', 'gateway_subscription_id'],
+                condition=models.Q(gateway_subscription_id__isnull=False) & ~models.Q(gateway_subscription_id=''),
+                name='unique_subscription_per_gateway_provider'
+            ),
+            models.UniqueConstraint(
+                fields=['gateway_provider', 'gateway_checkout_id'],
+                condition=models.Q(gateway_checkout_id__isnull=False) & ~models.Q(gateway_checkout_id=''),
+                name='unique_checkout_per_gateway_provider'
+            ),
+        ]
 
     def __str__(self):
         return f"Assinatura - {self.band.name}"
@@ -653,6 +675,13 @@ class BillingRecord(models.Model):
     proof_file = models.FileField(validators=[validate_file_size_and_type], upload_to=billing_proof_upload_path, blank=True, null=True, verbose_name='Comprovante')
     notes = models.TextField(blank=True, null=True, verbose_name='Observações')
 
+    # Gateway fields (Asaas / conciliação)
+    gateway_provider = models.CharField(max_length=30, blank=True, null=True, default=None, verbose_name='Provedor do Gateway')
+    gateway_payment_id = models.CharField(max_length=100, blank=True, null=True, default=None, db_index=True, verbose_name='ID do Pagamento no Gateway')
+    gateway_invoice_url = models.URLField(max_length=500, blank=True, null=True, default=None, verbose_name='URL da Fatura no Gateway')
+    gateway_external_reference = models.CharField(max_length=100, blank=True, null=True, default=None, db_index=True, verbose_name='Referência Externa no Gateway')
+    gateway_event_status = models.CharField(max_length=50, blank=True, null=True, default=None, verbose_name='Status do Evento no Gateway')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_billings', verbose_name='Criado por')
@@ -662,6 +691,13 @@ class BillingRecord(models.Model):
         verbose_name_plural = 'Faturas SaaS'
         ordering = ['-due_date', '-created_at']
         unique_together = ('subscription', 'due_date')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['gateway_provider', 'gateway_payment_id'],
+                condition=models.Q(gateway_payment_id__isnull=False) & ~models.Q(gateway_payment_id=''),
+                name='unique_payment_per_gateway_provider'
+            )
+        ]
 
     def __str__(self):
         return f"{self.band.name} - {self.reference_period} ({self.get_status_display()})"
@@ -1798,6 +1834,117 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.description} - R$ {self.amount}"
+
+
+class SignupOrder(models.Model):
+    """
+    Registro prévio de intenção de contratação / pedido antes do checkout e provisionamento da Band.
+    Garante que a Band não seja usada como carrinho/pedido temporário.
+    """
+    STATUS_CHOICES = (
+        ('PENDENTE', 'Pendente'),
+        ('PAGO', 'Pago / Aprovado'),
+        ('CANCELADO', 'Cancelado / Expirado'),
+        ('FALHOU', 'Falhou'),
+    )
+    PLAN_CHOICES = (
+        ('BASICO', 'Básico'),
+        ('AVANCADO', 'Avançado'),
+    )
+    CYCLE_CHOICES = (
+        ('MENSAL', 'Mensal'),
+        ('ANUAL', 'Anual'),
+    )
+
+    external_reference = models.CharField(max_length=64, unique=True, db_index=True, verbose_name='Referência Externa Única')
+    gateway_provider = models.CharField(max_length=30, default='ASAAS', verbose_name='Provedor de Gateway')
+    gateway_checkout_id = models.CharField(max_length=100, blank=True, null=True, db_index=True, verbose_name='ID do Checkout no Gateway')
+    gateway_customer_id = models.CharField(max_length=100, blank=True, null=True, db_index=True, verbose_name='ID do Cliente no Gateway')
+    gateway_subscription_id = models.CharField(max_length=100, blank=True, null=True, db_index=True, verbose_name='ID da Assinatura no Gateway')
+
+    band_name = models.CharField(max_length=150, verbose_name='Nome da Banda / Artista')
+    responsible_name = models.CharField(max_length=200, verbose_name='Nome do Responsável')
+    cpf_cnpj = models.CharField(max_length=30, blank=True, null=True, verbose_name='CPF ou CNPJ')
+    email = models.EmailField(verbose_name='E-mail do Responsável')
+    phone = models.CharField(max_length=30, blank=True, null=True, verbose_name='Telefone / WhatsApp')
+
+    plan_type = models.CharField(max_length=20, choices=PLAN_CHOICES, default='AVANCADO', verbose_name='Plano Escolhido')
+    billing_cycle = models.CharField(max_length=20, choices=CYCLE_CHOICES, default='MENSAL', verbose_name='Ciclo de Cobrança')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor da Contratação')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDENTE', db_index=True, verbose_name='Status do Pedido')
+
+    band = models.OneToOneField(Band, on_delete=models.SET_NULL, null=True, blank=True, related_name='signup_order', verbose_name='Banda Provisionada')
+    provisioned_at = models.DateTimeField(null=True, blank=True, verbose_name='Data do Provisionamento')
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
+
+    class Meta:
+        verbose_name = 'Pedido de Contratação'
+        verbose_name_plural = 'Pedidos de Contratação'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['gateway_provider', 'gateway_checkout_id'],
+                condition=models.Q(gateway_checkout_id__isnull=False) & ~models.Q(gateway_checkout_id=''),
+                name='unique_signup_order_checkout_per_gateway_provider'
+            )
+        ]
+
+    def __str__(self):
+        return f"Pedido {self.external_reference} - {self.band_name} ({self.get_status_display()})"
+
+
+class PaymentWebhookEvent(models.Model):
+    """
+    Tabela de eventos recebidos por webhooks com proteção de idempotência em nível 1.
+    Nunca armazena segredos, tokens ou dados sensíveis de cartão.
+    """
+    provider = models.CharField(max_length=30, default='ASAAS', verbose_name='Provedor')
+    gateway_event_id = models.CharField(max_length=150, unique=True, db_index=True, verbose_name='ID do Evento no Gateway')
+    event_type = models.CharField(max_length=100, db_index=True, verbose_name='Tipo de Evento')
+    payload = models.JSONField(verbose_name='Payload Seguro do Evento')
+    processed = models.BooleanField(default=False, db_index=True, verbose_name='Processado?')
+    processed_at = models.DateTimeField(null=True, blank=True, verbose_name='Data de Processamento')
+    error_message = models.TextField(blank=True, null=True, verbose_name='Mensagem de Erro')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Recebido em')
+
+    class Meta:
+        verbose_name = 'Evento de Webhook'
+        verbose_name_plural = 'Eventos de Webhook'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.provider}] {self.event_type} - {self.gateway_event_id} (Processado: {self.processed})"
+
+
+class BandActivationToken(models.Model):
+    """
+    Token criptográfico de uso único para primeiro acesso e criação de conta do comprador da banda.
+    O token em texto puro NUNCA é salvo no banco, apenas seu SHA-256 hash.
+    """
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='activation_tokens', verbose_name='Banda')
+    signup_order = models.ForeignKey(SignupOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name='activation_tokens', verbose_name='Pedido de Origem')
+    email = models.EmailField(verbose_name='E-mail do Destinatário')
+    responsible_name = models.CharField(max_length=200, blank=True, null=True, verbose_name='Nome do Responsável')
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True, verbose_name='Hash SHA-256 do Token')
+    expires_at = models.DateTimeField(verbose_name='Expira em')
+    used_at = models.DateTimeField(null=True, blank=True, verbose_name='Utilizado em')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+
+    class Meta:
+        verbose_name = 'Token de Ativação'
+        verbose_name_plural = 'Tokens de Ativação'
+        ordering = ['-created_at']
+
+    def is_valid(self):
+        from django.utils import timezone
+        if self.used_at is not None:
+            return False
+        return timezone.now() <= self.expires_at
+
+    def __str__(self):
+        return f"Ativação para {self.band.name} ({self.email}) - Válido: {self.is_valid()}"
 
 # ============================================================
 # AUTOMATIC FILE DELETION ON RECORD DELETE

@@ -322,3 +322,12 @@ WEB_PUSH_ALERT_EMAIL_MIN_SEVERITY = os.getenv('WEB_PUSH_ALERT_EMAIL_MIN_SEVERITY
 WEB_PUSH_ALERT_EMAIL_MAX_ATTEMPTS = env_int('WEB_PUSH_ALERT_EMAIL_MAX_ATTEMPTS', default=3)
 WEB_PUSH_ALERT_EMAIL_RETRY_MINUTES = env_int('WEB_PUSH_ALERT_EMAIL_RETRY_MINUTES', default=15)
 WEB_PUSH_ALERT_CYCLE_LOCK_MINUTES = env_int('WEB_PUSH_ALERT_CYCLE_LOCK_MINUTES', default=10)
+
+# ==============================================================================
+# ASAAS INTEGRATION SETTINGS
+# ==============================================================================
+
+ASAAS_ENVIRONMENT = os.getenv('ASAAS_ENVIRONMENT', 'sandbox').strip().lower()
+ASAAS_BASE_URL = os.getenv('ASAAS_BASE_URL', 'https://api-sandbox.asaas.com/v3' if ASAAS_ENVIRONMENT == 'sandbox' else 'https://api.asaas.com/v3')
+ASAAS_API_KEY = os.getenv('ASAAS_API_KEY', None)
+ASAAS_WEBHOOK_TOKEN = os.getenv('ASAAS_WEBHOOK_TOKEN', None)

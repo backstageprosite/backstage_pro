@@ -470,3 +470,25 @@ class WebPushDeliveryAdmin(admin.ModelAdmin):
         return False
 
 
+from .models import SignupOrder, PaymentWebhookEvent, BandActivationToken
+
+@admin.register(SignupOrder)
+class SignupOrderAdmin(admin.ModelAdmin):
+    list_display = ('external_reference', 'band_name', 'responsible_name', 'email', 'plan_type', 'billing_cycle', 'amount', 'status', 'created_at')
+    list_filter = ('status', 'plan_type', 'billing_cycle', 'created_at')
+    search_fields = ('external_reference', 'band_name', 'responsible_name', 'email', 'gateway_checkout_id')
+    readonly_fields = ('created_at', 'updated_at', 'provisioned_at')
+
+@admin.register(PaymentWebhookEvent)
+class PaymentWebhookEventAdmin(admin.ModelAdmin):
+    list_display = ('gateway_event_id', 'provider', 'event_type', 'processed', 'processed_at', 'created_at')
+    list_filter = ('provider', 'event_type', 'processed', 'created_at')
+    search_fields = ('gateway_event_id', 'event_type')
+    readonly_fields = ('created_at', 'processed_at', 'payload')
+
+@admin.register(BandActivationToken)
+class BandActivationTokenAdmin(admin.ModelAdmin):
+    list_display = ('band', 'email', 'responsible_name', 'expires_at', 'used_at', 'created_at')
+    list_filter = ('used_at', 'created_at')
+    search_fields = ('band__name', 'email', 'responsible_name', 'token_hash')
+    readonly_fields = ('token_hash', 'created_at', 'used_at')
