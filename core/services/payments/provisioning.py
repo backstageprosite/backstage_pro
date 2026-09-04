@@ -131,13 +131,24 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             ref_period = f"{month_names[financial_start_date.month]}/{financial_start_date.year}"
             record_notes = "Primeiro pagamento aprovado via Checkout Asaas"
 
+        # Valor da cobranca inicial: se houver parcelamento (ex: anual em ate 5x),
+        # a cobranca do primeiro pagamento (payment_data['value']) contem o valor da 1a parcela.
+        # Caso nao haja 'value' em payment_data, utiliza order.amount (valor integral).
+        # Isso impede duplicacao de valor contabil/financeiro quando as parcelas subsequentes chegarem.
+        initial_record_amount = order.amount
+        if payment_data and payment_data.get('value') is not None:
+            try:
+                initial_record_amount = Decimal(str(payment_data.get('value')))
+            except Exception:
+                initial_record_amount = order.amount
+
         BillingRecord.objects.create(
             subscription=sub,
             band=band,
             reference_period=ref_period,
             plan_name=plan_display,
             billing_cycle=order.billing_cycle,
-            amount=order.amount,
+            amount=initial_record_amount,
             due_date=financial_start_date,
             paid_date=financial_start_date,
             status='PAGO',

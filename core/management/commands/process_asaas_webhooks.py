@@ -1,5 +1,6 @@
 import logging
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from django.utils import timezone
 from core.models import PaymentWebhookEvent
 from core.services.payments.asaas.webhooks import process_webhook_event
@@ -43,15 +44,25 @@ class Command(BaseCommand):
         success_count = 0
         error_count = 0
 
-        for event in pending_events:
-            self.stdout.write(f'-> Processando evento {event.gateway_event_id} ({event.event_type})...')
-            success, msg = process_webhook_event(event)
-            if success:
-                success_count += 1
-                self.stdout.write(self.style.SUCCESS(f'   [OK] {event.gateway_event_id}: {msg}'))
-            else:
-                error_count += 1
-                self.stdout.write(self.style.ERROR(f'   [ERRO] {event.gateway_event_id}: {msg}'))
+        for event_item in pending_events:
+            with transaction.atomic():
+                locked_event = PaymentWebhookEvent.objects.select_for_update(skip_locked=True).filter(
+                    id=event_item.id,
+                    processed=False
+                ).first()
+
+                if not locked_event:
+                    self.stdout.write(self.style.WARNING(f'-> Evento {event_item.gateway_event_id} ja em processamento ou concluido por outro worker. Ignorando.'))
+                    continue
+
+                self.stdout.write(f'-> Processando evento {locked_event.gateway_event_id} ({locked_event.event_type})...')
+                success, msg = process_webhook_event(locked_event)
+                if success:
+                    success_count += 1
+                    self.stdout.write(self.style.SUCCESS(f'   [OK] {locked_event.gateway_event_id}: {msg}'))
+                else:
+                    error_count += 1
+                    self.stdout.write(self.style.ERROR(f'   [ERRO] {locked_event.gateway_event_id}: {msg}'))
 
         self.stdout.write(
             self.style.SUCCESS(

@@ -3653,3 +3653,192 @@ class AsaasFoundationTests(TestCase):
                 self.assertTrue(len(monthly_payload['items'][0]['name']) <= 30)
                 self.assertEqual(monthly_payload['items'][0]['name'], 'Backstage Pro Básico')
                 self.assertEqual(monthly_payload['items'][0]['value'], 19.90)
+
+    def test_annual_installment_billing_record_financial_reconciliation(self):
+        """
+        Garante que a provisao de uma compra anual parcelada (INSTALLMENT) registra a 1a parcela
+        com o valor unitario da parcela (ex: 39.98) e nao o valor total do contrato (199.90),
+        garantindo que a soma de todos os BillingRecords seja exatamente igual ao total contratado.
+        """
+        from core.services.payments.provisioning import process_checkout_paid_event
+        from core.services.payments.asaas.webhooks import process_webhook_event
+        from decimal import Decimal
+
+        order = SignupOrder.objects.create(
+            band_name="Banda Conciliacao Anual Teste",
+            responsible_name="Produtor Teste",
+            email="produtor_anual@teste.com",
+            phone="11999999999",
+            plan_type="BASICO",
+            billing_cycle="ANUAL",
+            amount=Decimal('199.90'),
+            external_reference="bp-annual-reconcile-test-01",
+            gateway_checkout_id="chk_reconcile_annual_001",
+            status="PENDENTE"
+        )
+
+        payload_chk_paid = {
+            "id": "evt_annual_reconcile_chk",
+            "event": "CHECKOUT_PAID",
+            "checkout": {
+                "id": "chk_reconcile_annual_001",
+                "customer": "cus_reconcile_001",
+                "externalReference": "bp-annual-reconcile-test-01",
+                "status": "PAID"
+            },
+            "payment": {
+                "id": "pay_reconcile_p1",
+                "value": 39.98,
+                "dueDate": "2026-09-04",
+                "status": "CONFIRMED"
+            }
+        }
+
+        ok, msg, band = process_checkout_paid_event(payload_chk_paid)
+        self.assertTrue(ok)
+        self.assertIsNotNone(band)
+
+        # 1. Primeiro BillingRecord deve ter R$ 39.98 e nao 199.90
+        b_records = BillingRecord.objects.filter(band=band).order_by('id')
+        self.assertEqual(b_records.count(), 1)
+        r1 = b_records.first()
+        self.assertEqual(r1.amount, Decimal('39.98'))
+        self.assertEqual(r1.gateway_payment_id, 'pay_reconcile_p1')
+
+        # 2. Simular webhooks das outras 4 parcelas
+        for i in range(2, 6):
+            p_id = f"pay_reconcile_p{i}"
+            ev = PaymentWebhookEvent.objects.create(
+                provider='ASAAS',
+                gateway_event_id=f"evt_pay_{p_id}",
+                event_type='PAYMENT_CONFIRMED',
+                payload={
+                    "id": f"evt_pay_{p_id}",
+                    "event": "PAYMENT_CONFIRMED",
+                    "payment": {
+                        "id": p_id,
+                        "value": 39.98,
+                        "dueDate": f"2026-{9+i-1:02d}-04" if (9+i-1) <= 12 else f"2027-{9+i-1-12:02d}-04",
+                        "status": "CONFIRMED",
+                        "externalReference": "bp-annual-reconcile-test-01"
+                    }
+                }
+            )
+            success_ev, _ = process_webhook_event(ev)
+            self.assertTrue(success_ev)
+
+        # 3. Validar total de 5 faturas somando exatamente R$ 199.90
+        all_records = BillingRecord.objects.filter(band=band)
+        self.assertEqual(all_records.count(), 5)
+        total_sum = sum(r.amount for r in all_records)
+        self.assertEqual(total_sum, Decimal('199.90'))
+
+    def test_run_asaas_webhook_worker_concurrency_and_skip_locked(self):
+        """
+        Testa a logica de _process_batch com SKIP LOCKED para garantir que
+        dois workers concorrentes nao processem o mesmo evento nem gerem conflito.
+        """
+        from core.management.commands.run_asaas_webhook_worker import Command as WorkerCommand
+        from django.db import transaction
+
+        ev1 = PaymentWebhookEvent.objects.create(
+            provider='ASAAS',
+            gateway_event_id='evt_concurrent_1',
+            event_type='TRANSFER_CONFIRMED',
+            payload={'id': 'evt_concurrent_1', 'event': 'TRANSFER_CONFIRMED'},
+            processed=False
+        )
+        ev2 = PaymentWebhookEvent.objects.create(
+            provider='ASAAS',
+            gateway_event_id='evt_concurrent_2',
+            event_type='TRANSFER_CONFIRMED',
+            payload={'id': 'evt_concurrent_2', 'event': 'TRANSFER_CONFIRMED'},
+            processed=False
+        )
+
+        cmd1 = WorkerCommand()
+        cmd2 = WorkerCommand()
+
+        # Simular worker 2 executando enquanto ev1 esta bloqueado ou sendo ignorado
+        # Em PostgreSQL real, select_for_update(skip_locked=True) pula o registro travado.
+        # Aqui, validamos que se o registro 1 nao for obtido pelo lock (locked_event is None),
+        # o worker continua e processa ev2 perfeitamente.
+        from unittest.mock import patch
+
+        original_filter = PaymentWebhookEvent.objects.filter
+
+        # Patch em select_for_update para simular ev1 travado (retornando None para ev1)
+        with patch.object(PaymentWebhookEvent.objects, 'select_for_update') as mock_sfu:
+            def mock_select(skip_locked=False):
+                class MockQS:
+                    def filter(self, **kwargs):
+                        if kwargs.get('id') == ev1.id:
+                            class EmptyQS:
+                                def first(self):
+                                    return None
+                            return EmptyQS()
+                        return PaymentWebhookEvent.objects.filter(**kwargs)
+                return MockQS()
+
+            mock_sfu.side_effect = mock_select
+
+            # Worker 2 processa lote: pula ev1 (pois esta bloqueado por outro processo) e processa ev2
+            processed2 = cmd2._process_batch(batch_size=10, backoff_seconds=30)
+            self.assertTrue(processed2)
+
+            ev1.refresh_from_db()
+            ev2.refresh_from_db()
+            self.assertFalse(ev1.processed)
+            self.assertTrue(ev2.processed)
+
+        # Worker 1 agora processa ev1 desimpedido
+        processed1 = cmd1._process_batch(batch_size=10, backoff_seconds=30)
+        self.assertTrue(processed1)
+        ev1.refresh_from_db()
+        self.assertTrue(ev1.processed)
+
+    def test_run_asaas_webhook_worker_error_backoff_resilience(self):
+        """
+        Testa a resiliencia do worker: um evento com erro de processamento entra em backoff
+        e nao bloqueia o processamento de outros eventos subsequentes validos.
+        """
+        from core.management.commands.run_asaas_webhook_worker import Command as WorkerCommand
+        import time
+
+        # Evento A: invalido / orfao (vai falhar no processamento de checkout_paid sem order)
+        ev_fail = PaymentWebhookEvent.objects.create(
+            provider='ASAAS',
+            gateway_event_id='evt_fail_orphan',
+            event_type='CHECKOUT_PAID',
+            payload={
+                'id': 'evt_fail_orphan',
+                'event': 'CHECKOUT_PAID',
+                'checkout': {'id': 'chk_nonexistent_888', 'externalReference': 'bp-none-999'}
+            },
+            processed=False
+        )
+
+        # Evento B: evento normal ignorado que tera sucesso
+        ev_succ = PaymentWebhookEvent.objects.create(
+            provider='ASAAS',
+            gateway_event_id='evt_succ_ignore',
+            event_type='TRANSFER_CONFIRMED',
+            payload={'id': 'evt_succ_ignore', 'event': 'TRANSFER_CONFIRMED'},
+            processed=False
+        )
+
+        cmd = WorkerCommand()
+
+        # Executa lote de 1 evento por vez
+        cmd._process_batch(batch_size=1, backoff_seconds=10)
+
+        ev_fail.refresh_from_db()
+        self.assertFalse(ev_fail.processed)
+        self.assertIsNotNone(ev_fail.error_message)
+        # Deve estar registrado no mapa de backoff
+        self.assertIn('evt_fail_orphan', cmd.error_backoff)
+
+        # No proximo ciclo, ev_fail e ignorado pelo backoff e ev_succ e processado
+        cmd._process_batch(batch_size=1, backoff_seconds=10)
+        ev_succ.refresh_from_db()
+        self.assertTrue(ev_succ.processed)
