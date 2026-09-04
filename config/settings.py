@@ -336,5 +336,22 @@ PAYMENT_TOKEN_ENCRYPTION_KEY = os.getenv('PAYMENT_TOKEN_ENCRYPTION_KEY', None)
 # ==============================================================================
 # EMAIL SETTINGS
 # ==============================================================================
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend' if not IS_PRODUCTION else 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend').strip()
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com').strip()
+EMAIL_PORT = env_int('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = env_bool('EMAIL_USE_TLS', default=True)
+EMAIL_USE_SSL = env_bool('EMAIL_USE_SSL', default=False)
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'backstagepro.site@gmail.com').strip()
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', None)
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Backstage Pro <backstagepro.site@gmail.com>').strip()
+SERVER_EMAIL = os.getenv('SERVER_EMAIL', DEFAULT_FROM_EMAIL).strip()
+EMAIL_TIMEOUT = env_int('EMAIL_TIMEOUT', default=10)
+
+# FAIL-CLOSED VALIDATION: Se o backend configurado for explicitamente SMTP,
+# exige que EMAIL_HOST_USER e EMAIL_HOST_PASSWORD estejam definidos.
+if 'smtp.EmailBackend' in EMAIL_BACKEND:
+    if not EMAIL_HOST_USER:
+        raise ImproperlyConfigured("EMAIL_HOST_USER must be configured when using SMTP EmailBackend.")
+    if not EMAIL_HOST_PASSWORD:
+        raise ImproperlyConfigured("EMAIL_HOST_PASSWORD must be configured when using SMTP EmailBackend.")
 

@@ -4941,3 +4941,36 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(AnnualPlanPurchase.objects.filter(band_subscription=sub, purchase_type=AnnualPlanPurchase.PurchaseType.RENEWAL).count(), 1)
         self.assertEqual(BillingRecord.objects.filter(subscription=sub, annual_purchase=pur).count(), 5)
         self.assertEqual(AnnualRenewalNotice.objects.filter(band_subscription=sub, renewal_date=datetime.date(2027, 9, 4)).count(), 1)
+
+    def test_gmail_smtp_send_mail_mock(self):
+        """
+        EMAIL-01: Testa o envio de e-mail via send_mail com backend mockado,
+        garantindo remetente canônico e parâmetros sem expor senhas.
+        """
+        from django.core.mail import send_mail
+        from unittest.mock import patch
+
+        with patch('django.core.mail.backends.smtp.EmailBackend.send_messages') as mock_send:
+            mock_send.return_value = 1
+            with self.settings(
+                EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend',
+                EMAIL_HOST='smtp.gmail.com',
+                EMAIL_PORT=587,
+                EMAIL_USE_TLS=True,
+                EMAIL_HOST_USER='backstagepro.site@gmail.com',
+                EMAIL_HOST_PASSWORD='fake_password_123',
+                DEFAULT_FROM_EMAIL='Backstage Pro <backstagepro.site@gmail.com>'
+            ):
+                sent_count = send_mail(
+                    subject='Backstage Pro — Teste de Email Homologação',
+                    message='Este é um teste de envio de email da homologação do Backstage Pro.',
+                    from_email='Backstage Pro <backstagepro.site@gmail.com>',
+                    recipient_list=['destinatario_autorizado@exemplo.com'],
+                    fail_silently=False
+                )
+                self.assertEqual(sent_count, 1)
+                self.assertTrue(mock_send.called)
+                email_message = mock_send.call_args[0][0][0]
+                self.assertEqual(email_message.subject, 'Backstage Pro — Teste de Email Homologação')
+                self.assertEqual(email_message.from_email, 'Backstage Pro <backstagepro.site@gmail.com>')
+                self.assertEqual(email_message.to, ['destinatario_autorizado@exemplo.com'])

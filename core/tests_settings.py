@@ -44,6 +44,12 @@ class SettingsSecurityTests(unittest.TestCase):
             "print(f'SECURE_HSTS_SECONDS={settings.SECURE_HSTS_SECONDS}'); "
             "print(f'SECURE_HSTS_INCLUDE_SUBDOMAINS={settings.SECURE_HSTS_INCLUDE_SUBDOMAINS}'); "
             "print(f'SECURE_HSTS_PRELOAD={settings.SECURE_HSTS_PRELOAD}'); "
+            "print(f'EMAIL_BACKEND={settings.EMAIL_BACKEND}'); "
+            "print(f'EMAIL_HOST={settings.EMAIL_HOST}'); "
+            "print(f'EMAIL_PORT={settings.EMAIL_PORT}'); "
+            "print(f'EMAIL_USE_TLS={settings.EMAIL_USE_TLS}'); "
+            "print(f'EMAIL_HOST_USER={settings.EMAIL_HOST_USER}'); "
+            "print(f'DEFAULT_FROM_EMAIL={settings.DEFAULT_FROM_EMAIL}'); "
         )
 
         # 6. Definir cwd explicitamente, 8. Timeout
@@ -636,3 +642,39 @@ class SettingsSecurityTests(unittest.TestCase):
         })
         self.assertEqual(res.returncode, 0)
         self.assertIn("DEBUG=False", res.stdout)
+
+    # 53. Gmail SMTP defaults e fail-closed
+    def test_gmail_smtp_production_fail_closed(self):
+        # Falta EMAIL_HOST_PASSWORD em produção com backend SMTP
+        res = self.run_settings_check({
+            "DJANGO_ENV": "production",
+            "SECRET_KEY": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "ALLOWED_HOSTS": "test.com",
+            "CSRF_TRUSTED_ORIGINS": "https://test.com",
+            "DATABASE_URL": "postgres://user:pass@host/db",
+            "EMAIL_BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "EMAIL_HOST_USER": "backstagepro.site@gmail.com",
+        })
+        self.assertNotEqual(res.returncode, 0)
+        self.assertIn("EMAIL_HOST_PASSWORD must be configured", res.stderr)
+
+    def test_gmail_smtp_production_success(self):
+        res = self.run_settings_check({
+            "DJANGO_ENV": "production",
+            "SECRET_KEY": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "ALLOWED_HOSTS": "test.com",
+            "CSRF_TRUSTED_ORIGINS": "https://test.com",
+            "DATABASE_URL": "postgres://user:pass@host/db",
+            "EMAIL_BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+            "EMAIL_HOST_USER": "backstagepro.site@gmail.com",
+            "EMAIL_HOST_PASSWORD": "app_password_mock_123",
+        })
+        self.assertEqual(res.returncode, 0)
+        self.assertIn("EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend", res.stdout)
+        self.assertIn("EMAIL_HOST=smtp.gmail.com", res.stdout)
+        self.assertIn("EMAIL_PORT=587", res.stdout)
+        self.assertIn("EMAIL_USE_TLS=True", res.stdout)
+        self.assertIn("EMAIL_HOST_USER=backstagepro.site@gmail.com", res.stdout)
+        self.assertIn("DEFAULT_FROM_EMAIL=Backstage Pro <backstagepro.site@gmail.com>", res.stdout)
+        self.assertNotIn("app_password_mock_123", res.stdout)
+        self.assertNotIn("app_password_mock_123", res.stderr)
