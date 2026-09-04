@@ -103,18 +103,30 @@ def resolve_reactivation_subscription(
 def synchronize_asaas_subscription_anchor(
     sub: BandSubscription,
     paid_date: Any,
+    triggering_payment_id: Optional[str] = None,
     client: Optional[Any] = None
 ) -> Tuple[bool, str]:
     """
-    Sincroniza a nova data-base (billing anchor) com a API do Asaas após regularização
+    Sincroniza a nova data-base (billing anchor) com a API do Asaas apos regularizacao
     de assinatura que estava suspensa.
 
+    IMPORTANTE: Esta funcao deve ser chamada ANTES de apply_payment_success().
+    Se qualquer PUT remoto falhar, retorna (False, msg) sem alterar o estado local,
+    permitindo reprocessamento idempotente do webhook.
+
+    Idempotencia:
+    - Os targets sao sempre calculados a partir de paid_date + offset cronologico.
+    - Se uma cobranca ja estiver na data correta, o PUT e omitido (sem deslocamento duplo).
+    - O payment que disparou a regularizacao (triggering_payment_id) e excluido
+      do realinhamento de futuros.
+
     Passos:
-    1. Calcula a nova sequência de vencimentos a partir de paid_date (+1 mês ou +1 ano).
-    2. Lista cobranças futuras abertas (PENDING/OVERDUE) da assinatura no Asaas (excluindo a paga e canceladas).
-    3. Realinha as datas de vencimento das cobranças futuras já geradas via PUT /v3/payments/{id}.
-    4. Atualiza o nextDueDate da assinatura no Asaas via PUT /v3/subscriptions/{id} para a próxima competência
-       que ainda NÃO possui cobrança gerada.
+    1. Lista cobranças abertas (PENDING/OVERDUE) da assinatura no Asaas.
+    2. Exclui: deletadas, quitadas, estornadas, canceladas, e a cobrança triggerante.
+    3. Ordena cronologicamente por dueDate.
+    4. Sequencia novas datas a partir de paid_date + offset (sempre deterministico).
+    5. Atualiza dueDates discordantes via PUT /v3/payments/{id}.
+    6. Atualiza subscription.nextDueDate via PUT /v3/subscriptions/{id}.
     """
     if not sub or sub.gateway_provider != 'ASAAS' or not sub.gateway_subscription_id:
         return True, 'GATEWAY_NAO_ASAAS'
@@ -134,40 +146,54 @@ def synchronize_asaas_subscription_anchor(
     cycle = sub.billing_cycle or 'MENSAL'
     remote_payments = client.get_payments_by_subscription(sub.gateway_subscription_id)
 
-    # Filtrar pagamentos futuros em aberto que não foram pagos nem deletados
+    # Filtrar cobranças futuras abertas:
+    # - nao deletadas
+    # - status PENDING ou OVERDUE
+    # - nao e a cobranca que disparou a regularizacao
     open_future_payments = []
     for p in remote_payments:
         p_status = p.get('status')
         p_deleted = p.get('deleted', False)
-        # Ignora pagamentos quitados, estornados ou deletados
-        if not p_deleted and p_status in ('PENDING', 'OVERDUE'):
-            # Ignora a cobrança que acabou de ser paga (se ainda constar em cache como OVERDUE/PENDING)
-            raw_due = p.get('dueDate') or p.get('originalDueDate')
-            open_future_payments.append(p)
+        p_id = p.get('id')
+        if p_deleted:
+            continue
+        if p_status not in ('PENDING', 'OVERDUE'):
+            continue
+        if triggering_payment_id and p_id == triggering_payment_id:
+            # Cobranca que acabou de ser confirmada - nao realinhar
+            continue
+        open_future_payments.append(p)
 
-    # Ordena cronologicamente por dueDate original
+    # Ordena cronologicamente por dueDate (deterministico)
     open_future_payments.sort(key=lambda x: x.get('dueDate') or '')
 
-    # Sequenciar novas datas para pagamentos abertos existentes
+    # Sequenciar novas datas a partir de paid_date (targets sempre deterministicos)
     current_offset = 1
     for p in open_future_payments:
         p_id = p.get('id')
+        # Target sempre calculado de paid_date + offset - nunca do dueDate atual
         new_target_due = calculate_next_billing_date(paid_date, cycle, periods_offset=current_offset)
         new_due_str = new_target_due.isoformat()
         if p.get('dueDate') != new_due_str:
             ok_p, resp_p = client.update_payment(p_id, {'dueDate': new_due_str})
             if not ok_p:
-                logger.warning("Falha ao atualizar dueDate da cobranca %s no Asaas para %s: %s", p_id, new_due_str, resp_p)
+                logger.error(
+                    "Falha ao atualizar dueDate da cobranca %s no Asaas para %s: %s",
+                    p_id, new_due_str, resp_p
+                )
                 return False, f'ERRO_PUT_PAYMENT_{p_id}'
         current_offset += 1
 
-    # Próxima data da assinatura para quando não houver cobrança gerada
+    # Proxima data da assinatura para quando nao houver cobranca gerada
     next_sub_due = calculate_next_billing_date(paid_date, cycle, periods_offset=current_offset)
     next_sub_due_str = next_sub_due.isoformat()
 
     ok_sub, resp_sub = client.update_subscription(sub.gateway_subscription_id, {'nextDueDate': next_sub_due_str})
     if not ok_sub:
-        logger.warning("Falha ao atualizar nextDueDate da assinatura %s no Asaas para %s: %s", sub.gateway_subscription_id, next_sub_due_str, resp_sub)
+        logger.error(
+            "Falha ao atualizar nextDueDate da assinatura %s no Asaas para %s: %s",
+            sub.gateway_subscription_id, next_sub_due_str, resp_sub
+        )
         return False, 'ERRO_PUT_SUBSCRIPTION_NEXT_DUE_DATE'
 
     logger.info(
@@ -290,19 +316,37 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                 import datetime
                 raw_paid = datetime.date.fromisoformat(raw_paid)
             record.paid_date = raw_paid
-        
-        # Atualiza a BandSubscription associada aplicando a regra de regularização vs tolerância
-        # apenas se a cobrança ainda não estava quitada
+
+        # Atualiza a BandSubscription associada aplicando a regra de regularizacao vs tolerancia
+        # apenas se a cobranca ainda nao estava quitada
         if not was_already_paid and record.subscription:
             sub = record.subscription
             was_suspended = sub.is_financially_suspended or (sub.status == 'DESATIVADO')
+
+            # REGRA DE CONSISTENCIA TRANSACIONAL:
+            # Se estava suspensa, a sincronizacao remota do billing anchor no Asaas
+            # DEVE ser concluida com SUCESSO antes de aplicar o ciclo local.
+            # Falha remota => retorna False => webhook permanece nao-processado => reprocessavel.
+            if was_suspended and sub.gateway_provider == 'ASAAS' and sub.gateway_subscription_id:
+                sync_ok, sync_msg = synchronize_asaas_subscription_anchor(
+                    sub,
+                    paid_date=record.paid_date,
+                    triggering_payment_id=payment_id
+                )
+                if not sync_ok:
+                    logger.error(
+                        "Sincronizacao do billing anchor falhou para sub %s: %s. "
+                        "Acesso NAO sera liberado. Webhook permanece reprocessavel.",
+                        sub.gateway_subscription_id, sync_msg
+                    )
+                    # Nao salva o record nem avanca o ciclo local.
+                    # process_webhook_event marcara processed=False para retry.
+                    return False, f'ANCHOR_SYNC_FALHOU_{sync_msg}'
+
+            # Sincronizacao remota concluida (ou desnecessaria por tolerancia):
+            # agora aplica o novo ciclo local.
             sub.apply_payment_success(paid_date=record.paid_date)
 
-            # Se a assinatura estava suspensa, sincroniza o novo billing anchor com o Asaas
-            if was_suspended and sub.gateway_provider == 'ASAAS' and sub.gateway_subscription_id:
-                sync_ok, sync_msg = synchronize_asaas_subscription_anchor(sub, paid_date=record.paid_date)
-                if not sync_ok:
-                    logger.warning("Aviso na sincronizacao do billing anchor no Asaas para sub %s: %s", sub.gateway_subscription_id, sync_msg)
     elif event_type in ('PAYMENT_OVERDUE',):
         if record.status != 'PAGO':
             record.status = 'PENDENTE'

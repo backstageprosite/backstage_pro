@@ -2317,7 +2317,9 @@ class AsaasFoundationTests(TestCase):
         initial_sub_id = sub_exp.id
         initial_user_id = user_exp.id
 
-        ok, msg = handle_asaas_webhook_payload(event_reactivate)
+        with patch('core.services.payments.asaas.webhooks.synchronize_asaas_subscription_anchor') as mock_anc:
+            mock_anc.return_value = (True, 'ASAAS_ANCHOR_SINCRONIZADO')
+            ok, msg = handle_asaas_webhook_payload(event_reactivate)
         self.assertTrue(ok)
 
         # Teste S, T, U, V: Acesso restaurado, flags resetadas, status ATIVO
@@ -2650,7 +2652,9 @@ class AsaasFoundationTests(TestCase):
                 "status": "CONFIRMED"
             }
         }
-        ok_pconf, _ = handle_asaas_webhook_payload(evt_pay_confirmed)
+        with patch('core.services.payments.asaas.webhooks.synchronize_asaas_subscription_anchor') as mock_anc:
+            mock_anc.return_value = (True, 'ASAAS_ANCHOR_SINCRONIZADO')
+            ok_pconf, _ = handle_asaas_webhook_payload(evt_pay_confirmed)
         self.assertTrue(ok_pconf)
         sub_audit.refresh_from_db()
         self.assertIsNone(sub_audit.canceled_at)
@@ -2868,11 +2872,11 @@ class AsaasFoundationTests(TestCase):
         mock_client.update_subscription.assert_called_once_with('sub_sync_123', {'nextDueDate': '2026-11-15'})
 
     def test_webhook_payment_confirmed_suspension_regularization_and_idempotency(self):
-        """ASAAS-09: Regularização via Webhook de assinatura suspensa reancora local e Asaas com idempotência."""
+        """ASAAS-09 3C.1: Regularizacao pos-suspensao sincroniza Asaas ANTES de liberar acesso. Idempotencia."""
         band = Band.objects.create(name='Banda Regularize Test', slug='bandaregtest')
         sub = BandSubscription.objects.create(
-            band=band, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
-            start_date=date(2026, 8, 4), next_due_date=date(2026, 8, 30), # D+5 em 04/09 -> suspenso
+            band=band, plan_name='Basico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 8, 4), next_due_date=date(2026, 8, 30),  # D+5 em 04/09 -> suspenso
             status='ATIVO', auto_renew=True, cancel_at_period_end=False,
             gateway_provider='ASAAS', gateway_subscription_id='sub_reg_123',
             gateway_customer_id='cus_reg_456'
@@ -2906,17 +2910,21 @@ class AsaasFoundationTests(TestCase):
             sub.refresh_from_db()
             rec.refresh_from_db()
 
-            # 1. Localmente reancorado
+            # 1. Localmente reancorado apenas apos sync remoto bem-sucedido
             self.assertEqual(rec.status, 'PAGO')
             self.assertEqual(sub.start_date, date(2026, 9, 4))
             self.assertEqual(sub.next_due_date, date(2026, 10, 4))
             self.assertFalse(sub.is_financially_suspended)
             self.assertTrue(band.has_active_subscription)
 
-            # 2. Sync Asaas foi disparado
-            mock_sync.assert_called_once_with(sub, paid_date=date(2026, 9, 4))
+            # 2. Sync Asaas foi disparado com triggering_payment_id correto
+            mock_sync.assert_called_once_with(
+                sub,
+                paid_date=date(2026, 9, 4),
+                triggering_payment_id='pay_reg_789'
+            )
 
-        # 3. Webhook duplicado (PAYMENT_RECEIVED) -> Idempotência estrita, NÃO re-sincroniza
+        # 3. Webhook duplicado (PAYMENT_RECEIVED) -> Idempotencia: ja processado, nao re-sincroniza
         webhook_payload_received = {
             "id": "evt_reg_002",
             "event": "PAYMENT_RECEIVED",
@@ -2937,11 +2945,11 @@ class AsaasFoundationTests(TestCase):
             mock_sync_dup.assert_not_called()
 
     def test_webhook_payment_confirmed_tolerance_does_not_reanchor(self):
-        """ASAAS-09: Pagamento dentro da tolerância (D+1 a D+4) mantém a data-base original e não sincroniza Asaas."""
+        """ASAAS-09 3C.1: Pagamento D+1 a D+4 nao reancora e nao chama sync remoto."""
         band = Band.objects.create(name='Banda Tolerancia Test', slug='bandatoltest')
         sub = BandSubscription.objects.create(
-            band=band, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
-            start_date=date(2026, 8, 3), next_due_date=date(2026, 9, 3), # D+1 em 04/09 -> tolerância
+            band=band, plan_name='Basico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 8, 3), next_due_date=date(2026, 9, 3),  # D+1 em 04/09 -> tolerancia
             status='ATIVO', auto_renew=True, cancel_at_period_end=False,
             gateway_provider='ASAAS', gateway_subscription_id='sub_tol_123',
             gateway_customer_id='cus_tol_456'
@@ -2975,12 +2983,239 @@ class AsaasFoundationTests(TestCase):
             sub.refresh_from_db()
             rec.refresh_from_db()
 
-            # 1. Localmente avança mantendo âncora original (03/10/2026)
+            # 1. Localmente avanca mantendo ancora original (03/10/2026)
             self.assertEqual(rec.status, 'PAGO')
             self.assertEqual(sub.start_date, date(2026, 8, 3))
             self.assertEqual(sub.next_due_date, date(2026, 10, 3))
             self.assertFalse(sub.is_financially_suspended)
             self.assertTrue(band.has_active_subscription)
 
-            # 2. Sync Asaas NÃO deve ser chamado pois não estava suspenso
+            # 2. Sync Asaas NAO deve ser chamado pois nao estava suspenso
             mock_sync.assert_not_called()
+
+    def test_anchor_sync_failure_put_payment_blocks_access(self):
+        """ASAAS-09 3C.1 Item 13: Falha em PUT payment bloqueia liberacao. Sub permanece suspensa."""
+        band = Band.objects.create(name='Banda Fail Pay', slug='bandafailpay')
+        sub = BandSubscription.objects.create(
+            band=band, plan_name='Basico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 8, 4), next_due_date=date(2026, 8, 30),  # D+5 -> suspenso
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False,
+            gateway_provider='ASAAS', gateway_subscription_id='sub_fp_123',
+            gateway_customer_id='cus_fp_456'
+        )
+        rec = BillingRecord.objects.create(
+            band=band, subscription=sub, gateway_payment_id='pay_fp_789',
+            amount=Decimal('19.90'), status='PENDENTE', due_date=date(2026, 8, 30)
+        )
+
+        self.assertTrue(sub.is_financially_suspended)
+
+        webhook_payload = {
+            "id": "evt_fp_001",
+            "event": "PAYMENT_CONFIRMED",
+            "payment": {
+                "id": "pay_fp_789",
+                "customer": "cus_fp_456",
+                "subscription": "sub_fp_123",
+                "status": "CONFIRMED",
+                "value": 19.90,
+                "dueDate": "2026-08-30",
+                "paymentDate": "2026-10-15"
+            }
+        }
+
+        with patch('core.services.payments.asaas.webhooks.synchronize_asaas_subscription_anchor') as mock_sync:
+            # PUT payment falha
+            mock_sync.return_value = (False, 'ERRO_PUT_PAYMENT_pay_future_111')
+            ok, msg = handle_asaas_webhook_payload(webhook_payload)
+
+            # Resultado: webhook nao processado
+            self.assertFalse(ok)
+            self.assertIn('ANCHOR_SYNC_FALHOU', msg)
+
+            # sub continua suspensa (apply_payment_success NAO foi chamado)
+            sub.refresh_from_db()
+            self.assertEqual(sub.next_due_date, date(2026, 8, 30))
+            self.assertTrue(sub.is_financially_suspended)
+            self.assertFalse(band.has_active_subscription)
+
+            # BillingRecord nao salvo como PAGO (nao chamamos record.save no path de falha)
+            # O record pode ter status PAGO em memoria mas nao foi persistido
+            rec.refresh_from_db()
+            self.assertEqual(rec.status, 'PENDENTE')
+
+            # webhook permanece nao-processado (processed=False)
+            from core.models import PaymentWebhookEvent
+            evt = PaymentWebhookEvent.objects.get(gateway_event_id='evt_fp_001')
+            self.assertFalse(evt.processed)
+            self.assertIn('ANCHOR_SYNC_FALHOU', evt.error_message)
+
+    def test_anchor_sync_failure_put_subscription_blocks_access(self):
+        """ASAAS-09 3C.1 Item 14: Falha em PUT subscription bloqueia liberacao. Reprocessamento idempotente."""
+        from core.services.payments.asaas.webhooks import synchronize_asaas_subscription_anchor
+        from unittest.mock import MagicMock
+
+        band = Band.objects.create(name='Banda Fail Sub', slug='bandafailsub')
+        sub = BandSubscription.objects.create(
+            band=band, plan_name='Basico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 8, 4), next_due_date=date(2026, 8, 30),  # D+5 -> suspenso
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False,
+            gateway_provider='ASAAS', gateway_subscription_id='sub_fs_123',
+            gateway_customer_id='cus_fs_456'
+        )
+
+        mock_client = MagicMock()
+        paid_date = date(2026, 10, 15)
+
+        # payment futuro ja existe e ainda esta com dueDate antigo (04/11)
+        mock_client.get_payments_by_subscription.return_value = [
+            {'id': 'pay_fut_111', 'status': 'PENDING', 'dueDate': '2026-11-04', 'deleted': False},
+        ]
+
+        # === TENTATIVA 1: update_payment ok, update_subscription falha ===
+        mock_client.update_payment.return_value = (True, {'id': 'pay_fut_111'})
+        mock_client.update_subscription.return_value = (False, {'error': 'gateway_timeout'})
+
+        ok1, msg1 = synchronize_asaas_subscription_anchor(sub, paid_date=paid_date, client=mock_client)
+        self.assertFalse(ok1)
+        self.assertEqual(msg1, 'ERRO_PUT_SUBSCRIPTION_NEXT_DUE_DATE')
+
+        # payment tentou ser atualizado para 15/11
+        mock_client.update_payment.assert_called_once_with('pay_fut_111', {'dueDate': '2026-11-15'})
+
+        # === TENTATIVA 2 (retry): payment ja em 15/11, nao deve ser deslocado novamente ===
+        mock_client.reset_mock()
+        # Simula que no retry, o payment ja foi atualizado para 15/11 na tentativa anterior
+        mock_client.get_payments_by_subscription.return_value = [
+            {'id': 'pay_fut_111', 'status': 'PENDING', 'dueDate': '2026-11-15', 'deleted': False},
+        ]
+        mock_client.update_subscription.return_value = (True, {'id': 'sub_fs_123'})
+
+        ok2, msg2 = synchronize_asaas_subscription_anchor(sub, paid_date=paid_date, client=mock_client)
+        self.assertTrue(ok2)
+        self.assertEqual(msg2, 'ASAAS_ANCHOR_SINCRONIZADO')
+
+        # payment nao deve ter sido chamado novamente (ja estava correto)
+        mock_client.update_payment.assert_not_called()
+        # subscription deve ser chamado com 15/12 (offset 2)
+        mock_client.update_subscription.assert_called_once_with('sub_fs_123', {'nextDueDate': '2026-12-15'})
+
+    def test_anchor_sync_triggering_payment_excluded_from_realignment(self):
+        """ASAAS-09 3C.1 Item 7+8: triggering_payment_id excluido do realinhamento de futuros."""
+        from core.services.payments.asaas.webhooks import synchronize_asaas_subscription_anchor
+        from unittest.mock import MagicMock
+
+        band = Band.objects.create(name='Banda Exclude Pay', slug='bandaexcludepay')
+        sub = BandSubscription.objects.create(
+            band=band, plan_name='Basico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 8, 30), next_due_date=date(2026, 8, 30),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False,
+            gateway_provider='ASAAS', gateway_subscription_id='sub_ex_123',
+            gateway_customer_id='cus_ex_456'
+        )
+
+        mock_client = MagicMock()
+        paid_date = date(2026, 9, 4)
+
+        # payment overdue (triggering) + payment futuro
+        mock_client.get_payments_by_subscription.return_value = [
+            {'id': 'pay_overdue_trigger', 'status': 'OVERDUE', 'dueDate': '2026-08-30', 'deleted': False},
+            {'id': 'pay_future_nov', 'status': 'PENDING', 'dueDate': '2026-11-04', 'deleted': False},
+        ]
+        mock_client.update_payment.return_value = (True, {})
+        mock_client.update_subscription.return_value = (True, {})
+
+        ok, msg = synchronize_asaas_subscription_anchor(
+            sub,
+            paid_date=paid_date,
+            triggering_payment_id='pay_overdue_trigger',
+            client=mock_client
+        )
+        self.assertTrue(ok)
+
+        # pay_overdue_trigger NAO deve ter sido atualizado
+        calls = [str(c) for c in mock_client.update_payment.call_args_list]
+        self.assertFalse(any('pay_overdue_trigger' in c for c in calls))
+
+        # pay_future_nov deve ir para 04/10/2026 (paid_date + 1 mes = offset 1)
+        mock_client.update_payment.assert_called_once_with('pay_future_nov', {'dueDate': '2026-10-04'})
+        # subscription.nextDueDate vai para 04/11/2026 (offset 2)
+        mock_client.update_subscription.assert_called_once_with('sub_ex_123', {'nextDueDate': '2026-11-04'})
+
+    def test_anchor_sync_sandbox_real_dates_04_09(self):
+        """ASAAS-09 3C.1 Item 16: paid_date=04/09/2026, cobranca futura 04/11 -> realinha para 04/10, nextDue 04/11."""
+        from core.services.payments.asaas.webhooks import synchronize_asaas_subscription_anchor
+        from unittest.mock import MagicMock
+
+        band = Band.objects.create(name='Banda Sandbox Real', slug='bandasandboxreal')
+        sub = BandSubscription.objects.create(
+            band=band, plan_name='Basico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 8, 30), next_due_date=date(2026, 8, 30),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False,
+            gateway_provider='ASAAS', gateway_subscription_id='sub_p9c1t1o708kepz54',
+            gateway_customer_id='cus_000009006807'
+        )
+
+        mock_client = MagicMock()
+        paid_date = date(2026, 9, 4)
+
+        # Estado real do sandbox:
+        # pay_7ffgs42hx0umnlxp: OVERDUE (triggering)
+        # pay_pz2uu6xj5jlvpe73: PENDING dueDate=2026-11-04
+        mock_client.get_payments_by_subscription.return_value = [
+            {'id': 'pay_7ffgs42hx0umnlxp', 'status': 'OVERDUE', 'dueDate': '2026-09-03', 'deleted': False},
+            {'id': 'pay_pz2uu6xj5jlvpe73', 'status': 'PENDING', 'dueDate': '2026-11-04', 'deleted': False},
+        ]
+        mock_client.update_payment.return_value = (True, {})
+        mock_client.update_subscription.return_value = (True, {})
+
+        ok, msg = synchronize_asaas_subscription_anchor(
+            sub,
+            paid_date=paid_date,
+            triggering_payment_id='pay_7ffgs42hx0umnlxp',  # excluido
+            client=mock_client
+        )
+        self.assertTrue(ok)
+        self.assertEqual(msg, 'ASAAS_ANCHOR_SINCRONIZADO')
+
+        # pay_pz2uu6xj5jlvpe73: 04/11 -> 04/10/2026 (paid_date + 1 mes)
+        mock_client.update_payment.assert_called_once_with('pay_pz2uu6xj5jlvpe73', {'dueDate': '2026-10-04'})
+        # subscription.nextDueDate -> 04/11/2026 (paid_date + 2 meses)
+        mock_client.update_subscription.assert_called_once_with('sub_p9c1t1o708kepz54', {'nextDueDate': '2026-11-04'})
+
+    def test_anchor_sync_success_scenario_15_10_paid(self):
+        """ASAAS-09 3C.1 Item 15: paid_date=15/10, futuro=04/11 -> futuro=15/11, nextDue=15/12."""
+        from core.services.payments.asaas.webhooks import synchronize_asaas_subscription_anchor
+        from unittest.mock import MagicMock
+
+        band = Band.objects.create(name='Banda Success 15', slug='bandasuccess15')
+        sub = BandSubscription.objects.create(
+            band=band, plan_name='Basico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 8, 4), next_due_date=date(2026, 8, 30),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False,
+            gateway_provider='ASAAS', gateway_subscription_id='sub_suc_123',
+            gateway_customer_id='cus_suc_456'
+        )
+
+        mock_client = MagicMock()
+        paid_date = date(2026, 10, 15)
+
+        mock_client.get_payments_by_subscription.return_value = [
+            {'id': 'pay_overdue_trig', 'status': 'OVERDUE', 'dueDate': '2026-08-30', 'deleted': False},
+            {'id': 'pay_nov', 'status': 'PENDING', 'dueDate': '2026-11-04', 'deleted': False},
+        ]
+        mock_client.update_payment.return_value = (True, {})
+        mock_client.update_subscription.return_value = (True, {})
+
+        ok, msg = synchronize_asaas_subscription_anchor(
+            sub,
+            paid_date=paid_date,
+            triggering_payment_id='pay_overdue_trig',
+            client=mock_client
+        )
+        self.assertTrue(ok)
+
+        # Futuro: 15/10 + 1 mes = 15/11
+        mock_client.update_payment.assert_called_once_with('pay_nov', {'dueDate': '2026-11-15'})
+        # nextDueDate: 15/10 + 2 meses = 15/12
+        mock_client.update_subscription.assert_called_once_with('sub_suc_123', {'nextDueDate': '2026-12-15'})
