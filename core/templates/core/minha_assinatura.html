@@ -22,22 +22,26 @@
     .bp-reports-page .kpi-card {
         border-radius: 10px;
     }
-    .bp-reports-page .kpi-card .card-body {
-        padding: 12px 14px;
-    }
     .bp-reports-page .kpi-label {
         font-size: 12px;
         font-weight: 700;
-        letter-spacing: 0.02em;
-        margin-bottom: 4px;
-        color: #000000 !important;
+        letter-spacing: 0.03em;
         text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 2px;
     }
     .bp-reports-page .kpi-value {
-        font-size: 17px;
+        font-size: 20px;
         font-weight: 400;
         line-height: 1.2;
+        margin: 0;
         color: #212529;
+    }
+    .bp-reports-page .kpi-icon-box {
+        width: 42px;
+        height: 42px;
+        font-size: 18px;
+        flex-shrink: 0;
     }
     .bp-reports-page .section-heading {
         font-size: 16px;
@@ -79,8 +83,16 @@
             padding: 4px 14px !important;
             font-size: 13px !important;
         }
+        .bp-reports-page .kpi-label {
+            font-size: 11px !important;
+        }
         .bp-reports-page .kpi-value {
-            font-size: 16px !important;
+            font-size: 15px !important;
+        }
+        .bp-reports-page .kpi-icon-box {
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 15px !important;
         }
     }
 </style>
@@ -101,91 +113,131 @@
     </div>
 
     {% if subscription %}
-    <!-- Resumo da Assinatura (Cards Gerenciais / BP-COMPACTO-01) -->
+    <!-- Resumo da Assinatura (Cards Gerenciais / Padrão Dashboard KPI) -->
     <div class="row g-2 g-md-3 mb-3">
         <!-- Linha 1: AZUL | VERDE | AMARELO | VERMELHO -->
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
-                <div class="card-body">
-                    <p class="kpi-label">Plano Atual</p>
-                    <div class="kpi-value text-dark">{{ plan_display }}</div>
+            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Plano Atual</p>
+                        <h3 class="kpi-value text-dark">{{ plan_display }}</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-layer-group text-primary"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-success h-100 kpi-card">
-                <div class="card-body">
-                    <p class="kpi-label">Status</p>
-                    <div class="kpi-value text-dark">{{ status_display }}</div>
+            <div class="card shadow-sm border-0 border-start border-4 border-success h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Status</p>
+                        <h3 class="kpi-value text-dark">{{ status_display }}</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-circle-check text-success"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 kpi-card">
-                <div class="card-body">
-                    <p class="kpi-label">Valor</p>
-                    <div class="kpi-value text-dark">R$ {{ subscription.contracted_value|floatformat:"2g" }}</div>
+            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Valor</p>
+                        <h3 class="kpi-value text-dark">R$ {{ subscription.contracted_value|floatformat:"2g" }}</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-dollar-sign text-warning"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-danger h-100 kpi-card">
-                <div class="card-body">
-                    <p class="kpi-label">Ciclo</p>
-                    <div class="kpi-value text-dark">{{ cycle_display }}</div>
+            <div class="card shadow-sm border-0 border-start border-4 border-danger h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Ciclo</p>
+                        <h3 class="kpi-value text-dark">{{ cycle_display }}</h3>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-rotate text-danger"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Linha 2: AZUL | VERDE | AMARELO | VERMELHO -->
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
-                <div class="card-body">
-                    <p class="kpi-label">Início</p>
-                    <div class="kpi-value text-dark">
-                        {% if subscription.start_date %}
-                            {{ subscription.start_date|date:"d/m/Y" }}
-                        {% else %}
-                            -
-                        {% endif %}
+            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Início</p>
+                        <h3 class="kpi-value text-dark">
+                            {% if subscription.start_date %}
+                                {{ subscription.start_date|date:"d/m/Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-calendar-check text-primary"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-success h-100 kpi-card">
-                <div class="card-body">
-                    <p class="kpi-label">Próxima Cobrança</p>
-                    <div class="kpi-value text-dark">
-                        {% if subscription.next_due_date %}
-                            {{ subscription.next_due_date|date:"d/m/Y" }}
-                        {% else %}
-                            -
-                        {% endif %}
+            <div class="card shadow-sm border-0 border-start border-4 border-success h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Próxima Cobrança</p>
+                        <h3 class="kpi-value text-dark">
+                            {% if subscription.next_due_date %}
+                                {{ subscription.next_due_date|date:"d/m/Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-calendar-days text-success"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 kpi-card">
-                <div class="card-body">
-                    <p class="kpi-label">Forma de Pagamento</p>
-                    <div class="kpi-value text-dark">{{ payment_method_display }}</div>
+            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Forma de Pagamento</p>
+                        <h3 class="kpi-value text-dark">{{ payment_method_display }}</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-credit-card text-warning"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-danger h-100 kpi-card">
-                <div class="card-body">
-                    <p class="kpi-label">Renovação Automática</p>
-                    <div class="kpi-value text-dark">
-                        {% if subscription.cancel_at_period_end %}
-                            Cancelamento agendado
-                        {% elif subscription.auto_renew %}
-                            Sim
-                        {% else %}
-                            Não
-                        {% endif %}
+            <div class="card shadow-sm border-0 border-start border-4 border-danger h-100" style="border-radius: 12px;">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="kpi-label">Renovação Automática</p>
+                        <h3 class="kpi-value text-dark">
+                            {% if subscription.cancel_at_period_end %}
+                                Cancelamento agendado
+                            {% elif subscription.auto_renew %}
+                                Sim
+                            {% else %}
+                                Não
+                            {% endif %}
+                        </h3>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
+                        <i class="fa-solid fa-arrows-rotate text-danger"></i>
                     </div>
                 </div>
             </div>
