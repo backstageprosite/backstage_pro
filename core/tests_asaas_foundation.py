@@ -637,3 +637,102 @@ class AsaasFoundationTests(TestCase):
         evt_unknown.refresh_from_db()
         self.assertTrue(evt_unknown.processed)
         self.assertEqual(evt_unknown.error_message, None)
+
+    def test_create_asaas_sandbox_checkout_guardrails_and_execution(self):
+        """ASAAS-06: Validar travas de ambiente (staging + sandbox), criacao correta do SignupOrder e payload Asaas."""
+        from unittest.mock import patch, MagicMock
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        from io import StringIO
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        # 1. Trava em producao -> deve falhar
+        with override_settings(DJANGO_ENV='production', ASAAS_ENVIRONMENT='sandbox', ASAAS_API_KEY='key_123'):
+            with self.assertRaises(CommandError) as cm:
+                call_command('create_asaas_sandbox_checkout')
+            self.assertIn('so pode ser executado no ambiente de homologacao', str(cm.exception))
+
+        # 2. Trava em staging com ASAAS_ENVIRONMENT=production -> deve falhar
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='production', ASAAS_API_KEY='key_123'):
+            with self.assertRaises(CommandError) as cm:
+                call_command('create_asaas_sandbox_checkout')
+            self.assertIn('so pode ser executado no ambiente de homologacao', str(cm.exception))
+
+        # 3. Execucao autorizada em staging + sandbox com mock da API Asaas
+        mock_response_data = {
+            'id': 'chk_sandbox_test_777',
+            'status': 'ACTIVE',
+            'paymentLink': 'https://sandbox.asaas.com/c/test777',
+            'items': [{'name': 'Backstage Pro Básico'}]
+        }
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps(mock_response_data).encode('utf-8')
+        mock_resp.status = 200
+        mock_resp.__enter__.return_value = mock_resp
+
+        out = StringIO()
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox', ASAAS_API_KEY='test_api_key_valid'):
+            with patch('urllib.request.urlopen', return_value=mock_resp) as mock_urlopen:
+                call_command('create_asaas_sandbox_checkout', stdout=out)
+
+                # Validar chamada enviada
+                self.assertEqual(mock_urlopen.call_count, 1)
+                req_arg = mock_urlopen.call_args[0][0]
+                self.assertIn('/checkouts', req_arg.full_url)
+
+                # Inspecionar payload enviado
+                sent_body = json.loads(req_arg.data.decode('utf-8'))
+                self.assertEqual(sent_body['customer'], 'cus_000009006807')
+                self.assertEqual(sent_body['chargeTypes'], ['RECURRENT'])
+                self.assertEqual(sent_body['billingTypes'], ['CREDIT_CARD'])
+                self.assertEqual(sent_body['subscription']['cycle'], 'MONTHLY')
+                self.assertEqual(sent_body['items'][0]['name'], 'Backstage Pro Básico')
+                self.assertEqual(sent_body['items'][0]['value'], 19.90)
+                self.assertIn('https://backstage-pro-web-homologacao.up.railway.app/', sent_body['callback']['successUrl'])
+
+                # Validar SignupOrder criado no banco
+                order = SignupOrder.objects.filter(gateway_checkout_id='chk_sandbox_test_777').first()
+                self.assertIsNotNone(order)
+                self.assertEqual(order.plan_type, 'BASICO')
+                self.assertEqual(order.billing_cycle, 'MENSAL')
+                self.assertEqual(order.amount, Decimal('19.90'))
+                self.assertEqual(order.status, 'PENDENTE')
+                self.assertIsNone(order.band) # NÃO cria Band
+
+                # Validar que NÃO cria User
+                self.assertEqual(User.objects.filter(email='backstagepro-sandbox@example.com').count(), 0)
+
+                # Validar saida sanitizada sem expor segredos
+                output_str = out.getvalue()
+                self.assertIn('CHECKOUT SANDBOX CRIADO COM SUCESSO', output_str)
+                self.assertIn('chk_sandbox_test_777', output_str)
+                self.assertNotIn('test_api_key_valid', output_str)
+
+    def test_inspect_asaas_webhooks_command_sanitization(self):
+        """ASAAS-06: Inspecao de webhooks lista eventos de forma sanitizada sem vazar dados confidenciais."""
+        from django.core.management import call_command
+        from io import StringIO
+
+        PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_insp_001',
+            event_type='CHECKOUT_CREATED',
+            payload={
+                'id': 'evt_insp_001',
+                'event': 'CHECKOUT_CREATED',
+                'checkout': {'id': 'chk_insp_123', 'externalReference': 'ref_insp_123'},
+                'secret_token': 'DO_NOT_SHOW_THIS_TOKEN',
+                'creditCard': {'creditCardNumber': '4111111111111111'}
+            }
+        )
+
+        out = StringIO()
+        call_command('inspect_asaas_webhooks', stdout=out)
+        output_str = out.getvalue()
+
+        self.assertIn('evt_insp_001', output_str)
+        self.assertIn('CHECKOUT_CREATED', output_str)
+        self.assertIn('chk_insp_123', output_str)
+        self.assertIn('ref_insp_123', output_str)
+        self.assertNotIn('DO_NOT_SHOW_THIS_TOKEN', output_str)
+        self.assertNotIn('4111111111111111', output_str)
