@@ -1154,7 +1154,6 @@ class AsaasFoundationTests(TestCase):
         with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox', ASAAS_API_KEY='key_123'):
             with patch('core.services.payments.asaas.client.AsaasClient.get_payments_by_checkout', return_value=mock_payments):
                 call_command('repair_asaas_sandbox_order', order_id=order.id, stdout=out)
-
         order.refresh_from_db()
         sub.refresh_from_db()
         billing.refresh_from_db()
@@ -1163,3 +1162,183 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(sub.gateway_subscription_id, 'sub_2vjxr6kit10l68yr')
         self.assertEqual(billing.gateway_payment_id, 'pay_8ufmj8khm9i24ik1')
         self.assertIn('REPARO ASAAS SANDBOX EXECUTADO COM SUCESSO', out.getvalue())
+
+    def test_customer_account_activation_flow_and_guardrails(self):
+        """ASAAS-07: Validação completa do fluxo de ativação de conta do cliente."""
+        from django.test import Client
+        from django.contrib.auth import get_user_model
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        from io import StringIO
+        from datetime import timedelta
+        from core.services.payments.activation import (
+            create_band_activation_token,
+            reissue_activation_token,
+            verify_activation_token,
+            build_activation_email_data
+        )
+
+        User = get_user_model()
+        client = Client()
+
+        # 1. Setup da contratação e banda
+        band = Band.objects.create(name='Banda Ativacao Real', slug='ativacaoreal')
+        order = SignupOrder.objects.create(
+            band=band,
+            band_name='Banda Ativacao Real',
+            responsible_name='Produtor Ativacao',
+            email='produtor-ativacao@example.com',
+            amount=Decimal('19.90'),
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            status='PAGO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_000009006807',
+            gateway_checkout_id='chk_ativ_123',
+            external_reference='bp-homolog-ativacao-1'
+        )
+
+        # 2. Criar token inicial e reemitir novo token (invalidando o anterior)
+        act1, raw1 = create_band_activation_token(band=band, email=order.email, responsible_name=order.responsible_name, signup_order=order)
+        self.assertEqual(BandActivationToken.objects.filter(band=band).count(), 1)
+
+        act2, raw2 = reissue_activation_token(band=band, signup_order=order, valid_hours=48)
+        self.assertEqual(BandActivationToken.objects.filter(band=band).count(), 2)
+
+        # O primeiro token foi invalidado por expiração
+        act1.refresh_from_db()
+        self.assertTrue(timezone.now() >= act1.expires_at)
+        valid1, code1, _ = verify_activation_token(raw1)
+        self.assertFalse(valid1)
+        self.assertEqual(code1, 'TOKEN_EXPIRADO')
+
+        # O segundo token é válido
+        valid2, code2, _ = verify_activation_token(raw2)
+        self.assertTrue(valid2)
+        self.assertEqual(code2, 'OK')
+
+        # 3. Teste do helper de e-mail estruturado
+        email_data = build_activation_email_data(raw2, act2)
+        self.assertEqual(email_data['subject'], 'Ative sua conta no Backstage Pro')
+        self.assertIn('/ativar-conta/' + raw2 + '/', email_data['activation_url'])
+        self.assertIn('Configurações', email_data['body_text'])
+
+        # 4. Abertura da página GET com token inexistente, expirado e válido
+        resp_invalid = client.get('/ativar-conta/token_inexistente_123/')
+        self.assertEqual(resp_invalid.status_code, 200)
+        self.assertContains(resp_invalid, 'Link Inválido')
+
+        resp_expired = client.get(f'/ativar-conta/{raw1}/')
+        self.assertEqual(resp_expired.status_code, 200)
+        self.assertContains(resp_expired, 'Link Expirado')
+
+        resp_valid = client.get(f'/ativar-conta/{raw2}/')
+        self.assertEqual(resp_valid.status_code, 200)
+        self.assertContains(resp_valid, 'Criar Conta')
+        self.assertContains(resp_valid, 'Login')
+        self.assertContains(resp_valid, 'Senha')
+        self.assertContains(resp_valid, 'Confirmar Senha')
+        self.assertContains(resp_valid, 'toggle-password-btn')
+
+        # 5. POST com erros de validação
+        # 5a. Login vazio
+        resp_post_empty = client.post(f'/ativar-conta/{raw2}/', {
+            'username': '',
+            'password': 'Password123!',
+            'confirm_password': 'Password123!'
+        })
+        self.assertContains(resp_post_empty, 'O campo Login é obrigatório.')
+
+        # 5b. Senhas diferentes
+        resp_post_diff = client.post(f'/ativar-conta/{raw2}/', {
+            'username': 'produtor_novo',
+            'password': 'Password123!',
+            'confirm_password': 'Password999!'
+        })
+        self.assertContains(resp_post_diff, 'As senhas digitadas não coincidem.')
+
+        # 5c. Login duplicado (criar usuário existente)
+        User.objects.create_user(username='produtor_existente', email='outro@example.com', password='pwd')
+        resp_post_dup = client.post(f'/ativar-conta/{raw2}/', {
+            'username': 'produtor_existente',
+            'password': 'Password123!',
+            'confirm_password': 'Password123!'
+        })
+        self.assertContains(resp_post_dup, 'Este login já está em uso. Escolha outro.')
+
+        # 6. POST com sucesso
+        resp_post_success = client.post(f'/ativar-conta/{raw2}/', {
+            'username': 'produtor_real',
+            'password': 'MinhaSenhaSegura123!',
+            'confirm_password': 'MinhaSenhaSegura123!'
+        })
+        self.assertEqual(resp_post_success.status_code, 200)
+        self.assertContains(resp_post_success, 'Conta criada com sucesso')
+        self.assertContains(resp_post_success, '/ativacaoreal/login/')
+        self.assertContains(resp_post_success, 'Configurações')
+
+        # 7. Validar User criado no banco
+        created_user = User.objects.get(username='produtor_real')
+        self.assertEqual(created_user.email, 'produtor-ativacao@example.com')
+        self.assertEqual(created_user.band, band)
+        self.assertEqual(created_user.role, 'PRODUTOR')
+        self.assertTrue(created_user.check_password('MinhaSenhaSegura123!'))
+
+        # 8. Validar token liquidado (used_at)
+        act2.refresh_from_db()
+        self.assertIsNotNone(act2.used_at)
+
+        # 9. Retentativa com mesmo token -> Bloqueada (já utilizado)
+        resp_post_reuse = client.post(f'/ativar-conta/{raw2}/', {
+            'username': 'produtor_outro',
+            'password': 'Password123!',
+            'confirm_password': 'Password123!'
+        })
+        self.assertContains(resp_post_reuse, 'Link Já Utilizado')
+        # Nenhum segundo usuário criado
+        self.assertEqual(User.objects.filter(band=band).count(), 1)
+
+        # 10. Teste do Management Command create_asaas_activation_test_link
+        # 10a. Bloqueio em producao
+        with override_settings(DJANGO_ENV='production', ASAAS_ENVIRONMENT='sandbox'):
+            with self.assertRaises(CommandError) as cm:
+                call_command('create_asaas_activation_test_link', order_id=order.id)
+            self.assertIn('so pode ser executado no ambiente de homologacao', str(cm.exception))
+
+        # 10b. Bloqueio fora do sandbox
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='production'):
+            with self.assertRaises(CommandError) as cm:
+                call_command('create_asaas_activation_test_link', order_id=order.id)
+            self.assertIn('so pode ser executado no ambiente de homologacao com Asaas Sandbox', str(cm.exception))
+
+        # 10c. Bloqueio se já houver usuário de Produtor ativado
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox'):
+            with self.assertRaises(CommandError) as cm:
+                call_command('create_asaas_activation_test_link', order_id=order.id)
+            self.assertIn('ja possui usuario inicial de Produtor ativado', str(cm.exception))
+
+        # 10d. Execucao autorizada em novo pedido sem produtor
+        band_new = Band.objects.create(name='Banda Sem Produtor', slug='semprodutor')
+        order_new = SignupOrder.objects.create(
+            band=band_new,
+            band_name='Banda Sem Produtor',
+            responsible_name='Novo Cliente',
+            email='novo@example.com',
+            amount=Decimal('19.90'),
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            status='PAGO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_000009006807',
+            gateway_checkout_id='chk_new_888',
+            external_reference='bp-homolog-new-888'
+        )
+
+        out_cmd = StringIO()
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox'):
+            call_command('create_asaas_activation_test_link', order_id=order_new.id, stdout=out_cmd)
+
+        out_val = out_cmd.getvalue()
+        self.assertIn('LINK DE ATIVACAO GERADO COM SUCESSO', out_val)
+        self.assertIn('https://backstage-pro-web-homologacao.up.railway.app/ativar-conta/', out_val)
+        self.assertIn('Banda Sem Produtor', out_val)

@@ -1,0 +1,155 @@
+{% extends 'core/base_public.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center mt-4 mb-5">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+        <div class="text-center mb-4">
+            {% if band and band.logo %}
+                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid mb-3" style="max-height: 120px;" onerror="this.onerror=null; this.style.display='none'; document.getElementById('band-fallback-title').style.display='block';">
+                <h2 id="band-fallback-title" class="text-primary fw-bold" style="display: none;"><i class="fa-solid fa-guitar"></i> {{ band.name }}</h2>
+            {% else %}
+                <h2 class="text-primary fw-bold"><i class="fa-solid fa-guitar"></i> {% if band %}{{ band.name }}{% else %}Backstage Pro{% endif %}</h2>
+            {% endif %}
+            <p class="text-muted small">Ativação da conta no Backstage Pro</p>
+        </div>
+
+        <div class="card p-4 shadow-sm border-0 card-hover-premium" style="border-radius: 12px;">
+            <div class="card-body p-sm-3">
+
+                {% if success %}
+                    <!-- Tela de Sucesso -->
+                    <div class="text-center py-3">
+                        <div class="mb-3 text-success">
+                            <i class="fa-solid fa-circle-check fa-4x"></i>
+                        </div>
+                        <h4 class="card-title fw-bold text-success mb-2">Conta criada com sucesso</h4>
+                        <p class="text-muted mb-4">
+                            Sua conta de acesso de Produtor(a) para <strong>{{ band.name }}</strong> foi ativada.
+                        </p>
+
+                        <div class="alert alert-info text-start small mb-4">
+                            <i class="fa-solid fa-circle-info me-2"></i>
+                            Após entrar, acesse <strong>Configurações</strong> para inserir a logo da sua banda ou artista e personalizar o Backstage Pro.
+                        </div>
+
+                        <a href="{{ login_url }}" class="btn btn-primary w-100 fw-bold py-3 text-uppercase shadow-sm" style="letter-spacing: 1px;">
+                            Entrar no Backstage Pro <i class="fa-solid fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+
+                {% elif is_valid %}
+                    <!-- Formulário de Criar Conta -->
+                    <h4 class="card-title text-center mb-2 fw-bold">Criar Conta</h4>
+                    <p class="text-center text-muted small mb-4">
+                        Defina seu Login e Senha para administrar a banda <strong>{{ band.name }}</strong>.
+                    </p>
+
+                    {% if errors %}
+                    <div class="alert alert-danger p-3 mb-4 small">
+                        <ul class="mb-0 ps-3">
+                            {% for err in errors %}
+                            <li>{{ err }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" autocomplete="off">
+                        {% csrf_token %}
+
+                        <!-- Campo Login / Usuário -->
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label fw-medium text-muted small text-uppercase">Login</label>
+                            <input type="text" name="username" class="form-control form-control-lg bg-light" id="id_username" value="{{ form_username|default:'' }}" placeholder="Ex: seunome ou produtor" required autofocus style="font-size: 16px;">
+                            <div class="form-text small">Este será o seu usuário de acesso ao sistema.</div>
+                        </div>
+
+                        <!-- Campo Senha com Olho -->
+                        <div class="mb-3">
+                            <label for="id_password" class="form-label fw-medium text-muted small text-uppercase">Senha</label>
+                            <div class="input-group">
+                                <input type="password" name="password" class="form-control form-control-lg bg-light" id="id_password" required style="font-size: 16px;">
+                                <button class="btn btn-outline-secondary toggle-password-btn" type="button" data-target="id_password" aria-label="Visualizar Senha">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Campo Confirmar Senha com Olho -->
+                        <div class="mb-4">
+                            <label for="id_confirm_password" class="form-label fw-medium text-muted small text-uppercase">Confirmar Senha</label>
+                            <div class="input-group">
+                                <input type="password" name="confirm_password" class="form-control form-control-lg bg-light" id="id_confirm_password" required style="font-size: 16px;">
+                                <button class="btn btn-outline-secondary toggle-password-btn" type="button" data-target="id_confirm_password" aria-label="Visualizar Confirmação de Senha">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-loading w-100 fw-bold py-3 text-uppercase shadow-sm" style="letter-spacing: 1px;">
+                            Criar Conta <i class="fa-solid fa-check ms-2"></i>
+                        </button>
+                    </form>
+
+                {% else %}
+                    <!-- Erro de Token Inválido / Expirado / Utilizado -->
+                    <div class="text-center py-3">
+                        <div class="mb-3 text-danger">
+                            <i class="fa-solid fa-circle-xmark fa-4x"></i>
+                        </div>
+                        
+                        {% if error_code == 'TOKEN_EXPIRADO' %}
+                            <h4 class="card-title fw-bold mb-2">Link Expirado</h4>
+                            <p class="text-muted mb-4">
+                                Este link de ativação expirou (validade de 48 horas). Entre em contato com o suporte do Backstage Pro para solicitar um novo link.
+                            </p>
+                        {% elif error_code == 'TOKEN_JA_UTILIZADO' %}
+                            <h4 class="card-title fw-bold mb-2">Link Já Utilizado</h4>
+                            <p class="text-muted mb-4">
+                                Este link de ativação já foi utilizado anteriormente para criar a conta de acesso.
+                            </p>
+                            {% if band %}
+                            <a href="/{{ band.slug }}/login/" class="btn btn-primary w-100 fw-bold py-3 text-uppercase shadow-sm">
+                                Ir para o Login <i class="fa-solid fa-arrow-right ms-2"></i>
+                            </a>
+                            {% endif %}
+                        {% else %}
+                            <h4 class="card-title fw-bold mb-2">Link Inválido</h4>
+                            <p class="text-muted mb-4">
+                                O link de ativação informado não é válido. Verifique se o endereço completo foi copiado corretamente.
+                            </p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.toggle-password-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const targetId = btn.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const icon = btn.querySelector('i');
+            if (input) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
