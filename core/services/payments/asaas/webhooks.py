@@ -100,6 +100,11 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
             record.status = 'PENDENTE'
     elif event_type in ('PAYMENT_REFUNDED',):
         record.status = 'ESTORNADO' if hasattr(record, 'status') else record.status
+    elif event_type in ('PAYMENT_DELETED', 'PAYMENT_CANCELLED', 'PAYMENT_CANCELED'):
+        # Cobrança removida no gateway: NUNCA altera ou apaga se já estiver PAGO.
+        # Se estiver PENDENTE, marca como CANCELADO preservando o histórico.
+        if record.status != 'PAGO':
+            record.status = 'CANCELADO'
 
     record.save()
     return True, 'BILLING_CONCILIADO'

@@ -2473,3 +2473,44 @@ class AsaasFoundationTests(TestCase):
         band.refresh_from_db()
         self.assertTrue(band.is_active)
         self.assertEqual(sub.records.filter(status='PAGO').count(), 1)
+
+        # Webhook PAYMENT_DELETED para cobrança PENDENTE: marca CANCELADO e preserva registro
+        pay_del_event = {
+            "id": "evt_pay_del_04_oct",
+            "event": "PAYMENT_DELETED",
+            "payment": {
+                "id": "pay_test_04_oct",
+                "subscription": "sub_test_remote_123",
+                "customer": "cus_test_remote_456",
+                "status": "DELETED"
+            }
+        }
+        ok_pdel, msg_pdel = handle_asaas_webhook_payload(pay_del_event)
+        self.assertTrue(ok_pdel)
+        record_oct = BillingRecord.objects.get(gateway_payment_id='pay_test_04_oct')
+        self.assertEqual(record_oct.status, 'CANCELADO')
+        self.assertEqual(sub.records.count(), 2)
+        band.refresh_from_db()
+        self.assertTrue(band.is_active)
+
+        # Webhook PAYMENT_DELETED para cobrança PAGA: NUNCA altera status nem apaga registro
+        pay_del_paid_event = {
+            "id": "evt_pay_del_04_sep_paid",
+            "event": "PAYMENT_DELETED",
+            "payment": {
+                "id": "pay_test_04_sep",
+                "subscription": "sub_test_remote_123",
+                "customer": "cus_test_remote_456"
+            }
+        }
+        ok_pdel_paid, _ = handle_asaas_webhook_payload(pay_del_paid_event)
+        self.assertTrue(ok_pdel_paid)
+        record_sep = BillingRecord.objects.get(gateway_payment_id='pay_test_04_sep')
+        self.assertEqual(record_sep.status, 'PAGO')
+
+        # Idempotência do PAYMENT_DELETED
+        ok_pdel_dup, _ = handle_asaas_webhook_payload(pay_del_event)
+        self.assertTrue(ok_pdel_dup)
+        self.assertEqual(sub.records.count(), 2)
+        sub.refresh_from_db()
+        self.assertEqual(sub.next_due_date, date(2026, 10, 4))
