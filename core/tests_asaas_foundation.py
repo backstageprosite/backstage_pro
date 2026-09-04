@@ -1397,6 +1397,7 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(resp_config.status_code, 200)
         self.assertContains(resp_config, 'backstage-pro-logo.png')
         self.assertContains(resp_config, 'Logo da banda ainda não cadastrada.')
+        self.assertContains(resp_config, 'Recomendamos imagens com fundo transparente (PNG)')
         self.assertNotContains(resp_config, 'Remover Logo')
         self.assertNotContains(resp_config, 'modalRemoverLogo')
 

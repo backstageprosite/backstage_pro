@@ -6,11 +6,11 @@
     <div class="col-md-5">
         <div class="text-center mb-4">
             {% if band and band.logo %}
-                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid mb-3" style="max-height: 140px; max-width: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='{% static 'images/backstage-pro-logo.png' %}';">
+                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid mb-2" style="max-height: 180px; max-width: 100%; width: auto; object-fit: contain;" onerror="this.onerror=null; this.src='{% static 'images/backstage-pro-logo.png' %}';">
             {% else %}
-                <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="img-fluid mb-3" style="max-height: 55px; max-width: 100%; object-fit: contain;">
+                <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="img-fluid mb-2" style="max-height: 65px; max-width: 100%; width: auto; object-fit: contain;">
             {% endif %}
-            <p class="text-muted">Acesso restrito ao sistema</p>
+            <p class="text-muted small mb-0">Acesso restrito ao sistema</p>
         </div>
         
         <div class="card p-4 shadow-sm border-0 card-hover-premium" style="border-radius: 12px;">
