@@ -1243,7 +1243,7 @@ def minha_assinatura_view(request, band_slug):
         # Forma de pagamento
         pm_pref = (subscription.payment_method_preference or '').strip().upper()
         if pm_pref == 'CARTAO' or pm_pref == 'CARTÃO':
-            payment_method_display = 'Cartão'
+            payment_method_display = 'Cartão de crédito'
         elif pm_pref == 'PIX':
             payment_method_display = 'Pix'
         elif pm_pref == 'BOLETO':

@@ -31,9 +31,10 @@
         margin-bottom: 2px;
     }
     .bp-reports-page .kpi-value {
-        font-size: 18px;
-        font-weight: 700;
+        font-size: 17px;
+        font-weight: 400;
         line-height: 1.2;
+        color: #212529;
     }
     .bp-reports-page .section-heading {
         font-size: 16px;
@@ -104,7 +105,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Plano Atual</p>
-                    <h4 class="kpi-value mb-0 text-primary">{{ plan_display }}</h4>
+                    <div class="kpi-value text-dark">{{ plan_display }}</div>
                 </div>
             </div>
         </div>
@@ -112,15 +113,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-success h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Status</p>
-                    <div class="mt-1">
-                        {% if subscription.status == 'ATIVO' %}
-                            <span class="badge status-pill bg-success">Ativo</span>
-                        {% elif subscription.status == 'DESATIVADO' %}
-                            <span class="badge status-pill bg-secondary">Desativado</span>
-                        {% else %}
-                            <span class="badge status-pill bg-light text-dark border">{{ status_display }}</span>
-                        {% endif %}
-                    </div>
+                    <div class="kpi-value text-dark">{{ status_display }}</div>
                 </div>
             </div>
         </div>
@@ -128,7 +121,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Valor</p>
-                    <h4 class="kpi-value mb-0 text-primary">R$ {{ subscription.contracted_value|floatformat:"2g" }}</h4>
+                    <div class="kpi-value text-dark">R$ {{ subscription.contracted_value|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
@@ -136,7 +129,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-info h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Ciclo</p>
-                    <h4 class="kpi-value mb-0 text-dark">{{ cycle_display }}</h4>
+                    <div class="kpi-value text-dark">{{ cycle_display }}</div>
                 </div>
             </div>
         </div>
@@ -146,13 +139,13 @@
             <div class="card shadow-sm border-0 border-start border-4 border-secondary h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Início</p>
-                    <h4 class="kpi-value mb-0 text-dark">
+                    <div class="kpi-value text-dark">
                         {% if subscription.start_date %}
                             {{ subscription.start_date|date:"d/m/Y" }}
                         {% else %}
                             -
                         {% endif %}
-                    </h4>
+                    </div>
                 </div>
             </div>
         </div>
@@ -160,13 +153,13 @@
             <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Próxima Cobrança</p>
-                    <h4 class="kpi-value mb-0 text-warning">
+                    <div class="kpi-value text-dark">
                         {% if subscription.next_due_date %}
                             {{ subscription.next_due_date|date:"d/m/Y" }}
                         {% else %}
                             -
                         {% endif %}
-                    </h4>
+                    </div>
                 </div>
             </div>
         </div>
@@ -174,7 +167,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-info h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Forma de Pagamento</p>
-                    <h4 class="kpi-value mb-0 text-dark">{{ payment_method_display }}</h4>
+                    <div class="kpi-value text-dark">{{ payment_method_display }}</div>
                 </div>
             </div>
         </div>
@@ -182,7 +175,7 @@
             <div class="card shadow-sm border-0 border-start border-4 {% if subscription.cancel_at_period_end %}border-warning{% elif subscription.auto_renew %}border-success{% else %}border-secondary{% endif %} h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Renovação Automática</p>
-                    <h4 class="kpi-value mb-0 {% if subscription.cancel_at_period_end %}text-warning fs-6{% elif subscription.auto_renew %}text-success{% else %}text-muted{% endif %}">
+                    <div class="kpi-value text-dark">
                         {% if subscription.cancel_at_period_end %}
                             Cancelamento agendado
                         {% elif subscription.auto_renew %}
@@ -190,7 +183,7 @@
                         {% else %}
                             Não
                         {% endif %}
-                    </h4>
+                    </div>
                 </div>
             </div>
         </div>
@@ -226,7 +219,7 @@
                     <tbody>
                         {% for fatura in faturas %}
                         <tr>
-                            <td class="ps-4 text-nowrap fw-medium" style="width: 110px;">
+                            <td class="ps-4 text-nowrap fw-normal text-dark" style="width: 110px;">
                                 {% if fatura.status == 'PAGO' and fatura.paid_date %}
                                     {{ fatura.paid_date|date:"d/m/Y" }}
                                 {% elif fatura.due_date %}
@@ -235,7 +228,7 @@
                                     -
                                 {% endif %}
                             </td>
-                            <td class="fw-medium text-dark">{{ fatura.reference_period|default:"-" }}</td>
+                            <td class="fw-normal text-dark">{{ fatura.reference_period|default:"-" }}</td>
                             <td class="text-muted">
                                 {% if fatura.payment_method == 'CARTAO' %}
                                     Cartão
@@ -251,7 +244,7 @@
                                     {{ fatura.get_payment_method_display|default:"-" }}
                                 {% endif %}
                             </td>
-                            <td class="fw-bold text-primary text-nowrap">
+                            <td class="fw-normal text-dark text-nowrap">
                                 R$ {{ fatura.amount|floatformat:"2g" }}
                             </td>
                             <td class="text-center">

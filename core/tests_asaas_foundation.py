@@ -1675,7 +1675,7 @@ class AsaasFoundationTests(TestCase):
         self.assertContains(resp_a, 'Mensal')
         self.assertContains(resp_a, '03/09/2026')  # Início
         self.assertContains(resp_a, '03/10/2026')  # Próxima Cobrança
-        self.assertContains(resp_a, 'Cartão')
+        self.assertContains(resp_a, 'Cartão de crédito')
         self.assertContains(resp_a, 'Sim')
 
         # Validar histórico com colunas e link seguro
