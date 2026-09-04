@@ -250,12 +250,12 @@
             <div class="offcanvas-body d-flex flex-column px-3 py-4 overflow-y-auto pt-lg-4">
                 
                 <!-- Logo da Banda Acima do Menu -->
-                <div class="mb-3 text-center text-lg-start">
-                    <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none" style="min-height: 48px;">
+                <div class="mb-3 text-center text-lg-start w-100">
+                    <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none w-100" style="min-height: 48px;">
                         {% if band and band.logo %}
-                            <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid" style="border-radius: 8px; object-fit: contain; max-height: 75px; max-width: 100%; width: auto;" onerror="this.onerror=null; this.src='{% static 'images/backstage-pro-logo.png' %}';">
+                            <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid d-block mx-auto mx-lg-0" style="border-radius: 8px; object-fit: contain; width: 100%; max-height: 105px; height: auto;" onerror="this.onerror=null; this.src='{% static 'images/backstage-pro-logo.png' %}';">
                         {% else %}
-                            <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="img-fluid" style="max-height: 44px; max-width: 100%; width: auto; object-fit: contain;">
+                            <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="img-fluid d-block mx-auto mx-lg-0" style="object-fit: contain; width: 100%; max-height: 55px; height: auto;">
                         {% endif %}
                     </a>
                 </div>
