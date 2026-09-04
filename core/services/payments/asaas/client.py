@@ -61,6 +61,40 @@ class AsaasClient:
 
         return []
 
+    def get_payment(self, payment_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Consulta dados de uma cobranca diretamente na API do Asaas via GET /v3/payments/{id}.
+        """
+        if not payment_id or not self.config.api_key:
+            return None
+
+        encoded_id = urllib.parse.quote(str(payment_id))
+        url = f"{self.base_url}/payments/{encoded_id}"
+        req = urllib.request.Request(url, headers=self.get_headers())
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return json.loads(resp.read().decode('utf-8'))
+        except Exception as e:
+            logger.warning("Falha na consulta de cobranca %s no Asaas: %s", payment_id, str(e))
+            return None
+
+    def get_installment(self, installment_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Consulta dados de um parcelamento diretamente na API do Asaas via GET /v3/installments/{id}.
+        """
+        if not installment_id or not self.config.api_key:
+            return None
+
+        encoded_id = urllib.parse.quote(str(installment_id))
+        url = f"{self.base_url}/installments/{encoded_id}"
+        req = urllib.request.Request(url, headers=self.get_headers())
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return json.loads(resp.read().decode('utf-8'))
+        except Exception as e:
+            logger.warning("Falha na consulta de parcelamento %s no Asaas: %s", installment_id, str(e))
+            return None
+
     def get_subscription(self, subscription_id: str) -> Optional[Dict[str, Any]]:
         """
         Consulta dados de uma assinatura diretamente na API do Asaas.

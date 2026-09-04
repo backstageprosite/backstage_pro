@@ -49,13 +49,17 @@ def asaas_webhook_view(request):
     if not event_id or not event_type:
         return JsonResponse({'error': 'Missing id or event in payload'}, status=400)
 
-    # 3. Persistencia idempotente em PaymentWebhookEvent (Nivel 1)
+    # 3. Sanitizacao recursiva de dados sensiveis (PCI-DSS / Seguranca de Token)
+    from core.services.payments.security import sanitize_webhook_payload
+    safe_payload = sanitize_webhook_payload(payload)
+
+    # 4. Persistencia idempotente em PaymentWebhookEvent (Nivel 1)
     webhook_event, created = PaymentWebhookEvent.objects.get_or_create(
         gateway_event_id=str(event_id),
         defaults={
             'provider': 'ASAAS',
             'event_type': str(event_type),
-            'payload': payload,
+            'payload': safe_payload,
             'processed': False,
         }
     )

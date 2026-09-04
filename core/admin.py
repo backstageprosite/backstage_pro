@@ -5,7 +5,7 @@ from django.db import models
 from django.forms import Textarea
 from django.utils import timezone
 import datetime
-from .models import User, Show, FinancialReceipt, ContractDocument, Band, Contact, ShowPayment, ShowTeamCost, BandSubscription, BillingRecord, WebPushSubscription, WebPushDelivery
+from .models import User, Show, FinancialReceipt, ContractDocument, Band, Contact, ShowPayment, ShowTeamCost, BandSubscription, BillingRecord, WebPushSubscription, WebPushDelivery, GatewayPaymentMethod, AnnualPlanPurchase
 
 
 def custom_get_app_list(self, request, app_label=None):
@@ -395,9 +395,37 @@ class BandSubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(BillingRecord)
 class BillingRecordAdmin(admin.ModelAdmin):
-    list_display = ('band', 'reference_period', 'amount', 'due_date', 'paid_date', 'status', 'payment_method', 'updated_at')
+    list_display = ('band', 'reference_period', 'amount', 'due_date', 'paid_date', 'status', 'payment_method', 'installment_number', 'updated_at')
     list_filter = ('status', 'payment_method', 'due_date')
     search_fields = ('band__name', 'reference_period', 'subscription__band__name')
+
+
+@admin.register(GatewayPaymentMethod)
+class GatewayPaymentMethodAdmin(admin.ModelAdmin):
+    """
+    Administração de Métodos de Pagamento com proteção PCI estrita.
+    NUNCA exibe encrypted_token nem token descriptografado.
+    """
+    list_display = ('subscription', 'card_brand', 'get_masked_card', 'gateway_provider', 'gateway_customer_id', 'is_active', 'created_at')
+    list_filter = ('gateway_provider', 'is_active', 'card_brand')
+    search_fields = ('subscription__band__name', 'gateway_customer_id', 'card_last4')
+    readonly_fields = ('subscription', 'gateway_provider', 'gateway_customer_id', 'card_brand', 'card_last4', 'expiration_month', 'expiration_year', 'created_at', 'updated_at')
+    exclude = ('encrypted_token',)
+
+    def get_masked_card(self, obj):
+        brand = obj.card_brand or 'Cartão'
+        last4 = f"•••• {obj.card_last4}" if obj.card_last4 else "••••"
+        return f"{brand} {last4}"
+    get_masked_card.short_description = 'Cartão Mascarado'
+
+
+@admin.register(AnnualPlanPurchase)
+class AnnualPlanPurchaseAdmin(admin.ModelAdmin):
+    list_display = ('band_subscription', 'purchase_type', 'installment_count', 'gross_amount', 'net_amount', 'coverage_start', 'coverage_end', 'status', 'approved_at')
+    list_filter = ('purchase_type', 'status', 'gateway_provider')
+    search_fields = ('band_subscription__band__name', 'gateway_installment_id', 'gateway_external_reference')
+    readonly_fields = ('created_at', 'updated_at')
+
 
 # Customizando o título do painel de administração
 admin.site.site_header = "Administração Backstage Pro"

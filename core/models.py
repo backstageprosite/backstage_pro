@@ -810,6 +810,21 @@ class BillingRecord(models.Model):
     gateway_external_reference = models.CharField(max_length=100, blank=True, null=True, default=None, db_index=True, verbose_name='Referência Externa no Gateway')
     gateway_event_status = models.CharField(max_length=50, blank=True, null=True, default=None, verbose_name='Status do Evento no Gateway')
 
+    # Vinculo com compra anual (quando aplicavel)
+    annual_purchase = models.ForeignKey(
+        'AnnualPlanPurchase',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='billing_records',
+        verbose_name='Compra Anual Vinculada'
+    )
+    installment_number = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Número da Parcela (ex: 1 a 5)'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_billings', verbose_name='Criado por')
@@ -2083,6 +2098,203 @@ class BandActivationToken(models.Model):
 
     def __str__(self):
         return f"Ativação para {self.band.name} ({self.email}) - Válido: {self.is_valid()}"
+
+
+class GatewayPaymentMethod(models.Model):
+    """
+    Armazenamento desacoplado e seguro do meio de pagamento tokenizado (cartão de crédito).
+    O token de pagamento NUNCA é armazenado em texto plano — é cifrado com Fernet em repouso.
+    Garante que nunca sejam armazenados PAN completo, CVV ou dados brutos não autorizados pelo PCI-DSS.
+    """
+    subscription = models.ForeignKey(
+        'BandSubscription',
+        on_delete=models.CASCADE,
+        related_name='payment_methods',
+        verbose_name='Assinatura Proprietária'
+    )
+    gateway_provider = models.CharField(
+        max_length=30,
+        default='ASAAS',
+        verbose_name='Provedor do Gateway'
+    )
+    gateway_customer_id = models.CharField(
+        max_length=100,
+        db_index=True,
+        verbose_name='ID do Cliente no Gateway'
+    )
+    encrypted_token = models.TextField(
+        verbose_name='Token Criptografado (Fernet)'
+    )
+    card_brand = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name='Bandeira do Cartão'
+    )
+    card_last4 = models.CharField(
+        max_length=4,
+        blank=True,
+        null=True,
+        verbose_name='Últimos 4 Dígitos'
+    )
+    expiration_month = models.CharField(
+        max_length=2,
+        blank=True,
+        null=True,
+        verbose_name='Mês de Expiração'
+    )
+    expiration_year = models.CharField(
+        max_length=4,
+        blank=True,
+        null=True,
+        verbose_name='Ano de Expiração'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name='Método Ativo?'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
+
+    class Meta:
+        verbose_name = 'Método de Pagamento Gateway'
+        verbose_name_plural = 'Métodos de Pagamento Gateway'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['subscription', 'gateway_provider'],
+                condition=models.Q(is_active=True),
+                name='unique_active_payment_method_per_subscription_and_provider'
+            )
+        ]
+
+    def __str__(self):
+        brand = self.card_brand or 'Cartão'
+        last4 = f"•••• {self.card_last4}" if self.card_last4 else ""
+        status = "Ativo" if self.is_active else "Inativo"
+        return f"{brand} {last4} ({self.gateway_provider}) - {status}"
+
+    def get_decrypted_token(self) -> str:
+        """
+        Descriptografa e retorna o token de pagamento em texto plano.
+        Utilizado estritamente em memória durante a execução de operações financeiras.
+        """
+        from core.services.payments.security import decrypt_payment_token
+        return decrypt_payment_token(self.encrypted_token)
+
+    def set_token(self, plain_token: str):
+        """
+        Criptografa o token recebido e persiste em encrypted_token.
+        """
+        from core.services.payments.security import encrypt_payment_token
+        self.encrypted_token = encrypt_payment_token(plain_token)
+
+
+class AnnualPlanPurchase(models.Model):
+    """
+    Representa formalmente cada compra/contratação anual (ciclo de 12 meses),
+    seja ela a compra inicial ou uma futura renovação anual automática/manual.
+    Preserva o histórico imutável de parcelamento, valores e vigência contratada.
+    """
+    class PurchaseType(models.TextChoices):
+        INITIAL = 'INITIAL', 'Compra Inicial'
+        RENEWAL = 'RENEWAL', 'Renovação Anual'
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pendente'
+        CONFIRMED = 'CONFIRMED', 'Aprovada / Confirmada'
+        CANCELED = 'CANCELED', 'Cancelada'
+
+    band_subscription = models.ForeignKey(
+        'BandSubscription',
+        on_delete=models.CASCADE,
+        related_name='annual_purchases',
+        verbose_name='Assinatura da Banda'
+    )
+    signup_order = models.ForeignKey(
+        'SignupOrder',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='annual_purchases',
+        verbose_name='Pedido de Origem (se compra inicial)'
+    )
+    purchase_type = models.CharField(
+        max_length=20,
+        choices=PurchaseType.choices,
+        default=PurchaseType.INITIAL,
+        verbose_name='Tipo da Compra'
+    )
+    gateway_provider = models.CharField(
+        max_length=30,
+        default='ASAAS',
+        verbose_name='Provedor do Gateway'
+    )
+    gateway_external_reference = models.CharField(
+        max_length=100,
+        db_index=True,
+        verbose_name='Referência Externa no Gateway'
+    )
+    gateway_installment_id = models.CharField(
+        max_length=100,
+        db_index=True,
+        verbose_name='ID do Parcelamento (Installment) no Gateway'
+    )
+    installment_count = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Quantidade de Parcelas Escolhida'
+    )
+    gross_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name='Valor Bruto Total (ex: 199.90)'
+    )
+    net_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Valor Líquido Recebido no Gateway'
+    )
+    coverage_start = models.DateField(
+        verbose_name='Início da Vigência (12 meses)'
+    )
+    coverage_end = models.DateField(
+        verbose_name='Fim da Vigência (12 meses)'
+    )
+    approved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Data de Aprovação Financeira'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.CONFIRMED,
+        db_index=True,
+        verbose_name='Status da Compra Anual'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
+
+    class Meta:
+        verbose_name = 'Compra de Plano Anual'
+        verbose_name_plural = 'Compras de Planos Anuais'
+        ordering = ['-coverage_start', '-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['gateway_provider', 'gateway_installment_id'],
+                condition=models.Q(gateway_installment_id__isnull=False) & ~models.Q(gateway_installment_id=''),
+                name='unique_installment_per_gateway_provider'
+            )
+        ]
+
+    def __str__(self):
+        band_name = self.band_subscription.band.name if self.band_subscription and self.band_subscription.band else 'Banda'
+        return f"Compra Anual {self.get_purchase_type_display()} - {band_name} ({self.installment_count}x R$ {self.gross_amount}) - {self.get_status_display()}"
 
 # ============================================================
 # AUTOMATIC FILE DELETION ON RECORD DELETE

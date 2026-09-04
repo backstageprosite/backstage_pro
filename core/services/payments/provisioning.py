@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Dict, Any, Tuple, Optional
 from django.db import transaction
 from django.utils import timezone
-from core.models import Band, BandSubscription, BillingRecord, SignupOrder, PaymentWebhookEvent
+from core.models import Band, BandSubscription, BillingRecord, SignupOrder, PaymentWebhookEvent, AnnualPlanPurchase, GatewayPaymentMethod
 from core.services.payments.base import generate_unique_band_slug, calculate_next_billing_date, extract_asaas_id
 from core.services.payments.activation import create_band_activation_token
 
@@ -142,6 +142,82 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             except Exception:
                 initial_record_amount = order.amount
 
+        # 4.1. Criar/Vincular AnnualPlanPurchase para contratos anuais (Modelagem ASAAS-11)
+        annual_purchase = None
+        if is_annual:
+            # Obter detalhes do installment via API se disponivel
+            installment_id = None
+            installment_count_val = 1
+            net_amount_val = None
+            raw_inst = payment_data.get('installment') if isinstance(payment_data, dict) else None
+            installment_id = extract_asaas_id(raw_inst)
+
+            try:
+                from core.services.payments.asaas.client import AsaasClient
+                client = AsaasClient()
+                if not installment_id and payment_id:
+                    p_info = client.get_payment(payment_id)
+                    if p_info:
+                        installment_id = extract_asaas_id(p_info.get('installment'))
+
+                if installment_id:
+                    inst_info = client.get_installment(installment_id)
+                    if inst_info:
+                        installment_count_val = inst_info.get('installmentCount') or 1
+                        if inst_info.get('netValue') is not None:
+                            net_amount_val = Decimal(str(inst_info.get('netValue')))
+            except Exception as e:
+                logger.warning("Falha ao enriquecer dados do parcelamento %s no Asaas: %s", installment_id, str(e))
+
+            annual_purchase, _ = AnnualPlanPurchase.objects.get_or_create(
+                gateway_provider='ASAAS',
+                gateway_installment_id=installment_id or f"inst_pending_{order.external_reference}",
+                defaults={
+                    'band_subscription': sub,
+                    'signup_order': order,
+                    'purchase_type': AnnualPlanPurchase.PurchaseType.INITIAL,
+                    'gateway_external_reference': order.external_reference,
+                    'installment_count': installment_count_val,
+                    'gross_amount': order.amount,
+                    'net_amount': net_amount_val,
+                    'coverage_start': financial_start_date,
+                    'coverage_end': next_due,
+                    'approved_at': timezone.now(),
+                    'status': AnnualPlanPurchase.Status.CONFIRMED,
+                }
+            )
+
+            # 4.2. Captura segura e criptografada do token de pagamento no Gateway (sem salvar no webhook)
+            if payment_id:
+                try:
+                    from core.services.payments.asaas.client import AsaasClient
+                    client = AsaasClient()
+                    p_full = client.get_payment(payment_id)
+                    if p_full:
+                        cc_info = p_full.get('creditCard') if isinstance(p_full.get('creditCard'), dict) else {}
+                        raw_token = p_full.get('creditCardToken') or cc_info.get('creditCardToken')
+                        if raw_token:
+                            pm, created_pm = GatewayPaymentMethod.objects.get_or_create(
+                                subscription=sub,
+                                gateway_provider='ASAAS',
+                                is_active=True,
+                                defaults={
+                                    'gateway_customer_id': customer_id or order.gateway_customer_id or '',
+                                    'card_brand': cc_info.get('creditCardBrand'),
+                                    'card_last4': str(cc_info.get('creditCardNumber') or '')[-4:] if cc_info.get('creditCardNumber') else None,
+                                    'encrypted_token': ''
+                                }
+                            )
+                            pm.set_token(raw_token)
+                            pm.gateway_customer_id = customer_id or order.gateway_customer_id or pm.gateway_customer_id
+                            pm.card_brand = cc_info.get('creditCardBrand') or pm.card_brand
+                            if cc_info.get('creditCardNumber'):
+                                pm.card_last4 = str(cc_info.get('creditCardNumber'))[-4:]
+                            pm.save()
+                            del raw_token  # Descarta imediatamente da memoria
+                except Exception as e:
+                    logger.warning("Falha ao capturar e criptografar token para subscription %s: %s", sub.id, str(e))
+
         BillingRecord.objects.create(
             subscription=sub,
             band=band,
@@ -157,7 +233,9 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             gateway_provider='ASAAS',
             gateway_payment_id=payment_id,
             gateway_external_reference=order.external_reference,
-            gateway_event_status='CHECKOUT_PAID'
+            gateway_event_status='CHECKOUT_PAID',
+            annual_purchase=annual_purchase,
+            installment_number=1 if is_annual else None
         )
 
         # 5. Criar BandActivationToken seguro (48 horas)

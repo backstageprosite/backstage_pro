@@ -3842,3 +3842,224 @@ class AsaasFoundationTests(TestCase):
         cmd._process_batch(batch_size=1, backoff_seconds=10)
         ev_succ.refresh_from_db()
         self.assertTrue(ev_succ.processed)
+
+    def test_asaas11_webhook_payload_sanitization_removes_sensitive_data(self):
+        """
+        ASAAS-11: Garante que o payload recebido e persistido via handle_asaas_webhook_payload
+        sanitiza recursivamente creditCardToken, cardNumber, CVV e creditCardHolderInfo,
+        mas preserva metadados operacionais (brand, last4, IDs, status, values, dates).
+        """
+        payload_with_secrets = {
+            "id": "evt_sensitive_test_01",
+            "event": "PAYMENT_CONFIRMED",
+            "payment": {
+                "id": "pay_test_sensitive_999",
+                "customer": "cus_test_sensitive_111",
+                "value": 199.90,
+                "netValue": 194.50,
+                "status": "CONFIRMED",
+                "dueDate": "2026-09-04",
+                "creditCard": {
+                    "creditCardBrand": "MASTERCARD",
+                    "creditCardNumber": "5555444433331234",
+                    "creditCardToken": "secret_token_never_persist_in_json",
+                    "cvv": "123"
+                },
+                "creditCardHolderInfo": {
+                    "name": "Titular Teste",
+                    "cpfCnpj": "12345678901",
+                    "phone": "11999999999"
+                }
+            }
+        }
+
+        ok, msg = handle_asaas_webhook_payload(payload_with_secrets)
+        # O evento pode falhar em vincular caso a sub nao exista, mas a persistencia do evento acontece
+        event_obj = PaymentWebhookEvent.objects.get(gateway_event_id="evt_sensitive_test_01")
+        p = event_obj.payload
+
+        # 1. Chaves sensiveis nao existem no payload persistido
+        self.assertNotIn('creditCardHolderInfo', p.get('payment', {}))
+        cc = p.get('payment', {}).get('creditCard', {})
+        self.assertNotIn('creditCardToken', cc)
+        self.assertNotIn('cvv', cc)
+        self.assertNotIn('secret_token_never_persist_in_json', str(p))
+        self.assertNotIn('5555444433331234', str(p))
+
+        # 2. Metadados operacionais foram estritamente preservados
+        self.assertEqual(cc.get('creditCardBrand'), 'MASTERCARD')
+        self.assertEqual(cc.get('creditCardNumber'), '1234')
+        self.assertEqual(p.get('payment', {}).get('id'), 'pay_test_sensitive_999')
+        self.assertEqual(p.get('payment', {}).get('value'), 199.90)
+
+    def test_asaas11_gateway_payment_method_fernet_encryption_roundtrip(self):
+        """
+        ASAAS-11: Valida que GatewayPaymentMethod criptografa o token em repouso com Fernet,
+        que encrypted_token != plain_token, e que get_decrypted_token() retorna o token exato.
+        """
+        from core.models import GatewayPaymentMethod, Band, BandSubscription
+        from decimal import Decimal
+
+        band = Band.objects.create(name="Banda Crypto Test", slug="bandacryptotest", plan_type="BASICO")
+        sub = BandSubscription.objects.create(
+            band=band, plan_name="Básico", billing_cycle="ANUAL", contracted_value=Decimal('199.90'), status="ATIVO"
+        )
+
+        test_plain_token = "tok_asaas_live_sandbox_987654321_abcdef"
+
+        pm = GatewayPaymentMethod(
+            subscription=sub,
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_crypto_test_01',
+            card_brand='VISA',
+            card_last4='4444',
+            is_active=True
+        )
+        pm.set_token(test_plain_token)
+        pm.save()
+
+        # 1. Em repouso, encrypted_token e diferente do token original
+        pm.refresh_from_db()
+        self.assertNotEqual(pm.encrypted_token, test_plain_token)
+        self.assertNotIn(test_plain_token, pm.encrypted_token)
+
+        # 2. Descriptografia retorna exatamente o token original em memoria
+        decrypted = pm.get_decrypted_token()
+        self.assertEqual(decrypted, test_plain_token)
+
+        # 3. String representation e admin nao expoem o token
+        self.assertNotIn(test_plain_token, str(pm))
+        self.assertNotIn(pm.encrypted_token, str(pm))
+
+    def test_asaas11_admin_never_exposes_token(self):
+        """
+        ASAAS-11: Garante que GatewayPaymentMethodAdmin exclui o campo encrypted_token
+        e nao o exibe em list_display ou campos editaveis.
+        """
+        from django.contrib.admin.sites import site
+        from core.models import GatewayPaymentMethod
+        from core.admin import GatewayPaymentMethodAdmin
+
+        admin_inst = site._registry[GatewayPaymentMethod]
+        self.assertIn('encrypted_token', admin_inst.exclude)
+        self.assertNotIn('encrypted_token', admin_inst.list_display)
+
+    def test_asaas11_annual_plan_purchase_provisioning_and_billing_linkage(self):
+        """
+        ASAAS-11: Testa a criacao de AnnualPlanPurchase e vinculo dos 5 BillingRecords
+        durante o fluxo anual, garantindo preservacao de installment_count=5 e soma = 199.90.
+        """
+        from core.services.payments.provisioning import process_checkout_paid_event
+        from core.services.payments.asaas.webhooks import process_webhook_event
+        from core.models import AnnualPlanPurchase, GatewayPaymentMethod
+        from decimal import Decimal
+        from unittest.mock import patch, MagicMock
+
+        order = SignupOrder.objects.create(
+            band_name="Banda Anual Full Test",
+            responsible_name="Responsavel Anual",
+            email="anual_full@teste.com",
+            phone="11988887777",
+            plan_type="BASICO",
+            billing_cycle="ANUAL",
+            amount=Decimal('199.90'),
+            external_reference="bp-annual-full-test-01",
+            gateway_checkout_id="chk_annual_full_001",
+            status="PENDENTE"
+        )
+
+        payload_chk = {
+            "id": "evt_chk_paid_annual_full",
+            "event": "CHECKOUT_PAID",
+            "checkout": {
+                "id": "chk_annual_full_001",
+                "customer": "cus_annual_full_01",
+                "externalReference": "bp-annual-full-test-01",
+                "status": "PAID"
+            },
+            "payment": {
+                "id": "pay_annual_full_p1",
+                "value": 39.98,
+                "installment": "inst_annual_full_123",
+                "dueDate": "2026-09-04",
+                "status": "CONFIRMED"
+            }
+        }
+
+        mock_installment = {
+            "id": "inst_annual_full_123",
+            "installmentCount": 5,
+            "value": 199.90,
+            "netValue": 194.50
+        }
+        mock_payment_full = {
+            "id": "pay_annual_full_p1",
+            "creditCard": {
+                "creditCardBrand": "VISA",
+                "creditCardNumber": "4444",
+                "creditCardToken": "token_remoto_via_api_mock_123"
+            }
+        }
+
+        with patch('core.services.payments.asaas.client.AsaasClient.get_installment', return_value=mock_installment):
+            with patch('core.services.payments.asaas.client.AsaasClient.get_payment', return_value=mock_payment_full):
+                ok, msg, band = process_checkout_paid_event(payload_chk)
+                self.assertTrue(ok)
+
+        sub = band.subscriptions.first()
+        self.assertIsNotNone(sub)
+
+        # 1. AnnualPlanPurchase criada corretamente
+        annual_pur = AnnualPlanPurchase.objects.filter(band_subscription=sub).first()
+        self.assertIsNotNone(annual_pur)
+        self.assertEqual(annual_pur.purchase_type, AnnualPlanPurchase.PurchaseType.INITIAL)
+        self.assertEqual(annual_pur.installment_count, 5)
+        self.assertEqual(annual_pur.gross_amount, Decimal('199.90'))
+        self.assertEqual(annual_pur.net_amount, Decimal('194.50'))
+        self.assertEqual(annual_pur.gateway_installment_id, "inst_annual_full_123")
+
+        # 2. GatewayPaymentMethod criado com token criptografado
+        pm = GatewayPaymentMethod.objects.filter(subscription=sub, is_active=True).first()
+        self.assertIsNotNone(pm)
+        self.assertEqual(pm.card_brand, "VISA")
+        self.assertEqual(pm.card_last4, "4444")
+        self.assertEqual(pm.get_decrypted_token(), "token_remoto_via_api_mock_123")
+
+        # 3. 1a Fatura associada a AnnualPlanPurchase
+        r1 = BillingRecord.objects.get(gateway_payment_id="pay_annual_full_p1")
+        self.assertEqual(r1.annual_purchase, annual_pur)
+        self.assertEqual(r1.installment_number, 1)
+        self.assertEqual(r1.amount, Decimal('39.98'))
+
+        # 4. Simular webhooks das parcelas 2 a 5
+        for i in range(2, 6):
+            p_id = f"pay_annual_full_p{i}"
+            ev = PaymentWebhookEvent.objects.create(
+                provider='ASAAS',
+                gateway_event_id=f"evt_pay_{p_id}",
+                event_type='PAYMENT_CONFIRMED',
+                payload={
+                    "id": f"evt_pay_{p_id}",
+                    "event": "PAYMENT_CONFIRMED",
+                    "payment": {
+                        "id": p_id,
+                        "value": 39.98,
+                        "installment": "inst_annual_full_123",
+                        "installmentNumber": i,
+                        "dueDate": f"2026-{9+i-1:02d}-04" if (9+i-1) <= 12 else f"2027-{9+i-1-12:02d}-04",
+                        "status": "CONFIRMED",
+                        "externalReference": "bp-annual-full-test-01"
+                    }
+                }
+            )
+            success_ev, _ = process_webhook_event(ev)
+            self.assertTrue(success_ev)
+
+        # 5. Todos os 5 BillingRecords apontam para a mesma AnnualPlanPurchase e somam 199.90
+        all_records = BillingRecord.objects.filter(band=band).order_by('installment_number')
+        self.assertEqual(all_records.count(), 5)
+        for idx, rec in enumerate(all_records, start=1):
+            self.assertEqual(rec.annual_purchase, annual_pur)
+            self.assertEqual(rec.installment_number, idx)
+            self.assertEqual(rec.amount, Decimal('39.98'))
+        self.assertEqual(sum(r.amount for r in all_records), Decimal('199.90'))

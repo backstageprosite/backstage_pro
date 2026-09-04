@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Dict, Any, Tuple, Optional
 from django.db import transaction
 from django.utils import timezone
-from core.models import PaymentWebhookEvent, BillingRecord, BandSubscription, SignupOrder
+from core.models import PaymentWebhookEvent, BillingRecord, BandSubscription, SignupOrder, AnnualPlanPurchase, GatewayPaymentMethod
 from core.services.payments.base import extract_asaas_id
 from core.services.payments.provisioning import process_checkout_paid_event
 
@@ -276,6 +276,21 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
             ).first()
 
             if not record:
+                # Localizar vinculo com AnnualPlanPurchase se for plano anual
+                inst_id_ref = extract_asaas_id(payment_data.get('installment'))
+                inst_num_ref = payment_data.get('installmentNumber')
+                annual_purchase_ref = None
+                if sub.billing_cycle == 'ANUAL':
+                    if inst_id_ref:
+                        annual_purchase_ref = AnnualPlanPurchase.objects.filter(
+                            band_subscription=sub,
+                            gateway_installment_id=inst_id_ref
+                        ).first()
+                    if not annual_purchase_ref:
+                        annual_purchase_ref = AnnualPlanPurchase.objects.filter(
+                            band_subscription=sub
+                        ).order_by('-coverage_start').first()
+
                 record = BillingRecord.objects.create(
                     subscription=sub,
                     band=sub.band,
@@ -290,13 +305,29 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                     gateway_payment_id=payment_id,
                     gateway_invoice_url=payment_data.get('invoiceUrl'),
                     gateway_external_reference=external_ref,
-                    gateway_event_status=event_type
+                    gateway_event_status=event_type,
+                    annual_purchase=annual_purchase_ref,
+                    installment_number=inst_num_ref
                 )
             else:
                 record.gateway_payment_id = payment_id
                 record.gateway_invoice_url = payment_data.get('invoiceUrl') or record.gateway_invoice_url
                 record.gateway_external_reference = external_ref or record.gateway_external_reference
                 record.gateway_event_status = event_type
+                if sub.billing_cycle == 'ANUAL':
+                    if payment_data.get('installmentNumber') and not record.installment_number:
+                        record.installment_number = payment_data.get('installmentNumber')
+                    if not record.annual_purchase:
+                        inst_id_ref = extract_asaas_id(payment_data.get('installment'))
+                        if inst_id_ref:
+                            record.annual_purchase = AnnualPlanPurchase.objects.filter(
+                                band_subscription=sub,
+                                gateway_installment_id=inst_id_ref
+                            ).first()
+                        if not record.annual_purchase:
+                            record.annual_purchase = AnnualPlanPurchase.objects.filter(
+                                band_subscription=sub
+                            ).order_by('-coverage_start').first()
         else:
             return False, f'AGUARDANDO_PROVISIONAMENTO_CHECKOUT_PAID: payment_id={payment_id}, ref={external_ref}, sub={subscription_id}'
 
@@ -543,12 +574,15 @@ def handle_asaas_webhook_payload(payload: Dict[str, Any]) -> Tuple[bool, str]:
     if not event_id or not event_type:
         return False, 'PAYLOAD_INVALIDO_SEM_ID_OU_EVENTO'
 
+    from core.services.payments.security import sanitize_webhook_payload
+    safe_payload = sanitize_webhook_payload(payload)
+
     webhook_event, created = PaymentWebhookEvent.objects.get_or_create(
         gateway_event_id=str(event_id),
         defaults={
             'provider': 'ASAAS',
             'event_type': str(event_type),
-            'payload': payload,
+            'payload': safe_payload,
             'processed': False
         }
     )
