@@ -78,6 +78,11 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
         cycle_name = 'Anual' if order.billing_cycle == 'ANUAL' else 'Mensal'
         plan_display = f"{'Avançado' if order.plan_type == 'AVANCADO' else 'Básico'} {cycle_name}"
         next_due = calculate_next_billing_date(timezone.localdate(), order.billing_cycle, 1)
+        is_annual = (order.billing_cycle == 'ANUAL')
+
+        # Para ANUAL (INSTALLMENT): nao ha recorrencia automatica no gateway (auto_renew=False)
+        # Para MENSAL (RECURRENT): ha renovacao automatica (auto_renew=True)
+        auto_renew_val = False if is_annual else True
 
         sub = BandSubscription.objects.create(
             band=band,
@@ -86,7 +91,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             contracted_value=order.amount,
             start_date=timezone.localdate(),
             next_due_date=next_due,
-            auto_renew=True,
+            auto_renew=auto_renew_val,
             status='ATIVO',
             payment_method_preference='CARTAO',
             financial_responsible_name=order.responsible_name,
@@ -106,7 +111,12 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
             9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
         }
-        ref_period = f"{month_names[today.month]}/{today.year}"
+        if is_annual:
+            ref_period = f"Vigência {today.strftime('%d/%m/%Y')} a {next_due.strftime('%d/%m/%Y')}"
+            record_notes = "Compra Anual parcelável aprovada via Checkout Asaas (vigência de 12 meses)"
+        else:
+            ref_period = f"{month_names[today.month]}/{today.year}"
+            record_notes = "Primeiro pagamento aprovado via Checkout Asaas"
 
         BillingRecord.objects.create(
             subscription=sub,
@@ -119,7 +129,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             paid_date=today,
             status='PAGO',
             payment_method='CARTAO',
-            notes="Primeiro pagamento aprovado via Checkout Asaas",
+            notes=record_notes,
             gateway_provider='ASAAS',
             gateway_payment_id=payment_id,
             gateway_external_reference=order.external_reference,

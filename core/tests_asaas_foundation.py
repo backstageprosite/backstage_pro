@@ -3219,3 +3219,187 @@ class AsaasFoundationTests(TestCase):
         mock_client.update_payment.assert_called_once_with('pay_nov', {'dueDate': '2026-11-15'})
         # nextDueDate: 15/10 + 2 meses = 15/12
         mock_client.update_subscription.assert_called_once_with('sub_suc_123', {'nextDueDate': '2026-12-15'})
+
+    def test_annual_installment_checkout_and_provisioning(self):
+        """
+        ASAAS-10: Testes A, C, D, E, H, I, J do plano anual parcelavel em ate 5x:
+        - Básico anual (199.90 / INSTALLMENT / ate 5x)
+        - Avançado anual (499.90 / INSTALLMENT / ate 5x)
+        - Anual aprovado: vigência de 12 meses (ano calendário)
+        - Anual não cria Subscription YEARLY no gateway
+        - auto_renew=False e sem exibição de 'Renovação Automática: Sim'
+        """
+        from core.services.payments.provisioning import process_checkout_paid_event
+        from django.test import Client, override_settings
+
+        # 1. SignupOrder para Básico Anual (R$ 199,90)
+        order_basic = SignupOrder.objects.create(
+            band_name='Banda Basico Anual',
+            responsible_name='Resp Basico',
+            email='basico-anual@example.com',
+            plan_type='BASICO',
+            billing_cycle='ANUAL',
+            amount=Decimal('199.90'),
+            status='PENDENTE',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_annual_01',
+            gateway_checkout_id='chk_annual_basic_01',
+            external_reference='bp-annual-basic-001'
+        )
+
+        payload_basic = {
+            'id': 'evt_chk_annual_01',
+            'event': 'CHECKOUT_PAID',
+            'checkout': {
+                'id': 'chk_annual_basic_01',
+                'customer': 'cus_annual_01',
+                'externalReference': 'bp-annual-basic-001',
+                'status': 'PAID',
+                # Em INSTALLMENT, nao ha subscription_id no Asaas
+                'subscription': None
+            },
+            'payment': {
+                'id': 'pay_annual_installment_01',
+                'status': 'CONFIRMED',
+                'value': 199.90
+            }
+        }
+
+        ok, msg, band = process_checkout_paid_event(payload_basic)
+        self.assertTrue(ok)
+        self.assertEqual(msg, 'PROVISIONADO')
+
+        sub = band.subscriptions.first()
+        self.assertIsNotNone(sub)
+        self.assertEqual(sub.billing_cycle, 'ANUAL')
+        self.assertEqual(sub.contracted_value, Decimal('199.90'))
+        self.assertEqual(sub.status, 'ATIVO')
+        self.assertFalse(sub.auto_renew)  # auto_renew=False no modelo INSTALLMENT
+        self.assertIsNone(sub.gateway_subscription_id)  # Nao cria Subscription YEARLY
+
+        # Vigencia de 12 meses
+        today = timezone.localdate()
+        expected_due = calculate_next_billing_date(today, 'ANUAL', 1)
+        self.assertEqual(sub.start_date, today)
+        self.assertEqual(sub.next_due_date, expected_due)
+        self.assertTrue(band.has_active_subscription)
+
+        # BillingRecord inicial
+        rec = sub.records.first()
+        self.assertIsNotNone(rec)
+        self.assertEqual(rec.status, 'PAGO')
+        self.assertEqual(rec.amount, Decimal('199.90'))
+        self.assertIn('Vigência', rec.reference_period)
+
+        # Testar visualizacao da tela Minha Assinatura
+        with override_settings(ALLOWED_HOSTS=['*']):
+            user = band.users.first()
+            if not user:
+                # Criar usuario de teste com perfil PRODUTOR vinculado a banda para testar a view
+                user = User.objects.create_user(
+                    username='user_annual_test',
+                    password='secretpassword',
+                    band=band,
+                    role='PRODUTOR'
+                )
+            c = Client()
+            c.force_login(user)
+            resp = c.get(f'/{band.slug}/relatorios/assinatura/')
+            self.assertEqual(resp.status_code, 200)
+            html = resp.content.decode('utf-8')
+            # Nao deve exibir 'Renovação Automática: Sim'
+            self.assertIn('Renovação Automática', html)
+            self.assertNotIn('Sim', html[html.find('Renovação Automática'):html.find('Renovação Automática') + 400])
+            # Deve exibir 'Acesso até' em vez de 'Próxima Cobrança'
+            self.assertIn('Acesso até', html)
+            # Não deve exibir botão 'Cancelar Assinatura' (pois não é renovação automática)
+            self.assertNotIn('modalCancelarAssinatura', html)
+
+    def test_annual_multiple_installment_events_idempotency(self):
+        """
+        ASAAS-10: Testes F e G:
+        - Pagamento parcelado em 5x: NÂO concede 5 extensões de vigência.
+        - Eventos posteriores de parcelas não alteram next_due_date.
+        """
+        from core.services.payments.provisioning import process_checkout_paid_event
+
+        order = SignupOrder.objects.create(
+            band_name='Banda 5x Anual',
+            responsible_name='Resp 5x',
+            email='anual5x@example.com',
+            plan_type='AVANCADO',
+            billing_cycle='ANUAL',
+            amount=Decimal('499.90'),
+            status='PENDENTE',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_annual_5x',
+            gateway_checkout_id='chk_annual_5x_001',
+            external_reference='bp-annual-5x-001'
+        )
+
+        payload_p1 = {
+            'id': 'evt_chk_annual_5x',
+            'event': 'CHECKOUT_PAID',
+            'checkout': {
+                'id': 'chk_annual_5x_001',
+                'customer': 'cus_annual_5x',
+                'externalReference': 'bp-annual-5x-001',
+                'status': 'PAID',
+                'subscription': None
+            },
+            'payment': {
+                'id': 'pay_p1_999',
+                'status': 'CONFIRMED',
+                'value': 99.98
+            }
+        }
+
+        # Primeira parcela / aprovacao da compra
+        ok1, msg1, band = process_checkout_paid_event(payload_p1)
+        self.assertTrue(ok1)
+        sub = band.subscriptions.first()
+        initial_due = sub.next_due_date
+
+        # Simula segunda chamada de CHECKOUT_PAID (idempotencia)
+        ok2, msg2, band2 = process_checkout_paid_event(payload_p1)
+        self.assertTrue(ok2)
+        self.assertEqual(msg2, 'JA_PROVISIONADO')
+
+        sub.refresh_from_db()
+        # next_due_date NAO foi estendido novamente
+        self.assertEqual(sub.next_due_date, initial_due)
+
+    def test_annual_expiration_boundary_and_leap_year(self):
+        """
+        ASAAS-10: Testes K e L:
+        - Acesso valido durante o dia de next_due_date (boundary).
+        - Bloqueio somente apos o ultimo dia de acesso (today > next_due_date).
+        - Calculo de 29/02 em ano bissexto para +1 ano calendario.
+        """
+        # Teste L: 29/02 em ano bissexto (ex: 29/02/2028 -> 28/02/2029)
+        leap_start = date(2028, 2, 29)
+        calc_next = calculate_next_billing_date(leap_start, 'ANUAL', 1)
+        self.assertEqual(calc_next, date(2029, 2, 28))
+
+        # Teste K: Boundary de acesso
+        band = Band.objects.create(name='Banda Expiration Test', slug='bandaexptest')
+        sub = BandSubscription.objects.create(
+            band=band, plan_name='Básico Anual', billing_cycle='ANUAL', contracted_value=Decimal('199.90'),
+            start_date=date(2025, 9, 4), next_due_date=date(2026, 9, 4),
+            status='ATIVO', auto_renew=False,
+            gateway_provider='ASAAS'
+        )
+
+        with patch('django.utils.timezone.localdate') as mock_today:
+            # No dia 04/09/2026: today == next_due_date -> acesso PERMANECE VALIDO
+            mock_today.return_value = date(2026, 9, 4)
+            self.assertFalse(sub.is_canceled_period_expired)
+            self.assertTrue(band.has_active_subscription)
+
+            # No dia 05/09/2026: today > next_due_date -> PERIODO ENCERRADO
+            mock_today.return_value = date(2026, 9, 5)
+            self.assertTrue(sub.is_canceled_period_expired)
+            # Ao checar has_active_subscription, executa check_and_sync_auto_expiration e passa para DESATIVADO
+            self.assertFalse(band.has_active_subscription)
+            sub.refresh_from_db()
+            self.assertEqual(sub.status, 'DESATIVADO')

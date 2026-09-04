@@ -24,6 +24,20 @@ class Command(BaseCommand):
             type=int,
             help='ID do SignupOrder existente para retentativa de criacao de Checkout no Sandbox.'
         )
+        parser.add_argument(
+            '--plan',
+            type=str,
+            choices=['BASICO', 'AVANCADO'],
+            default='BASICO',
+            help='Plano comercial (BASICO ou AVANCADO). Padrao: BASICO.'
+        )
+        parser.add_argument(
+            '--cycle',
+            type=str,
+            choices=['MENSAL', 'ANUAL'],
+            default='MENSAL',
+            help='Ciclo de cobranca (MENSAL ou ANUAL). Padrao: MENSAL.'
+        )
 
     def handle(self, *args, **options):
         # 1. Trava estrita de seguranca: Executar exclusivamente em staging + sandbox
@@ -40,6 +54,8 @@ class Command(BaseCommand):
 
         customer_id = 'cus_000009006807'
         order_id = options.get('order_id')
+        plan_arg = options.get('plan', 'BASICO').upper()
+        cycle_arg = options.get('cycle', 'MENSAL').upper()
 
         # 2. Carregar pedido existente ou criar novo pedido
         if order_id:
@@ -61,6 +77,14 @@ class Command(BaseCommand):
 
             self.stdout.write(self.style.NOTICE(f'Reutilizando SignupOrder existente (ID: {order.id}, Ref: {order.external_reference}).'))
         else:
+            # Tabela de precos comerciais
+            prices = {
+                ('BASICO', 'MENSAL'): Decimal('19.90'),
+                ('BASICO', 'ANUAL'): Decimal('199.90'),
+                ('AVANCADO', 'MENSAL'): Decimal('49.90'),
+                ('AVANCADO', 'ANUAL'): Decimal('499.90'),
+            }
+            order_amount = prices.get((plan_arg, cycle_arg), Decimal('19.90'))
             ext_ref = f'bp-homolog-{uuid.uuid4().hex[:12]}'
             order = SignupOrder.objects.create(
                 band_name='Banda Teste Homologacao',
@@ -68,9 +92,9 @@ class Command(BaseCommand):
                 email='backstagepro-sandbox@example.com',
                 cpf_cnpj='24.587.214/0001-44',
                 phone='71999887766',
-                plan_type='BASICO',
-                billing_cycle='MENSAL',
-                amount=Decimal('19.90'),
+                plan_type=plan_arg,
+                billing_cycle=cycle_arg,
+                amount=order_amount,
                 status='PENDENTE',
                 gateway_provider='ASAAS',
                 gateway_customer_id=customer_id,
@@ -84,30 +108,64 @@ class Command(BaseCommand):
 
         # 4. Montar payload do Checkout Sandbox com UTF-8 estrito
         homolog_url = 'https://backstage-pro-web-homologacao.up.railway.app/'
-        checkout_payload = {
-            'customer': customer_id,
-            'billingTypes': ['CREDIT_CARD'],
-            'chargeTypes': ['RECURRENT'],
-            'minutesToExpire': 60,
-            'externalReference': order.external_reference,
-            'items': [
-                {
-                    'name': 'Backstage Pro Básico',
-                    'description': 'Assinatura mensal Backstage Pro - Sandbox',
-                    'quantity': 1,
-                    'value': 19.90
+        plan_label = 'Avançado' if order.plan_type == 'AVANCADO' else 'Básico'
+        is_annual = (order.billing_cycle == 'ANUAL')
+
+        if is_annual:
+            # Compra anual parcelavel em ate 5x no cartao (INSTALLMENT)
+            item_name = f'Backstage Pro {plan_label} Anual'
+            item_desc = f'Assinatura anual Backstage Pro (vigência de 12 meses) - Sandbox'
+            checkout_payload = {
+                'customer': customer_id,
+                'billingTypes': ['CREDIT_CARD'],
+                'chargeTypes': ['INSTALLMENT'],
+                'minutesToExpire': 60,
+                'externalReference': order.external_reference,
+                'items': [
+                    {
+                        'name': item_name,
+                        'description': item_desc,
+                        'quantity': 1,
+                        'value': float(order.amount)
+                    }
+                ],
+                'installment': {
+                    'maxInstallmentCount': 5
+                },
+                'callback': {
+                    'successUrl': homolog_url,
+                    'cancelUrl': homolog_url,
+                    'expiredUrl': homolog_url
                 }
-            ],
-            'subscription': {
-                'cycle': 'MONTHLY',
-                'nextDueDate': next_due_str
-            },
-            'callback': {
-                'successUrl': homolog_url,
-                'cancelUrl': homolog_url,
-                'expiredUrl': homolog_url
             }
-        }
+        else:
+            # Assinatura mensal recorrente (RECURRENT)
+            item_name = f'Backstage Pro {plan_label}'
+            item_desc = f'Assinatura mensal Backstage Pro - Sandbox'
+            checkout_payload = {
+                'customer': customer_id,
+                'billingTypes': ['CREDIT_CARD'],
+                'chargeTypes': ['RECURRENT'],
+                'minutesToExpire': 60,
+                'externalReference': order.external_reference,
+                'items': [
+                    {
+                        'name': item_name,
+                        'description': item_desc,
+                        'quantity': 1,
+                        'value': float(order.amount)
+                    }
+                ],
+                'subscription': {
+                    'cycle': 'MONTHLY',
+                    'nextDueDate': next_due_str
+                },
+                'callback': {
+                    'successUrl': homolog_url,
+                    'cancelUrl': homolog_url,
+                    'expiredUrl': homolog_url
+                }
+            }
 
         client = AsaasClient(config=config)
         endpoint_url = f'{client.base_url}/checkouts'
@@ -153,8 +211,11 @@ class Command(BaseCommand):
         self.stdout.write(f'checkout.status: {checkout_status}')
         if checkout_link:
             self.stdout.write(f'checkout.link: {checkout_link}')
-        self.stdout.write(f'valor: R$ 19,90')
-        self.stdout.write(f'plano: Basico')
-        self.stdout.write(f'ciclo: Mensal')
-        self.stdout.write(f'nextDueDate: {next_due_str}')
+        self.stdout.write(f'valor: R$ {order.amount:.2f}')
+        self.stdout.write(f'plano: {plan_label}')
+        self.stdout.write(f'ciclo: {"Anual" if is_annual else "Mensal"}')
+        if not is_annual:
+            self.stdout.write(f'nextDueDate: {next_due_str}')
+        else:
+            self.stdout.write(f'tipo: INSTALLMENT (ate 5x)')
         self.stdout.write(self.style.SUCCESS('=================================================='))

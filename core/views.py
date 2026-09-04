@@ -1381,7 +1381,9 @@ def minha_assinatura_view(request, band_slug):
 
         # Estados dos botões de ação para assinaturas ativas não suspensas:
         if subscription.status == 'ATIVO' and not subscription.is_financially_suspended:
-            if not subscription.cancel_at_period_end:
+            # Para planos recorrentes com renovação automática ativa (ex: Mensal), permite cancelar
+            # Para compras anuais pré-pagas/parceladas sem recorrência (auto_renew=False), não exibe cancelamento
+            if not subscription.cancel_at_period_end and subscription.auto_renew:
                 can_cancel = True
     else:
         can_resubscribe = True

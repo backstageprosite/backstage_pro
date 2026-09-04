@@ -712,7 +712,9 @@ class BandSubscription(models.Model):
     @property
     def is_canceled_period_expired(self):
         """
-        Assinatura com cancelamento voluntário agendado que já atingiu/ultrapassou o fim do período pago.
+        Assinatura com cancelamento voluntário agendado (cancel_at_period_end=True) ou
+        plano anual sem renovação automática (billing_cycle='ANUAL', auto_renew=False)
+        que já atingiu/ultrapassou o fim do período pago.
         O acesso operacional é concedido até o final do dia de next_due_date.
         Após esse dia (today > next_due_date), ou quando desativada por cancelamento, o período está encerrado.
         """
@@ -722,21 +724,26 @@ class BandSubscription(models.Model):
         if self.cancel_at_period_end and not self.auto_renew and self.next_due_date:
             today = timezone.localdate()
             return today > self.next_due_date
+        if self.billing_cycle == 'ANUAL' and not self.auto_renew and self.next_due_date:
+            today = timezone.localdate()
+            return today > self.next_due_date
         return False
 
     def check_and_sync_auto_expiration(self):
         """
         Regra de encerramento automático do período já pago:
-        Quando cancel_at_period_end=True, auto_renew=False e today > next_due_date (após o dia final pago),
-        a assinatura passa automaticamente para DESATIVADO.
+        Quando cancel_at_period_end=True e auto_renew=False, ou plano anual sem renovação automática,
+        e today > next_due_date (após o dia final pago), a assinatura passa automaticamente para DESATIVADO.
         """
         from django.utils import timezone
         today = timezone.localdate()
-        if self.status == 'ATIVO' and self.cancel_at_period_end and not self.auto_renew:
-            if self.next_due_date and today > self.next_due_date:
-                self.status = 'DESATIVADO'
-                self.save(update_fields=['status', 'updated_at'])
-                return True
+        if self.status == 'ATIVO':
+            is_expired_annual = (self.billing_cycle == 'ANUAL' and not self.auto_renew)
+            if (self.cancel_at_period_end and not self.auto_renew) or is_expired_annual:
+                if self.next_due_date and today > self.next_due_date:
+                    self.status = 'DESATIVADO'
+                    self.save(update_fields=['status', 'updated_at'])
+                    return True
         return False
 
     def __str__(self):
