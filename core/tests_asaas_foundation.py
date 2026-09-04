@@ -1979,8 +1979,9 @@ class AsaasFoundationTests(TestCase):
         resp_assina_c = client.get(f'/{band_c.slug}/relatorios/assinatura/')
         self.assertEqual(resp_assina_c.status_code, 200)
         self.assertContains(resp_assina_c, 'Pagamento em atraso')
-        limit_date_c = (sub_c.next_due_date + timedelta(days=5)).strftime('%d/%m/%Y')
+        limit_date_c = (sub_c.next_due_date + timedelta(days=4)).strftime('%d/%m/%Y')
         self.assertContains(resp_assina_c, limit_date_c)
+
 
         # --- Cenário D: 5 dias de atraso (Suspensão Automática) ---
         band_d = Band.objects.create(name='Banda Dia 5', slug='bandadia5')
@@ -2709,3 +2710,64 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(sub_abandon.canceled_at, abandon_canceled_at)
         self.assertEqual(sub_abandon.status, 'DESATIVADO')
         self.assertFalse(band_abandon.has_active_subscription)
+
+    def test_overdue_grace_period_deadline_and_suspension(self):
+        """
+        BACKSTAGE PRO — ASAAS-09: Valida prazo de tolerância (next_due_date + 4 dias)
+        e suspensão a partir do 5º dia.
+        - Vencimento 03/09/2026 (hoje 04/09, days_overdue=1): deadline = 07/09/2026, banner amarelo.
+        - Vencimento 31/08/2026 (hoje 04/09, days_overdue=4): deadline = 04/09/2026, banner amarelo.
+        - Vencimento 30/08/2026 (hoje 04/09, days_overdue=5): suspenso, banner vermelho, CTA Regularizar Pagamento.
+        """
+        band_dl = Band.objects.create(name='Banda Deadline Test', slug='bandadltest')
+        user_dl = User.objects.create_user(
+            username='prod_dl', email='dl@test.com', password='123',
+            band=band_dl, role='PRODUTOR'
+        )
+        sub_dl = BandSubscription.objects.create(
+            band=band_dl, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 8, 4), next_due_date=date(2026, 9, 3),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO',
+            gateway_provider='ASAAS', gateway_subscription_id='sub_dl_123',
+            gateway_customer_id='cus_dl_456'
+        )
+
+        client = Client(HTTP_HOST='localhost')
+        client.force_login(user_dl)
+
+        # 1. Dia 1 de atraso (vencimento 03/09/2026) -> deadline 07/09/2026
+        resp1 = client.get(f'/{band_dl.slug}/relatorios/assinatura/')
+        self.assertEqual(resp1.status_code, 200)
+        self.assertEqual(sub_dl.days_overdue(), 1)
+        self.assertTrue(sub_dl.is_overdue_tolerance)
+        self.assertFalse(sub_dl.is_financially_suspended)
+        self.assertContains(resp1, 'Existe um pagamento em atraso')
+        self.assertContains(resp1, 'Regularize até 07/09/2026')
+        self.assertNotContains(resp1, '08/09/2026')
+        self.assertNotContains(resp1, 'Assinatura suspensa por pagamento em atraso')
+
+        # 2. Dia 4 de atraso (vencimento 31/08/2026) -> deadline 04/09/2026 (hoje)
+        sub_dl.next_due_date = date(2026, 8, 31)
+        sub_dl.save(update_fields=['next_due_date'])
+        resp4 = client.get(f'/{band_dl.slug}/relatorios/assinatura/')
+        self.assertEqual(resp4.status_code, 200)
+        self.assertEqual(sub_dl.days_overdue(), 4)
+        self.assertTrue(sub_dl.is_overdue_tolerance)
+        self.assertFalse(sub_dl.is_financially_suspended)
+        self.assertContains(resp4, 'Existe um pagamento em atraso')
+        self.assertContains(resp4, 'Regularize até 04/09/2026')
+        self.assertNotContains(resp4, '05/09/2026')
+
+        # 3. Dia 5 de atraso (vencimento 30/08/2026) -> Suspensão financeira
+        sub_dl.next_due_date = date(2026, 8, 30)
+        sub_dl.save(update_fields=['next_due_date'])
+        resp5 = client.get(f'/{band_dl.slug}/relatorios/assinatura/')
+        self.assertEqual(resp5.status_code, 200)
+        self.assertEqual(sub_dl.days_overdue(), 5)
+        self.assertFalse(sub_dl.is_overdue_tolerance)
+        self.assertTrue(sub_dl.is_financially_suspended)
+        self.assertContains(resp5, 'Assinatura suspensa por pagamento em atraso')
+        self.assertContains(resp5, 'Regularizar Pagamento')
+        self.assertNotContains(resp5, 'Existe um pagamento em atraso. Regularize até')
+        self.assertNotContains(resp5, 'Reativar Assinatura')
+        self.assertNotContains(resp5, 'Cancelar Assinatura')

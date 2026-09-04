@@ -1366,7 +1366,7 @@ def minha_assinatura_view(request, band_slug):
                 alert_overdue_tolerance = True
                 if subscription.next_due_date:
                     from datetime import timedelta
-                    overdue_limit_date = subscription.next_due_date + timedelta(days=5)
+                    overdue_limit_date = subscription.next_due_date + timedelta(days=4)
             else:
                 status_display = 'Ativo'
         elif subscription.is_canceled_period_expired or (st == 'DESATIVADO' and subscription.cancel_at_period_end):
