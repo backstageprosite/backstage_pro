@@ -3,7 +3,7 @@ import logging
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from core.models import BandSubscription
+from core.models import BandSubscription, AnnualPlanPurchase
 from core.services.payments.renewal import AnnualRenewalService
 
 logger = logging.getLogger(__name__)
@@ -84,9 +84,16 @@ class Command(BaseCommand):
                 skipped_count += 1
                 continue
 
+            price, reason_price = service.calculate_renewal_price(sub, target_date=target_date)
+            last_confirmed = AnnualPlanPurchase.objects.filter(
+                band_subscription=sub,
+                status=AnnualPlanPurchase.Status.CONFIRMED
+            ).order_by('-coverage_start').first()
+            inst_count = last_confirmed.installment_count if last_confirmed else 1
+
             self.stdout.write(f"Sub {sub.id} ({sub.band.name}): Elegível para renovação anual.")
             if dry_run:
-                self.stdout.write(f"  [DRY-RUN] Simulação: criaria renovação de R$ {sub.contracted_value}")
+                self.stdout.write(f"  [DRY-RUN] Simulação: criaria renovação de R$ {price:.2f} em {inst_count}x (Motivo: {reason_price})")
                 continue
 
             success, msg, purchase = service.process_subscription_renewal(sub, target_date=target_date)

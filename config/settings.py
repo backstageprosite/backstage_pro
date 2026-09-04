@@ -332,3 +332,9 @@ ASAAS_BASE_URL = os.getenv('ASAAS_BASE_URL', 'https://api-sandbox.asaas.com/v3' 
 ASAAS_API_KEY = os.getenv('ASAAS_API_KEY', None)
 ASAAS_WEBHOOK_TOKEN = os.getenv('ASAAS_WEBHOOK_TOKEN', None)
 PAYMENT_TOKEN_ENCRYPTION_KEY = os.getenv('PAYMENT_TOKEN_ENCRYPTION_KEY', None)
+
+# ==============================================================================
+# EMAIL SETTINGS
+# ==============================================================================
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend' if not IS_PRODUCTION else 'django.core.mail.backends.smtp.EmailBackend')
+
