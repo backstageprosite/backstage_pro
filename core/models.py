@@ -2103,6 +2103,7 @@ class BandActivationToken(models.Model):
     email = models.EmailField(verbose_name='E-mail do Destinatário')
     responsible_name = models.CharField(max_length=200, blank=True, null=True, verbose_name='Nome do Responsável')
     token_hash = models.CharField(max_length=64, unique=True, db_index=True, verbose_name='Hash SHA-256 do Token')
+    encrypted_token = models.TextField(blank=True, null=True, verbose_name='Token Criptografado (Fernet)')
     expires_at = models.DateTimeField(verbose_name='Expira em')
     used_at = models.DateTimeField(null=True, blank=True, verbose_name='Utilizado em')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')

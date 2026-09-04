@@ -27,8 +27,11 @@ def create_band_activation_token(
 ) -> Tuple[BandActivationToken, str]:
     """
     Cria registro de token de ativação com validade (padrão 48h) e retorna a instância e o token em texto puro.
+    Persiste o token_hash para validação pública e o encrypted_token (Fernet) para recuperação pelo worker de email.
     """
     raw_token, token_hash = generate_activation_token_pair()
+    from core.services.payments.security import encrypt_activation_token
+    encrypted_tok = encrypt_activation_token(raw_token)
     expires_at = timezone.now() + timedelta(hours=valid_hours)
 
     activation = BandActivationToken.objects.create(
@@ -37,6 +40,7 @@ def create_band_activation_token(
         email=email,
         responsible_name=responsible_name,
         token_hash=token_hash,
+        encrypted_token=encrypted_tok,
         expires_at=expires_at
     )
     return activation, raw_token

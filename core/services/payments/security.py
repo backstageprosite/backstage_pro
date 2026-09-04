@@ -55,6 +55,56 @@ def decrypt_payment_token(encrypted_token: str) -> str:
         raise ValueError("Falha na descriptografia do token de pagamento.") from e
 
 
+def get_activation_encryption_key() -> bytes:
+    """
+    Recupera a chave Fernet configurada em ACTIVATION_TOKEN_ENCRYPTION_KEY ou PAYMENT_TOKEN_ENCRYPTION_KEY.
+    A chave deve ser uma string base64 válida de 32 bytes (44 caracteres).
+    """
+    key = getattr(settings, 'ACTIVATION_TOKEN_ENCRYPTION_KEY', None) or os.getenv('ACTIVATION_TOKEN_ENCRYPTION_KEY')
+    if not key:
+        key = getattr(settings, 'PAYMENT_TOKEN_ENCRYPTION_KEY', None) or os.getenv('PAYMENT_TOKEN_ENCRYPTION_KEY')
+    if not key:
+        secret = getattr(settings, 'SECRET_KEY', 'default-dev-secret-key-32-chars-long!')
+        import base64, hashlib
+        derived = hashlib.sha256(secret.encode('utf-8')).digest()
+        key = base64.urlsafe_b64encode(derived)
+    if isinstance(key, str):
+        key = key.strip().encode('utf-8')
+    return key
+
+
+def encrypt_activation_token(token: str) -> str:
+    """
+    Criptografa um token de ativação de conta utilizando Fernet (AES-128-CBC + HMAC-SHA256).
+    Retorna o ciphertext seguro codificado em string base64.
+    """
+    if not token or not isinstance(token, str):
+        raise ValueError("Token invalido para criptografia.")
+
+    key = get_activation_encryption_key()
+    f = Fernet(key)
+    ciphertext = f.encrypt(token.strip().encode('utf-8'))
+    return ciphertext.decode('utf-8')
+
+
+def decrypt_activation_token(encrypted_token: str) -> str:
+    """
+    Descriptografa um token de ativação cifrado com Fernet.
+    Retorna o token original em texto plano para montagem estritamente em memoria pelo worker de email.
+    """
+    if not encrypted_token or not isinstance(encrypted_token, str):
+        raise ValueError("Ciphertext invalido para descriptografia.")
+
+    key = get_activation_encryption_key()
+    f = Fernet(key)
+    try:
+        decrypted_bytes = f.decrypt(encrypted_token.strip().encode('utf-8'))
+        return decrypted_bytes.decode('utf-8')
+    except InvalidToken as e:
+        logger.error("Falha ao descriptografar token de ativacao: chave incorreta ou token corrompido.")
+        raise ValueError("Falha na descriptografia do token de ativacao.") from e
+
+
 SENSITIVE_FIELD_NAMES = {
     # Tokens e segredos
     'creditcardtoken', 'token', 'access_token', 'accesstoken', 'secret',

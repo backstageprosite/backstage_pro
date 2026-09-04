@@ -249,9 +249,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
 
         # 5.1 Enfileirar EmailDelivery ACCOUNT_ACTIVATION (desacoplado de SMTP)
         try:
-            from core.services.email_service import enqueue_email, get_canonical_base_url
-            base_url = get_canonical_base_url()
-            activation_url = f"{base_url}/ativar-conta/{raw_token}/"
+            from core.services.email_service import enqueue_email
             enqueue_email(
                 email_type='ACCOUNT_ACTIVATION',
                 recipient_email=order.email,
@@ -264,12 +262,11 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
                     'plan_name': plan_display,
                     'billing_cycle': 'Anual' if is_annual else 'Mensal',
                     'amount': f"{order.amount:.2f}",
-                    'activation_url': activation_url,
                 },
                 related_object_type='BandActivationToken',
                 related_object_id=str(activation.pk)
             )
-            del raw_token  # Limpa token em texto plano da memória após montagem do link
+            del raw_token  # Limpa token em texto plano da memória
         except Exception as e:
             logger.warning("Falha ao enfileirar e-mail de ativação para pedido %s: %s", order.external_reference, str(e))
 

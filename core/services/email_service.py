@@ -148,7 +148,7 @@ def render_and_send_email_delivery(delivery: EmailDelivery) -> Tuple[bool, Optio
     base_url = get_canonical_base_url()
     ctx['base_url'] = base_url
 
-    # Resolução dinâmica para ACCOUNT_ACTIVATION (link seguro em memória)
+    # Resolução dinâmica para ACCOUNT_ACTIVATION (link seguro em memória a partir de encrypted_token)
     if delivery.email_type == EmailDelivery.EmailType.ACCOUNT_ACTIVATION:
         if delivery.related_object_id:
             try:
@@ -157,14 +157,22 @@ def render_and_send_email_delivery(delivery: EmailDelivery) -> Tuple[bool, Optio
                     return False, 'ACTIVATION_TOKEN_ALREADY_USED', 'O token de ativação já foi utilizado anteriormente.'
                 if not activation.is_valid():
                     return False, 'ACTIVATION_TOKEN_EXPIRED', 'O token de ativação expirou (prazo de 48h).'
-                # Se o raw_token estiver no context temporário de memória ou precisar montar URL
-                raw_tok = ctx.get('_raw_activation_token')
-                if raw_tok:
+
+                if activation.encrypted_token:
+                    from core.services.payments.security import decrypt_activation_token
+                    raw_tok = decrypt_activation_token(activation.encrypted_token)
                     ctx['activation_url'] = f"{base_url}/ativar-conta/{raw_tok}/"
-                elif 'activation_url' not in ctx:
-                    return False, 'ACTIVATION_TOKEN_RAW_MISSING', 'Token em texto puro não disponível para geração do link.'
+                elif ctx.get('_raw_activation_token'):
+                    raw_tok = ctx.get('_raw_activation_token')
+                    ctx['activation_url'] = f"{base_url}/ativar-conta/{raw_tok}/"
+                elif 'activation_url' in ctx:
+                    pass
+                else:
+                    return False, 'ACTIVATION_TOKEN_UNRECOVERABLE', 'Token de ativação legado sem versão criptografada recuperável.'
             except BandActivationToken.DoesNotExist:
                 return False, 'ACTIVATION_TOKEN_NOT_FOUND', 'Registro BandActivationToken não encontrado.'
+        else:
+            return False, 'ACTIVATION_TOKEN_RELATED_OBJECT_MISSING', 'Registro BandActivationToken não referenciado.'
 
     template_base = delivery.template_name or f"emails/{delivery.email_type.lower()}"
     html_template = f"{template_base}.html"

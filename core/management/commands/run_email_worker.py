@@ -161,7 +161,18 @@ class Command(BaseCommand):
             clean_err = str(err_msg or '').replace('\n', ' ')[:500]
             clean_code = str(err_code or 'UNKNOWN')[:100]
 
-            if delivery.attempt_count < max_attempts:
+            PERMANENT_ERROR_CODES = {
+                'ACTIVATION_TOKEN_ALREADY_USED',
+                'ACTIVATION_TOKEN_EXPIRED',
+                'ACTIVATION_TOKEN_UNRECOVERABLE',
+                'ACTIVATION_TOKEN_NOT_FOUND',
+                'ACTIVATION_TOKEN_RELATED_OBJECT_MISSING',
+                'RECIPIENT_MISSING',
+            }
+
+            is_permanent = clean_code in PERMANENT_ERROR_CODES
+
+            if not is_permanent and delivery.attempt_count < max_attempts:
                 backoff_delay = self._calculate_backoff(delivery.attempt_count)
                 delivery.status = EmailDelivery.Status.RETRY
                 delivery.last_error_code = clean_code
@@ -174,10 +185,13 @@ class Command(BaseCommand):
             else:
                 delivery.status = EmailDelivery.Status.FAILED
                 delivery.last_error_code = clean_code
-                delivery.last_error_message = f"MAX_ATTEMPTS_EXCEEDED ({max_attempts}): {clean_err}"
+                if is_permanent:
+                    delivery.last_error_message = clean_err
+                else:
+                    delivery.last_error_message = f"MAX_ATTEMPTS_EXCEEDED ({max_attempts}): {clean_err}"
                 delivery.save(update_fields=['status', 'last_error_code', 'last_error_message', 'updated_at'])
                 self.stdout.write(self.style.ERROR(
-                    f"  [FAILED] ID={delivery.id} ({delivery.email_type}) -> {delivery.recipient_email}. Tentativas esgotadas. Erro: {clean_err[:80]}"
+                    f"  [FAILED] ID={delivery.id} ({delivery.email_type}) -> {delivery.recipient_email}. Erro: {clean_err[:80]}"
                 ))
 
                 # Atualizar AnnualRenewalNotice se vinculado

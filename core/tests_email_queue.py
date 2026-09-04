@@ -237,36 +237,149 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertEqual(notice.status, AnnualRenewalNotice.Status.SENT)
         self.assertIsNotNone(notice.sent_at)
 
-    def test_activation_token_security_no_plaintext_saved(self):
-        import hashlib, secrets
-        plain_token = secrets.token_urlsafe(32)
-        token_hash = hashlib.sha256(plain_token.encode()).hexdigest()
-        token_obj = BandActivationToken.objects.create(
+    def test_activation_token_security_and_fernet_roundtrip(self):
+        from core.services.payments.activation import create_band_activation_token
+        from core.services.payments.security import decrypt_activation_token
+
+        activation, raw_token = create_band_activation_token(
             band=self.band,
             email="produtor_novo@teste.com",
             responsible_name="Novo Produtor",
-            token_hash=token_hash,
-            expires_at=timezone.now() + datetime.timedelta(hours=72)
+            valid_hours=48
         )
-        act_delivery, _ = enqueue_email(
+
+        # 1. Plaintext token is not on model
+        self.assertFalse(hasattr(activation, 'token_plain'))
+        self.assertFalse(hasattr(activation, 'raw_token'))
+        self.assertEqual(len(activation.token_hash), 64)
+
+        # 2. Encrypted token is persisted and is not plaintext
+        self.assertIsNotNone(activation.encrypted_token)
+        self.assertNotEqual(activation.encrypted_token, raw_token)
+        self.assertNotIn(raw_token, activation.encrypted_token)
+
+        # 3. Round-trip decrypt in memory works
+        decrypted = decrypt_activation_token(activation.encrypted_token)
+        self.assertEqual(decrypted, raw_token)
+
+        # 4. TTL is 48 hours
+        delta = activation.expires_at - activation.created_at
+        self.assertAlmostEqual(delta.total_seconds(), 48 * 3600, delta=10)
+
+    def test_account_activation_email_worker_dynamic_assembly_and_context_security(self):
+        from core.services.payments.activation import create_band_activation_token
+
+        activation, raw_token = create_band_activation_token(
+            band=self.band,
+            email="produtor_novo@teste.com",
+            responsible_name="Novo Produtor",
+            valid_hours=48
+        )
+
+        # Enqueue without raw token or activation_url in context_data
+        delivery, created = enqueue_email(
             email_type=EmailDelivery.EmailType.ACCOUNT_ACTIVATION,
             recipient_email="produtor_novo@teste.com",
-            subject="Ative sua Conta",
-            idempotency_key=f"activation-{token_obj.id}",
+            subject="Sua conta no Backstage Pro está pronta!",
+            idempotency_key=f"activation-test-{activation.id}",
             template_name="emails/account_activation",
             context_data={
-                "user_name": "Novo Produtor",
+                "responsible_name": "Novo Produtor",
                 "band_name": self.band.name,
                 "plan_name": "Avançado",
-                "activation_url": f"https://app.backstagepro.site/ativar-conta/?token={plain_token}",
-                "expires_hours": 72,
+                "billing_cycle": "Anual",
+                "amount": "499.90",
             },
             related_object_type="BandActivationToken",
-            related_object_id=str(token_obj.id)
+            related_object_id=str(activation.id)
         )
-        self.assertEqual(act_delivery.related_object_id, str(token_obj.id))
-        self.assertFalse(hasattr(token_obj, 'token_plain'))
-        self.assertTrue(len(token_obj.token_hash) == 64)
+        self.assertTrue(created)
+
+        # Confirm context_data has NO secrets or tokens
+        self.assertNotIn('token', delivery.context_data)
+        self.assertNotIn('activation_token', delivery.context_data)
+        self.assertNotIn('activation_url', delivery.context_data)
+        self.assertNotIn('_raw_activation_token', delivery.context_data)
+
+        # Execute worker
+        call_command('run_email_worker', once=True)
+
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, EmailDelivery.Status.SENT)
+        self.assertEqual(len(mail.outbox), 1)
+
+        sent_msg = mail.outbox[0]
+        self.assertEqual(sent_msg.to, ["produtor_novo@teste.com"])
+
+        # Verify rendered HTML contains https domain and route with raw_token, NOT hash
+        self.assertIn(f"/ativar-conta/{raw_token}/", sent_msg.body or sent_msg.alternatives[0][0])
+        self.assertNotIn(activation.token_hash, sent_msg.body or sent_msg.alternatives[0][0])
+        self.assertIn("https://", sent_msg.body or sent_msg.alternatives[0][0])
+        self.assertNotIn("localhost", sent_msg.body or sent_msg.alternatives[0][0])
+
+        # Confirm DB context_data is still free of secrets
+        self.assertNotIn('activation_url', delivery.context_data)
+
+    def test_account_activation_used_token_fails_gracefully(self):
+        from core.services.payments.activation import create_band_activation_token
+
+        activation, raw_token = create_band_activation_token(
+            band=self.band,
+            email="produtor_used@teste.com",
+            responsible_name="Produtor Used",
+            valid_hours=48
+        )
+        activation.used_at = timezone.now()
+        activation.save()
+
+        delivery, _ = enqueue_email(
+            email_type=EmailDelivery.EmailType.ACCOUNT_ACTIVATION,
+            recipient_email="produtor_used@teste.com",
+            subject="Conta Pronta",
+            idempotency_key=f"activation-used-{activation.id}",
+            template_name="emails/account_activation",
+            context_data={"responsible_name": "Produtor Used"},
+            related_object_type="BandActivationToken",
+            related_object_id=str(activation.id)
+        )
+
+        call_command('run_email_worker', once=True)
+
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, EmailDelivery.Status.FAILED)
+        self.assertEqual(delivery.last_error_code, 'ACTIVATION_TOKEN_ALREADY_USED')
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_account_activation_expired_token_fails_gracefully(self):
+        from core.services.payments.activation import create_band_activation_token
+
+        activation, raw_token = create_band_activation_token(
+            band=self.band,
+            email="produtor_exp@teste.com",
+            responsible_name="Produtor Expired",
+            valid_hours=48
+        )
+        activation.expires_at = timezone.now() - datetime.timedelta(hours=1)
+        activation.save()
+
+        delivery, _ = enqueue_email(
+            email_type=EmailDelivery.EmailType.ACCOUNT_ACTIVATION,
+            recipient_email="produtor_exp@teste.com",
+            subject="Conta Pronta",
+            idempotency_key=f"activation-exp-{activation.id}",
+            template_name="emails/account_activation",
+            context_data={"responsible_name": "Produtor Expired"},
+            related_object_type="BandActivationToken",
+            related_object_id=str(activation.id)
+        )
+
+        call_command('run_email_worker', once=True)
+
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, EmailDelivery.Status.FAILED)
+        self.assertEqual(delivery.last_error_code, 'ACTIVATION_TOKEN_EXPIRED')
+        self.assertEqual(len(mail.outbox), 0)
+
 
     def test_payment_overdue_webhook_enqueues_email(self):
         from core.models import BillingRecord
