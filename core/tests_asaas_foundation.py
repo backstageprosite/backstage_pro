@@ -2514,3 +2514,198 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(sub.records.count(), 2)
         sub.refresh_from_db()
         self.assertEqual(sub.next_due_date, date(2026, 10, 4))
+
+    def test_canceled_at_lifecycle_audit(self):
+        """
+        BACKSTAGE PRO — ASAAS-08: Auditoria estrita do ciclo de vida de `canceled_at`.
+        - Cancelamento voluntário preenche `canceled_at`.
+        - Fim do período / expiração preserva `canceled_at`.
+        - Criação de Checkout de reativação preserva `canceled_at`.
+        - Webhook CHECKOUT_CREATED preserva `canceled_at`.
+        - Webhook SUBSCRIPTION_CREATED preserva `canceled_at`.
+        - Webhook PAYMENT_CREATED preserva `canceled_at`.
+        - Webhook PAYMENT_CONFIRMED redefine `canceled_at = None` e restaura acesso.
+        - Webhook PAYMENT_RECEIVED posterior é idempotente e mantém `canceled_at = None`.
+        - Checkout abandonado preserva `canceled_at` indefinidamente.
+        """
+        band_audit = Band.objects.create(name='Banda Auditoria CanceledAt', slug='bandaauditcanc')
+        user_audit = User.objects.create_user(
+            username='prod_audit_canc', email='audit_canc@test.com', password='123',
+            band=band_audit, role='PRODUTOR'
+        )
+        sub_audit = BandSubscription.objects.create(
+            band=band_audit, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 8, 4), next_due_date=date(2026, 9, 4),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO',
+            gateway_provider='ASAAS', gateway_subscription_id='sub_audit_old_111',
+            gateway_customer_id='cus_audit_999'
+        )
+        BillingRecord.objects.create(
+            subscription=sub_audit, band=band_audit, reference_period='Agosto/2026',
+            plan_name='Básico', billing_cycle='MENSAL', amount=Decimal('19.90'),
+            due_date=date(2026, 8, 4), paid_date=date(2026, 8, 4), status='PAGO', payment_method='CARTAO',
+            gateway_payment_id='pay_audit_aug'
+        )
+
+        # 1. Cancelamento voluntário -> preenche canceled_at
+        client = Client(HTTP_HOST='localhost')
+        client.force_login(user_audit)
+        with patch('core.services.payments.asaas.client.AsaasClient.get_subscription') as mock_get, \
+             patch('core.services.payments.asaas.client.AsaasClient.cancel_subscription') as mock_del:
+            mock_get.return_value = {'id': 'sub_audit_old_111', 'customer': 'cus_audit_999'}
+            mock_del.return_value = (True, {'deleted': True})
+            resp_canc = client.post(f'/{band_audit.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+            self.assertEqual(resp_canc.status_code, 200)
+
+        sub_audit.refresh_from_db()
+        self.assertTrue(sub_audit.cancel_at_period_end)
+        self.assertFalse(sub_audit.auto_renew)
+        self.assertIsNotNone(sub_audit.canceled_at)
+        initial_canceled_at = sub_audit.canceled_at
+
+        # 2. Fim do período pago (expiração) -> status=DESATIVADO, canceled_at permanece preenchido
+        sub_audit.status = 'DESATIVADO'
+        sub_audit.save(update_fields=['status'])
+        sub_audit.refresh_from_db()
+        self.assertEqual(sub_audit.canceled_at, initial_canceled_at)
+        self.assertTrue(sub_audit.is_canceled_period_expired)
+
+        # 3. Criação de Checkout de reativação -> canceled_at permanece preenchido
+        sub_audit.gateway_checkout_id = 'chk_audit_react_777'
+        sub_audit.gateway_external_reference = 'bp-reactivation-audit-777'
+        sub_audit.save(update_fields=['gateway_checkout_id', 'gateway_external_reference'])
+        sub_audit.refresh_from_db()
+        self.assertEqual(sub_audit.canceled_at, initial_canceled_at)
+        self.assertEqual(sub_audit.status, 'DESATIVADO')
+
+        # 4. Webhook CHECKOUT_CREATED -> canceled_at permanece preenchido
+        evt_chk_created = {
+            "id": "evt_chk_created_audit",
+            "event": "CHECKOUT_CREATED",
+            "checkout": {
+                "id": "chk_audit_react_777",
+                "customer": "cus_audit_999",
+                "externalReference": "bp-reactivation-audit-777"
+            }
+        }
+        ok_cc, _ = handle_asaas_webhook_payload(evt_chk_created)
+        self.assertTrue(ok_cc)
+        sub_audit.refresh_from_db()
+        self.assertEqual(sub_audit.canceled_at, initial_canceled_at)
+        self.assertEqual(sub_audit.status, 'DESATIVADO')
+
+        # 5. Webhook SUBSCRIPTION_CREATED -> atualiza gateway_subscription_id mas NÃO limpa canceled_at
+        evt_sub_created = {
+            "id": "evt_sub_created_audit",
+            "event": "SUBSCRIPTION_CREATED",
+            "subscription": {
+                "id": "sub_audit_new_222",
+                "customer": "cus_audit_999",
+                "checkoutSession": "chk_audit_react_777",
+                "value": 19.90,
+                "cycle": "MONTHLY",
+                "nextDueDate": "2026-10-04"
+            }
+        }
+        ok_sc, _ = handle_asaas_webhook_payload(evt_sub_created)
+        self.assertTrue(ok_sc)
+        sub_audit.refresh_from_db()
+        self.assertEqual(sub_audit.gateway_subscription_id, 'sub_audit_new_222')
+        self.assertEqual(sub_audit.canceled_at, initial_canceled_at)
+        self.assertEqual(sub_audit.status, 'DESATIVADO')
+        self.assertFalse(band_audit.has_active_subscription)
+
+        # 6. Webhook PAYMENT_CREATED -> canceled_at permanece preenchido
+        evt_pay_created = {
+            "id": "evt_pay_created_audit",
+            "event": "PAYMENT_CREATED",
+            "payment": {
+                "id": "pay_audit_new_333",
+                "customer": "cus_audit_999",
+                "subscription": "sub_audit_new_222",
+                "value": 19.90,
+                "dueDate": "2026-09-04",
+                "status": "PENDING"
+            }
+        }
+        ok_pc, _ = handle_asaas_webhook_payload(evt_pay_created)
+        self.assertTrue(ok_pc)
+        sub_audit.refresh_from_db()
+        self.assertEqual(sub_audit.canceled_at, initial_canceled_at)
+        self.assertEqual(sub_audit.status, 'DESATIVADO')
+        self.assertFalse(band_audit.has_active_subscription)
+
+        # 7. Webhook PAYMENT_CONFIRMED -> SOMENTE AQUI canceled_at vira None e status vira ATIVO
+        evt_pay_confirmed = {
+            "id": "evt_pay_confirmed_audit",
+            "event": "PAYMENT_CONFIRMED",
+            "payment": {
+                "id": "pay_audit_new_333",
+                "customer": "cus_audit_999",
+                "subscription": "sub_audit_new_222",
+                "value": 19.90,
+                "netValue": 19.90,
+                "paymentDate": "2026-09-04",
+                "status": "CONFIRMED"
+            }
+        }
+        ok_pconf, _ = handle_asaas_webhook_payload(evt_pay_confirmed)
+        self.assertTrue(ok_pconf)
+        sub_audit.refresh_from_db()
+        self.assertIsNone(sub_audit.canceled_at)
+        self.assertEqual(sub_audit.status, 'ATIVO')
+        self.assertTrue(sub_audit.auto_renew)
+        self.assertFalse(sub_audit.cancel_at_period_end)
+        self.assertEqual(sub_audit.start_date, date(2026, 9, 4))
+        self.assertEqual(sub_audit.next_due_date, date(2026, 10, 4))
+        self.assertTrue(band_audit.has_active_subscription)
+
+        # 8. Webhook PAYMENT_RECEIVED posterior -> idempotente, permanece canceled_at = None e next_due_date inalterado
+        evt_pay_received = {
+            "id": "evt_pay_received_audit",
+            "event": "PAYMENT_RECEIVED",
+            "payment": {
+                "id": "pay_audit_new_333",
+                "customer": "cus_audit_999",
+                "subscription": "sub_audit_new_222",
+                "value": 19.90,
+                "netValue": 19.90,
+                "paymentDate": "2026-09-04",
+                "status": "RECEIVED"
+            }
+        }
+        ok_prec, _ = handle_asaas_webhook_payload(evt_pay_received)
+        self.assertTrue(ok_prec)
+        sub_audit.refresh_from_db()
+        self.assertIsNone(sub_audit.canceled_at)
+        self.assertEqual(sub_audit.status, 'ATIVO')
+        self.assertEqual(sub_audit.next_due_date, date(2026, 10, 4))
+
+
+        # 9. Cenário de Checkout abandonado:
+        band_abandon = Band.objects.create(name='Banda Abandon', slug='bandaabandon')
+        sub_abandon = BandSubscription.objects.create(
+            band=band_abandon, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 8, 4), next_due_date=date(2026, 9, 4),
+            status='DESATIVADO', auto_renew=False, cancel_at_period_end=True,
+            canceled_at=timezone.now(),
+            gateway_provider='ASAAS', gateway_subscription_id='sub_abandon_old',
+            gateway_customer_id='cus_abandon_123',
+            gateway_checkout_id='chk_abandon_456'
+        )
+        abandon_canceled_at = sub_abandon.canceled_at
+        # Expirar checkout
+        evt_chk_exp = {
+            "id": "evt_chk_exp_abandon",
+            "event": "CHECKOUT_EXPIRED",
+            "checkout": {
+                "id": "chk_abandon_456",
+                "customer": "cus_abandon_123"
+            }
+        }
+        ok_exp, _ = handle_asaas_webhook_payload(evt_chk_exp)
+        self.assertTrue(ok_exp)
+        sub_abandon.refresh_from_db()
+        self.assertEqual(sub_abandon.canceled_at, abandon_canceled_at)
+        self.assertEqual(sub_abandon.status, 'DESATIVADO')
+        self.assertFalse(band_abandon.has_active_subscription)

@@ -205,6 +205,7 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
         record.gateway_invoice_url = payment_data.get('invoiceUrl')
 
     if event_type in ('PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'):
+        was_already_paid = (record.status == 'PAGO')
         record.status = 'PAGO'
         if not record.paid_date:
             raw_paid = payment_data.get('paymentDate') or payment_data.get('clientPaymentDate') or payment_data.get('confirmedDate') or timezone.localdate()
@@ -214,7 +215,8 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
             record.paid_date = raw_paid
         
         # Atualiza a BandSubscription associada aplicando a regra de regularização vs tolerância
-        if record.subscription:
+        # apenas se a cobrança ainda não estava quitada
+        if not was_already_paid and record.subscription:
             record.subscription.apply_payment_success(paid_date=record.paid_date)
     elif event_type in ('PAYMENT_OVERDUE',):
         if record.status != 'PAGO':
