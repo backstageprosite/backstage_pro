@@ -4,7 +4,7 @@ from typing import Dict, Any, Tuple, Optional
 from django.db import transaction
 from django.utils import timezone
 from core.models import Band, BandSubscription, BillingRecord, SignupOrder, PaymentWebhookEvent
-from core.services.payments.base import generate_unique_band_slug, calculate_next_billing_date
+from core.services.payments.base import generate_unique_band_slug, calculate_next_billing_date, extract_asaas_id
 from core.services.payments.activation import create_band_activation_token
 
 logger = logging.getLogger(__name__)
@@ -16,11 +16,11 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
     Implementa idempotência de Nível 2 via SignupOrder.external_reference / gateway_checkout_id.
     NÃO cria User ainda (usuário cria senha via token de ativação).
     """
-    checkout_data = payload.get('checkout') or payload
+    checkout_data = payload.get('checkout') if isinstance(payload.get('checkout'), dict) else payload
     external_reference = checkout_data.get('externalReference') or payload.get('externalReference')
-    checkout_id = checkout_data.get('id') or payload.get('checkoutId') or payload.get('id')
-    customer_id = checkout_data.get('customer') or payload.get('customer')
-    subscription_id = checkout_data.get('subscription') or payload.get('subscription')
+    checkout_id = extract_asaas_id(checkout_data.get('id') or payload.get('checkoutId') or payload.get('id'))
+    customer_id = extract_asaas_id(checkout_data.get('customer') or payload.get('customer'), expected_prefix='cus_')
+    subscription_id = extract_asaas_id(checkout_data.get('subscription') or payload.get('subscription'), expected_prefix='sub_')
 
     # 1. Localizar SignupOrder correspondente
     order = None
@@ -32,9 +32,9 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
     if not order:
         return False, f"SignupOrder nao encontrado para ref={external_reference} / checkout={checkout_id}", None
 
-    effective_checkout_id = checkout_id or order.gateway_checkout_id
+    effective_checkout_id = checkout_id or extract_asaas_id(order.gateway_checkout_id)
     payment_data = payload.get('payment') if isinstance(payload.get('payment'), dict) else {}
-    payment_id = payment_data.get('id') or payload.get('paymentId')
+    payment_id = extract_asaas_id(payment_data.get('id') or payload.get('paymentId'), expected_prefix='pay_')
 
     # Consulta de seguranca via API Asaas para obter payment.id e subscription.id exatos
     if (not payment_id or not subscription_id) and effective_checkout_id:
@@ -44,8 +44,8 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             payments_found = client.get_payments_by_checkout(effective_checkout_id)
             if len(payments_found) == 1:
                 p_item = payments_found[0]
-                payment_id = payment_id or p_item.get('id')
-                subscription_id = subscription_id or p_item.get('subscription')
+                payment_id = payment_id or extract_asaas_id(p_item.get('id'), expected_prefix='pay_')
+                subscription_id = subscription_id or extract_asaas_id(p_item.get('subscription'), expected_prefix='sub_')
                 if not payment_data:
                     payment_data = p_item
             elif len(payments_found) > 1:

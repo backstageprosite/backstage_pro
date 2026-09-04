@@ -121,3 +121,44 @@ def calculate_next_billing_date(start_date: date, cycle: str, periods_offset: in
     target_day = min(orig_day, max_days_in_target)
 
     return date(target_year, target_month, target_day)
+
+
+def extract_asaas_id(value: Any, expected_prefix: Optional[str] = None) -> Optional[str]:
+    """
+    Extrai e valida de forma segura um identificador escalar do Asaas.
+    Rejeita estritamente:
+    - dicts/listas sem ID inequívoco (ex: {'cycle': 'MONTHLY', ...})
+    - objetos JSON serializados ou conversões cegas de str(dict)
+    - valores vazios ou não strings
+    - strings que contenham formatação de dict ('{', '}')
+
+    Se expected_prefix for informado (ex: 'sub_', 'pay_', 'cus_', 'chk_'):
+    - Garante que a string comece com o prefixo esperado.
+    """
+    if value is None:
+        return None
+
+    # Se for dict, só aceita se possuir a chave 'id' escalar válida
+    if isinstance(value, dict):
+        raw_id = value.get('id')
+        if not raw_id or not isinstance(raw_id, str):
+            return None
+        value = raw_id
+
+    # Não aceita tipos não string
+    if not isinstance(value, str):
+        return None
+
+    s = value.strip()
+    if not s:
+        return None
+
+    # Rejeita representações textuais de dicionários / objetos / JSON
+    if s.startswith('{') or s.endswith('}') or ':' in s:
+        return None
+
+    if expected_prefix:
+        if not s.startswith(expected_prefix):
+            return None
+
+    return s

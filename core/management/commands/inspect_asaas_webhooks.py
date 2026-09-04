@@ -1,6 +1,7 @@
 import logging
 from django.core.management.base import BaseCommand
 from core.models import PaymentWebhookEvent
+from core.services.payments.base import extract_asaas_id
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +37,9 @@ class Command(BaseCommand):
             sub_data = payload.get('subscription') if isinstance(payload.get('subscription'), dict) else {}
             pay_data = payload.get('payment') if isinstance(payload.get('payment'), dict) else {}
 
-            checkout_id = chk_data.get('id') or payload.get('checkoutId') or (payload.get('id') if evt.event_type.startswith('CHECKOUT_') else None)
-            sub_id = sub_data.get('id') or payload.get('subscriptionId') or payload.get('subscription') or (pay_data.get('subscription') if isinstance(pay_data, dict) else None)
-            pay_id = pay_data.get('id') or payload.get('paymentId') or (payload.get('id') if evt.event_type.startswith('PAYMENT_') else None)
+            checkout_id = extract_asaas_id(chk_data.get('id') or payload.get('checkoutId') or (payload.get('id') if evt.event_type.startswith('CHECKOUT_') else None))
+            sub_id = extract_asaas_id(sub_data.get('id') or payload.get('subscriptionId') or payload.get('subscription') or (pay_data.get('subscription') if isinstance(pay_data, dict) else None), expected_prefix='sub_')
+            pay_id = extract_asaas_id(pay_data.get('id') or payload.get('paymentId') or (payload.get('id') if evt.event_type.startswith('PAYMENT_') else None), expected_prefix='pay_')
             ext_ref = chk_data.get('externalReference') or sub_data.get('externalReference') or pay_data.get('externalReference') or payload.get('externalReference')
 
             created_str = evt.created_at.strftime('%Y-%m-%d %H:%M:%S') if evt.created_at else 'N/A'

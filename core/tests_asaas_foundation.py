@@ -982,3 +982,184 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(BandSubscription.objects.count(), 1)
         self.assertEqual(BillingRecord.objects.count(), 1)
         self.assertEqual(User.objects.filter(email='cliente-homolog@example.com').count(), 0)
+
+    def test_extract_asaas_id_validation_guardrails(self):
+        """ASAAS-06: Validação de extração defensiva de identificadores Asaas."""
+        from core.services.payments.base import extract_asaas_id
+
+        # 1. Objeto dict de configuração -> NUNCA vira ID
+        config_dict = {'cycle': 'MONTHLY', 'endDate': None, 'nextDueDate': '2026-09-04'}
+        self.assertIsNone(extract_asaas_id(config_dict))
+        self.assertIsNone(extract_asaas_id(config_dict, expected_prefix='sub_'))
+
+        # 2. String formatada de dict -> NUNCA vira ID
+        dict_str = "{'cycle': 'MONTHLY', 'endDate': None, 'nextDueDate': '2026-09-04'}"
+        self.assertIsNone(extract_asaas_id(dict_str))
+        self.assertIsNone(extract_asaas_id(dict_str, expected_prefix='sub_'))
+
+        # 3. String de ID escalar válido
+        self.assertEqual(extract_asaas_id('sub_2vjxr6kit10l68yr'), 'sub_2vjxr6kit10l68yr')
+        self.assertEqual(extract_asaas_id('sub_2vjxr6kit10l68yr', expected_prefix='sub_'), 'sub_2vjxr6kit10l68yr')
+        self.assertEqual(extract_asaas_id('pay_8ufmj8khm9i24ik1', expected_prefix='pay_'), 'pay_8ufmj8khm9i24ik1')
+        self.assertEqual(extract_asaas_id('cus_000009006807', expected_prefix='cus_'), 'cus_000009006807')
+
+        # 4. Prefixo divergente
+        self.assertIsNone(extract_asaas_id('sub_123', expected_prefix='pay_'))
+        self.assertIsNone(extract_asaas_id('pay_123', expected_prefix='sub_'))
+
+        # 5. Dict com chave 'id' válida
+        self.assertEqual(extract_asaas_id({'id': 'sub_2vjxr6kit10l68yr'}, expected_prefix='sub_'), 'sub_2vjxr6kit10l68yr')
+        self.assertIsNone(extract_asaas_id({'id': {'nested': 123}}))
+
+        # 6. Valores vazios / None / outros tipos
+        self.assertIsNone(extract_asaas_id(None))
+        self.assertIsNone(extract_asaas_id(''))
+        self.assertIsNone(extract_asaas_id(12345))
+        self.assertIsNone(extract_asaas_id([]))
+
+    def test_checkout_paid_with_config_dict_does_not_pollute_subscription_id(self):
+        """ASAAS-06: CHECKOUT_PAID com checkout.subscription sendo dict de configuracao nao polui gateway_subscription_id."""
+        from unittest.mock import patch
+        from django.core.management import call_command
+        from core.models import SignupOrder, Band, BandSubscription
+
+        order = SignupOrder.objects.create(
+            band_name='Banda Sem Sub Inicial',
+            responsible_name='Cliente Teste',
+            email='cliente-teste@example.com',
+            amount=Decimal('19.90'),
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            status='PENDENTE',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_000009006807',
+            gateway_checkout_id='chk_no_sub_item',
+            external_reference='bp-homolog-no-sub'
+        )
+
+        evt_checkout = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_checkout_no_sub',
+            event_type='CHECKOUT_PAID',
+            payload={
+                'id': 'evt_checkout_no_sub',
+                'event': 'CHECKOUT_PAID',
+                'checkout': {
+                    'id': 'chk_no_sub_item',
+                    'customer': 'cus_000009006807',
+                    'externalReference': 'bp-homolog-no-sub',
+                    'subscription': {
+                        'cycle': 'MONTHLY',
+                        'endDate': None,
+                        'nextDueDate': '2026-09-04'
+                    }
+                }
+            }
+        )
+
+        # Mock do AsaasClient retornando lista vazia para simular checkout sem consulta prévia
+        with patch('core.services.payments.asaas.client.AsaasClient.get_payments_by_checkout', return_value=[]):
+            call_command('process_asaas_webhooks', event_id='evt_checkout_no_sub')
+
+        evt_checkout.refresh_from_db()
+        self.assertTrue(evt_checkout.processed)
+
+        sub = BandSubscription.objects.get(gateway_checkout_id='chk_no_sub_item')
+        # gateway_subscription_id DEVE ser None e NÃO o dict de ciclo
+        self.assertIsNone(sub.gateway_subscription_id)
+
+        # Evento SUBSCRIPTION_CREATED posterior preenche o gateway_subscription_id de forma limpa
+        evt_sub = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_sub_late_arrive',
+            event_type='SUBSCRIPTION_CREATED',
+            payload={
+                'id': 'evt_sub_late_arrive',
+                'event': 'SUBSCRIPTION_CREATED',
+                'subscription': {
+                    'id': 'sub_2vjxr6kit10l68yr',
+                    'customer': 'cus_000009006807',
+                    'status': 'ACTIVE'
+                }
+            }
+        )
+        call_command('process_asaas_webhooks', event_id='evt_sub_late_arrive')
+        evt_sub.refresh_from_db()
+        self.assertTrue(evt_sub.processed)
+
+        sub.refresh_from_db()
+        self.assertEqual(sub.gateway_subscription_id, 'sub_2vjxr6kit10l68yr')
+
+    def test_repair_asaas_sandbox_order_command(self):
+        """ASAAS-06: Validação do management command de reparo da homologação."""
+        from unittest.mock import patch, MagicMock
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        from io import StringIO
+
+        # 1. Trava de ambiente em producao
+        with override_settings(DJANGO_ENV='production', ASAAS_ENVIRONMENT='sandbox', ASAAS_API_KEY='key_123'):
+            with self.assertRaises(CommandError) as cm:
+                call_command('repair_asaas_sandbox_order', order_id=1)
+            self.assertIn('so pode ser executado no ambiente de homologacao', str(cm.exception))
+
+        # 2. Criar cenário com gateway_subscription_id corrompido
+        order = SignupOrder.objects.create(
+            band_name='Banda Corrompida',
+            responsible_name='Cliente Corrompido',
+            email='corrompido@example.com',
+            amount=Decimal('19.90'),
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            status='PAGO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_000009006807',
+            gateway_checkout_id='7d0a0681-282a-42b1-9c74-d0d47288ce18',
+            gateway_subscription_id="{'cycle': 'MONTHLY', 'endDate': None}",
+            external_reference='bp-homolog-repair-test'
+        )
+
+        band = Band.objects.create(name='Banda Corrompida', slug='bandacorrompida')
+        order.band = band
+        order.save()
+
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name='Básico Mensal',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_000009006807',
+            gateway_subscription_id="{'cycle': 'MONTHLY', 'endDate': None}",
+            gateway_checkout_id='7d0a0681-282a-42b1-9c74-d0d47288ce18'
+        )
+
+        billing = BillingRecord.objects.create(
+            subscription=sub,
+            band=band,
+            reference_period='Setembro/2026',
+            amount=Decimal('19.90'),
+            due_date=timezone.localdate(),
+            status='PAGO',
+            gateway_provider='ASAAS',
+            gateway_payment_id='pay_8ufmj8khm9i24ik1'
+        )
+
+        mock_payments = [{
+            'id': 'pay_8ufmj8khm9i24ik1',
+            'customer': 'cus_000009006807',
+            'subscription': 'sub_2vjxr6kit10l68yr'
+        }]
+
+        out = StringIO()
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox', ASAAS_API_KEY='key_123'):
+            with patch('core.services.payments.asaas.client.AsaasClient.get_payments_by_checkout', return_value=mock_payments):
+                call_command('repair_asaas_sandbox_order', order_id=order.id, stdout=out)
+
+        order.refresh_from_db()
+        sub.refresh_from_db()
+        billing.refresh_from_db()
+
+        self.assertEqual(order.gateway_subscription_id, 'sub_2vjxr6kit10l68yr')
+        self.assertEqual(sub.gateway_subscription_id, 'sub_2vjxr6kit10l68yr')
+        self.assertEqual(billing.gateway_payment_id, 'pay_8ufmj8khm9i24ik1')
+        self.assertIn('REPARO ASAAS SANDBOX EXECUTADO COM SUCESSO', out.getvalue())

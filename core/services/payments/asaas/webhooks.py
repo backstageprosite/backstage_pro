@@ -5,6 +5,7 @@ from typing import Dict, Any, Tuple
 from django.db import transaction
 from django.utils import timezone
 from core.models import PaymentWebhookEvent, BillingRecord, BandSubscription, SignupOrder
+from core.services.payments.base import extract_asaas_id
 from core.services.payments.provisioning import process_checkout_paid_event
 
 logger = logging.getLogger(__name__)
@@ -12,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str) -> Tuple[bool, str]:
     payment_data = payload.get('payment') if isinstance(payload.get('payment'), dict) else payload
-    payment_id = payment_data.get('id') or payload.get('paymentId')
+    payment_id = extract_asaas_id(payment_data.get('id') or payload.get('paymentId'), expected_prefix='pay_')
     external_ref = payment_data.get('externalReference') or payload.get('externalReference')
-    subscription_id = payment_data.get('subscription') or payload.get('subscription')
-    customer_id = payment_data.get('customer') or payload.get('customer')
+    subscription_id = extract_asaas_id(payment_data.get('subscription') or payload.get('subscription'), expected_prefix='sub_')
+    customer_id = extract_asaas_id(payment_data.get('customer') or payload.get('customer'), expected_prefix='cus_')
 
     if not payment_id:
         return False, 'EVENTO_SEM_PAYMENT_ID'
@@ -91,8 +92,8 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
 
 def handle_subscription_event(payload: Dict[str, Any], event_type: str) -> Tuple[bool, str]:
     sub_data = payload.get('subscription') if isinstance(payload.get('subscription'), dict) else payload
-    sub_id = sub_data.get('id') or payload.get('subscriptionId')
-    customer_id = sub_data.get('customer') or payload.get('customer')
+    sub_id = extract_asaas_id(sub_data.get('id') or payload.get('subscriptionId') or payload.get('subscription'), expected_prefix='sub_')
+    customer_id = extract_asaas_id(sub_data.get('customer') or payload.get('customer'), expected_prefix='cus_')
     external_ref = sub_data.get('externalReference') or payload.get('externalReference')
 
     if not sub_id:
@@ -137,7 +138,7 @@ def handle_subscription_event(payload: Dict[str, Any], event_type: str) -> Tuple
 
 def handle_checkout_event(payload: Dict[str, Any], event_type: str, event_id: str = None) -> Tuple[bool, str]:
     checkout_data = payload.get('checkout') if isinstance(payload.get('checkout'), dict) else payload
-    checkout_id = checkout_data.get('id') or payload.get('checkoutId')
+    checkout_id = extract_asaas_id(checkout_data.get('id') or payload.get('checkoutId'))
     external_ref = checkout_data.get('externalReference') or payload.get('externalReference')
 
     order = None
