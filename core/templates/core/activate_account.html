@@ -6,11 +6,9 @@
     <div class="col-12 col-sm-10 col-md-8 col-lg-5">
         <div class="text-center mb-4">
             {% if band and band.logo %}
-                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid mb-3" style="max-height: 120px;" onerror="this.onerror=null; this.src='{% static 'images/backstage-pro-logo.png' %}';">
-                <h2 class="text-primary fw-bold">{% if band %}{{ band.name }}{% else %}Backstage Pro{% endif %}</h2>
+                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid mb-3" style="max-height: 100px; max-width: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='{% static 'images/backstage-pro-logo.png' %}';">
             {% else %}
-                <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="img-fluid mb-3" style="max-height: 50px;">
-                <h2 class="text-primary fw-bold">{% if band %}{{ band.name }}{% else %}Backstage Pro{% endif %}</h2>
+                <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="img-fluid mb-3" style="max-height: 50px; max-width: 100%; object-fit: contain;">
             {% endif %}
             <p class="text-muted small">Ativação da conta no Backstage Pro</p>
         </div>

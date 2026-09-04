@@ -251,13 +251,11 @@
                 
                 <!-- Logo da Banda Acima do Menu -->
                 <div class="mb-4 px-2 text-center text-lg-start">
-                    <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="d-flex flex-column align-items-center align-items-lg-start text-decoration-none">
+                    <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none">
                         {% if band and band.logo %}
-                            <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid w-100 mb-2" style="border-radius: 8px; object-fit: contain; max-height: 80px;" onerror="this.onerror=null; this.src='{% static 'images/backstage-pro-logo.png' %}';">
-                            <span class="fs-5 fw-bold text-dark text-truncate w-100">{% if band %}{{ band.name }}{% else %}Backstage Pro{% endif %}</span>
+                            <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid" style="border-radius: 8px; object-fit: contain; max-height: 60px; max-width: 100%;" onerror="this.onerror=null; this.src='{% static 'images/backstage-pro-logo.png' %}';">
                         {% else %}
-                            <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="img-fluid mb-2" style="max-height: 35px; object-fit: contain;">
-                            <span class="fs-5 fw-bold text-dark text-truncate w-100">{% if band %}{{ band.name }}{% else %}Backstage Pro{% endif %}</span>
+                            <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="img-fluid" style="max-height: 40px; object-fit: contain; max-width: 100%;">
                         {% endif %}
                     </a>
                 </div>

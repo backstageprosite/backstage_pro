@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block extra_head %}
 <style>
@@ -109,18 +110,25 @@
 
                         <div class="mb-3">
                             <label class="form-label">Logo Atual</label>
-                            <div class="d-flex align-items-center logo-preview-box bg-light rounded border">
-                                {% if band.logo %}
-                                    <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="me-3" style="max-height: 64px; border-radius: 6px;">
-                                {% else %}
-                                    <div class="bg-secondary bg-opacity-10 rounded d-flex justify-content-center align-items-center me-3" style="width: 64px; height: 64px;">
-                                        <i class="fa-solid fa-image fs-2 text-muted"></i>
+                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center logo-preview-box bg-light rounded border gap-3 p-3">
+                                <div class="d-flex align-items-center">
+                                    {% if band.logo %}
+                                        <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="me-3" style="max-height: 64px; max-width: 100px; object-fit: contain; border-radius: 6px;">
+                                    {% else %}
+                                        <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="me-3" style="max-height: 40px; max-width: 100px; object-fit: contain;">
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="fw-bold mb-1" style="font-size: 14px;">{{ band.name }}</h6>
+                                        <small class="text-muted">{% if band.logo %}Logo cadastrada.{% else %}Logo da banda ainda não cadastrada.{% endif %}</small>
                                     </div>
-                                {% endif %}
-                                <div>
-                                    <h6 class="fw-bold mb-1" style="font-size: 14px;">{{ band.name }}</h6>
-                                    <small class="text-muted">{% if band.logo %}Logo carregada.{% else %}Nenhuma logo carregada.{% endif %}</small>
                                 </div>
+                                {% if band.logo %}
+                                <div class="align-self-start align-self-sm-center flex-shrink-0">
+                                    <button type="button" class="btn btn-outline-danger fw-bold btn-subaction" data-bs-toggle="modal" data-bs-target="#modalRemoverLogo">
+                                        <i class="fa-solid fa-trash-can me-1"></i> Remover Logo
+                                    </button>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -136,6 +144,35 @@
                             </button>
                         </div>
                     </form>
+
+                    {% if band.logo %}
+                    <!-- Modal Confirmar Remoção de Logo -->
+                    <div class="modal fade" id="modalRemoverLogo" tabindex="-1" aria-labelledby="modalRemoverLogoLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                                <div class="modal-header border-bottom-0 pb-0">
+                                    <h5 class="modal-title fw-bold text-danger" id="modalRemoverLogoLabel" style="font-size: 16px;">
+                                        Remover Logo?
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-3 p-md-4 text-dark" style="font-size: 13px; line-height: 1.4;">
+                                    <span>Tem certeza que deseja remover a logo da banda? A logo padrão do Backstage Pro será exibida até que uma nova logo seja cadastrada.</span>
+                                </div>
+                                <div class="modal-footer border-top-0 pt-0 d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                                    <form method="post" action="{% url 'configuracoes' band.slug %}" class="d-inline m-0 p-0">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="remove_logo">
+                                        <button type="submit" class="btn btn-danger fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">
+                                            Remover Logo
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
 
                     <hr class="my-3">
 

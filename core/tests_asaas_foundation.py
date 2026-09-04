@@ -1343,27 +1343,94 @@ class AsaasFoundationTests(TestCase):
         self.assertIn('https://backstage-pro-web-homologacao.up.railway.app/ativar-conta/', out_val)
         self.assertIn('Banda Sem Produtor', out_val)
 
-    def test_band_logo_fallback_rendering(self):
-        """ASAAS-07 Passo 2: Fallback de logo para backstage-pro-logo.png quando a banda nao possui logo."""
+    def test_band_logo_fallback_and_removal(self):
+        """ASAAS-07 Passo 3: Identidade visual sem repeticao de nome no branding e remocao de logo."""
         from django.test import Client
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
         client = Client()
 
         # 1. Banda sem logo
-        band_no_logo = Band.objects.create(name='Banda Sem Imagem', slug='semimagem')
+        band = Band.objects.create(name='Banda Sem Imagem', slug='semimagem')
         act, raw = create_band_activation_token(
-            band=band_no_logo,
+            band=band,
             email='contato@semimagem.com',
             responsible_name='Artista'
         )
 
-        # Na tela de ativacao: deve renderizar backstage-pro-logo.png e o nome da banda
+        # 1a. Ativacao: branding exibe apenas a logo Backstage Pro (sem h2 com nome da banda)
         resp_act = client.get(f'/ativar-conta/{raw}/')
         self.assertEqual(resp_act.status_code, 200)
         self.assertContains(resp_act, 'backstage-pro-logo.png')
-        self.assertContains(resp_act, 'Banda Sem Imagem')
+        self.assertNotContains(resp_act, '<h2 class="text-primary fw-bold">')
+        # Contexto informativo interno continua com o nome da banda
+        self.assertContains(resp_act, 'administrar a banda <strong>Banda Sem Imagem</strong>')
 
-        # Na tela de login: deve renderizar backstage-pro-logo.png e o nome da banda
-        resp_login = client.get(f'/{band_no_logo.slug}/login/')
+        # 1b. Login: branding exibe apenas a logo Backstage Pro (sem título/nome escrito no branding)
+        resp_login = client.get(f'/{band.slug}/login/')
         self.assertEqual(resp_login.status_code, 200)
         self.assertContains(resp_login, 'backstage-pro-logo.png')
-        self.assertContains(resp_login, 'Banda Sem Imagem')
+        self.assertNotContains(resp_login, '<h1')
+        self.assertNotContains(resp_login, '<h2')
+        self.assertNotContains(resp_login, '<h3')
+
+        # 1c. Area logada (Sidebar e Configuracoes)
+        user_produtor = User.objects.create_user(
+            username='prod_sem_logo',
+            email='contato@semimagem.com',
+            password='123',
+            band=band,
+            role='PRODUTOR'
+        )
+        client.force_login(user_produtor)
+
+        # Sidebar no Dashboard: apenas logo Backstage Pro sem texto do nome
+        resp_dash = client.get(f'/{band.slug}/painel/')
+        self.assertEqual(resp_dash.status_code, 200)
+        self.assertContains(resp_dash, 'backstage-pro-logo.png')
+        self.assertNotContains(resp_dash, 'span class="fs-5 fw-bold text-dark text-truncate w-100"')
+
+        # Configuracoes sem logo cadastrada:
+        # Exibe fallback, texto "Logo da banda ainda não cadastrada." e NAO exibe botao "Remover Logo"
+        resp_config = client.get(f'/{band.slug}/configuracoes/')
+        self.assertEqual(resp_config.status_code, 200)
+        self.assertContains(resp_config, 'backstage-pro-logo.png')
+        self.assertContains(resp_config, 'Logo da banda ainda não cadastrada.')
+        self.assertNotContains(resp_config, 'Remover Logo')
+        self.assertNotContains(resp_config, 'modalRemoverLogo')
+
+        # 2. Upload de logo própria
+        dummy_img = SimpleUploadedFile("custom_logo.png", b"fake_image_content", content_type="image/png")
+        resp_upload = client.post(f'/{band.slug}/configuracoes/', {'logo': dummy_img})
+        self.assertEqual(resp_upload.status_code, 302)
+
+        band.refresh_from_db()
+        self.assertTrue(bool(band.logo))
+        self.assertIn('custom_logo', band.logo.name)
+
+        # Configuracoes com logo cadastrada:
+        # Exibe logo própria, texto "Logo cadastrada." e exibe botao e modal "Remover Logo"
+        resp_config_custom = client.get(f'/{band.slug}/configuracoes/')
+        self.assertEqual(resp_config_custom.status_code, 200)
+        self.assertContains(resp_config_custom, f'/{band.slug}/assets/logo/')
+        self.assertContains(resp_config_custom, 'Logo cadastrada.')
+        self.assertContains(resp_config_custom, 'Remover Logo')
+        self.assertContains(resp_config_custom, 'modalRemoverLogo')
+        self.assertContains(resp_config_custom, 'Tem certeza que deseja remover a logo da banda?')
+
+        # 3. Remover Logo via POST action=remove_logo
+        resp_remove = client.post(f'/{band.slug}/configuracoes/', {'action': 'remove_logo'})
+        self.assertEqual(resp_remove.status_code, 302)
+
+        # Validar no banco de dados que band.logo e None / vazio e NÃO salvou string 'backstage-pro-logo.png'
+        band.refresh_from_db()
+        self.assertFalse(bool(band.logo))
+        self.assertIsNone(band.logo.name if band.logo else None)
+
+        # 4. Validar retorno imediato do fallback Backstage Pro
+        resp_config_after = client.get(f'/{band.slug}/configuracoes/')
+        self.assertEqual(resp_config_after.status_code, 200)
+        self.assertContains(resp_config_after, 'backstage-pro-logo.png')
+        self.assertContains(resp_config_after, 'Logo da banda ainda não cadastrada.')
+        self.assertNotContains(resp_config_after, 'modalRemoverLogo')

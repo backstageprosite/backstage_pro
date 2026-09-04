@@ -1923,37 +1923,35 @@ def arquivos_view(request, band_slug):
 
 
 @login_required
-
 @band_required
-
 def configuracoes_view(request, band_slug):
-
     band = get_object_or_404(Band, slug=band_slug)
 
-
-
     if request.method == 'POST':
-
         if not request.user.is_produtor():
-
             return HttpResponseForbidden("Apenas produtores podem alterar a identidade visual da banda.")
 
-        if 'logo' in request.FILES:
-
-            band.logo = request.FILES['logo']
-
-            band.save()
-
+        action = request.POST.get('action')
+        if action == 'remove_logo':
+            if band.logo:
+                try:
+                    band.logo.delete(save=False)
+                except Exception:
+                    pass
+                band.logo = None
+                band.save(update_fields=['logo'])
+                messages.success(request, "Logo da banda removida com sucesso!")
             return redirect('configuracoes', band_slug=band.slug)
 
-
+        if 'logo' in request.FILES:
+            band.logo = request.FILES['logo']
+            band.save()
+            messages.success(request, "Logo da banda atualizada com sucesso!")
+            return redirect('configuracoes', band_slug=band.slug)
 
     context = {
-
         'band': band,
-
     }
-
     return render(request, 'core/configuracoes.html', context)
 
 
