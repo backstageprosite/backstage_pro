@@ -1226,8 +1226,11 @@ def minha_assinatura_view(request, band_slug):
                 from core.models import BandSubscription
                 from core.services.payments.asaas.client import AsaasClient
 
-                # 1. Se assinatura possui gateway Asaas, valida remotamente via GET e executa DELETE
-                if subscription.gateway_provider == 'ASAAS' and subscription.gateway_subscription_id:
+                # 1. Se assinatura possui gateway Asaas e recorrência gerenciada (ex: Mensal),
+                # valida remotamente via GET e executa DELETE.
+                # Para planos ANUAIS (parcelamento desacoplado / installment), não existe subscription no Asaas,
+                # de modo que o cancelamento apenas desativa a renovação futura localmente sem chamar DELETE.
+                if subscription.gateway_provider == 'ASAAS' and subscription.gateway_subscription_id and subscription.billing_cycle != 'ANUAL':
                     client = AsaasClient()
                     sub_info = client.get_subscription(subscription.gateway_subscription_id)
                     if not sub_info:

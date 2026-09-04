@@ -232,3 +232,90 @@ class AsaasClient:
         except Exception as e:
             logger.warning("Exceção ao atualizar cobrança %s no Asaas: %s", payment_id, str(e))
             return False, {"error": str(e)}
+
+    def create_installment(self, data: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+        """
+        Cria um parcelamento no Asaas via POST /v3/installments sem informar cartão/token.
+        Retorna (sucesso: bool, resposta_ou_erro: dict).
+        """
+        if not self.config.api_key:
+            return False, {"error": "api_key_ausente"}
+
+        url = f"{self.base_url}/installments"
+        body_bytes = self.encode_payload(data)
+        req = urllib.request.Request(url, data=body_bytes, headers=self.get_headers(), method='POST')
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                status_code = resp.getcode()
+                raw_body = resp.read().decode('utf-8')
+                resp_data = json.loads(raw_body) if raw_body else {}
+                if status_code in (200, 201) or resp_data.get('id'):
+                    return True, resp_data
+                return False, resp_data
+        except urllib.error.HTTPError as http_err:
+            raw_err = http_err.read().decode('utf-8') if hasattr(http_err, 'read') else str(http_err)
+            try:
+                err_data = json.loads(raw_err)
+            except Exception:
+                err_data = {"error": str(http_err), "status": http_err.code}
+            logger.warning("Erro HTTP %s ao criar parcelamento no Asaas: %s", http_err.code, raw_err)
+            return False, err_data
+        except Exception as e:
+            logger.warning("Exceção ao criar parcelamento no Asaas: %s", str(e))
+            return False, {"error": str(e)}
+
+    def get_payments_by_installment(self, installment_id: str) -> List[Dict[str, Any]]:
+        """
+        Consulta as parcelas (payments) vinculadas a um installment via GET /v3/payments?installment={id}.
+        """
+        if not installment_id or not self.config.api_key:
+            return []
+
+        encoded_id = urllib.parse.quote(str(installment_id))
+        url = f"{self.base_url}/payments?installment={encoded_id}&limit=50"
+        req = urllib.request.Request(url, headers=self.get_headers())
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                return data.get('data', [])
+        except Exception as e:
+            logger.warning("Falha na consulta de parcelas do installment %s no Asaas: %s", installment_id, str(e))
+            return []
+
+    def pay_with_credit_card(self, payment_id: str, credit_card_token: str) -> Tuple[bool, Dict[str, Any]]:
+        """
+        Realiza o pagamento de uma cobrança com cartão tokenizado via POST /v3/payments/{id}/payWithCreditCard.
+        O credit_card_token nunca é logado ou exposto em exceções.
+        Retorna (sucesso: bool, resposta_ou_erro: dict).
+        """
+        if not payment_id:
+            return False, {"error": "payment_id_invalido"}
+        if not credit_card_token:
+            return False, {"error": "credit_card_token_ausente"}
+        if not self.config.api_key:
+            return False, {"error": "api_key_ausente"}
+
+        encoded_id = urllib.parse.quote(str(payment_id))
+        url = f"{self.base_url}/payments/{encoded_id}/payWithCreditCard"
+        payload = {"creditCardToken": credit_card_token}
+        body_bytes = self.encode_payload(payload)
+        req = urllib.request.Request(url, data=body_bytes, headers=self.get_headers(), method='POST')
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                status_code = resp.getcode()
+                raw_body = resp.read().decode('utf-8')
+                resp_data = json.loads(raw_body) if raw_body else {}
+                if status_code in (200, 201) or resp_data.get('status') in ('CONFIRMED', 'RECEIVED'):
+                    return True, resp_data
+                return False, resp_data
+        except urllib.error.HTTPError as http_err:
+            raw_err = http_err.read().decode('utf-8') if hasattr(http_err, 'read') else str(http_err)
+            try:
+                err_data = json.loads(raw_err)
+            except Exception:
+                err_data = {"error": str(http_err), "status": http_err.code}
+            logger.warning("Erro HTTP %s ao executar payWithCreditCard na cobrança %s no Asaas", http_err.code, payment_id)
+            return False, err_data
+        except Exception as e:
+            logger.warning("Exceção ao executar payWithCreditCard na cobrança %s no Asaas: %s", payment_id, str(e))
+            return False, {"error": str(e)}

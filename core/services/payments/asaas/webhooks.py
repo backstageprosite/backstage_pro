@@ -375,12 +375,13 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                     return False, f'ANCHOR_SYNC_FALHOU_{sync_msg}'
 
             # Sincronizacao remota concluida (ou desnecessaria por tolerancia):
-            # Para planos ANUAIS nao recorrentes (compra anual parcelada), parcelas subsequentes
-            # apenas liquidam seu respectivo BillingRecord e nao avancam next_due_date nem alteram auto_renew.
-            # Apenas chama apply_payment_success se nao for ANUAL ativo sem auto_renew, ou se for regularizacao.
-            is_annual_installment = (sub.billing_cycle == 'ANUAL' and not sub.auto_renew)
+            # Para planos ANUAIS (parcelamentos desacoplados gerenciados por AnnualPlanPurchase),
+            # parcelas subsequentes apenas liquidam seu respectivo BillingRecord e NUNCA avancam next_due_date,
+            # pois a vigencia de 12 meses ja e concedida atomicamente pelo motor de renovacao / provisionamento.
+            # Somente chama apply_payment_success se NAO for ANUAL ou se for regularizacao pos-suspensao.
+            is_annual_installment = (sub.billing_cycle == 'ANUAL' or record.annual_purchase_id is not None)
             if is_annual_installment and sub.status == 'ATIVO' and not was_suspended:
-                logger.info("Parcela de plano anual recebida para sub %s. Billing liquidado sem estender vigencia.", sub.id)
+                logger.info("Parcela de plano anual recebida para sub %s (record=%s). Billing liquidado sem estender vigencia.", sub.id, record.id)
             else:
                 sub.apply_payment_success(paid_date=record.paid_date)
 

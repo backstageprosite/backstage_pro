@@ -4063,3 +4063,421 @@ class AsaasFoundationTests(TestCase):
             self.assertEqual(rec.installment_number, idx)
             self.assertEqual(rec.amount, Decimal('39.98'))
         self.assertEqual(sum(r.amount for r in all_records), Decimal('199.90'))
+
+    def test_annual_renewal_engine_success_5x(self):
+        """
+        Testa o fluxo completo e bem-sucedido de renovação anual automática (5x de R$ 39,98):
+        - sub.next_due_date = 2027-09-04
+        - AnnualPlanPurchase INITIAL existe (5x R$ 199.90)
+        - GatewayPaymentMethod ativo existe com token criptografado
+        - Executa AnnualRenewalService.process_subscription_renewal()
+        - Verifica:
+          1. AnnualPlanPurchase de RENEWAL criada e CONFIRMED
+          2. sub.next_due_date avançou +1 ano para 2028-09-04 (sub.start_date inalterado)
+          3. 5 BillingRecords criados com status PAGO apontando para a nova AnnualPlanPurchase
+        """
+        import datetime
+        from decimal import Decimal
+        from unittest.mock import MagicMock
+        from core.models import BandSubscription, AnnualPlanPurchase, GatewayPaymentMethod, BillingRecord
+        from core.services.payments.renewal import AnnualRenewalService
+
+        band = Band.objects.create(name="Banda Anual Renov 5x", slug="banda-anual-renov-5x")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_annual_renov_01'
+        )
+
+        # Compra inicial
+        AnnualPlanPurchase.objects.create(
+            band_subscription=sub,
+            purchase_type=AnnualPlanPurchase.PurchaseType.INITIAL,
+            gateway_provider='ASAAS',
+            gateway_external_reference='bp-annual-initial-renov-1',
+            gateway_installment_id='inst_initial_renov_1',
+            installment_count=5,
+            gross_amount=Decimal('199.90'),
+            coverage_start=datetime.date(2026, 9, 4),
+            coverage_end=datetime.date(2027, 9, 4),
+            status=AnnualPlanPurchase.Status.CONFIRMED
+        )
+
+        pm = GatewayPaymentMethod.objects.create(
+            subscription=sub,
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_annual_renov_01',
+            card_brand='MASTERCARD',
+            card_last4='5555',
+            is_active=True
+        )
+        pm.set_token('token_seguro_teste_renov_123')
+        pm.save()
+
+        # Mock AsaasClient
+        mock_client = MagicMock()
+        mock_client.create_installment.return_value = (True, {
+            'id': 'inst_renewal_renov_2',
+            'installmentCount': 5,
+            'value': 199.90,
+            'netValue': 194.50
+        })
+
+        payments_mock = [
+            {'id': f'pay_renov_part_{i}', 'installmentNumber': i, 'value': 39.98, 'dueDate': f'2027-{9+i-1:02d}-04' if (9+i-1) <= 12 else f'2028-{9+i-1-12:02d}-04', 'status': 'CONFIRMED'}
+            for i in range(1, 6)
+        ]
+        mock_client.get_payments_by_installment.return_value = payments_mock
+        mock_client.pay_with_credit_card.return_value = (True, {'status': 'CONFIRMED', 'id': 'pay_renov_part_1'})
+
+        service = AnnualRenewalService(client=mock_client)
+        eval_date = datetime.date(2027, 9, 4)
+
+        success, msg, renewal_purchase = service.process_subscription_renewal(sub, target_date=eval_date)
+        self.assertTrue(success)
+        self.assertEqual(msg, "RENOVACAO_CONCLUIDA_COM_SUCESSO")
+        self.assertIsNotNone(renewal_purchase)
+        self.assertEqual(renewal_purchase.purchase_type, AnnualPlanPurchase.PurchaseType.RENEWAL)
+        self.assertEqual(renewal_purchase.status, AnnualPlanPurchase.Status.CONFIRMED)
+        self.assertEqual(renewal_purchase.installment_count, 5)
+        self.assertEqual(renewal_purchase.gross_amount, Decimal('199.90'))
+        self.assertEqual(renewal_purchase.net_amount, Decimal('194.50'))
+
+        sub.refresh_from_db()
+        self.assertEqual(sub.start_date, datetime.date(2026, 9, 4))  # Preserva data-base inicial
+        self.assertEqual(sub.next_due_date, datetime.date(2028, 9, 4))  # +1 ano
+        self.assertEqual(sub.status, 'ATIVO')
+
+        # 5 BillingRecords gerados
+        records = BillingRecord.objects.filter(subscription=sub, annual_purchase=renewal_purchase)
+        self.assertEqual(records.count(), 5)
+        self.assertEqual(sum(r.amount for r in records), Decimal('199.90'))
+
+    def test_annual_renewal_engine_idempotency(self):
+        """
+        Testa que executar a renovação mais de uma vez na mesma data é estritamente idempotente:
+        - Não cria novo parcelamento no gateway
+        - Não duplica AnnualPlanPurchase nem BillingRecords
+        - Não avança next_due_date pela segunda vez
+        """
+        import datetime
+        from decimal import Decimal
+        from unittest.mock import MagicMock
+        from core.models import BandSubscription, AnnualPlanPurchase, GatewayPaymentMethod, BillingRecord
+        from core.services.payments.renewal import AnnualRenewalService
+
+        band = Band.objects.create(name="Banda Anual Idemp", slug="banda-anual-idemp")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_idemp_01'
+        )
+        AnnualPlanPurchase.objects.create(
+            band_subscription=sub,
+            purchase_type=AnnualPlanPurchase.PurchaseType.INITIAL,
+            gateway_provider='ASAAS',
+            gateway_external_reference='bp-annual-initial-idemp-1',
+            gateway_installment_id='inst_initial_idemp_1',
+            installment_count=5,
+            gross_amount=Decimal('199.90'),
+            coverage_start=datetime.date(2026, 9, 4),
+            coverage_end=datetime.date(2027, 9, 4),
+            status=AnnualPlanPurchase.Status.CONFIRMED
+        )
+        pm = GatewayPaymentMethod.objects.create(
+            subscription=sub,
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_idemp_01',
+            is_active=True
+        )
+        pm.set_token('token_idemp_123')
+        pm.save()
+
+        mock_client = MagicMock()
+        mock_client.create_installment.return_value = (True, {'id': 'inst_idemp_2', 'installmentCount': 5, 'value': 199.90, 'netValue': 194.50})
+        payments_mock = [
+            {'id': f'pay_idemp_part_{i}', 'installmentNumber': i, 'value': 39.98, 'dueDate': f'2027-{9+i-1:02d}-04' if (9+i-1) <= 12 else f'2028-{9+i-1-12:02d}-04', 'status': 'CONFIRMED'}
+            for i in range(1, 6)
+        ]
+        mock_client.get_payments_by_installment.return_value = payments_mock
+        mock_client.pay_with_credit_card.return_value = (True, {'status': 'CONFIRMED', 'id': 'pay_idemp_part_1'})
+
+        service = AnnualRenewalService(client=mock_client)
+        eval_date = datetime.date(2027, 9, 4)
+
+        # 1a Execução
+        ok1, _, pur1 = service.process_subscription_renewal(sub, target_date=eval_date)
+        self.assertTrue(ok1)
+        self.assertEqual(mock_client.create_installment.call_count, 1)
+
+        # 2a Execução na mesma data
+        ok2, msg2, pur2 = service.process_subscription_renewal(sub, target_date=eval_date)
+        # Como sub.next_due_date agora é 2028-09-04 e eval_date é 2027-09-04, a verificação de elegibilidade detecta data futura
+        # ou se avaliado contra a purchase direta, é idempotente.
+        self.assertEqual(mock_client.create_installment.call_count, 1)  # Não chamou novamente
+        self.assertEqual(AnnualPlanPurchase.objects.filter(band_subscription=sub).count(), 2)  # 1 initial + 1 renewal
+
+    def test_annual_renewal_engine_crash_recovery(self):
+        """
+        Testa recuperação após crash: se o installment já foi gravado em AnnualPlanPurchase
+        mas o processo caiu antes de pagar o cartão, a próxima tentativa reutiliza o mesmo
+        gateway_installment_id sem criar outro parcelamento.
+        """
+        import datetime
+        from decimal import Decimal
+        from unittest.mock import MagicMock
+        from core.models import BandSubscription, AnnualPlanPurchase, GatewayPaymentMethod
+        from core.services.payments.renewal import AnnualRenewalService
+
+        band = Band.objects.create(name="Banda Crash Recovery", slug="banda-crash-recovery")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_crash_01'
+        )
+        pm = GatewayPaymentMethod.objects.create(
+            subscription=sub,
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_crash_01',
+            is_active=True
+        )
+        pm.set_token('token_crash_123')
+        pm.save()
+
+        # Simula purchase já com gateway_installment_id persistido e status PENDING
+        AnnualPlanPurchase.objects.create(
+            band_subscription=sub,
+            purchase_type=AnnualPlanPurchase.PurchaseType.RENEWAL,
+            gateway_provider='ASAAS',
+            gateway_external_reference='bp-annual-renewal-' + str(sub.id) + '-20270904',
+            gateway_installment_id='inst_pre_existing_recovered',
+            installment_count=5,
+            gross_amount=Decimal('199.90'),
+            coverage_start=datetime.date(2027, 9, 4),
+            coverage_end=datetime.date(2028, 9, 4),
+            status=AnnualPlanPurchase.Status.PENDING
+        )
+
+        mock_client = MagicMock()
+        payments_mock = [
+            {'id': f'pay_recov_{i}', 'installmentNumber': i, 'value': 39.98, 'dueDate': f'2027-{9+i-1:02d}-04' if (9+i-1) <= 12 else f'2028-{9+i-1-12:02d}-04', 'status': 'CONFIRMED'}
+            for i in range(1, 6)
+        ]
+        mock_client.get_payments_by_installment.return_value = payments_mock
+        mock_client.pay_with_credit_card.return_value = (True, {'status': 'CONFIRMED'})
+
+        service = AnnualRenewalService(client=mock_client)
+        ok, _, pur = service.process_subscription_renewal(sub, target_date=datetime.date(2027, 9, 4))
+        self.assertTrue(ok)
+        # NUNCA chamou create_installment
+        mock_client.create_installment.assert_not_called()
+        self.assertEqual(pur.gateway_installment_id, 'inst_pre_existing_recovered')
+        self.assertEqual(pur.status, AnnualPlanPurchase.Status.CONFIRMED)
+
+    def test_annual_renewal_engine_card_refused(self):
+        """
+        Testa recusa de cartão na tentativa de renovação:
+        - AnnualPlanPurchase permanece PENDING
+        - sub.next_due_date NÃO avança
+        - Retorna erro CARTAO_RECUSADO
+        """
+        import datetime
+        from decimal import Decimal
+        from unittest.mock import MagicMock
+        from core.models import BandSubscription, AnnualPlanPurchase, GatewayPaymentMethod
+        from core.services.payments.renewal import AnnualRenewalService
+
+        band = Band.objects.create(name="Banda Card Refused", slug="banda-card-refused")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_refused_01'
+        )
+        pm = GatewayPaymentMethod.objects.create(
+            subscription=sub,
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_refused_01',
+            is_active=True
+        )
+        pm.set_token('token_refused_123')
+        pm.save()
+
+        mock_client = MagicMock()
+        mock_client.create_installment.return_value = (True, {'id': 'inst_refused_1', 'installmentCount': 5, 'value': 199.90})
+        mock_client.get_payments_by_installment.return_value = [
+            {'id': 'pay_refused_1', 'installmentNumber': 1, 'status': 'PENDING', 'value': 39.98}
+        ]
+        mock_client.pay_with_credit_card.return_value = (False, {'error': 'Cartão sem limite disponível'})
+
+        service = AnnualRenewalService(client=mock_client)
+        ok, msg, pur = service.process_subscription_renewal(sub, target_date=datetime.date(2027, 9, 4))
+        self.assertFalse(ok)
+        self.assertIn("CARTAO_RECUSADO", msg)
+        self.assertEqual(pur.status, AnnualPlanPurchase.Status.PENDING)
+
+        sub.refresh_from_db()
+        self.assertEqual(sub.next_due_date, datetime.date(2027, 9, 4))  # NÃO avançou
+
+    def test_annual_renewal_engine_retry_window_and_day5_suspension(self):
+        """
+        Testa a janela de tolerância D+1 a D+4 e bloqueio no D+5:
+        - D+2: elegível para retry
+        - D+5: inelegível por suspensão financeira
+        """
+        import datetime
+        from decimal import Decimal
+        from core.models import BandSubscription
+        from core.services.payments.renewal import AnnualRenewalService
+
+        band = Band.objects.create(name="Banda Window Test", slug="banda-window-test")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_win_01'
+        )
+
+        service = AnnualRenewalService()
+
+        # D0 (2027-09-04): Elegível
+        ok_d0, _ = service.is_eligible_for_renewal(sub, target_date=datetime.date(2027, 9, 4))
+        self.assertTrue(ok_d0)
+
+        # D+2 (2027-09-06): Elegível (dentro da tolerância)
+        ok_d2, _ = service.is_eligible_for_renewal(sub, target_date=datetime.date(2027, 9, 6))
+        self.assertTrue(ok_d2)
+
+        # D+4 (2027-09-08): Elegível (último dia de tolerância)
+        ok_d4, _ = service.is_eligible_for_renewal(sub, target_date=datetime.date(2027, 9, 8))
+        self.assertTrue(ok_d4)
+
+        # D+5 (2027-09-09): Inelegível (atraso >= 5 dias, suspensão financeira)
+        ok_d5, reason_d5 = service.is_eligible_for_renewal(sub, target_date=datetime.date(2027, 9, 9))
+        self.assertFalse(ok_d5)
+        self.assertIn("JANELA_EXPIRADA_SUSPENSAO_FINANCEIRA", reason_d5)
+
+    def test_annual_renewal_engine_missing_payment_method(self):
+        """
+        Testa que assinaturas anuais sem método de pagamento tokenizado ativo
+        retornam PAYMENT_METHOD_MISSING sem chamar o gateway.
+        """
+        import datetime
+        from decimal import Decimal
+        from unittest.mock import MagicMock
+        from core.models import BandSubscription
+        from core.services.payments.renewal import AnnualRenewalService
+
+        band = Band.objects.create(name="Banda No Card", slug="banda-no-card")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_nocard_01'
+        )
+
+        mock_client = MagicMock()
+        service = AnnualRenewalService(client=mock_client)
+        ok, msg, pur = service.process_subscription_renewal(sub, target_date=datetime.date(2027, 9, 4))
+        self.assertFalse(ok)
+        self.assertEqual(msg, "PAYMENT_METHOD_MISSING")
+        mock_client.create_installment.assert_not_called()
+        mock_client.pay_with_credit_card.assert_not_called()
+
+    def test_annual_subscription_cancellation_flow(self):
+        """
+        Testa o cancelamento de uma assinatura anual com auto_renew=True:
+        - O cancelamento marca cancel_at_period_end=True, auto_renew=False, canceled_at=now
+        - NUNCA chama DELETE /v3/subscriptions no Asaas
+        - O acesso da banda permanece liberado até next_due_date
+        - Quando next_due_date é ultrapassado, transita para DESATIVADO
+        """
+        import datetime
+        from decimal import Decimal
+        from django.test import Client
+        from unittest.mock import patch
+        from core.models import BandSubscription, User
+
+        band = Band.objects.create(name="Banda Anual Cancel Test", slug="banda-anual-cancel-test")
+        user = User.objects.create_user(
+            username='user_anual_canc',
+            email='anual_canc@teste.com',
+            band=band,
+            role='PRODUTOR'
+        )
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_canc_01',
+            gateway_subscription_id=''
+        )
+
+        client = Client(HTTP_HOST='localhost')
+        client.force_login(user)
+
+        with patch('core.services.payments.asaas.client.AsaasClient.cancel_subscription') as mock_del:
+            resp = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+            self.assertEqual(resp.status_code, 200)
+            # Confirma que NUNCA invocou cancel_subscription no Asaas
+            mock_del.assert_not_called()
+
+        sub.refresh_from_db()
+        self.assertTrue(sub.cancel_at_period_end)
+        self.assertFalse(sub.auto_renew)
+        self.assertIsNotNone(sub.canceled_at)
+        self.assertEqual(sub.status, 'ATIVO')
+
+        # Acesso permanece liberado
+        self.assertTrue(band.has_active_subscription)
+
+        # Se avançar o tempo além do período pago (hoje > 2027-09-04), transita para DESATIVADO
+        with patch('django.utils.timezone.localdate', return_value=datetime.date(2027, 9, 5)):
+            self.assertFalse(band.has_active_subscription)
+            sub.refresh_from_db()
+            self.assertEqual(sub.status, 'DESATIVADO')

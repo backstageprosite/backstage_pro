@@ -2289,7 +2289,12 @@ class AnnualPlanPurchase(models.Model):
                 fields=['gateway_provider', 'gateway_installment_id'],
                 condition=models.Q(gateway_installment_id__isnull=False) & ~models.Q(gateway_installment_id=''),
                 name='unique_installment_per_gateway_provider'
-            )
+            ),
+            models.UniqueConstraint(
+                fields=['gateway_provider', 'gateway_external_reference'],
+                condition=models.Q(gateway_external_reference__isnull=False) & ~models.Q(gateway_external_reference=''),
+                name='unique_annual_purchase_external_ref'
+            ),
         ]
 
     def __str__(self):
