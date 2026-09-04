@@ -267,3 +267,134 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertEqual(act_delivery.related_object_id, str(token_obj.id))
         self.assertFalse(hasattr(token_obj, 'token_plain'))
         self.assertTrue(len(token_obj.token_hash) == 64)
+
+    def test_payment_overdue_webhook_enqueues_email(self):
+        from core.models import BillingRecord
+        from core.services.payments.asaas.webhooks import handle_asaas_webhook_payload
+
+        # Pre-create BillingRecord
+        record = BillingRecord.objects.create(
+            subscription=self.subscription,
+            band=self.band,
+            reference_period="09/2026",
+            plan_name="Avançado",
+            billing_cycle="ANUAL",
+            amount=Decimal("499.90"),
+            due_date=datetime.date(2026, 9, 4),
+            status="PENDENTE",
+            gateway_provider="ASAAS",
+            gateway_payment_id="pay_overdue_test_123"
+        )
+
+        payload = {
+            "id": "evt_overdue_001",
+            "event": "PAYMENT_OVERDUE",
+            "payment": {
+                "id": "pay_overdue_test_123",
+                "customer": "cus_test_123",
+                "value": 499.90,
+                "dueDate": "2026-09-04",
+                "invoiceUrl": "https://sandbox.asaas.com/i/test-overdue"
+            }
+        }
+
+        success, msg = handle_asaas_webhook_payload(payload)
+        self.assertTrue(success)
+
+        # Verify email delivery was enqueued
+        delivery = EmailDelivery.objects.filter(
+            email_type=EmailDelivery.EmailType.PAYMENT_OVERDUE,
+            idempotency_key="overdue-payment-pay_overdue_test_123"
+        ).first()
+        self.assertIsNotNone(delivery)
+        self.assertEqual(delivery.recipient_email, "financeiro@teste.com")
+        self.assertEqual(delivery.status, EmailDelivery.Status.PENDING)
+
+        # Execute worker
+        call_command('run_email_worker', once=True)
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, EmailDelivery.Status.SENT)
+
+    def test_payment_credit_card_capture_refused_webhook_enqueues_email(self):
+        from core.models import BillingRecord
+        from core.services.payments.asaas.webhooks import handle_asaas_webhook_payload
+
+        record = BillingRecord.objects.create(
+            subscription=self.subscription,
+            band=self.band,
+            reference_period="09/2026",
+            plan_name="Avançado",
+            billing_cycle="ANUAL",
+            amount=Decimal("499.90"),
+            due_date=datetime.date(2026, 9, 4),
+            status="PENDENTE",
+            gateway_provider="ASAAS",
+            gateway_payment_id="pay_refused_test_456"
+        )
+
+        payload = {
+            "id": "evt_refused_001",
+            "event": "PAYMENT_CREDIT_CARD_CAPTURE_REFUSED",
+            "payment": {
+                "id": "pay_refused_test_456",
+                "customer": "cus_test_123",
+                "value": 499.90,
+                "dueDate": "2026-09-04",
+                "refusalReason": "Cartão bloqueado para compras online",
+                "invoiceUrl": "https://sandbox.asaas.com/i/test-refused"
+            }
+        }
+
+        success, msg = handle_asaas_webhook_payload(payload)
+        self.assertTrue(success)
+
+        delivery = EmailDelivery.objects.filter(
+            email_type=EmailDelivery.EmailType.CREDIT_CARD_CAPTURE_REFUSED,
+            idempotency_key="cc-refused-webhook-pay_refused_test_456"
+        ).first()
+        self.assertIsNotNone(delivery)
+        self.assertEqual(delivery.recipient_email, "financeiro@teste.com")
+
+        # Execute worker
+        call_command('run_email_worker', once=True)
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, EmailDelivery.Status.SENT)
+
+    def test_subscription_suspended_due_dates_enqueues_email(self):
+        # Set next_due_date to 6 days ago (suspension threshold >= 5 days)
+        today = timezone.localdate()
+        self.subscription.next_due_date = today - datetime.timedelta(days=6)
+        self.subscription.save()
+
+        self.assertTrue(self.subscription.is_financially_suspended)
+
+        call_command('check_subscription_due_dates')
+
+        idemp_k = f"sub-suspended-{self.subscription.id}-{self.subscription.next_due_date.isoformat()}"
+        delivery = EmailDelivery.objects.filter(
+            email_type=EmailDelivery.EmailType.SUBSCRIPTION_SUSPENDED,
+            idempotency_key=idemp_k
+        ).first()
+        self.assertIsNotNone(delivery)
+        self.assertEqual(delivery.recipient_email, "financeiro@teste.com")
+
+        # Execute worker
+        call_command('run_email_worker', once=True)
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, EmailDelivery.Status.SENT)
+
+    def test_resolve_subscription_recipient_hierarchy(self):
+        # 1. Billing email
+        email, name = resolve_subscription_recipient(self.subscription)
+        self.assertEqual(email, "financeiro@teste.com")
+        self.assertEqual(name, "Carlos Financeiro")
+
+        # 2. Fallback to Produtor user
+        self.subscription.billing_email = ""
+        self.subscription.financial_responsible_name = ""
+        self.subscription.save()
+
+        email2, name2 = resolve_subscription_recipient(self.subscription)
+        self.assertEqual(email2, "produtor@teste.com")
+        self.assertEqual(name2, "Carlos Silva")
+

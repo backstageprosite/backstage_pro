@@ -388,6 +388,67 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
     elif event_type in ('PAYMENT_OVERDUE',):
         if record.status != 'PAGO':
             record.status = 'PENDENTE'
+            if record.subscription:
+                try:
+                    from core.services.email_service import enqueue_email, resolve_subscription_recipient
+                    sub = record.subscription
+                    recip_email, recip_name = resolve_subscription_recipient(sub)
+                    if recip_email:
+                        due_fmt = record.due_date.strftime('%d/%m/%Y') if record.due_date else ''
+                        import datetime
+                        grace_until_date = record.due_date + datetime.timedelta(days=4) if record.due_date else None
+                        grace_fmt = grace_until_date.strftime('%d/%m/%Y') if grace_until_date else ''
+                        enqueue_email(
+                            email_type='PAYMENT_OVERDUE',
+                            recipient_email=recip_email,
+                            subject=f"Aviso de Vencimento — Backstage Pro ({sub.band.name if sub.band else 'Assinatura'})",
+                            idempotency_key=f"overdue-payment-{payment_id}",
+                            template_name='emails/payment_overdue',
+                            context_data={
+                                'user_name': recip_name,
+                                'band_name': sub.band.name if sub.band else 'Sua Banda',
+                                'plan_name': sub.plan_name,
+                                'amount': f"{record.amount:.2f}",
+                                'due_date': due_fmt,
+                                'grace_until': grace_fmt,
+                                'invoice_url': record.gateway_invoice_url or '',
+                            },
+                            related_object_type='BillingRecord',
+                            related_object_id=str(record.id)
+                        )
+                except Exception as e:
+                    logger.warning("Falha ao enfileirar e-mail PAYMENT_OVERDUE para payment %s: %s", payment_id, str(e))
+
+    elif event_type in ('PAYMENT_CREDIT_CARD_CAPTURE_REFUSED',):
+        if record.status != 'PAGO':
+            record.status = 'PENDENTE'
+            if record.subscription:
+                try:
+                    from core.services.email_service import enqueue_email, resolve_subscription_recipient
+                    sub = record.subscription
+                    recip_email, recip_name = resolve_subscription_recipient(sub)
+                    if recip_email:
+                        refusal_reason = payment_data.get('creditCard', {}).get('creditCardBrand') or payment_data.get('refusalReason') or 'Transação não autorizada pela emissora do cartão.'
+                        enqueue_email(
+                            email_type='CREDIT_CARD_CAPTURE_REFUSED',
+                            recipient_email=recip_email,
+                            subject=f"Falha na Captura do Cartão — Backstage Pro ({sub.band.name if sub.band else 'Assinatura'})",
+                            idempotency_key=f"cc-refused-webhook-{payment_id}",
+                            template_name='emails/credit_card_capture_refused',
+                            context_data={
+                                'user_name': recip_name,
+                                'band_name': sub.band.name if sub.band else 'Sua Banda',
+                                'plan_name': sub.plan_name,
+                                'amount': f"{record.amount:.2f}",
+                                'reason': refusal_reason,
+                                'invoice_url': record.gateway_invoice_url or '',
+                            },
+                            related_object_type='BillingRecord',
+                            related_object_id=str(record.id)
+                        )
+                except Exception as e:
+                    logger.warning("Falha ao enfileirar e-mail CREDIT_CARD_CAPTURE_REFUSED para payment %s: %s", payment_id, str(e))
+
     elif event_type in ('PAYMENT_REFUNDED',):
         record.status = 'ESTORNADO' if hasattr(record, 'status') else record.status
     elif event_type in ('PAYMENT_DELETED', 'PAYMENT_CANCELLED', 'PAYMENT_CANCELED'):

@@ -56,8 +56,43 @@ class Command(BaseCommand):
                     )
                     created += 1
 
+        # Verificar assinaturas com suspensão financeira (>= 5 dias de atraso) para enfileirar e-mail transacional
+        suspended_count = 0
+        all_active_subs = BandSubscription.objects.filter(
+            status="ATIVO",
+            is_deleted=False,
+            next_due_date__isnull=False
+        )
+        for sub in all_active_subs:
+            if sub.is_financially_suspended:
+                try:
+                    from core.services.email_service import enqueue_email, resolve_subscription_recipient
+                    recip_email, recip_name = resolve_subscription_recipient(sub)
+                    if recip_email and sub.next_due_date:
+                        enqueue_email(
+                            email_type='SUBSCRIPTION_SUSPENDED',
+                            recipient_email=recip_email,
+                            subject=f"Acesso Suspenso por Pendência — Backstage Pro ({sub.band.name if sub.band else 'Assinatura'})",
+                            idempotency_key=f"sub-suspended-{sub.id}-{sub.next_due_date.isoformat()}",
+                            template_name='emails/subscription_suspended',
+                            context_data={
+                                'user_name': recip_name,
+                                'band_name': sub.band.name if sub.band else 'Sua Banda',
+                                'plan_name': sub.plan_name,
+                                'contracted_value': f"{sub.contracted_value:.2f}",
+                                'days_overdue': sub.days_overdue(),
+                                'next_due_date': sub.next_due_date.strftime('%d/%m/%Y'),
+                            },
+                            related_object_type='BandSubscription',
+                            related_object_id=str(sub.id)
+                        )
+                        suspended_count += 1
+                except Exception as e:
+                    self.stdout.write(self.style.WARNING(f"Falha ao enfileirar e-mail de suspensão para sub {sub.id}: {e}"))
+
         self.stdout.write(self.style.SUCCESS(
             f"Varredura concluida: {created} faturas criadas, "
             f"{updated_vencendo} assinaturas marcadas como VENCENDO, "
-            f"{updated_vencido} marcadas como VENCIDO."
+            f"{updated_vencido} marcadas como VENCIDO, "
+            f"{suspended_count} suspensões financeiras verificadas/notificadas."
         ))
