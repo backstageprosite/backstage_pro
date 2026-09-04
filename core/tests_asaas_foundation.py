@@ -3590,3 +3590,66 @@ class AsaasFoundationTests(TestCase):
         self.assertTrue(sub_m.auto_renew)
         self.assertEqual(sub_m.gateway_subscription_id, 'sub_2b_mensal_001')
         self.assertEqual(sub_m.next_due_date, date(2026, 10, 4))
+
+    def test_create_asaas_sandbox_checkout_annual_and_monthly_payload(self):
+        """
+        ASAAS-10 ETAPA 3A.1:
+        Validar que create_asaas_sandbox_checkout gera payloads estritamente conformes:
+        - ANUAL: chargeTypes == ['DETACHED', 'INSTALLMENT']
+        - ANUAL: subscription ausente (null)
+        - ANUAL: installment.maxInstallmentCount == 5
+        - ANUAL: items[0].name <= 30 caracteres
+        - MENSAL: chargeTypes == ['RECURRENT']
+        - MENSAL: subscription.cycle == 'MONTHLY'
+        """
+        from unittest.mock import patch, MagicMock
+        from django.core.management import call_command
+        import json
+
+        # 1. Teste ANUAL
+        mock_resp_annual = MagicMock()
+        mock_resp_annual.read.return_value = json.dumps({
+            'id': 'chk_mock_annual_test_999',
+            'status': 'ACTIVE',
+            'paymentLink': 'https://sandbox.asaas.com/c/testannual'
+        }).encode('utf-8')
+        mock_resp_annual.status = 200
+        mock_resp_annual.__enter__.return_value = mock_resp_annual
+
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox', ASAAS_API_KEY='key_123'):
+            with patch('urllib.request.urlopen', return_value=mock_resp_annual) as mock_url:
+                call_command('create_asaas_sandbox_checkout', plan='BASICO', cycle='ANUAL')
+                annual_call = mock_url.call_args[0][0]
+                annual_payload = json.loads(annual_call.data.decode('utf-8'))
+
+                self.assertEqual(annual_payload['chargeTypes'], ['DETACHED', 'INSTALLMENT'])
+                self.assertNotIn('subscription', annual_payload)
+                self.assertEqual(annual_payload['billingTypes'], ['CREDIT_CARD'])
+                self.assertEqual(annual_payload['installment']['maxInstallmentCount'], 5)
+                self.assertTrue(len(annual_payload['items'][0]['name']) <= 30)
+                self.assertEqual(annual_payload['items'][0]['name'], 'Backstage Pro Básico')
+                self.assertEqual(annual_payload['items'][0]['value'], 199.90)
+
+        # 2. Teste MENSAL
+        mock_resp_monthly = MagicMock()
+        mock_resp_monthly.read.return_value = json.dumps({
+            'id': 'chk_mock_monthly_test_999',
+            'status': 'ACTIVE',
+            'paymentLink': 'https://sandbox.asaas.com/c/testmonthly'
+        }).encode('utf-8')
+        mock_resp_monthly.status = 200
+        mock_resp_monthly.__enter__.return_value = mock_resp_monthly
+
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox', ASAAS_API_KEY='key_123'):
+            with patch('urllib.request.urlopen', return_value=mock_resp_monthly) as mock_url:
+                call_command('create_asaas_sandbox_checkout', plan='BASICO', cycle='MENSAL')
+                monthly_call = mock_url.call_args[0][0]
+                monthly_payload = json.loads(monthly_call.data.decode('utf-8'))
+
+                self.assertEqual(monthly_payload['chargeTypes'], ['RECURRENT'])
+                self.assertIn('subscription', monthly_payload)
+                self.assertEqual(monthly_payload['subscription']['cycle'], 'MONTHLY')
+                self.assertNotIn('installment', monthly_payload)
+                self.assertTrue(len(monthly_payload['items'][0]['name']) <= 30)
+                self.assertEqual(monthly_payload['items'][0]['name'], 'Backstage Pro Básico')
+                self.assertEqual(monthly_payload['items'][0]['value'], 19.90)

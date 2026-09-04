@@ -112,13 +112,13 @@ class Command(BaseCommand):
         is_annual = (order.billing_cycle == 'ANUAL')
 
         if is_annual:
-            # Compra anual parcelavel em ate 5x no cartao (INSTALLMENT)
-            item_name = f'Backstage Pro {plan_label} Anual'
+            # Compra anual parcelavel em ate 5x no cartao (DETACHED + INSTALLMENT)
+            item_name = f'Backstage Pro {plan_label}'
             item_desc = f'Assinatura anual Backstage Pro (vigência de 12 meses) - Sandbox'
             checkout_payload = {
                 'customer': customer_id,
                 'billingTypes': ['CREDIT_CARD'],
-                'chargeTypes': ['INSTALLMENT'],
+                'chargeTypes': ['DETACHED', 'INSTALLMENT'],
                 'minutesToExpire': 60,
                 'externalReference': order.external_reference,
                 'items': [
