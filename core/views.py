@@ -1215,17 +1215,14 @@ def minha_assinatura_view(request, band_slug):
     status_display = None
 
     if subscription:
-        # Plano
+        # Plano (exibir estritamente Básico ou Avançado)
         p_name = (subscription.plan_name or '').strip().upper()
-        if p_name in ['BASICO', 'BÁSICO']:
+        if 'BASICO' in p_name or 'BÁSICO' in p_name:
             plan_display = 'Básico'
-        elif p_name in ['AVANCADO', 'AVANÇADO']:
+        elif 'AVANCADO' in p_name or 'AVANÇADO' in p_name:
             plan_display = 'Avançado'
-        elif p_name in ['MENSAL', 'SEMESTRAL', 'ANUAL', 'PERSONALIZADO']:
-            # Caso plan_name tenha vindo como ciclo no legado
-            plan_display = 'Básico' if band.is_basic else 'Avançado'
         else:
-            plan_display = subscription.plan_name or ('Básico' if band.is_basic else 'Avançado')
+            plan_display = 'Básico' if getattr(band, 'is_basic', True) else 'Avançado'
 
         # Ciclo
         c_name = (subscription.billing_cycle or '').strip().upper()
