@@ -101,7 +101,7 @@
     {% if subscription %}
     <!-- Resumo da Assinatura (Cards Gerenciais / BP-COMPACTO-01) -->
     <div class="row g-2 g-md-3 mb-3">
-        <!-- Linha 1 -->
+        <!-- Linha 1: AZUL | VERDE | AMARELO | VERMELHO -->
         <div class="col-6 col-md-3">
             <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
                 <div class="card-body">
@@ -119,7 +119,7 @@
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
+            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Valor</p>
                     <div class="kpi-value text-dark">R$ {{ subscription.contracted_value|floatformat:"2g" }}</div>
@@ -127,7 +127,7 @@
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-info h-100 kpi-card">
+            <div class="card shadow-sm border-0 border-start border-4 border-danger h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Ciclo</p>
                     <div class="kpi-value text-dark">{{ cycle_display }}</div>
@@ -135,9 +135,9 @@
             </div>
         </div>
 
-        <!-- Linha 2 -->
+        <!-- Linha 2: AZUL | VERDE | AMARELO | VERMELHO -->
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-secondary h-100 kpi-card">
+            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Início</p>
                     <div class="kpi-value text-dark">
@@ -151,7 +151,7 @@
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 kpi-card">
+            <div class="card shadow-sm border-0 border-start border-4 border-success h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Próxima Cobrança</p>
                     <div class="kpi-value text-dark">
@@ -165,7 +165,7 @@
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 border-info h-100 kpi-card">
+            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Forma de Pagamento</p>
                     <div class="kpi-value text-dark">{{ payment_method_display }}</div>
@@ -173,7 +173,7 @@
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card shadow-sm border-0 border-start border-4 {% if subscription.cancel_at_period_end %}border-warning{% elif subscription.auto_renew %}border-success{% else %}border-secondary{% endif %} h-100 kpi-card">
+            <div class="card shadow-sm border-0 border-start border-4 border-danger h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Renovação Automática</p>
                     <div class="kpi-value text-dark">
