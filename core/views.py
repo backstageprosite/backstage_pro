@@ -1313,7 +1313,7 @@ def minha_assinatura_view(request, band_slug):
         else:
             payment_method_display = subscription.get_payment_method_preference_display() if hasattr(subscription, 'get_payment_method_preference_display') else (subscription.payment_method_preference or '-')
 
-        # Status e Inadimplência
+        # Status, Inadimplência e Cancelamento
         st = (subscription.status or '').strip().upper()
 
         if st == 'ATIVO':
@@ -1329,6 +1329,9 @@ def minha_assinatura_view(request, band_slug):
                     overdue_limit_date = subscription.next_due_date + timedelta(days=5)
             else:
                 status_display = 'Ativo'
+        elif subscription.is_canceled_period_expired or (st == 'DESATIVADO' and subscription.cancel_at_period_end):
+            status_display = 'Assinatura encerrada'
+            can_reactivate = True
         elif st == 'DESATIVADO':
             status_display = 'Inativo'
             can_resubscribe = True
@@ -1338,9 +1341,7 @@ def minha_assinatura_view(request, band_slug):
 
         # Estados dos botões de ação para assinaturas ativas não suspensas:
         if subscription.status == 'ATIVO' and not subscription.is_financially_suspended:
-            if subscription.cancel_at_period_end:
-                can_reactivate = True
-            else:
+            if not subscription.cancel_at_period_end:
                 can_cancel = True
     else:
         can_resubscribe = True

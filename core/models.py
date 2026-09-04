@@ -703,19 +703,37 @@ class BandSubscription(models.Model):
             self.next_due_date = calculate_next_billing_date(base_anchor, self.billing_cycle or 'MENSAL', periods_offset=1)
 
         self.status = 'ATIVO'
-        self.save(update_fields=['status', 'start_date', 'next_due_date', 'updated_at'])
+        self.auto_renew = True
+        self.cancel_at_period_end = False
+        self.canceled_at = None
+        self.save(update_fields=['status', 'auto_renew', 'cancel_at_period_end', 'canceled_at', 'start_date', 'next_due_date', 'updated_at'])
         return was_suspended
+
+    @property
+    def is_canceled_period_expired(self):
+        """
+        Assinatura com cancelamento voluntário agendado que já atingiu/ultrapassou o fim do período pago.
+        O acesso operacional é concedido até o final do dia de next_due_date.
+        Após esse dia (today > next_due_date), ou quando desativada por cancelamento, o período está encerrado.
+        """
+        if self.status == 'DESATIVADO' and self.cancel_at_period_end:
+            return True
+        from django.utils import timezone
+        if self.cancel_at_period_end and not self.auto_renew and self.next_due_date:
+            today = timezone.localdate()
+            return today > self.next_due_date
+        return False
 
     def check_and_sync_auto_expiration(self):
         """
         Regra de encerramento automático do período já pago:
-        Quando cancel_at_period_end=True, auto_renew=False e today >= next_due_date,
+        Quando cancel_at_period_end=True, auto_renew=False e today > next_due_date (após o dia final pago),
         a assinatura passa automaticamente para DESATIVADO.
         """
         from django.utils import timezone
         today = timezone.localdate()
         if self.status == 'ATIVO' and self.cancel_at_period_end and not self.auto_renew:
-            if self.next_due_date and today >= self.next_due_date:
+            if self.next_due_date and today > self.next_due_date:
                 self.status = 'DESATIVADO'
                 self.save(update_fields=['status', 'updated_at'])
                 return True

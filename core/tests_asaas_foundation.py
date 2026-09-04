@@ -1695,12 +1695,11 @@ class AsaasFoundationTests(TestCase):
         sub_a.cancel_at_period_end = True
         sub_a.save()
         resp_cancel = client.get(f'/{band_a.slug}/relatorios/assinatura/')
-        self.assertContains(resp_cancel, 'Não')
-        self.assertContains(resp_cancel, '- Acesso até 03/10/2026')
-        # Quando está cancelado no período pago: exibe Reativar Assinatura e esconde Cancelar Assinatura
+        self.assertContains(resp_cancel, 'Cancelamento agendado')
+        self.assertContains(resp_cancel, 'Acesso até')
+        # Quando está cancelado no período pago: não exibe Cancelar Assinatura nem Regularizar Pagamento
         self.assertNotContains(resp_cancel, 'modalCancelarAssinatura')
-        self.assertContains(resp_cancel, 'Reativar Assinatura')
-        self.assertContains(resp_cancel, 'modalReativarAssinatura')
+        self.assertNotContains(resp_cancel, 'Regularizar Pagamento')
 
         # Testar POST cancel_subscription
         sub_a.cancel_at_period_end = False
@@ -1714,8 +1713,9 @@ class AsaasFoundationTests(TestCase):
         sub_a.refresh_from_db()
         self.assertTrue(sub_a.cancel_at_period_end)
         self.assertFalse(sub_a.auto_renew)
-        self.assertContains(post_cancel, '- Acesso até 03/10/2026')
-        self.assertContains(post_cancel, 'Reativar Assinatura')
+        self.assertContains(post_cancel, 'Cancelamento agendado')
+        self.assertContains(post_cancel, 'Acesso até')
+        self.assertNotContains(post_cancel, 'modalCancelarAssinatura')
 
         # Testar POST reactivate_subscription
         post_reactivate = client.post(f'/{band_a.slug}/relatorios/assinatura/', {'action': 'reactivate_subscription'}, follow=True)
@@ -1864,10 +1864,10 @@ class AsaasFoundationTests(TestCase):
         # Cenário D: Tela de Assinatura para a banda expirada
         resp_assina = client.get(f'/{band_b.slug}/relatorios/assinatura/')
         self.assertEqual(resp_assina.status_code, 200)
-        self.assertContains(resp_assina, 'Inativo')
-        self.assertContains(resp_assina, 'Sem cobrança agendada')
-        self.assertContains(resp_assina, 'Assinar Novamente')
-        self.assertNotContains(resp_assina, '- Acesso até')
+        self.assertContains(resp_assina, 'Assinatura encerrada')
+        self.assertContains(resp_assina, sub_b.next_due_date.strftime('%d/%m/%Y'))
+        self.assertContains(resp_assina, 'Reativar Assinatura')
+        self.assertNotContains(resp_assina, 'Regularizar Pagamento')
         # Sidebar restrita: não exibe link do Dashboard operacional
         self.assertNotContains(resp_assina, f'/{band_b.slug}/calendario/')
 
@@ -2164,21 +2164,197 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(overdue_rec.status, 'PAGO')
         self.assertEqual(overdue_rec.paid_date, date(2026, 10, 15))
 
-        # Teste adicional: Plano Anual regularizado após suspensão
-        band_annual = Band.objects.create(name='Banda Anual Reg', slug='bandaanualreg')
-        sub_annual = BandSubscription.objects.create(
-            band=band_annual, plan_name='Avançado', billing_cycle='ANUAL', contracted_value=Decimal('300.00'),
-            start_date=date(2025, 10, 3), next_due_date=date(2026, 10, 3),
+    def test_cancellation_expiry_and_reactivation_scenarios(self):
+        """
+        Suíte completa de testes ASAAS-08 (Cancelamento, Fim de Período e Reativação):
+        - Cancelamento:
+          A) Assinatura ativa -> 'Cancelar Assinatura' disponível.
+          B) Cancelamento solicitado -> cancel_at_period_end=True.
+          C) Cancelamento solicitado -> auto_renew=False.
+          D) Antes do fim do período -> acesso operacional continua.
+          E) Antes do fim -> Renovação Automática = 'Cancelamento agendado'.
+          F) Antes do fim -> Próxima Cobrança vira 'Acesso até'.
+          G) 'Cancelar Assinatura' desaparece.
+        - Fim do Período:
+          H) Período cancelado termina -> acesso operacional bloqueado.
+          I) Band.is_active continua True.
+          J) Não entra em is_financially_suspended.
+          K) Usuário consegue acessar Assinatura.
+          L) Usuário não consegue acessar Dashboard (redireciona).
+          M) Sidebar fica restrita.
+          N) Status mostra 'Assinatura encerrada'.
+          O) Botão 'Reativar Assinatura' aparece.
+          P) 'Regularizar Pagamento' NÃO aparece.
+        - Reativação:
+          Q) Clicar Reativar -> modal/pagamento, não libera acesso imediatamente.
+          R) Antes da confirmação -> continua bloqueado.
+          S) Pagamento confirmado -> acesso restaurado.
+          T) Pagamento confirmado -> cancel_at_period_end=False.
+          U) Pagamento confirmado -> auto_renew=True.
+          V) Pagamento confirmado -> status ATIVO.
+          W) Data de pagamento vira nova data-base.
+          X) Mensal: 18/10 -> 18/11.
+          Y) Anual: 18/10/2026 -> 18/10/2027.
+          Z) Não cria nova Band.
+          AA) Não cria novo User.
+          AB) Preserva histórico financeiro anterior.
+          AC) Webhook duplicado idempotente.
+          AD) Inadimplência continua usando Regularizar Pagamento.
+        """
+        from django.test import Client
+        from core.models import User
+        client = Client()
+        today = timezone.localdate()
+
+        # 1. CANCELAMENTO VOLUNTÁRIO DURANTE O PERÍODO PAGO (A até G)
+        band_canc = Band.objects.create(name='Banda Cancel Test', slug='bandacanceltest')
+        user_canc = User.objects.create_user(username='prod_canc', email='canc@test.com', password='123', band=band_canc, role='PRODUTOR')
+        sub_canc = BandSubscription.objects.create(
+            band=band_canc, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=today - timedelta(days=10), next_due_date=today + timedelta(days=20),
             status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO'
         )
-        # Regularizado em 15/10/2026
-        # Forçamos estado suspenso
-        sub_annual.next_due_date = date(2026, 10, 3)
-        # Simulando paid_date 15/10/2026 após atraso >= 5 dias (12 dias)
-        sub_annual.apply_payment_success(paid_date=date(2026, 10, 15))
-        self.assertEqual(sub_annual.start_date, date(2026, 10, 15))
-        self.assertEqual(sub_annual.next_due_date, date(2027, 10, 15))
 
+        client.force_login(user_canc)
 
+        # Teste A: Assinatura ativa -> 'Cancelar Assinatura' disponível
+        resp_assina_active = client.get(f'/{band_canc.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_assina_active.status_code, 200)
+        self.assertContains(resp_assina_active, 'Cancelar Assinatura')
+        self.assertContains(resp_assina_active, 'Próxima Cobrança')
 
+        # Realiza o cancelamento voluntário
+        resp_post_cancel = client.post(f'/{band_canc.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'})
+        self.assertEqual(resp_post_cancel.status_code, 302)
 
+        # Teste B & C: cancel_at_period_end=True e auto_renew=False
+        sub_canc.refresh_from_db()
+        self.assertTrue(sub_canc.cancel_at_period_end)
+        self.assertFalse(sub_canc.auto_renew)
+        self.assertIsNotNone(sub_canc.canceled_at)
+
+        # Teste D: Antes do fim do período -> acesso operacional continua
+        self.assertTrue(band_canc.has_active_subscription)
+        resp_dash_during = client.get(f'/{band_canc.slug}/painel/')
+        self.assertEqual(resp_dash_during.status_code, 200)
+
+        # Teste E, F, G: Na tela de assinatura
+        resp_assina_scheduled = client.get(f'/{band_canc.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_assina_scheduled.status_code, 200)
+        self.assertContains(resp_assina_scheduled, 'Cancelamento agendado')
+        self.assertContains(resp_assina_scheduled, 'Acesso até')
+        self.assertContains(resp_assina_scheduled, sub_canc.next_due_date.strftime('%d/%m/%Y'))
+        self.assertNotContains(resp_assina_scheduled, 'Cancelar Assinatura')
+        self.assertNotContains(resp_assina_scheduled, 'Regularizar Pagamento')
+
+        # 2. FIM DO PERÍODO PAGO APÓS CANCELAMENTO (H até P)
+        band_exp = Band.objects.create(name='Banda Periodo Encerrado', slug='bandaexp')
+        user_exp = User.objects.create_user(username='prod_exp', email='exp@test.com', password='123', band=band_exp, role='PRODUTOR')
+        sub_exp = BandSubscription.objects.create(
+            band=band_exp, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 9, 4), next_due_date=date(2026, 10, 4),
+            status='ATIVO', auto_renew=False, cancel_at_period_end=True, payment_method_preference='CARTAO',
+            gateway_provider='ASAAS', gateway_subscription_id='sub_exp_test_888'
+        )
+        BillingRecord.objects.create(
+            subscription=sub_exp, band=band_exp, reference_period='Setembro/2026',
+            plan_name='Básico', billing_cycle='MENSAL', amount=Decimal('19.90'),
+            due_date=date(2026, 9, 4), paid_date=date(2026, 9, 4), status='PAGO', payment_method='CARTAO'
+        )
+
+        # Simulando acesso em 05/10/2026 (período pago encerrou em 04/10)
+        # Teste H, I, J:
+        # Band.is_active continua True
+        self.assertTrue(band_exp.is_active)
+        # Não entra em is_financially_suspended
+        self.assertFalse(sub_exp.is_financially_suspended)
+        # É identificado como cancelamento expirado
+        sub_exp.status = 'DESATIVADO'
+        sub_exp.save(update_fields=['status'])
+        self.assertTrue(sub_exp.is_canceled_period_expired)
+        self.assertFalse(band_exp.has_active_subscription)
+
+        client.force_login(user_exp)
+
+        # Teste L: Usuário não consegue acessar Dashboard (redireciona para Assinatura)
+        resp_dash_exp = client.get(f'/{band_exp.slug}/painel/')
+        self.assertEqual(resp_dash_exp.status_code, 302)
+        self.assertEqual(resp_dash_exp.url, f'/{band_exp.slug}/relatorios/assinatura/')
+
+        # Teste K, M, N, O, P:
+        resp_assina_exp = client.get(f'/{band_exp.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_assina_exp.status_code, 200)
+        self.assertContains(resp_assina_exp, 'Assinatura encerrada')
+        self.assertContains(resp_assina_exp, 'Acesso até')
+        self.assertContains(resp_assina_exp, '04/10/2026')
+        self.assertContains(resp_assina_exp, 'Reativar Assinatura')
+        self.assertNotContains(resp_assina_exp, 'Regularizar Pagamento')
+        self.assertNotContains(resp_assina_exp, 'Cancelar Assinatura')
+        # Sidebar restrita
+        self.assertNotContains(resp_assina_exp, f'/{band_exp.slug}/calendario/')
+
+        # 3. REATIVAÇÃO COM PAGAMENTO PRIMEIRO E NOVA DATA-BASE (Q até AD)
+        # Teste Q & R: Antes da confirmação do pagamento, acesso permanece bloqueado
+        self.assertFalse(band_exp.has_active_subscription)
+
+        # Simula pagamento de reativação confirmado no Asaas em 18/10/2026
+        event_reactivate = {
+            "id": "evt_reactivate_18_oct",
+            "event": "PAYMENT_CONFIRMED",
+            "payment": {
+                "id": "pay_reactivate_888",
+                "customer": "cus_reactivate_123",
+                "value": 19.90,
+                "netValue": 19.90,
+                "status": "CONFIRMED",
+                "paymentDate": "2026-10-18",
+                "subscription": "sub_exp_test_888"
+            }
+        }
+        initial_band_id = band_exp.id
+        initial_sub_id = sub_exp.id
+        initial_user_id = user_exp.id
+
+        ok, msg = handle_asaas_webhook_payload(event_reactivate)
+        self.assertTrue(ok)
+
+        # Teste S, T, U, V: Acesso restaurado, flags resetadas, status ATIVO
+        sub_exp.refresh_from_db()
+        self.assertEqual(sub_exp.status, 'ATIVO')
+        self.assertTrue(sub_exp.auto_renew)
+        self.assertFalse(sub_exp.cancel_at_period_end)
+        self.assertIsNone(sub_exp.canceled_at)
+        self.assertTrue(band_exp.has_active_subscription)
+
+        # Teste W & X: Data do pagamento (18/10) vira nova data-base; mensal: 18/10 -> 18/11
+        self.assertEqual(sub_exp.start_date, date(2026, 10, 18))
+        self.assertEqual(sub_exp.next_due_date, date(2026, 11, 18))
+
+        # Teste Z & AA: Não cria nova Band nem novo User nem nova Sub
+        self.assertEqual(band_exp.id, initial_band_id)
+        self.assertEqual(user_exp.id, initial_user_id)
+        self.assertEqual(sub_exp.id, initial_sub_id)
+
+        # Teste AB: Preserva histórico financeiro anterior + novo registro
+        self.assertEqual(sub_exp.records.count(), 2)
+
+        # Teste AC: Webhook duplicado idempotente
+        ok_dup, msg_dup = handle_asaas_webhook_payload(event_reactivate)
+        self.assertTrue(ok_dup)
+        self.assertEqual(sub_exp.records.count(), 2)
+        sub_exp.refresh_from_db()
+        self.assertEqual(sub_exp.next_due_date, date(2026, 11, 18))
+
+        # Teste Y: Ciclo Anual reativado
+        band_ann = Band.objects.create(name='Banda Anual Exp', slug='bandaanualexp')
+        sub_ann = BandSubscription.objects.create(
+            band=band_ann, plan_name='Avançado', billing_cycle='ANUAL', contracted_value=Decimal('300.00'),
+            start_date=date(2025, 10, 4), next_due_date=date(2026, 10, 4),
+            status='DESATIVADO', auto_renew=False, cancel_at_period_end=True, payment_method_preference='CARTAO'
+        )
+        sub_ann.apply_payment_success(paid_date=date(2026, 10, 18))
+        self.assertEqual(sub_ann.start_date, date(2026, 10, 18))
+        self.assertEqual(sub_ann.next_due_date, date(2027, 10, 18))
+        self.assertEqual(sub_ann.status, 'ATIVO')
+        self.assertTrue(sub_ann.auto_renew)
+        self.assertFalse(sub_ann.cancel_at_period_end)

@@ -48,25 +48,36 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                 5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
                 9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
             }
+            due_date_val = payment_data.get('dueDate') or sub.next_due_date or today
             ref_period = f'{month_names[today.month]}/{today.year}'
             raw_value = payment_data.get('value') or payment_data.get('netValue') or sub.contracted_value
             amount_val = Decimal(str(raw_value))
 
-            record = BillingRecord.objects.create(
+            record = BillingRecord.objects.filter(
                 subscription=sub,
-                band=sub.band,
-                reference_period=ref_period,
-                plan_name=sub.plan_name,
-                billing_cycle=sub.billing_cycle,
-                amount=amount_val,
-                due_date=today,
-                status='PENDENTE',
-                payment_method='CARTAO',
-                gateway_provider='ASAAS',
-                gateway_payment_id=payment_id,
-                gateway_external_reference=external_ref,
-                gateway_event_status=event_type
-            )
+                due_date=due_date_val
+            ).first()
+
+            if not record:
+                record = BillingRecord.objects.create(
+                    subscription=sub,
+                    band=sub.band,
+                    reference_period=ref_period,
+                    plan_name=sub.plan_name,
+                    billing_cycle=sub.billing_cycle,
+                    amount=amount_val,
+                    due_date=due_date_val,
+                    status='PENDENTE',
+                    payment_method='CARTAO',
+                    gateway_provider='ASAAS',
+                    gateway_payment_id=payment_id,
+                    gateway_external_reference=external_ref,
+                    gateway_event_status=event_type
+                )
+            else:
+                record.gateway_payment_id = payment_id
+                record.gateway_external_reference = external_ref or record.gateway_external_reference
+                record.gateway_event_status = event_type
         elif matching_subs.count() > 1:
             return False, f'AMBIGUIDADE: Multiplas assinaturas locais para gateway_subscription_id={subscription_id}'
         else:

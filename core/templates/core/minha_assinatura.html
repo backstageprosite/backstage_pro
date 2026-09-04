@@ -225,10 +225,12 @@
             <div class="card shadow-sm border-0 border-start border-4 border-success h-100" style="border-radius: 12px;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
-                        <p class="kpi-label">Próxima Cobrança</p>
+                        <p class="kpi-label">{% if subscription.cancel_at_period_end or subscription.status != 'ATIVO' %}Acesso até{% else %}Próxima Cobrança{% endif %}</p>
                         <h3 class="kpi-value text-dark">
                             {% if subscription.status != 'ATIVO' %}
-                                Sem cobrança agendada
+                                {% if subscription.next_due_date %}{{ subscription.next_due_date|date:"d/m/Y" }}{% else %}Sem cobrança agendada{% endif %}
+                            {% elif subscription.cancel_at_period_end %}
+                                {% if subscription.next_due_date %}{{ subscription.next_due_date|date:"d/m/Y" }}{% else %}-{% endif %}
                             {% elif alert_overdue_tolerance or alert_suspended %}
                                 {% if subscription.next_due_date %}{{ subscription.next_due_date|date:"d/m/Y" }} - Vencida{% else %}Sem cobrança agendada{% endif %}
                             {% elif subscription.next_due_date %}
@@ -266,7 +268,7 @@
                             {% if subscription.status != 'ATIVO' %}
                                 Não
                             {% elif subscription.cancel_at_period_end %}
-                                Não{% if subscription.next_due_date %} <span class="text-muted fw-normal" style="font-size: 10px; font-weight: 400 !important;">- Acesso até {{ subscription.next_due_date|date:"d/m/Y" }}</span>{% endif %}
+                                Cancelamento agendado
                             {% elif subscription.auto_renew %}
                                 Sim
                             {% else %}
@@ -386,18 +388,13 @@
             <div class="modal-content" style="border-radius: 12px; border: none;">
                 <div class="modal-header border-bottom-0 pb-0">
                     <h5 class="modal-title fw-bold text-danger" id="modalCancelarAssinaturaLabel" style="font-size: 16px;">
-                        <i class="fa-solid fa-triangle-exclamation me-2"></i>Cancelar Assinatura
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>Cancelar assinatura?
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body pt-3 pb-2 text-dark" style="font-size: 14px; line-height: 1.5;">
-                    <p class="mb-2">Tem certeza de que deseja cancelar a assinatura da sua banda?</p>
-                    <p class="text-muted mb-0" style="font-size: 13px;">
-                        {% if subscription.next_due_date %}
-                            O plano continuará ativo e seu acesso permanecerá liberado até <strong>{{ subscription.next_due_date|date:"d/m/Y" }}</strong>. A partir dessa data, nenhuma nova cobrança será realizada.
-                        {% else %}
-                            A renovação automática será cancelada e nenhuma nova cobrança será gerada ao final do ciclo atual.
-                        {% endif %}
+                    <p class="mb-0 text-dark">
+                        Seu acesso continuará ativo até <strong>{% if subscription.next_due_date %}{{ subscription.next_due_date|date:"d/m/Y" }}{% else %}-{% endif %}</strong>. Após essa data, não haverá nova cobrança.
                     </p>
                 </div>
                 <div class="modal-footer border-top-0 pt-2 pb-3 justify-content-end gap-2">
@@ -408,7 +405,7 @@
                         {% csrf_token %}
                         <input type="hidden" name="action" value="cancel_subscription">
                         <button type="submit" class="btn btn-danger fw-bold rounded-pill px-3 text-white" style="height: 35px; font-size: 13px;">
-                            Confirmar Cancelamento
+                            Cancelar Assinatura
                         </button>
                     </form>
                 </div>
@@ -429,22 +426,18 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body pt-3 pb-2 text-dark" style="font-size: 14px; line-height: 1.5;">
-                    <p class="mb-2">Deseja reativar a renovação automática da sua assinatura?</p>
+                    <p class="mb-2">Deseja reativar o acesso ao Backstage Pro para a sua banda?</p>
                     <p class="text-muted mb-0" style="font-size: 13px;">
-                        Seu acesso já está ativo até <strong>{{ subscription.next_due_date|date:"d/m/Y" }}</strong>. Nenhuma cobrança será realizada agora. A próxima cobrança de <strong>R$ {{ subscription.contracted_value|floatformat:"2g" }}</strong> ocorrerá em <strong>{{ subscription.next_due_date|date:"d/m/Y" }}</strong>, mantendo sua assinatura ativa normalmente.
+                        Ao efetuar a contratação de <strong>R$ {{ subscription.contracted_value|floatformat:"2g" }}</strong>, seu acesso será restabelecido imediatamente após a confirmação do pagamento e a data de hoje passará a ser a nova data-base da sua assinatura.
                     </p>
                 </div>
                 <div class="modal-footer border-top-0 pt-2 pb-3 justify-content-end gap-2">
                     <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 35px; font-size: 13px;">
                         Voltar
                     </button>
-                    <form method="post" action="{% url 'minha_assinatura' band.slug %}" class="d-inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="reactivate_subscription">
-                        <button type="submit" class="btn btn-success fw-bold rounded-pill px-3 text-white" style="height: 35px; font-size: 13px;">
-                            Confirmar Reativação
-                        </button>
-                    </form>
+                    <a href="https://backstagepro.site/" target="_blank" rel="noopener noreferrer" class="btn btn-success fw-bold rounded-pill px-3 text-white d-inline-flex align-items-center" style="height: 35px; font-size: 13px;">
+                        Efetuar Pagamento
+                    </a>
                 </div>
             </div>
         </div>
