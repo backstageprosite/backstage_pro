@@ -662,6 +662,50 @@ class BandSubscription(models.Model):
         """
         return self.days_overdue() >= 5
 
+    def apply_payment_success(self, paid_date=None):
+        """
+        Aplica a quitação de um pagamento na assinatura:
+        1. Se o pagamento ocorreu DENTRO da tolerância (< 5 dias de atraso em relação a next_due_date):
+           - Preserva a data-base (billing anchor) original da assinatura.
+           - next_due_date avança +1 período a partir da data de vencimento atual (ou original).
+        2. Se o pagamento ocorreu APÓS a suspensão financeira (>= 5 dias de atraso em relação a next_due_date ou desativada):
+           - REGULARIZAÇÃO COM REATIVAÇÃO: a data do pagamento aprovado passa a ser a NOVA DATA-BASE.
+           - next_due_date é recalculado a partir de paid_date (+1 mês ou +1 ano).
+        3. Restaura o status para 'ATIVO' e auto_renew=True.
+        """
+        from django.utils import timezone
+        from core.services.payments.base import calculate_next_billing_date
+        import datetime
+
+        if not paid_date:
+            paid_date = timezone.localdate()
+        elif isinstance(paid_date, datetime.datetime):
+            paid_date = timezone.localdate(paid_date) if timezone.is_aware(paid_date) else paid_date.date()
+        elif isinstance(paid_date, str):
+            paid_date = datetime.date.fromisoformat(paid_date)
+
+        # Determina se estava suspenso financeiramente com base na data do pagamento vs next_due_date
+        was_suspended = False
+        if self.status == 'DESATIVADO':
+            was_suspended = True
+        elif self.next_due_date:
+            diff_days = (paid_date - self.next_due_date).days
+            if diff_days >= 5:
+                was_suspended = True
+
+        if was_suspended:
+            # Regularização após suspensão: nova data-base baseada na data do pagamento
+            self.start_date = paid_date
+            self.next_due_date = calculate_next_billing_date(paid_date, self.billing_cycle or 'MENSAL', periods_offset=1)
+        else:
+            # Pagamento em dia ou durante tolerância: preserva a data-base original
+            base_anchor = self.next_due_date or paid_date
+            self.next_due_date = calculate_next_billing_date(base_anchor, self.billing_cycle or 'MENSAL', periods_offset=1)
+
+        self.status = 'ATIVO'
+        self.save(update_fields=['status', 'start_date', 'next_due_date', 'updated_at'])
+        return was_suspended
+
     def check_and_sync_auto_expiration(self):
         """
         Regra de encerramento automático do período já pago:

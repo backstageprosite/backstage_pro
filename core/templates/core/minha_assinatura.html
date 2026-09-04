@@ -111,6 +111,10 @@
                 <button type="button" class="btn btn-danger btn-back fw-bold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCancelarAssinatura">
                     <i class="fa-solid fa-ban me-1"></i> Cancelar Assinatura
                 </button>
+            {% elif can_regularize %}
+                <button type="button" class="btn btn-success btn-back fw-bold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalRegularizarPagamento">
+                    <i class="fa-solid fa-credit-card me-1"></i> Regularizar Pagamento
+                </button>
             {% elif can_resubscribe %}
                 <button type="button" class="btn btn-success btn-back fw-bold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAssinarNovamente">
                     <i class="fa-solid fa-cart-shopping me-1"></i> Assinar Novamente
@@ -441,6 +445,36 @@
                             Confirmar Reativação
                         </button>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if can_regularize %}
+    <!-- Modal Regularizar Pagamento -->
+    <div class="modal fade" id="modalRegularizarPagamento" tabindex="-1" aria-labelledby="modalRegularizarPagamentoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 12px; border: none;">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-success" id="modalRegularizarPagamentoLabel" style="font-size: 16px;">
+                        <i class="fa-solid fa-credit-card me-2 text-success"></i>Regularizar Pagamento
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3 pb-2 text-dark" style="font-size: 14px; line-height: 1.5;">
+                    <p class="mb-2">Sua assinatura está suspensa por pagamento em atraso.</p>
+                    <p class="text-muted mb-0" style="font-size: 13px;">
+                        Ao efetuar a regularização de <strong>R$ {{ subscription.contracted_value|floatformat:"2g" }}</strong>, seu acesso será liberado imediatamente após a confirmação do pagamento e a data de hoje passará a ser a nova data-base da sua assinatura.
+                    </p>
+                </div>
+                <div class="modal-footer border-top-0 pt-2 pb-3 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 35px; font-size: 13px;">
+                        Voltar
+                    </button>
+                    <a href="https://backstagepro.site/" target="_blank" rel="noopener noreferrer" class="btn btn-success fw-bold rounded-pill px-3 text-white d-inline-flex align-items-center" style="height: 35px; font-size: 13px;">
+                        Efetuar Pagamento
+                    </a>
                 </div>
             </div>
         </div>

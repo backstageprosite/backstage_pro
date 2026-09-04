@@ -1266,6 +1266,7 @@ def minha_assinatura_view(request, band_slug):
     can_cancel = False
     can_reactivate = False
     can_resubscribe = False
+    can_regularize = False
     alert_overdue_tolerance = False
     alert_suspended = False
     overdue_limit_date = None
@@ -1319,6 +1320,7 @@ def minha_assinatura_view(request, band_slug):
             if subscription.is_financially_suspended:
                 status_display = 'Suspensa'
                 alert_suspended = True
+                can_regularize = True
             elif subscription.is_overdue_tolerance:
                 status_display = 'Pagamento em atraso'
                 alert_overdue_tolerance = True
@@ -1329,17 +1331,17 @@ def minha_assinatura_view(request, band_slug):
                 status_display = 'Ativo'
         elif st == 'DESATIVADO':
             status_display = 'Inativo'
+            can_resubscribe = True
         else:
             status_display = subscription.get_status_display() if hasattr(subscription, 'get_status_display') else subscription.status
+            can_resubscribe = True
 
-        # Estados dos botões de ação:
+        # Estados dos botões de ação para assinaturas ativas não suspensas:
         if subscription.status == 'ATIVO' and not subscription.is_financially_suspended:
             if subscription.cancel_at_period_end:
                 can_reactivate = True
             else:
                 can_cancel = True
-        else:
-            can_resubscribe = True
     else:
         can_resubscribe = True
 
@@ -1357,6 +1359,7 @@ def minha_assinatura_view(request, band_slug):
         'can_cancel': can_cancel,
         'can_reactivate': can_reactivate,
         'can_resubscribe': can_resubscribe,
+        'can_regularize': can_regularize,
     }
 
     return render(request, 'core/minha_assinatura.html', context)

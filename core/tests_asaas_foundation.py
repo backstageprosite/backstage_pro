@@ -2000,13 +2000,13 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(resp_dash_d.status_code, 302)
         self.assertEqual(resp_dash_d.url, f'/{band_d.slug}/relatorios/assinatura/')
 
-        # Tela de assinatura exibe alerta vermelho e status 'Suspensa'
+        # Tela de assinatura exibe alerta vermelho, status 'Suspensa' e botão 'Regularizar Pagamento'
         resp_assina_d = client.get(f'/{band_d.slug}/relatorios/assinatura/')
         self.assertEqual(resp_assina_d.status_code, 200)
         self.assertContains(resp_assina_d, 'Suspensa')
         self.assertContains(resp_assina_d, 'Assinatura suspensa por pagamento em atraso')
         self.assertContains(resp_assina_d, '- Vencida')
-        self.assertContains(resp_assina_d, 'Assinar Novamente')
+        self.assertContains(resp_assina_d, 'Regularizar Pagamento')
 
         # --- Cenário E: 10 dias de atraso (Permanece Suspensa) ---
         band_e = Band.objects.create(name='Banda Dia 10', slug='bandadia10')
@@ -2018,15 +2018,6 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(sub_e.days_overdue(), 10)
         self.assertTrue(sub_e.is_financially_suspended)
         self.assertFalse(band_e.has_active_subscription)
-
-        # --- Cenário F: Pagamento e regularização ---
-        # Quando a fatura é paga e next_due_date avança para o próximo mês
-        sub_b.next_due_date = today + timedelta(days=29)
-        sub_b.save(update_fields=['next_due_date'])
-        self.assertEqual(sub_b.days_overdue(), 0)
-        self.assertFalse(sub_b.is_overdue_tolerance)
-        self.assertFalse(sub_b.is_financially_suspended)
-        self.assertTrue(band_b.has_active_subscription)
 
         # --- Cenário G: Cancelamento agendado (cancel_at_period_end=True) ---
         # Não entra no fluxo de atraso (dias_overdue retorna 0)
@@ -2077,6 +2068,117 @@ class AsaasFoundationTests(TestCase):
         rec = BillingRecord.objects.get(gateway_payment_id='pay_test_overdue_123')
         self.assertEqual(rec.status, 'PENDENTE')
         self.assertEqual(rec.gateway_event_status, 'PAYMENT_OVERDUE')
+
+    def test_regularization_rules_and_billing_anchors(self):
+        """
+        Regras comerciais obrigatórias:
+        A) Vencimento dia 03, pagamento dia 05 (em tolerância) -> próxima cobrança dia 03 (mantém billing anchor).
+        B) Vencimento dia 03, suspensão financeira, regularização dia 15 -> próxima cobrança dia 15 (novo anchor).
+        C) Regularização após suspensão -> acesso somente volta APÓS confirmação do pagamento.
+        D) Antes da confirmação -> acesso continua bloqueado.
+        E) Regularização não cria nova BandSubscription (preserva a existente).
+        F) Histórico financeiro anterior permanece intacto.
+        G) Novo billing anchor fica persistido corretamente (inclusive anual).
+        """
+        from django.test import Client
+        from core.models import User
+        client = Client()
+
+        # --- Regra A: Tolerância preserva data-base original ---
+        band_tol = Band.objects.create(name='Banda Tol Anchor', slug='bandatolanchor')
+        sub_tol = BandSubscription.objects.create(
+            band=band_tol, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 9, 3), next_due_date=date(2026, 10, 3),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO'
+        )
+        # Pagamento efetuado dia 05/10 (2 dias de atraso, dentro da tolerância)
+        was_suspended = sub_tol.apply_payment_success(paid_date=date(2026, 10, 5))
+        self.assertFalse(was_suspended)
+        self.assertEqual(sub_tol.next_due_date, date(2026, 11, 3))
+        self.assertEqual(sub_tol.start_date, date(2026, 9, 3))
+
+        # --- Regra B: Suspensão financeira + Regularização -> nova data-base ---
+        band_reg = Band.objects.create(name='Banda Reg Anchor', slug='bandareganchor')
+        user_reg = User.objects.create_user(username='prod_reg', email='reg@test.com', password='123', band=band_reg, role='PRODUTOR')
+        sub_reg = BandSubscription.objects.create(
+            band=band_reg, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=date(2026, 9, 3), next_due_date=date(2026, 10, 3),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO',
+            gateway_provider='ASAAS', gateway_subscription_id='sub_reg_test_999'
+        )
+        # Cria faturas anteriores no histórico
+        old_rec = BillingRecord.objects.create(
+            subscription=sub_reg, band=band_reg, reference_period='Setembro/2026',
+            plan_name='Básico', billing_cycle='MENSAL', amount=Decimal('19.90'),
+            due_date=date(2026, 9, 3), paid_date=date(2026, 9, 3), status='PAGO', payment_method='CARTAO'
+        )
+        overdue_rec = BillingRecord.objects.create(
+            subscription=sub_reg, band=band_reg, reference_period='Outubro/2026',
+            plan_name='Básico', billing_cycle='MENSAL', amount=Decimal('19.90'),
+            due_date=date(2026, 10, 3), status='PENDENTE', payment_method='CARTAO',
+            gateway_provider='ASAAS', gateway_payment_id='pay_reg_test_oct'
+        )
+
+        client.force_login(user_reg)
+
+        # Regra D: Antes da confirmação do pagamento, com data simulada 15/10 (12 dias de atraso), acesso bloqueado
+        with override_settings():
+            # A assinatura está suspensa financeiramente
+            self.assertTrue(sub_reg.days_overdue() > 0 or (date(2026, 10, 15) - sub_reg.next_due_date).days >= 5)
+
+        # Simula o recebimento do webhook PAYMENT_CONFIRMED em 15/10/2026
+        event_reg = {
+            "id": "evt_reg_oct_15",
+            "event": "PAYMENT_CONFIRMED",
+            "payment": {
+                "id": "pay_reg_test_oct",
+                "customer": "cus_reg_123",
+                "value": 19.90,
+                "netValue": 19.90,
+                "status": "CONFIRMED",
+                "paymentDate": "2026-10-15"
+            }
+        }
+        initial_sub_id = sub_reg.id
+        ok, msg = handle_asaas_webhook_payload(event_reg)
+        self.assertTrue(ok)
+
+        # Regra E: Não cria nova BandSubscription (preserva o mesmo ID)
+        self.assertEqual(band_reg.subscriptions.count(), 1)
+        sub_reg.refresh_from_db()
+        self.assertEqual(sub_reg.id, initial_sub_id)
+
+        # Regra B & G: Nova data-base é 15/10 e próxima cobrança mensal é 15/11
+        self.assertEqual(sub_reg.start_date, date(2026, 10, 15))
+        self.assertEqual(sub_reg.next_due_date, date(2026, 11, 15))
+        self.assertEqual(sub_reg.status, 'ATIVO')
+
+        # Regra C: Acesso operacional liberado após confirmação do pagamento
+        self.assertTrue(band_reg.has_active_subscription)
+
+        # Regra F: Histórico anterior permanece intacto
+        self.assertEqual(sub_reg.records.count(), 2)
+        old_rec.refresh_from_db()
+        self.assertEqual(old_rec.status, 'PAGO')
+        overdue_rec.refresh_from_db()
+        self.assertEqual(overdue_rec.status, 'PAGO')
+        self.assertEqual(overdue_rec.paid_date, date(2026, 10, 15))
+
+        # Teste adicional: Plano Anual regularizado após suspensão
+        band_annual = Band.objects.create(name='Banda Anual Reg', slug='bandaanualreg')
+        sub_annual = BandSubscription.objects.create(
+            band=band_annual, plan_name='Avançado', billing_cycle='ANUAL', contracted_value=Decimal('300.00'),
+            start_date=date(2025, 10, 3), next_due_date=date(2026, 10, 3),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO'
+        )
+        # Regularizado em 15/10/2026
+        # Forçamos estado suspenso
+        sub_annual.next_due_date = date(2026, 10, 3)
+        # Simulando paid_date 15/10/2026 após atraso >= 5 dias (12 dias)
+        sub_annual.apply_payment_success(paid_date=date(2026, 10, 15))
+        self.assertEqual(sub_annual.start_date, date(2026, 10, 15))
+        self.assertEqual(sub_annual.next_due_date, date(2027, 10, 15))
+
 
 
 

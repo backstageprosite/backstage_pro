@@ -80,6 +80,10 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
         record.status = 'PAGO'
         if not record.paid_date:
             record.paid_date = payment_data.get('paymentDate') or payment_data.get('clientPaymentDate') or payment_data.get('confirmedDate') or timezone.localdate()
+        
+        # Atualiza a BandSubscription associada aplicando a regra de regularização vs tolerância
+        if record.subscription:
+            record.subscription.apply_payment_success(paid_date=record.paid_date)
     elif event_type in ('PAYMENT_OVERDUE',):
         if record.status != 'PAGO':
             record.status = 'PENDENTE'
