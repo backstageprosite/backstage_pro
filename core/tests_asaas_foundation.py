@@ -1,11 +1,12 @@
 import json
 import hashlib
+from unittest.mock import patch
 from datetime import date, timedelta
 from decimal import Decimal
-from django.test import TestCase, override_settings
+from django.test import TestCase, Client, override_settings
 from django.utils import timezone
 from core.models import (
-    Band, BandSubscription, BillingRecord, SignupOrder,
+    User, Band, BandSubscription, BillingRecord, SignupOrder,
     PaymentWebhookEvent, BandActivationToken
 )
 from core.services.payments.base import (
@@ -2358,3 +2359,117 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(sub_ann.status, 'ATIVO')
         self.assertTrue(sub_ann.auto_renew)
         self.assertFalse(sub_ann.cancel_at_period_end)
+
+    @patch('core.services.payments.asaas.client.AsaasClient.cancel_subscription')
+    @patch('core.services.payments.asaas.client.AsaasClient.get_subscription')
+    def test_asaas_cancellation_flow_and_anti_free_month_entitlement(self, mock_get_sub, mock_cancel_sub):
+        """
+        ASAAS-08: Testes do fluxo de cancelamento com AsaasClient e regra comercial anti-mês-grátis.
+        """
+        client = Client()
+        band = Band.objects.create(name='Banda Cancel Entitlement', slug='bandacancelentitlement')
+        user = User.objects.create_user(username='prod_cancel_ent', email='cancelent@test.com', password='123', band=band, role='PRODUTOR')
+        client.login(username='prod_cancel_ent', password='123')
+
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            start_date=date(2026, 9, 4),
+            next_due_date=date(2026, 10, 4),
+            status='ATIVO',
+            auto_renew=True,
+            cancel_at_period_end=False,
+            gateway_provider='ASAAS',
+            gateway_subscription_id='sub_test_remote_123',
+            gateway_customer_id='cus_test_remote_456'
+        )
+
+        # 1. BillingRecord quitado em 04/09/2026
+        BillingRecord.objects.create(
+            subscription=sub,
+            band=band,
+            reference_period='Setembro/2026',
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            due_date=date(2026, 9, 4),
+            paid_date=date(2026, 9, 4),
+            status='PAGO',
+            gateway_provider='ASAAS',
+            gateway_payment_id='pay_test_04_sep'
+        )
+
+        # 2. BillingRecord de renovação de 04/10/2026 PENDENTE
+        BillingRecord.objects.create(
+            subscription=sub,
+            band=band,
+            reference_period='Outubro/2026',
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            due_date=date(2026, 10, 4),
+            status='PENDENTE',
+            gateway_provider='ASAAS',
+            gateway_payment_id='pay_test_04_oct'
+        )
+
+        # Cenário A: Falha na validação remota (GET retorna None) -> Não altera estado local
+        mock_get_sub.return_value = None
+        resp_fail_get = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        self.assertEqual(resp_fail_get.status_code, 200)
+        sub.refresh_from_db()
+        self.assertFalse(sub.cancel_at_period_end)
+        self.assertTrue(sub.auto_renew)
+
+        # Cenário B: Divergência de Customer ID -> Cancelamento abortado
+        mock_get_sub.return_value = {'id': 'sub_test_remote_123', 'customer': 'cus_divergente_999'}
+        resp_fail_cust = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        sub.refresh_from_db()
+        self.assertFalse(sub.cancel_at_period_end)
+
+        # Cenário C: Falha no DELETE do Asaas -> Não altera estado local
+        mock_get_sub.return_value = {'id': 'sub_test_remote_123', 'customer': 'cus_test_remote_456'}
+        mock_cancel_sub.return_value = (False, {'error': 'gateway_timeout'})
+        resp_fail_del = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        sub.refresh_from_db()
+        self.assertFalse(sub.cancel_at_period_end)
+
+        # Cenário D: Sucesso no GET e no DELETE Asaas -> Marca cancelamento agendado
+        mock_cancel_sub.return_value = (True, {'deleted': True})
+        resp_success = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        self.assertEqual(resp_success.status_code, 200)
+        sub.refresh_from_db()
+        self.assertTrue(sub.cancel_at_period_end)
+        self.assertFalse(sub.auto_renew)
+        self.assertIsNotNone(sub.canceled_at)
+        self.assertEqual(sub.status, 'ATIVO')
+
+        # Regra Anti-Mês-Grátis:
+        # Cobrança de 04/10 pendente não concede período até 04/11. Acesso até = 04/10/2026.
+        resp_view = client.get(f'/{band.slug}/relatorios/assinatura/')
+        self.assertContains(resp_view, 'Acesso até')
+        self.assertContains(resp_view, '04/10/2026')
+        self.assertNotContains(resp_view, '04/11/2026')
+
+        # Acesso operacional permanece ativo
+        resp_dash = client.get(f'/{band.slug}/painel/')
+        self.assertEqual(resp_dash.status_code, 200)
+        resp_cal = client.get(f'/{band.slug}/calendario/')
+        self.assertEqual(resp_cal.status_code, 200)
+
+        # Webhook SUBSCRIPTION_DELETED posterior é idempotente e preserva Band.is_active e BillingRecords
+        del_event = {
+            "id": "evt_sub_del_test_123",
+            "event": "SUBSCRIPTION_DELETED",
+            "subscription": {
+                "id": "sub_test_remote_123",
+                "customer": "cus_test_remote_456"
+            }
+        }
+        ok_del, _ = handle_asaas_webhook_payload(del_event)
+        self.assertTrue(ok_del)
+        band.refresh_from_db()
+        self.assertTrue(band.is_active)
+        self.assertEqual(sub.records.filter(status='PAGO').count(), 1)

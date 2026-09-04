@@ -1221,15 +1221,51 @@ def minha_assinatura_view(request, band_slug):
         action = request.POST.get('action')
         if action == 'cancel_subscription':
             if subscription and subscription.status == 'ATIVO' and not subscription.cancel_at_period_end:
+                from django.db import transaction
                 from django.utils import timezone
-                subscription.cancel_at_period_end = True
-                subscription.auto_renew = False
-                subscription.canceled_at = timezone.now()
-                subscription.save(update_fields=['cancel_at_period_end', 'auto_renew', 'canceled_at', 'updated_at'])
+                from core.models import BandSubscription
+                from core.services.payments.asaas.client import AsaasClient
+
+                # 1. Se assinatura possui gateway Asaas, valida remotamente via GET e executa DELETE
+                if subscription.gateway_provider == 'ASAAS' and subscription.gateway_subscription_id:
+                    client = AsaasClient()
+                    sub_info = client.get_subscription(subscription.gateway_subscription_id)
+                    if not sub_info:
+                        messages.error(request, "Não foi possível validar a assinatura junto ao gateway de pagamento. Tente novamente mais tarde.")
+                        return redirect('minha_assinatura', band_slug=band.slug)
+
+                    # Validação de integridade: subscription ID e customer ID (quando presente)
+                    remote_sub_id = sub_info.get('id')
+                    remote_cust_id = sub_info.get('customer')
+
+                    if remote_sub_id != subscription.gateway_subscription_id:
+                        logger.error("Divergência de ID de assinatura: local=%s, remoto=%s", subscription.gateway_subscription_id, remote_sub_id)
+                        messages.error(request, "Inconsistência identificada na assinatura remota. Cancelamento abortado por segurança.")
+                        return redirect('minha_assinatura', band_slug=band.slug)
+
+                    if subscription.gateway_customer_id and remote_cust_id and remote_cust_id != subscription.gateway_customer_id:
+                        logger.error("Divergência de customer ID: local=%s, remoto=%s", subscription.gateway_customer_id, remote_cust_id)
+                        messages.error(request, "Inconsistência de titularidade identificada na assinatura. Cancelamento abortado por segurança.")
+                        return redirect('minha_assinatura', band_slug=band.slug)
+
+                    # Executa DELETE na recorrência do Asaas
+                    success, resp_data = client.cancel_subscription(subscription.gateway_subscription_id)
+                    if not success:
+                        logger.error("Falha no DELETE da assinatura %s no Asaas: %s", subscription.gateway_subscription_id, resp_data)
+                        messages.error(request, "Não foi possível cancelar a renovação junto ao gateway de pagamento. Nenhuma alteração foi realizada.")
+                        return redirect('minha_assinatura', band_slug=band.slug)
+
+                with transaction.atomic():
+                    sub_locked = BandSubscription.objects.select_for_update().filter(id=subscription.id).first()
+                    if sub_locked and sub_locked.status == 'ATIVO' and not sub_locked.cancel_at_period_end:
+                        sub_locked.cancel_at_period_end = True
+                        sub_locked.auto_renew = False
+                        sub_locked.canceled_at = timezone.now()
+                        sub_locked.save(update_fields=['cancel_at_period_end', 'auto_renew', 'canceled_at', 'updated_at'])
 
                 # Log para auditoria
                 logger.info(
-                    "Assinatura %d da banda '%s' marcada para cancelamento ao fim do período pelo usuário %s.",
+                    "Assinatura %d da banda '%s' marcada para cancelamento ao fim do período pelo usuário %s após sucesso no Asaas.",
                     subscription.id, band.slug, request.user.username
                 )
                 messages.success(request, "Cancelamento confirmado com sucesso. O seu acesso permanecerá ativo até o fim do período contratado.")

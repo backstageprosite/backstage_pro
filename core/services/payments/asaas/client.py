@@ -2,7 +2,7 @@ import json
 import logging
 import urllib.request
 import urllib.parse
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 from core.services.payments.base import AsaasConfig
 
 logger = logging.getLogger(__name__)
@@ -96,3 +96,35 @@ class AsaasClient:
             logger.warning("Falha na consulta de pagamentos da assinatura %s no Asaas: %s", subscription_id, str(e))
             return []
 
+    def cancel_subscription(self, subscription_id: str) -> Tuple[bool, Dict[str, Any]]:
+        """
+        Cancela uma assinatura na API do Asaas utilizando DELETE /v3/subscriptions/{id}.
+        Retorna (sucesso: bool, resposta_ou_erro: dict).
+        """
+        if not subscription_id:
+            return False, {"error": "subscription_id_invalido"}
+        if not self.config.api_key:
+            return False, {"error": "api_key_ausente"}
+
+        encoded_id = urllib.parse.quote(str(subscription_id))
+        url = f"{self.base_url}/subscriptions/{encoded_id}"
+        req = urllib.request.Request(url, headers=self.get_headers(), method='DELETE')
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                status_code = resp.getcode()
+                raw_body = resp.read().decode('utf-8')
+                data = json.loads(raw_body) if raw_body else {}
+                if status_code in (200, 204) or data.get('deleted') is True:
+                    return True, data
+                return False, data
+        except urllib.error.HTTPError as http_err:
+            raw_err = http_err.read().decode('utf-8') if hasattr(http_err, 'read') else str(http_err)
+            try:
+                err_data = json.loads(raw_err)
+            except Exception:
+                err_data = {"error": str(http_err), "status": http_err.code}
+            logger.warning("Erro HTTP %s ao cancelar assinatura %s no Asaas: %s", http_err.code, subscription_id, raw_err)
+            return False, err_data
+        except Exception as e:
+            logger.warning("Exceção ao cancelar assinatura %s no Asaas: %s", subscription_id, str(e))
+            return False, {"error": str(e)}
