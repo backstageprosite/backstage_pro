@@ -687,6 +687,9 @@ class AsaasFoundationTests(TestCase):
                 self.assertEqual(sent_body['chargeTypes'], ['RECURRENT'])
                 self.assertEqual(sent_body['billingTypes'], ['CREDIT_CARD'])
                 self.assertEqual(sent_body['subscription']['cycle'], 'MONTHLY')
+                self.assertIn('nextDueDate', sent_body['subscription'])
+                self.assertTrue(len(sent_body['subscription']['nextDueDate']) >= 10)
+                self.assertNotIn('endDate', sent_body['subscription'])
                 self.assertEqual(sent_body['items'][0]['name'], 'Backstage Pro Básico')
                 self.assertEqual(sent_body['items'][0]['value'], 19.90)
                 self.assertIn('https://backstage-pro-web-homologacao.up.railway.app/', sent_body['callback']['successUrl'])
@@ -707,7 +710,48 @@ class AsaasFoundationTests(TestCase):
                 output_str = out.getvalue()
                 self.assertIn('CHECKOUT SANDBOX CRIADO COM SUCESSO', output_str)
                 self.assertIn('chk_sandbox_test_777', output_str)
+                self.assertIn('nextDueDate:', output_str)
                 self.assertNotIn('test_api_key_valid', output_str)
+
+        # 4. Teste de retentativa com --order-id reutilizando pedido existente
+        existing_order = SignupOrder.objects.create(
+            band_name='Banda Teste Homologacao',
+            responsible_name='Cliente Teste Sandbox',
+            email='backstagepro-sandbox@example.com',
+            amount=Decimal('19.90'),
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            status='PENDENTE',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_000009006807',
+            external_reference='bp-homolog-test-retry-123'
+        )
+
+        mock_response_retry = {
+            'id': 'chk_retry_888',
+            'status': 'ACTIVE',
+            'paymentLink': 'https://sandbox.asaas.com/c/retry888'
+        }
+        mock_resp_retry = MagicMock()
+        mock_resp_retry.read.return_value = json.dumps(mock_response_retry).encode('utf-8')
+        mock_resp_retry.status = 200
+        mock_resp_retry.__enter__.return_value = mock_resp_retry
+
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox', ASAAS_API_KEY='test_key'):
+            with patch('urllib.request.urlopen', return_value=mock_resp_retry) as mock_urlopen_retry:
+                call_command('create_asaas_sandbox_checkout', order_id=existing_order.id)
+                sent_retry_body = json.loads(mock_urlopen_retry.call_args[0][0].data.decode('utf-8'))
+                self.assertEqual(sent_retry_body['externalReference'], 'bp-homolog-test-retry-123')
+
+                existing_order.refresh_from_db()
+                self.assertEqual(existing_order.gateway_checkout_id, 'chk_retry_888')
+                self.assertEqual(existing_order.status, 'PENDENTE')
+
+        # 5. Tentativa com order_id que ja possui gateway_checkout_id -> deve abortar
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox', ASAAS_API_KEY='test_key'):
+            with self.assertRaises(CommandError) as cm:
+                call_command('create_asaas_sandbox_checkout', order_id=existing_order.id)
+            self.assertIn('ja possui Checkout Asaas vinculado', str(cm.exception))
 
     def test_inspect_asaas_webhooks_command_sanitization(self):
         """ASAAS-06: Inspecao de webhooks lista eventos de forma sanitizada sem vazar dados confidenciais."""
