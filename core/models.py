@@ -1844,8 +1844,9 @@ class SignupOrder(models.Model):
     STATUS_CHOICES = (
         ('PENDENTE', 'Pendente'),
         ('PAGO', 'Pago / Aprovado'),
-        ('CANCELADO', 'Cancelado / Expirado'),
+        ('CANCELADO', 'Cancelado'),
         ('FALHOU', 'Falhou'),
+        ('EXPIRADO', 'Expirado'),
     )
     PLAN_CHOICES = (
         ('BASICO', 'Básico'),

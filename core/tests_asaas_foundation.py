@@ -336,5 +336,304 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(decoded["items"][0]["category"], "Assinatura")
         self.assertNotIn("?", decoded["items"][0]["category"])
 
+    def test_webhook_endpoint_security_and_validation(self):
+        """ASAAS-05: Testes de seguranca e validacao do endpoint /webhooks/asaas/."""
+        from django.test import Client
+        client = Client()
+        webhook_url = '/webhooks/asaas/'
 
+        valid_token = 'secret_webhook_token_test_1234567890'
+        with override_settings(ASAAS_WEBHOOK_TOKEN=valid_token):
+            payload = {'id': 'evt_test_sec_1', 'event': 'CHECKOUT_CREATED', 'checkout': {'id': 'chk_sec_1'}}
 
+            # 1. GET nao permitido -> 405
+            res_get = client.get(webhook_url)
+            self.assertEqual(res_get.status_code, 405)
+
+            # 2. POST sem asaas-access-token -> 401
+            res_no_token = client.post(webhook_url, data=json.dumps(payload), content_type='application/json')
+            self.assertEqual(res_no_token.status_code, 401)
+
+            # 3. POST com token incorreto -> 401
+            res_wrong_token = client.post(
+                webhook_url,
+                data=json.dumps(payload),
+                content_type='application/json',
+                HTTP_ASAAS_ACCESS_TOKEN='wrong_token_abc'
+            )
+            self.assertEqual(res_wrong_token.status_code, 401)
+
+            # 4. JSON invalido -> 400
+            res_invalid_json = client.post(
+                webhook_url,
+                data='{invalid-json',
+                content_type='application/json',
+                HTTP_ASAAS_ACCESS_TOKEN=valid_token
+            )
+            self.assertEqual(res_invalid_json.status_code, 400)
+
+            # 5. Payload sem id -> 400
+            res_no_id = client.post(
+                webhook_url,
+                data=json.dumps({'event': 'CHECKOUT_CREATED'}),
+                content_type='application/json',
+                HTTP_ASAAS_ACCESS_TOKEN=valid_token
+            )
+            self.assertEqual(res_no_id.status_code, 400)
+
+            # 6. Payload sem event -> 400
+            res_no_event = client.post(
+                webhook_url,
+                data=json.dumps({'id': 'evt_no_event_1'}),
+                content_type='application/json',
+                HTTP_ASAAS_ACCESS_TOKEN=valid_token
+            )
+            self.assertEqual(res_no_event.status_code, 400)
+
+            # 7. POST com token correto -> 200
+            res_ok = client.post(
+                webhook_url,
+                data=json.dumps(payload),
+                content_type='application/json',
+                HTTP_ASAAS_ACCESS_TOKEN=valid_token
+            )
+            self.assertEqual(res_ok.status_code, 200)
+            self.assertFalse(res_ok.json().get('duplicate'))
+
+            # 8. Token NUNCA aparece na resposta
+            self.assertNotIn(valid_token, res_ok.content.decode('utf-8'))
+
+            # 9. Idempotencia de persistencia (mesmo event.id enviado duas vezes -> 1 PaymentWebhookEvent)
+            res_dup = client.post(
+                webhook_url,
+                data=json.dumps(payload),
+                content_type='application/json',
+                HTTP_ASAAS_ACCESS_TOKEN=valid_token
+            )
+            self.assertEqual(res_dup.status_code, 200)
+            self.assertTrue(res_dup.json().get('duplicate'))
+            self.assertEqual(PaymentWebhookEvent.objects.filter(gateway_event_id='evt_test_sec_1').count(), 1)
+
+    def test_webhook_checkout_lifecycle_and_expired_status(self):
+        """ASAAS-05: Testar CHECKOUT_CREATED, CHECKOUT_CANCELED e CHECKOUT_EXPIRED mantendo e alterando status."""
+        from django.core.management import call_command
+
+        # 1. CHECKOUT_CREATED -> mantem PENDENTE
+        order1 = SignupOrder.objects.create(
+            external_reference='ord_chk_life_1',
+            gateway_checkout_id='chk_life_1',
+            band_name='Banda Criada',
+            responsible_name='Resp 1',
+            email='resp1@teste.com',
+            amount=Decimal('49.90'),
+            status='PENDENTE'
+        )
+        PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_created_1',
+            event_type='CHECKOUT_CREATED',
+            payload={'id': 'evt_created_1', 'event': 'CHECKOUT_CREATED', 'checkout': {'id': 'chk_life_1'}}
+        )
+        call_command('process_asaas_webhooks', event_id='evt_created_1')
+        order1.refresh_from_db()
+        self.assertEqual(order1.status, 'PENDENTE')
+
+        # 2. CHECKOUT_CANCELED -> vai para CANCELADO
+        order2 = SignupOrder.objects.create(
+            external_reference='ord_chk_life_2',
+            gateway_checkout_id='chk_life_2',
+            band_name='Banda Cancelada',
+            responsible_name='Resp 2',
+            email='resp2@teste.com',
+            amount=Decimal('49.90'),
+            status='PENDENTE'
+        )
+        PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_canceled_1',
+            event_type='CHECKOUT_CANCELED',
+            payload={'id': 'evt_canceled_1', 'event': 'CHECKOUT_CANCELED', 'checkout': {'id': 'chk_life_2'}}
+        )
+        call_command('process_asaas_webhooks', event_id='evt_canceled_1')
+        order2.refresh_from_db()
+        self.assertEqual(order2.status, 'CANCELADO')
+
+        # 3. CHECKOUT_EXPIRED -> vai para EXPIRADO (NAO CANCELADO)
+        order3 = SignupOrder.objects.create(
+            external_reference='ord_chk_life_3',
+            gateway_checkout_id='chk_life_3',
+            band_name='Banda Expirada',
+            responsible_name='Resp 3',
+            email='resp3@teste.com',
+            amount=Decimal('49.90'),
+            status='PENDENTE'
+        )
+        PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_expired_1',
+            event_type='CHECKOUT_EXPIRED',
+            payload={'id': 'evt_expired_1', 'event': 'CHECKOUT_EXPIRED', 'checkout': {'id': 'chk_life_3'}}
+        )
+        call_command('process_asaas_webhooks', event_id='evt_expired_1')
+        order3.refresh_from_db()
+        self.assertEqual(order3.status, 'EXPIRADO')
+
+    def test_webhook_checkout_paid_full_activation_isolation(self):
+        """ASAAS-05: Apos processar CHECKOUT_PAID: Band=1, Sub=1, Bill=1, Token=1, User=0, Email=0. Protecao contra duplicidade."""
+        from django.core.management import call_command
+        from django.core import mail
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        order = SignupOrder.objects.create(
+            external_reference='ord_canon_001',
+            gateway_checkout_id='chk_canon_001',
+            band_name='Banda Canonica',
+            responsible_name='Responsavel Canonico',
+            email='canonico@teste.com',
+            amount=Decimal('79.90'),
+            plan_type='AVANCADO',
+            billing_cycle='MENSAL',
+            status='PENDENTE'
+        )
+
+        evt_paid = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_paid_canon_1',
+            event_type='CHECKOUT_PAID',
+            payload={
+                'id': 'evt_paid_canon_1',
+                'event': 'CHECKOUT_PAID',
+                'checkout': {
+                    'id': 'chk_canon_001',
+                    'externalReference': 'ord_canon_001',
+                    'customer': 'cus_canon_1',
+                    'subscription': 'sub_canon_1'
+                },
+                'payment': {'id': 'pay_canon_1'}
+            }
+        )
+
+        call_command('process_asaas_webhooks', event_id='evt_paid_canon_1')
+
+        # 1. Validar SignupOrder atualizado
+        order.refresh_from_db()
+        self.assertEqual(order.status, 'PAGO')
+        self.assertIsNotNone(order.band)
+        self.assertIsNotNone(order.provisioned_at)
+
+        # 2. Validar Band criada (1)
+        self.assertEqual(Band.objects.filter(name='Banda Canonica').count(), 1)
+        band = order.band
+
+        # 3. Validar BandSubscription criada (1)
+        self.assertEqual(BandSubscription.objects.filter(band=band).count(), 1)
+        sub = BandSubscription.objects.get(band=band)
+        self.assertEqual(sub.gateway_subscription_id, 'sub_canon_1')
+
+        # 4. Validar BillingRecord criada (1)
+        self.assertEqual(BillingRecord.objects.filter(band=band).count(), 1)
+        bill = BillingRecord.objects.get(band=band)
+        self.assertEqual(bill.status, 'PAGO')
+        self.assertEqual(bill.gateway_payment_id, 'pay_canon_1')
+
+        # 5. Validar BandActivationToken criado (1)
+        self.assertEqual(BandActivationToken.objects.filter(band=band).count(), 1)
+
+        # 6. REGRA RIGIDA: User NAO criado (0)
+        self.assertEqual(User.objects.filter(email='canonico@teste.com').count(), 0)
+        self.assertEqual(band.users.count(), 0)
+
+        # 7. REGRA RIGIDA: E-mail NAO enviado (0)
+        self.assertEqual(len(mail.outbox), 0)
+
+        # 8. Proteção contra dois CHECKOUT_PAID para o mesmo checkout ID
+        evt_paid_duplicate = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_paid_canon_2_diff_id',
+            event_type='CHECKOUT_PAID',
+            payload={
+                'id': 'evt_paid_canon_2_diff_id',
+                'event': 'CHECKOUT_PAID',
+                'checkout': {
+                    'id': 'chk_canon_001',
+                    'externalReference': 'ord_canon_001',
+                    'customer': 'cus_canon_1',
+                    'subscription': 'sub_canon_1'
+                }
+            }
+        )
+        call_command('process_asaas_webhooks', event_id='evt_paid_canon_2_diff_id')
+
+        # Continua havendo exatamente 1 de cada registro
+        self.assertEqual(Band.objects.filter(name='Banda Canonica').count(), 1)
+        self.assertEqual(BandSubscription.objects.filter(band=band).count(), 1)
+        self.assertEqual(BillingRecord.objects.filter(band=band).count(), 1)
+        self.assertEqual(BandActivationToken.objects.filter(band=band).count(), 1)
+
+    def test_subscription_and_payment_reconciliation_safeguards(self):
+        """ASAAS-05: Reconciliacao segura de subscription e payment sem adivinhar ou duplicar."""
+        from django.core.management import call_command
+
+        band = Band.objects.create(name='Banda Jazz', slug='jazz')
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name='Avancado Mensal',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('49.90'),
+            gateway_provider='ASAAS',
+            gateway_subscription_id='sub_jazz_1',
+            gateway_customer_id='cus_jazz_1',
+            status='ATIVO'
+        )
+
+        # 1. SUBSCRIPTION_INACTIVATED -> marca sub como CANCELADO
+        evt_sub_del = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_sub_inact_1',
+            event_type='SUBSCRIPTION_INACTIVATED',
+            payload={'id': 'evt_sub_inact_1', 'event': 'SUBSCRIPTION_INACTIVATED', 'subscription': {'id': 'sub_jazz_1'}}
+        )
+        call_command('process_asaas_webhooks', event_id='evt_sub_inact_1')
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, 'CANCELADO')
+
+        # 2. Evento de pagamento com vinculo univoco
+        evt_pay = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_pay_conf_jazz',
+            event_type='PAYMENT_CONFIRMED',
+            payload={
+                'id': 'evt_pay_conf_jazz',
+                'event': 'PAYMENT_CONFIRMED',
+                'payment': {
+                    'id': 'pay_jazz_100',
+                    'subscription': 'sub_jazz_1',
+                    'value': '49.90'
+                }
+            }
+        )
+        call_command('process_asaas_webhooks', event_id='evt_pay_conf_jazz')
+        self.assertEqual(BillingRecord.objects.filter(gateway_payment_id='pay_jazz_100').count(), 1)
+
+        # 3. Evento ambiguo/desconhecido de pagamento sem vinculo nao quebra nem cria registros aleatorios
+        evt_pay_ambiguous = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_pay_ambig_1',
+            event_type='PAYMENT_CONFIRMED',
+            payload={
+                'id': 'evt_pay_ambig_1',
+                'event': 'PAYMENT_CONFIRMED',
+                'payment': {
+                    'id': 'pay_unknown_999',
+                    'value': '99.90'
+                }
+            }
+        )
+        call_command('process_asaas_webhooks', event_id='evt_pay_ambig_1')
+        evt_pay_ambiguous.refresh_from_db()
+        self.assertFalse(evt_pay_ambiguous.processed)
+        self.assertIsNotNone(evt_pay_ambiguous.error_message)
+
+        # 4. Evento desconhecido generico e persistido e ignorado com seguranca
+        evt_unknown = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_future_feature_1',
+            event_type='TRANSFER_CONFIRMED',
+            payload={'id': 'evt_future_feature_1', 'event': 'TRANSFER_CONFIRMED', 'transfer': {'id': 'tx_123'}}
+        )
+        call_command('process_asaas_webhooks', event_id='evt_future_feature_1')
+        evt_unknown.refresh_from_db()
+        self.assertTrue(evt_unknown.processed)
+        self.assertEqual(evt_unknown.error_message, None)

@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth import views as auth_views
 from core import views
 from core.views import landing_page_view, termos_de_uso_view, politica_de_privacidade_view
+from core.services.payments.asaas import views as views_asaas
 
 urlpatterns = [
     path('admin-master/', admin.site.urls),
@@ -22,6 +23,9 @@ urlpatterns = [
     path('redefinir-senha/concluido/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
     path('bancodedados/', views.banco_de_dados_view, name='banco_de_dados_global'),
+
+    # Webhook Asaas
+    path('webhooks/asaas/', views_asaas.asaas_webhook_view, name='asaas_webhook'),
 
     path('<slug:band_slug>/', include('core.urls')),
 ]
