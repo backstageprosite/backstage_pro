@@ -1790,3 +1790,111 @@ class AsaasFoundationTests(TestCase):
         self.assertContains(resp_hub, f'/{band_manual.slug}/relatorios/assinatura/')
         self.assertContains(resp_hub, 'fa-credit-card')
 
+    def test_auto_expiration_and_access_restriction(self):
+        """
+        Valida os 5 cenários do encerramento automático e restrição de acesso:
+        Cenário A: cancel_at_period_end=True, auto_renew=False, today < next_due_date -> STATUS Ativo, acesso normal
+        Cenário B: cancel_at_period_end=True, auto_renew=False, today >= next_due_date -> STATUS Inativo, bloqueio operacional, redireciona para Assinatura
+        Cenário C: cancel_at_period_end=False, auto_renew=True, today >= next_due_date -> STATUS permanece Ativo (aguarda cobrança)
+        Cenário D: Tela de Assinatura exibe 'Inativo', 'Sem cobrança agendada', 'Não' e botão 'Assinar Novamente'
+        Cenário E: Superuser continua com acesso administrativo
+        """
+        from django.test import Client
+        from core.models import User
+        from django.utils import timezone
+        today = timezone.localdate()
+        client = Client()
+
+        # Cenário A: Assinatura cancelada mas ainda dentro do período pago
+        band_a = Band.objects.create(name='Banda Periodo Valido', slug='bandaperiodovalido')
+        user_a = User.objects.create_user(username='prod_valido', email='valido@test.com', password='123', band=band_a, role='PRODUTOR')
+        sub_a = BandSubscription.objects.create(
+            band=band_a,
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            start_date=today - timedelta(days=10),
+            next_due_date=today + timedelta(days=20),
+            status='ATIVO',
+            auto_renew=False,
+            cancel_at_period_end=True,
+            payment_method_preference='CARTAO'
+        )
+
+        client.force_login(user_a)
+        # Deve acessar dashboard normalmente
+        resp_dash = client.get(f'/{band_a.slug}/painel/')
+        self.assertEqual(resp_dash.status_code, 200)
+        # Assinatura permanece ATIVO
+        self.assertTrue(band_a.has_active_subscription)
+        self.assertEqual(sub_a.status, 'ATIVO')
+
+        # Cenário B: Assinatura cancelada cujo período pago VENCEU (today >= next_due_date)
+        band_b = Band.objects.create(name='Banda Expirada', slug='bandaexpirada')
+        user_b = User.objects.create_user(username='prod_expirado', email='expirado@test.com', password='123', band=band_b, role='PRODUTOR')
+        sub_b = BandSubscription.objects.create(
+            band=band_b,
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            start_date=today - timedelta(days=35),
+            next_due_date=today - timedelta(days=5),
+            status='ATIVO',
+            auto_renew=False,
+            cancel_at_period_end=True,
+            payment_method_preference='CARTAO'
+        )
+
+        client.force_login(user_b)
+        # Ao acessar o dashboard, é bloqueado e redirecionado para a tela de Assinatura
+        resp_dash_b = client.get(f'/{band_b.slug}/painel/')
+        self.assertEqual(resp_dash_b.status_code, 302)
+        self.assertEqual(resp_dash_b.url, f'/{band_b.slug}/relatorios/assinatura/')
+
+        # Outras rotas operacionais (ex: contatos, shows, calendario) também redirecionam
+        resp_contatos = client.get(f'/{band_b.slug}/contatos/')
+        self.assertEqual(resp_contatos.status_code, 302)
+        self.assertEqual(resp_contatos.url, f'/{band_b.slug}/relatorios/assinatura/')
+
+        # Status no banco foi alterado para DESATIVADO
+        sub_b.refresh_from_db()
+        self.assertEqual(sub_b.status, 'DESATIVADO')
+        self.assertFalse(band_b.has_active_subscription)
+
+        # Cenário D: Tela de Assinatura para a banda expirada
+        resp_assina = client.get(f'/{band_b.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_assina.status_code, 200)
+        self.assertContains(resp_assina, 'Inativo')
+        self.assertContains(resp_assina, 'Sem cobrança agendada')
+        self.assertContains(resp_assina, 'Assinar Novamente')
+        self.assertNotContains(resp_assina, '- Acesso até')
+        # Sidebar restrita: não exibe link do Dashboard operacional
+        self.assertNotContains(resp_assina, f'/{band_b.slug}/calendario/')
+
+        # Cenário C: Assinatura com renovação ativa vencida (auto_renew=True, cancel_at_period_end=False)
+        # NÃO deve ser cancelada automaticamente (aguarda webhook/tentativa de cobrança)
+        band_c = Band.objects.create(name='Banda Renovacao Normal', slug='bandarenovacao')
+        user_c = User.objects.create_user(username='prod_renov', email='renov@test.com', password='123', band=band_c, role='PRODUTOR')
+        sub_c = BandSubscription.objects.create(
+            band=band_c,
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            start_date=today - timedelta(days=35),
+            next_due_date=today - timedelta(days=1),
+            status='ATIVO',
+            auto_renew=True,
+            cancel_at_period_end=False,
+            payment_method_preference='CARTAO'
+        )
+        self.assertTrue(band_c.has_active_subscription)
+        sub_c.refresh_from_db()
+        self.assertEqual(sub_c.status, 'ATIVO')
+
+        # Cenário E: Superuser acessa qualquer página mesmo com banda inativa
+        super_user = User.objects.create_superuser(username='superadmin', email='admin@test.com', password='123')
+        client.force_login(super_user)
+        resp_admin_dash = client.get(f'/{band_b.slug}/painel/')
+        self.assertEqual(resp_admin_dash.status_code, 200)
+
+

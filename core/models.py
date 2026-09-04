@@ -53,6 +53,18 @@ class Band(models.Model):
         return self.plan_type == self.PlanType.BASICO
 
     @property
+    def has_active_subscription(self):
+        """
+        Retorna se a banda possui assinatura ativa.
+        Executa verificação e sincronização de encerramento automático caso aplicável.
+        """
+        sub = self.subscriptions.filter(is_deleted=False).order_by('-created_at').first()
+        if not sub:
+            return self.is_active
+        sub.check_and_sync_auto_expiration()
+        return sub.status == 'ATIVO'
+
+    @property
     def dynamic_status(self):
         if self.status == 'PAGO':
             return 'PAGO'
@@ -617,6 +629,21 @@ class BandSubscription(models.Model):
                 name='unique_checkout_per_gateway_provider'
             ),
         ]
+
+    def check_and_sync_auto_expiration(self):
+        """
+        Regra de encerramento automático do período já pago:
+        Quando cancel_at_period_end=True, auto_renew=False e today >= next_due_date,
+        a assinatura passa automaticamente para DESATIVADO.
+        """
+        from django.utils import timezone
+        today = timezone.localdate()
+        if self.status == 'ATIVO' and self.cancel_at_period_end and not self.auto_renew:
+            if self.next_due_date and today >= self.next_due_date:
+                self.status = 'DESATIVADO'
+                self.save(update_fields=['status', 'updated_at'])
+                return True
+        return False
 
     def __str__(self):
         return f"Assinatura - {self.band.name}"

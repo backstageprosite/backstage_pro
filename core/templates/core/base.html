@@ -251,7 +251,7 @@
                 
                 <!-- Logo da Banda Acima do Menu -->
                 <div class="mb-3 text-center text-lg-start w-100">
-                    <a href="{% if band %}{% url 'dashboard' band.slug %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none w-100" style="min-height: 48px;">
+                    <a href="{% if band %}{% if not band.has_active_subscription and not request.user.is_superuser %}{% url 'minha_assinatura' band.slug %}{% else %}{% url 'dashboard' band.slug %}{% endif %}{% else %}#{% endif %}" class="d-flex align-items-center justify-content-center justify-content-lg-start text-decoration-none w-100" style="min-height: 48px;">
                         {% if band and band.logo %}
                             <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid d-block mx-auto mx-lg-0" style="border-radius: 8px; object-fit: contain; width: 100%; max-height: 105px; height: auto;" onerror="this.onerror=null; this.src='{% static 'images/backstage-pro-logo.png' %}';">
                         {% else %}
@@ -260,6 +260,17 @@
                     </a>
                 </div>
 
+                {% if band and not band.has_active_subscription and not request.user.is_superuser %}
+                <!-- Menu Restrito para Assinatura Inativa / Vencida -->
+                <ul class="nav nav-pills flex-column mb-auto gap-1">
+                    <li class="nav-item">
+                        <a href="{% url 'minha_assinatura' band.slug %}" class="nav-link active text-white fw-bold shadow-sm py-2 px-3" style="border-radius: 8px; font-size: 14px;">
+                            <i class="fa-solid fa-credit-card fa-fw me-2"></i> Assinatura
+                        </a>
+                    </li>
+                </ul>
+                {% else %}
+                <!-- Menu Completo Operacional -->
                 <ul class="nav nav-pills flex-column mb-auto gap-1">
 
                     <li class="nav-item">
@@ -331,6 +342,7 @@
                         </a>
                     </li>
                 </ul>
+                {% endif %}
             </div>
         </div>
 

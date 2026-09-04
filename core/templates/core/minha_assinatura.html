@@ -205,10 +205,12 @@
                     <div>
                         <p class="kpi-label">Próxima Cobrança</p>
                         <h3 class="kpi-value text-dark">
-                            {% if subscription.next_due_date %}
+                            {% if subscription.status != 'ATIVO' %}
+                                Sem cobrança agendada
+                            {% elif subscription.next_due_date %}
                                 {{ subscription.next_due_date|date:"d/m/Y" }}
                             {% else %}
-                                -
+                                Sem cobrança agendada
                             {% endif %}
                         </h3>
                     </div>
@@ -237,7 +239,9 @@
                     <div>
                         <p class="kpi-label">Renovação Automática</p>
                         <h3 class="kpi-value text-dark">
-                            {% if subscription.cancel_at_period_end %}
+                            {% if subscription.status != 'ATIVO' %}
+                                Não
+                            {% elif subscription.cancel_at_period_end %}
                                 Não{% if subscription.next_due_date %} <span class="text-muted fw-normal" style="font-size: 10px; font-weight: 400 !important;">- Acesso até {{ subscription.next_due_date|date:"d/m/Y" }}</span>{% endif %}
                             {% elif subscription.auto_renew %}
                                 Sim

@@ -182,7 +182,11 @@ def band_required(view_func):
 
             raise PermissionDenied("O acesso desta banda ao Backstage Pro está temporariamente suspenso. Entre em contato com a administração.")
 
-
+        # Restrição de acesso para assinaturas inativas/encerradas
+        if not request.user.is_superuser:
+            if not band.has_active_subscription:
+                if view_func.__name__ not in ('minha_assinatura_view', 'band_logout'):
+                    return redirect('minha_assinatura', band_slug=band.slug)
 
         request.band = band
 
@@ -202,10 +206,15 @@ def band_root_redirect_view(request, band_slug):
 
             return redirect('admin_painel:dashboard')
 
-        if request.user.band and request.user.band.slug != band_slug:
+        if request.user.band:
+            target_slug = request.user.band.slug
+            if not request.user.band.has_active_subscription:
+                return redirect('minha_assinatura', band_slug=target_slug)
+            return redirect('dashboard', band_slug=target_slug)
 
-            return redirect('dashboard', band_slug=request.user.band.slug)
-
+    band = get_object_or_404(Band, slug=band_slug)
+    if not band.has_active_subscription:
+        return redirect('minha_assinatura', band_slug=band_slug)
     return redirect('dashboard', band_slug=band_slug)
 
 
@@ -237,6 +246,9 @@ class BandLoginView(LoginView):
                 if request.user.band != band:
 
                     raise PermissionDenied("Você não pertence a esta banda.")
+
+                if not band.has_active_subscription:
+                    return redirect('minha_assinatura', band_slug=band.slug)
 
                 return redirect('dashboard', band_slug=band.slug)
 
@@ -273,10 +285,15 @@ class BandLoginView(LoginView):
             return reverse('admin_painel:dashboard')
 
         if user.band:
-
+            if not user.band.has_active_subscription:
+                return reverse('minha_assinatura', kwargs={'band_slug': user.band.slug})
             return reverse('dashboard', kwargs={'band_slug': user.band.slug})
 
-        return reverse('dashboard', kwargs={'band_slug': self.kwargs.get('band_slug')})
+        band_slug = self.kwargs.get('band_slug')
+        band = get_object_or_404(Band, slug=band_slug)
+        if not band.has_active_subscription:
+            return reverse('minha_assinatura', kwargs={'band_slug': band_slug})
+        return reverse('dashboard', kwargs={'band_slug': band_slug})
 
 
 
@@ -1251,6 +1268,10 @@ def minha_assinatura_view(request, band_slug):
     can_resubscribe = False
 
     if subscription:
+        # Sincronizar encerramento automático se aplicável
+        subscription.check_and_sync_auto_expiration()
+        subscription.refresh_from_db()
+
         # Plano (exibir estritamente Básico ou Avançado)
         p_name = (subscription.plan_name or '').strip().upper()
         if 'BASICO' in p_name or 'BÁSICO' in p_name:
@@ -1293,7 +1314,7 @@ def minha_assinatura_view(request, band_slug):
         if st == 'ATIVO':
             status_display = 'Ativo'
         elif st == 'DESATIVADO':
-            status_display = 'Desativado'
+            status_display = 'Inativo'
         else:
             status_display = subscription.get_status_display() if hasattr(subscription, 'get_status_display') else subscription.status
 
