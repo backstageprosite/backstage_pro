@@ -103,9 +103,17 @@
             <i class="fa-solid fa-credit-card text-primary me-2"></i>Assinatura
         </h4>
         <div class="d-flex align-items-center gap-2">
-            {% if subscription and not subscription.cancel_at_period_end and subscription.status == 'ATIVO' %}
+            {% if can_reactivate %}
+                <button type="button" class="btn btn-success btn-back fw-bold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalReativarAssinatura">
+                    <i class="fa-solid fa-arrows-rotate me-1"></i> Reativar Assinatura
+                </button>
+            {% elif can_cancel %}
                 <button type="button" class="btn btn-danger btn-back fw-bold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCancelarAssinatura">
                     <i class="fa-solid fa-ban me-1"></i> Cancelar Assinatura
+                </button>
+            {% elif can_resubscribe %}
+                <button type="button" class="btn btn-success btn-back fw-bold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAssinarNovamente">
+                    <i class="fa-solid fa-cart-shopping me-1"></i> Assinar Novamente
                 </button>
             {% endif %}
             <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-back fw-bold">
@@ -343,7 +351,7 @@
         </div>
     </div>
 
-    {% if subscription and not subscription.cancel_at_period_end and subscription.status == 'ATIVO' %}
+    {% if can_cancel %}
     <!-- Modal Confirmar Cancelamento da Assinatura -->
     <div class="modal fade" id="modalCancelarAssinatura" tabindex="-1" aria-labelledby="modalCancelarAssinaturaLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -375,6 +383,70 @@
                             Confirmar Cancelamento
                         </button>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if can_reactivate %}
+    <!-- Modal Confirmar Reativação da Assinatura -->
+    <div class="modal fade" id="modalReativarAssinatura" tabindex="-1" aria-labelledby="modalReativarAssinaturaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 12px; border: none;">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-success" id="modalReativarAssinaturaLabel" style="font-size: 16px;">
+                        <i class="fa-solid fa-arrows-rotate me-2 text-success"></i>Reativar Assinatura
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3 pb-2 text-dark" style="font-size: 14px; line-height: 1.5;">
+                    <p class="mb-2">Deseja reativar a renovação automática da sua assinatura?</p>
+                    <p class="text-muted mb-0" style="font-size: 13px;">
+                        Seu acesso já está ativo até <strong>{{ subscription.next_due_date|date:"d/m/Y" }}</strong>. Nenhuma cobrança será realizada agora. A próxima cobrança de <strong>R$ {{ subscription.contracted_value|floatformat:"2g" }}</strong> ocorrerá em <strong>{{ subscription.next_due_date|date:"d/m/Y" }}</strong>, mantendo sua assinatura ativa normalmente.
+                    </p>
+                </div>
+                <div class="modal-footer border-top-0 pt-2 pb-3 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 35px; font-size: 13px;">
+                        Voltar
+                    </button>
+                    <form method="post" action="{% url 'minha_assinatura' band.slug %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reactivate_subscription">
+                        <button type="submit" class="btn btn-success fw-bold rounded-pill px-3 text-white" style="height: 35px; font-size: 13px;">
+                            Confirmar Reativação
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if can_resubscribe %}
+    <!-- Modal Confirmar Assinar Novamente -->
+    <div class="modal fade" id="modalAssinarNovamente" tabindex="-1" aria-labelledby="modalAssinarNovamenteLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 12px; border: none;">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-success" id="modalAssinarNovamenteLabel" style="font-size: 16px;">
+                        <i class="fa-solid fa-cart-shopping me-2 text-success"></i>Assinar Novamente
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3 pb-2 text-dark" style="font-size: 14px; line-height: 1.5;">
+                    <p class="mb-2">Deseja assinar novamente o Backstage Pro?</p>
+                    <p class="text-muted mb-0" style="font-size: 13px;">
+                        Uma nova assinatura será iniciada e a renovação automática ficará ativada para as próximas cobranças.
+                    </p>
+                </div>
+                <div class="modal-footer border-top-0 pt-2 pb-3 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 35px; font-size: 13px;">
+                        Voltar
+                    </button>
+                    <a href="https://backstagepro.site/" target="_blank" rel="noopener noreferrer" class="btn btn-success fw-bold rounded-pill px-3 text-white d-inline-flex align-items-center" style="height: 35px; font-size: 13px;">
+                        Confirmar Assinatura
+                    </a>
                 </div>
             </div>
         </div>

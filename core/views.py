@@ -1199,22 +1199,39 @@ def minha_assinatura_view(request, band_slug):
     if not subscription:
         subscription = band.subscriptions.filter(is_deleted=False).order_by('-created_at').first()
 
-    # Processar cancelamento solicitado pelo produtor
-    if request.method == 'POST' and request.POST.get('action') == 'cancel_subscription':
-        if subscription and subscription.status == 'ATIVO' and not subscription.cancel_at_period_end:
-            from django.utils import timezone
-            subscription.cancel_at_period_end = True
-            subscription.auto_renew = False
-            subscription.canceled_at = timezone.now()
-            subscription.save(update_fields=['cancel_at_period_end', 'auto_renew', 'canceled_at', 'updated_at'])
+    # Processar ações solicitadas pelo produtor
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'cancel_subscription':
+            if subscription and subscription.status == 'ATIVO' and not subscription.cancel_at_period_end:
+                from django.utils import timezone
+                subscription.cancel_at_period_end = True
+                subscription.auto_renew = False
+                subscription.canceled_at = timezone.now()
+                subscription.save(update_fields=['cancel_at_period_end', 'auto_renew', 'canceled_at', 'updated_at'])
 
-            # Log para auditoria
-            logger.info(
-                "Assinatura %d da banda '%s' marcada para cancelamento ao fim do período pelo usuário %s.",
-                subscription.id, band.slug, request.user.username
-            )
-            messages.success(request, "Cancelamento confirmado com sucesso. O seu acesso permanecerá ativo até o fim do período contratado.")
-            return redirect('minha_assinatura', band_slug=band.slug)
+                # Log para auditoria
+                logger.info(
+                    "Assinatura %d da banda '%s' marcada para cancelamento ao fim do período pelo usuário %s.",
+                    subscription.id, band.slug, request.user.username
+                )
+                messages.success(request, "Cancelamento confirmado com sucesso. O seu acesso permanecerá ativo até o fim do período contratado.")
+                return redirect('minha_assinatura', band_slug=band.slug)
+
+        elif action == 'reactivate_subscription':
+            if subscription and subscription.status == 'ATIVO' and subscription.cancel_at_period_end:
+                subscription.cancel_at_period_end = False
+                subscription.auto_renew = True
+                subscription.canceled_at = None
+                subscription.save(update_fields=['cancel_at_period_end', 'auto_renew', 'canceled_at', 'updated_at'])
+
+                # Log para auditoria
+                logger.info(
+                    "Assinatura %d da banda '%s' reativada pelo usuário %s.",
+                    subscription.id, band.slug, request.user.username
+                )
+                messages.success(request, "Assinatura reativada com sucesso! A renovação automática continuará normalmente.")
+                return redirect('minha_assinatura', band_slug=band.slug)
 
     # 2. Histórico de cobranças (BillingRecord) ordenado pelo mais recente
     faturas = []
@@ -1229,6 +1246,9 @@ def minha_assinatura_view(request, band_slug):
     cycle_display = None
     payment_method_display = None
     status_display = None
+    can_cancel = False
+    can_reactivate = False
+    can_resubscribe = False
 
     if subscription:
         # Plano (exibir estritamente Básico ou Avançado)
@@ -1277,6 +1297,17 @@ def minha_assinatura_view(request, band_slug):
         else:
             status_display = subscription.get_status_display() if hasattr(subscription, 'get_status_display') else subscription.status
 
+        # Estados dos botões de ação:
+        if subscription.status == 'ATIVO':
+            if subscription.cancel_at_period_end:
+                can_reactivate = True
+            else:
+                can_cancel = True
+        else:
+            can_resubscribe = True
+    else:
+        can_resubscribe = True
+
     context = {
         'band': band,
         'subscription': subscription,
@@ -1285,6 +1316,9 @@ def minha_assinatura_view(request, band_slug):
         'cycle_display': cycle_display,
         'payment_method_display': payment_method_display,
         'status_display': status_display,
+        'can_cancel': can_cancel,
+        'can_reactivate': can_reactivate,
+        'can_resubscribe': can_resubscribe,
     }
 
     return render(request, 'core/minha_assinatura.html', context)

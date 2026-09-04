@@ -1697,8 +1697,10 @@ class AsaasFoundationTests(TestCase):
         resp_cancel = client.get(f'/{band_a.slug}/relatorios/assinatura/')
         self.assertContains(resp_cancel, 'Não')
         self.assertContains(resp_cancel, '- Acesso até 03/10/2026')
-        # Quando já está cancelado, botão de cancelar não deve ser exibido
+        # Quando está cancelado no período pago: exibe Reativar Assinatura e esconde Cancelar Assinatura
         self.assertNotContains(resp_cancel, 'modalCancelarAssinatura')
+        self.assertContains(resp_cancel, 'Reativar Assinatura')
+        self.assertContains(resp_cancel, 'modalReativarAssinatura')
 
         # Testar POST cancel_subscription
         sub_a.cancel_at_period_end = False
@@ -1713,6 +1715,29 @@ class AsaasFoundationTests(TestCase):
         self.assertTrue(sub_a.cancel_at_period_end)
         self.assertFalse(sub_a.auto_renew)
         self.assertContains(post_cancel, '- Acesso até 03/10/2026')
+        self.assertContains(post_cancel, 'Reativar Assinatura')
+
+        # Testar POST reactivate_subscription
+        post_reactivate = client.post(f'/{band_a.slug}/relatorios/assinatura/', {'action': 'reactivate_subscription'}, follow=True)
+        self.assertEqual(post_reactivate.status_code, 200)
+        sub_a.refresh_from_db()
+        self.assertFalse(sub_a.cancel_at_period_end)
+        self.assertTrue(sub_a.auto_renew)
+        self.assertContains(post_reactivate, 'Sim')
+        self.assertNotContains(post_reactivate, '- Acesso até')
+        self.assertContains(post_reactivate, 'Cancelar Assinatura')
+        self.assertNotContains(post_reactivate, 'modalReativarAssinatura')
+
+        # Testar estado de assinatura inativa/desativada (Assinar Novamente)
+        sub_a.status = 'DESATIVADO'
+        sub_a.save()
+        resp_desativado = client.get(f'/{band_a.slug}/relatorios/assinatura/')
+        self.assertContains(resp_desativado, 'Assinar Novamente')
+        self.assertContains(resp_desativado, 'modalAssinarNovamente')
+        self.assertNotContains(resp_desativado, 'modalCancelarAssinatura')
+        self.assertNotContains(resp_desativado, 'modalReativarAssinatura')
+        sub_a.status = 'ATIVO'
+        sub_a.save()
 
         # 6. Assinatura manual/legada sem gateway
         band_manual = Band.objects.create(name='Banda Manual Teste', slug='manualteste', plan_type='AVANCADO')
