@@ -1314,6 +1314,13 @@ def minha_assinatura_view(request, band_slug):
     alert_suspended = False
     overdue_limit_date = None
 
+    # Banner informativo de pré-renovação de 30 dias para contratos anuais com auto_renew ativo
+    alert_pre_renewal = False
+    pre_renewal_price_changed = False
+    pre_renewal_current_price = None
+    pre_renewal_next_price = None
+    pre_renewal_date = None
+
     if subscription:
         # Sincronizar encerramento automático se aplicável
         subscription.check_and_sync_auto_expiration()
@@ -1372,7 +1379,7 @@ def minha_assinatura_view(request, band_slug):
                     overdue_limit_date = subscription.next_due_date + timedelta(days=4)
             else:
                 status_display = 'Ativo'
-        elif subscription.is_canceled_period_expired or (st == 'DESATIVADO' and subscription.cancel_at_period_end):
+        elif subscription.is_canceled_period_expired or (st == 'DESATIVADO' and (subscription.cancel_at_period_end or subscription.billing_cycle == 'ANUAL')):
             status_display = 'Assinatura encerrada'
             can_reactivate = True
         elif st == 'DESATIVADO':
@@ -1388,6 +1395,29 @@ def minha_assinatura_view(request, band_slug):
             # Para compras anuais pré-pagas/parceladas sem recorrência (auto_renew=False), não exibe cancelamento
             if not subscription.cancel_at_period_end and subscription.auto_renew:
                 can_cancel = True
+
+            if subscription.billing_cycle == 'ANUAL' and subscription.auto_renew and not subscription.cancel_at_period_end:
+                if subscription.next_due_date:
+                    from django.utils import timezone
+                    from core.models import SystemSettings, AnnualRenewalNotice
+                    today = timezone.localdate()
+                    diff_days = (subscription.next_due_date - today).days
+                    if 0 <= diff_days <= 30:
+                        alert_pre_renewal = True
+                        pre_renewal_date = subscription.next_due_date
+                        pre_renewal_current_price = subscription.contracted_value
+                        # Verifica se há aviso com preço congelado ou obtém o preço canônico vigente
+                        notice = AnnualRenewalNotice.objects.filter(
+                            band_subscription=subscription,
+                            renewal_date=subscription.next_due_date
+                        ).first()
+                        if notice and notice.notified_renewal_price:
+                            pre_renewal_next_price = notice.notified_renewal_price
+                        else:
+                            pre_renewal_next_price = SystemSettings.get_canonical_plan_price(subscription.plan_name, 'ANUAL')
+
+                        if pre_renewal_next_price != pre_renewal_current_price:
+                            pre_renewal_price_changed = True
     else:
         can_resubscribe = True
 
@@ -1406,6 +1436,11 @@ def minha_assinatura_view(request, band_slug):
         'can_reactivate': can_reactivate,
         'can_resubscribe': can_resubscribe,
         'can_regularize': can_regularize,
+        'alert_pre_renewal': alert_pre_renewal,
+        'pre_renewal_price_changed': pre_renewal_price_changed,
+        'pre_renewal_current_price': pre_renewal_current_price,
+        'pre_renewal_next_price': pre_renewal_next_price,
+        'pre_renewal_date': pre_renewal_date,
     }
 
     return render(request, 'core/minha_assinatura.html', context)

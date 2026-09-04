@@ -7,7 +7,14 @@ from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
 
-from core.models import BandSubscription, AnnualPlanPurchase, GatewayPaymentMethod, BillingRecord
+from core.models import (
+    BandSubscription,
+    AnnualPlanPurchase,
+    GatewayPaymentMethod,
+    BillingRecord,
+    SystemSettings,
+    AnnualRenewalNotice
+)
 from core.services.payments.base import calculate_next_billing_date
 from core.services.payments.asaas.client import AsaasClient
 
@@ -18,7 +25,7 @@ class AnnualRenewalService:
     """
     Motor seguro de renovação automática para planos anuais no Backstage Pro.
     
-    Regras de Negócio:
+    Regras de Negócio e Hardening Financeiro (ETAPA 3.1):
     1. Elegibilidade:
        - sub.billing_cycle == 'ANUAL'
        - sub.status == 'ATIVO'
@@ -28,34 +35,31 @@ class AnnualRenewalService:
        - Janela de tentativa: D0 (next_due_date) até D+4 (tolerância).
        - A partir de D+5 (atraso >= 5 dias): tentativas automáticas cessam. Assinatura fica suspensa financeiramente.
        
-    2. Parâmetros da Renovação:
-       - gross_amount: sub.contracted_value (valor contratado da assinatura, sem reajuste automático).
-       - installment_count: recuperado da última AnnualPlanPurchase confirmada da assinatura (fallback=1).
-       - external_reference: determinístico no padrão 'bp-annual-renewal-<sub_id>-<YYYYMMDD>' baseado em next_due_date.
+    2. Preço Vigente e Trava de Aviso (D-30):
+       - O preço pago não muda durante a vigência em curso.
+       - Na renovação, o preço base é o preço vigente canônico de SystemSettings.get_canonical_plan_price().
+       - Se houve AnnualRenewalNotice enviado (SENT) para este ciclo:
+         * O preço notificado congela o valor máximo cobrado: min(notified_price, public_price_d0).
+       - Se o preço público subiu (public > contracted) mas NÃO houve aviso SENT registrado:
+         * Política segura de fallback: cobra o contracted_value anterior e registra fallback (não cobra aumento surpresa).
+       - BandSubscription.contracted_value SOMENTE é atualizado após a aprovação de TODAS as parcelas.
+       - Quantidade de parcelas é rigorosamente preservada da última compra confirmada (ex: 5x).
        
-    3. Idempotência e Recuperação de Falhas:
-       - AnnualPlanPurchase criada ou recuperada com status PENDING e external_reference determinístico.
+    3. Idempotência e Recuperação de Falhas (Crash Recovery):
+       - AnnualPlanPurchase criada/recuperada com status PENDING e external_reference determinístico.
        - Se já houver gateway_installment_id gravado, NÃO cria novo parcelamento no gateway; reaproveita o existente.
-       - Se não houver, chama AsaasClient.create_installment() e persiste imediatamente gateway_installment_id.
        
-    4. Execução Financeira:
-       - Busca GatewayPaymentMethod ativo para o provedor (ASAAS) vinculado à assinatura.
-       - Se ausente ou sem token, aborta sem cobrar com erro PAYMENT_METHOD_MISSING.
-       - Consulta cobranças do parcelamento via AsaasClient.get_payments_by_installment().
-       - Localiza a primeira parcela (installmentNumber == 1).
-       - Descriptografa token estritamente em memória e invoca AsaasClient.pay_with_credit_card(first_payment_id, token).
-       - O token é deletado da memória imediatamente após a chamada.
+    4. Hardening de Execução Financeira (payWithCreditCard):
+       - Consulta cobranças do parcelamento ANTES de qualquer cobrança.
+       - Se 5/5 já estiverem CONFIRMED/RECEIVED: pula payWithCreditCard e finaliza a renovação idempotentemente.
+       - Se a parcela 1 estiver CONFIRMED e as demais PENDING: NÃO chama payWithCreditCard novamente (retorna ESTADO_FINANCEIRO_INCONCLUSIVO).
+       - Somente chama payWithCreditCard se a parcela 1 estiver em estado aberto compatível (PENDING ou OVERDUE).
+       - Se ocorrer timeout/erro de rede: reconsulta payments no gateway antes de falhar.
        
     5. Confirmação e Extensão da Vigência:
-       - Reconsulta parcelas do installment.
-       - A vigência somente avança se TODAS as parcelas estiverem com status CONFIRMED ou RECEIVED.
-       - Em caso afirmativo:
-         * AnnualPlanPurchase.status = CONFIRMED, approved_at = now
-         * sub.next_due_date avança +1 ano via calculate_next_billing_date (sub.start_date permanece inalterado)
-         * Cria/atualiza BillingRecords para cada parcela apontando para annual_purchase e installment_number
-       - Se pagamento for recusado ou pendente:
-         * sub.next_due_date NÃO avança
-         * AnnualPlanPurchase permanece PENDING
+       - Vigência somente avança (+1 ano em next_due_date) se TODAS as parcelas estiverem CONFIRMED/RECEIVED.
+       - sub.start_date permanece inalterado.
+       - Atualiza sub.contracted_value para o gross_amount efetivo da nova contratação confirmada.
     """
 
     def __init__(self, client: Optional[AsaasClient] = None):
@@ -98,6 +102,49 @@ class AnnualRenewalService:
 
         return True, "ELEGIVEL"
 
+    @classmethod
+    def calculate_renewal_price(
+        cls,
+        sub: BandSubscription,
+        target_date: Optional[datetime.date] = None
+    ) -> Tuple[Decimal, str]:
+        """
+        Calcula o valor da renovação respeitando o preço vigente, congelamento por aviso D-30,
+        e política de fallback caso um aumento não tenha sido comunicado previamente.
+        Retorna (preço_final, motivo_politica).
+        """
+        eval_date = target_date or sub.next_due_date or timezone.localdate()
+        public_price = SystemSettings.get_canonical_plan_price(sub.plan_name, 'ANUAL')
+        contracted_val = sub.contracted_value or Decimal('199.90')
+
+        # Buscar se existe aviso formal enviado para a data de renovação deste ciclo
+        notice = AnnualRenewalNotice.objects.filter(
+            band_subscription=sub,
+            renewal_date=sub.next_due_date,
+            status=AnnualRenewalNotice.Status.SENT
+        ).first()
+
+        if notice and notice.notified_renewal_price:
+            notified_price = notice.notified_renewal_price
+            # Se o preço diminuiu após o aviso, beneficia o cliente com o menor valor
+            # Nunca cobra acima do valor notificado
+            final_price = min(notified_price, public_price)
+            reason = f"NOTICE_FROZEN_PRICE (notified={notified_price}, public={public_price}, final={final_price})"
+            return final_price, reason
+
+        # Se NÃO houve aviso prévio enviado:
+        if public_price > contracted_val:
+            # Aumento sem aviso prévio de 30 dias: não cobrar aumento surpresa. Fallback para contracted_value.
+            logger.warning(
+                "Sub %s: Preço público (%s) é maior que contratado (%s) mas aviso de 30 dias não foi enviado. "
+                "Aplicando política de segurança PRICE_CHANGE_NOTICE_MISSING (mantendo %s).",
+                sub.id, public_price, contracted_val, contracted_val
+            )
+            return contracted_val, "PRICE_CHANGE_NOTICE_MISSING"
+
+        # Se o preço for igual ou menor, aplica o preço vigente público
+        return public_price, "PUBLIC_PRICE_APPLIED"
+
     def get_or_create_renewal_purchase(
         self,
         sub: BandSubscription,
@@ -113,14 +160,14 @@ class AnnualRenewalService:
         if existing:
             return existing
 
-        # Determina quantidade de parcelas baseada no histórico da assinatura
+        # Determina quantidade de parcelas baseada no histórico da assinatura (preserva última escolha, ex: 5x)
         last_confirmed = AnnualPlanPurchase.objects.filter(
             band_subscription=sub,
             status=AnnualPlanPurchase.Status.CONFIRMED
         ).order_by('-coverage_start').first()
 
         inst_count = last_confirmed.installment_count if last_confirmed else 1
-        gross_amt = sub.contracted_value or Decimal('199.90')
+        gross_amt, price_reason = self.calculate_renewal_price(sub, target_date=target_date)
         cov_start = sub.next_due_date or timezone.localdate()
         cov_end = calculate_next_billing_date(cov_start, 'ANUAL', periods_offset=1)
 
@@ -146,7 +193,7 @@ class AnnualRenewalService:
         target_date: Optional[datetime.date] = None
     ) -> Tuple[bool, str, Optional[AnnualPlanPurchase]]:
         """
-        Executa o fluxo completo de renovação anual da assinatura especificada.
+        Executa o fluxo completo de renovação anual da assinatura especificada com hardening financeiro.
         """
         eval_date = target_date or timezone.localdate()
         eligible, reason = self.is_eligible_for_renewal(sub, target_date=eval_date)
@@ -213,10 +260,24 @@ class AnnualRenewalService:
         payments.sort(key=lambda x: x.get('installmentNumber', 0))
         first_payment = payments[0]
         first_payment_id = first_payment.get('id')
-
-        # Se a primeira parcela já estiver confirmada/recebida, pula o pagamento
         first_status = first_payment.get('status')
-        if first_status not in ('CONFIRMED', 'RECEIVED'):
+
+        # HARDENING: Contagem de parcelas confirmadas previamente
+        confirmed_count = sum(1 for p in payments if p.get('status') in ('CONFIRMED', 'RECEIVED'))
+
+        # REGRA 23: Se todas as parcelas já estão CONFIRMED/RECEIVED, não chama payWithCreditCard
+        if confirmed_count >= annual_purchase.installment_count:
+            logger.info("Todas as %d parcelas do installment %s já estão confirmadas. Finalizando renovação.", confirmed_count, installment_id)
+        # REGRA 24: Se a parcela 1 já estiver confirmada mas as restantes ainda pendentes, NÃO chama payWithCreditCard de novo
+        elif first_status in ('CONFIRMED', 'RECEIVED'):
+            logger.warning(
+                "Primeira parcela %s está CONFIRMED mas parcelas restantes ainda pendentes (%d/%d). "
+                "payWithCreditCard NÃO será repetido. Estado inconclusivo.",
+                first_payment_id, confirmed_count, annual_purchase.installment_count
+            )
+            return False, "ESTADO_FINANCEIRO_INCONCLUSIVO", annual_purchase
+        # REGRA 25: Somente chama payWithCreditCard se a primeira parcela estiver aberta (PENDING ou OVERDUE)
+        elif first_status in ('PENDING', 'OVERDUE'):
             # Descriptografa token na memória estrita
             plain_token = payment_method.get_decrypted_token()
             try:
@@ -225,9 +286,19 @@ class AnnualRenewalService:
                 del plain_token  # Remove imediatamente da memória
 
             if not success_pay:
-                err_msg = pay_resp.get('error') or pay_resp.get('errors') or "pagamento_recusado"
-                logger.warning("Falha ao pagar primeira parcela %s da renovação: %s", first_payment_id, err_msg)
-                return False, f"CARTAO_RECUSADO: {err_msg}", annual_purchase
+                # REGRA 26: Em caso de erro ou timeout, reconsulta o gateway antes de concluir recusa
+                recheck_payments = self.client.get_payments_by_installment(installment_id)
+                recheck_confirmed = sum(1 for p in recheck_payments if p.get('status') in ('CONFIRMED', 'RECEIVED'))
+                if recheck_confirmed >= annual_purchase.installment_count:
+                    logger.info("Após timeout/falha na resposta, reconsulta confirmou 100%% das parcelas para installment %s.", installment_id)
+                    payments = recheck_payments
+                else:
+                    err_msg = pay_resp.get('error') or pay_resp.get('errors') or "pagamento_recusado"
+                    logger.warning("Falha ao pagar primeira parcela %s da renovação: %s", first_payment_id, err_msg)
+                    return False, f"CARTAO_RECUSADO: {err_msg}", annual_purchase
+        else:
+            logger.error("Parcela 1 em estado incompatível com pagamento: %s", first_status)
+            return False, f"ESTADO_PARCELA_INCOMPATIVEL_{first_status}", annual_purchase
 
         # 5. Verificar se TODAS as parcelas do parcelamento estão confirmadas
         updated_payments = self.client.get_payments_by_installment(installment_id)
@@ -240,7 +311,7 @@ class AnnualRenewalService:
             )
             return False, f"PARCELAS_PENDENTES: {confirmed_count}/{annual_purchase.installment_count}", annual_purchase
 
-        # 6. Efetivação atômica: Confirmação da compra, avanço de vigência e criação dos BillingRecords
+        # 6. Efetivação atômica: Confirmação da compra, avanço de vigência, atualização de contracted_value e criação dos BillingRecords
         with transaction.atomic():
             sub_locked = BandSubscription.objects.select_for_update().get(id=sub.id)
             
@@ -255,7 +326,10 @@ class AnnualRenewalService:
             new_due_date = calculate_next_billing_date(base_anchor, 'ANUAL', periods_offset=1)
             sub_locked.next_due_date = new_due_date
             sub_locked.status = 'ATIVO'
-            sub_locked.save(update_fields=['next_due_date', 'status', 'updated_at'])
+            
+            # Atualiza contracted_value para o novo preço vigente confirmado
+            sub_locked.contracted_value = annual_purchase.gross_amount
+            sub_locked.save(update_fields=['next_due_date', 'status', 'contracted_value', 'updated_at'])
 
             # Criar/atualizar BillingRecords para todas as parcelas
             for p in updated_payments:
@@ -288,7 +362,8 @@ class AnnualRenewalService:
                 )
 
         logger.info(
-            "Renovação anual concluída com sucesso para subscription %s. Nova next_due_date: %s",
-            sub.id, sub_locked.next_due_date
+            "Renovação anual concluída com sucesso para subscription %s. Nova next_due_date: %s, Novo contracted_value: %s",
+            sub.id, sub_locked.next_due_date, sub_locked.contracted_value
         )
         return True, "RENOVACAO_CONCLUIDA_COM_SUCESSO", annual_purchase
+

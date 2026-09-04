@@ -36,6 +36,18 @@ class Command(BaseCommand):
 
         target_date = timezone.localdate()
         if date_str:
+            from django.conf import settings
+            import os
+            # PROTEÇÃO HARD BLOCK: O parâmetro --date é estritamente proibido em produção.
+            # Só é permitido se ASAAS_ENVIRONMENT='sandbox' e o ambiente Django for não-produção (development/test/staging).
+            raw_asaas_env = getattr(settings, 'ASAAS_ENVIRONMENT', os.getenv('ASAAS_ENVIRONMENT', 'sandbox')).strip().lower()
+            django_env = getattr(settings, 'DJANGO_ENV', os.getenv('DJANGO_ENV', 'development')).strip().lower()
+            if raw_asaas_env == 'production' or django_env == 'production':
+                self.stderr.write(self.style.ERROR(
+                    "BLOQUEIO DE SEGURANÇA: O parâmetro --date é estritamente proibido em ambiente de PRODUÇÃO. Operação abortada."
+                ))
+                return
+
             try:
                 target_date = datetime.date.fromisoformat(date_str)
             except ValueError:

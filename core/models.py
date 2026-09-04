@@ -1615,6 +1615,28 @@ class SystemSettings(models.Model):
         )
         return obj
 
+    @classmethod
+    def get_canonical_plan_price(cls, plan_name: str, billing_cycle: str) -> Decimal:
+        """
+        Retorna o preço vigente e canônico do plano a partir das configurações públicas do sistema.
+        Normaliza plan_name ('BASICO' / 'AVANCADO') e billing_cycle ('MENSAL' / 'ANUAL').
+        """
+        settings_obj = cls.get_settings()
+        p_name = (plan_name or '').strip().upper()
+        c_name = (billing_cycle or '').strip().upper()
+
+        is_basic = 'BASICO' in p_name or 'BÁSICO' in p_name
+        is_annual = 'ANUAL' in c_name
+
+        if is_basic:
+            if is_annual:
+                return settings_obj.plan_basic_annual or Decimal('199.90')
+            return settings_obj.plan_basic_monthly or Decimal('19.90')
+        else:
+            if is_annual:
+                return settings_obj.plan_advanced_annual or Decimal('499.90')
+            return settings_obj.plan_advanced_monthly or Decimal('49.90')
+
 
 class LandingPageBandLogo(models.Model):
     name = models.CharField(max_length=255, verbose_name="Nome da banda ou artista")
@@ -2300,6 +2322,104 @@ class AnnualPlanPurchase(models.Model):
     def __str__(self):
         band_name = self.band_subscription.band.name if self.band_subscription and self.band_subscription.band else 'Banda'
         return f"Compra Anual {self.get_purchase_type_display()} - {band_name} ({self.installment_count}x R$ {self.gross_amount}) - {self.get_status_display()}"
+
+
+class AnnualRenewalNotice(models.Model):
+    """
+    Registra o envio do aviso pré-renovação de 30 dias para contratos anuais.
+    Congela o renewal_price_notified para proteger o cliente contra aumentos posteriores.
+    """
+    class NoticeType(models.TextChoices):
+        STANDARD = 'STANDARD', 'Aviso Padrão (Sem alteração)'
+        PRICE_CHANGE = 'PRICE_CHANGE', 'Aviso de Atualização de Valor'
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pendente'
+        SENT = 'SENT', 'Enviado com Sucesso'
+        FAILED = 'FAILED', 'Falha no Envio'
+
+    band_subscription = models.ForeignKey(
+        'BandSubscription',
+        on_delete=models.CASCADE,
+        related_name='renewal_notices',
+        verbose_name='Assinatura'
+    )
+    renewal_date = models.DateField(
+        verbose_name='Data Prevista da Renovação'
+    )
+    plan_name = models.CharField(
+        max_length=100,
+        verbose_name='Nome do Plano'
+    )
+    billing_cycle = models.CharField(
+        max_length=20,
+        default='ANUAL',
+        verbose_name='Ciclo de Cobrança'
+    )
+    current_contracted_value = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name='Valor Contratado Atual'
+    )
+    notified_renewal_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name='Preço Notificado para Renovação'
+    )
+    installment_count = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Parcelamento Previsto'
+    )
+    notice_type = models.CharField(
+        max_length=20,
+        choices=NoticeType.choices,
+        default=NoticeType.STANDARD,
+        verbose_name='Tipo de Aviso'
+    )
+    email_recipient = models.EmailField(
+        blank=True,
+        null=True,
+        verbose_name='E-mail Destinatário'
+    )
+    scheduled_for = models.DateField(
+        verbose_name='Agendado Para (D-30)'
+    )
+    sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Data de Envio Efetivo'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+        verbose_name='Status do Aviso'
+    )
+    error_message = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Mensagem de Erro (Sanitizada)'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
+
+    class Meta:
+        verbose_name = 'Aviso de Renovação Anual'
+        verbose_name_plural = 'Avisos de Renovação Anual'
+        ordering = ['-renewal_date', '-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['band_subscription', 'renewal_date'],
+                name='unique_annual_renewal_notice_per_cycle'
+            )
+        ]
+
+    def __str__(self):
+        band_name = self.band_subscription.band.name if self.band_subscription and self.band_subscription.band else 'Banda'
+        return f"Aviso Renovação {self.get_notice_type_display()} - {band_name} ({self.renewal_date}) - {self.get_status_display()}"
+
 
 # ============================================================
 # AUTOMATIC FILE DELETION ON RECORD DELETE

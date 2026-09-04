@@ -143,6 +143,25 @@
             Existe um pagamento em atraso. Regularize até {% if overdue_limit_date %}{{ overdue_limit_date|date:"d/m/Y" }}{% else %}breve{% endif %} para evitar a suspensão do acesso ao Backstage Pro.
         </div>
     </div>
+    {% elif alert_pre_renewal %}
+    <!-- Alerta Informativo Pré-Renovação de 30 Dias -->
+    <div class="alert alert-info d-flex align-items-center justify-content-between mb-3 shadow-sm" role="alert" style="border-radius: 10px; font-size: 14px;">
+        <div class="d-flex align-items-center">
+            <i class="fa-solid fa-circle-info flex-shrink-0 me-2" style="font-size: 18px;"></i>
+            <div>
+                {% if pre_renewal_price_changed %}
+                    O valor da sua próxima renovação será atualizado de <strong>R$ {{ pre_renewal_current_price|floatformat:"2g" }}</strong> para <strong>R$ {{ pre_renewal_next_price|floatformat:"2g" }}</strong>. Renovação prevista para <strong>{{ pre_renewal_date|date:"d/m/Y" }}</strong>.
+                {% else %}
+                    Sua assinatura será renovada em <strong>{{ pre_renewal_date|date:"d/m/Y" }}</strong> por <strong>R$ {{ pre_renewal_current_price|floatformat:"2g" }}</strong>.
+                {% endif %}
+            </div>
+        </div>
+        {% if can_cancel %}
+        <button type="button" class="btn btn-sm btn-outline-danger fw-bold ms-3 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalCancelarAssinatura" style="font-size: 12px; border-radius: 20px;">
+            Cancelar Renovação
+        </button>
+        {% endif %}
+    </div>
     {% endif %}
 
     <!-- Resumo da Assinatura (Cards Gerenciais / Padrão Dashboard KPI) -->

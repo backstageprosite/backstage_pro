@@ -4481,3 +4481,328 @@ class AsaasFoundationTests(TestCase):
             self.assertFalse(band.has_active_subscription)
             sub.refresh_from_db()
             self.assertEqual(sub.status, 'DESATIVADO')
+
+    def test_annual_renewal_price_rules(self):
+        """
+        Testa as regras de preço da ETAPA 3.1:
+        1. Preço sem alteração (199.90 -> 199.90): Notice STANDARD
+        2. Preço com aumento (199.90 -> 239.90): Notice PRICE_CHANGE
+        3. Preço aumenta após o aviso (aviso 239.90, público vira 259.90): cobra 239.90
+        4. Preço reduz após o aviso (aviso 239.90, público vira 219.90): cobra 219.90
+        5. Aumento sem aviso prévio: fallback para contracted_value 199.90 (PRICE_CHANGE_NOTICE_MISSING)
+        6. Atualização de contracted_value apenas após aprovação da compra
+        """
+        import datetime
+        from decimal import Decimal
+        from unittest.mock import MagicMock
+        from django.core import mail
+        from core.models import BandSubscription, AnnualPlanPurchase, GatewayPaymentMethod, AnnualRenewalNotice, SystemSettings
+        from core.services.payments.renewal import AnnualRenewalService
+        from django.core.management import call_command
+
+        settings_obj = SystemSettings.get_settings()
+        settings_obj.plan_basic_annual = Decimal('199.90')
+        settings_obj.save()
+
+        band = Band.objects.create(name="Banda Price Test", slug="banda-price-test")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            billing_email='financeiro@bandaprice.com'
+        )
+        AnnualPlanPurchase.objects.create(
+            band_subscription=sub,
+            purchase_type=AnnualPlanPurchase.PurchaseType.INITIAL,
+            gateway_provider='ASAAS',
+            gateway_external_reference='bp-annual-price-init',
+            gateway_installment_id='inst_price_init',
+            installment_count=5,
+            gross_amount=Decimal('199.90'),
+            coverage_start=datetime.date(2026, 9, 4),
+            coverage_end=datetime.date(2027, 9, 4),
+            status=AnnualPlanPurchase.Status.CONFIRMED
+        )
+        pm = GatewayPaymentMethod.objects.create(
+            subscription=sub,
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_price_01',
+            is_active=True
+        )
+        pm.set_token('token_price_123')
+        pm.save()
+
+        # 1. TESTE D-30 PREÇO SEM ALTERAÇÃO (199.90 -> 199.90)
+        mail.outbox = []
+        call_command('process_annual_renewal_notices', date='2027-08-05')
+        notice1 = AnnualRenewalNotice.objects.filter(band_subscription=sub, renewal_date=datetime.date(2027, 9, 4)).first()
+        self.assertIsNotNone(notice1)
+        self.assertEqual(notice1.notice_type, AnnualRenewalNotice.NoticeType.STANDARD)
+        self.assertEqual(notice1.notified_renewal_price, Decimal('199.90'))
+        self.assertEqual(notice1.status, AnnualRenewalNotice.Status.SENT)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Renovação do Backstage Pro em 30 dias", mail.outbox[0].subject)
+
+        # 2. TESTE IDEMPOTÊNCIA DO AVISO (segunda execução não envia outro e-mail)
+        call_command('process_annual_renewal_notices', date='2027-08-05')
+        self.assertEqual(len(mail.outbox), 1)  # Permanece 1
+        self.assertEqual(AnnualRenewalNotice.objects.filter(band_subscription=sub).count(), 1)
+
+        # 3. TESTE AUMENTO DE PREÇO APÓS AVISO (Aviso 199.90, público vira 259.90 no D-10 -> renovação usa 199.90)
+        settings_obj.plan_basic_annual = Decimal('259.90')
+        settings_obj.save()
+
+        mock_client = MagicMock()
+        mock_client.create_installment.return_value = (True, {'id': 'inst_p1', 'installmentCount': 5, 'value': 199.90, 'netValue': 194.50})
+        mock_client.get_payments_by_installment.return_value = [
+            {'id': f'pay_p1_{i}', 'installmentNumber': i, 'value': 39.98, 'dueDate': f'2027-{9+i-1:02d}-04' if (9+i-1) <= 12 else f'2028-{9+i-1-12:02d}-04', 'status': 'CONFIRMED'}
+            for i in range(1, 6)
+        ]
+        mock_client.pay_with_credit_card.return_value = (True, {'status': 'CONFIRMED'})
+
+        service = AnnualRenewalService(client=mock_client)
+        ok_renov, _, pur_renov = service.process_subscription_renewal(sub, target_date=datetime.date(2027, 9, 4))
+        self.assertTrue(ok_renov)
+        self.assertEqual(pur_renov.gross_amount, Decimal('199.90'))  # Travado no valor do aviso!
+
+        # 4. TESTE REDUÇÃO DE PREÇO DEPOIS DO AVISO (Aviso 239.90, público vira 219.90 -> renovação usa 219.90)
+        # Prepara um novo ciclo para testar redução
+        sub2 = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            billing_email='financeiro@bandaprice.com'
+        )
+        # Cria notice avisando 239.90
+        AnnualRenewalNotice.objects.create(
+            band_subscription=sub2,
+            renewal_date=datetime.date(2027, 9, 4),
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            current_contracted_value=Decimal('199.90'),
+            notified_renewal_price=Decimal('239.90'),
+            installment_count=5,
+            notice_type=AnnualRenewalNotice.NoticeType.PRICE_CHANGE,
+            email_recipient='financeiro@bandaprice.com',
+            scheduled_for=datetime.date(2027, 8, 5),
+            status=AnnualRenewalNotice.Status.SENT
+        )
+        # Público reduziu para 219.90
+        settings_obj.plan_basic_annual = Decimal('219.90')
+        settings_obj.save()
+
+        price_reduced, reason_reduced = AnnualRenewalService.calculate_renewal_price(sub2, target_date=datetime.date(2027, 9, 4))
+        self.assertEqual(price_reduced, Decimal('219.90'))
+        self.assertIn("NOTICE_FROZEN_PRICE", reason_reduced)
+
+        # 5. TESTE AUSÊNCIA DE AVISO QUANDO PREÇO AUMENTOU (Público 259.90 > Contratado 199.90, sem notice)
+        sub3 = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO'
+        )
+        settings_obj.plan_basic_annual = Decimal('259.90')
+        settings_obj.save()
+
+        price_no_notice, reason_no_notice = AnnualRenewalService.calculate_renewal_price(sub3, target_date=datetime.date(2027, 9, 4))
+        self.assertEqual(price_no_notice, Decimal('199.90'))  # Fallback seguro!
+        self.assertEqual(reason_no_notice, "PRICE_CHANGE_NOTICE_MISSING")
+
+        # 6. TESTE ATUALIZAÇÃO DE CONTRACTED_VALUE APÓS APROVAÇÃO
+        sub4 = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_price_04'
+        )
+        AnnualRenewalNotice.objects.create(
+            band_subscription=sub4,
+            renewal_date=datetime.date(2027, 9, 4),
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            current_contracted_value=Decimal('199.90'),
+            notified_renewal_price=Decimal('239.90'),
+            installment_count=5,
+            notice_type=AnnualRenewalNotice.NoticeType.PRICE_CHANGE,
+            email_recipient='financeiro@bandaprice.com',
+            scheduled_for=datetime.date(2027, 8, 5),
+            status=AnnualRenewalNotice.Status.SENT
+        )
+        settings_obj.plan_basic_annual = Decimal('239.90')
+        settings_obj.save()
+
+        pm4 = GatewayPaymentMethod.objects.create(
+            subscription=sub4,
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_price_04',
+            is_active=True
+        )
+        pm4.set_token('token_p4_123')
+        pm4.save()
+
+        # Antes da aprovação: contracted_value = 199.90
+        self.assertEqual(sub4.contracted_value, Decimal('199.90'))
+
+        mock_client4 = MagicMock()
+        mock_client4.create_installment.return_value = (True, {'id': 'inst_p4', 'installmentCount': 5, 'value': 239.90, 'netValue': 233.00})
+        mock_client4.get_payments_by_installment.return_value = [
+            {'id': f'pay_p4_{i}', 'installmentNumber': i, 'value': 47.98, 'dueDate': f'2027-{9+i-1:02d}-04' if (9+i-1) <= 12 else f'2028-{9+i-1-12:02d}-04', 'status': 'CONFIRMED'}
+            for i in range(1, 6)
+        ]
+        mock_client4.pay_with_credit_card.return_value = (True, {'status': 'CONFIRMED'})
+
+        service4 = AnnualRenewalService(client=mock_client4)
+        ok4, _, pur4 = service4.process_subscription_renewal(sub4, target_date=datetime.date(2027, 9, 4))
+        self.assertTrue(ok4)
+        sub4.refresh_from_db()
+        self.assertEqual(sub4.contracted_value, Decimal('239.90'))  # Atualizado com sucesso após aprovação!
+
+    def test_annual_renewal_paywithcreditcard_hardening(self):
+        """
+        Testa o hardening do payWithCreditCard:
+        1. Se 5/5 parcelas já estão CONFIRMED: NUNCA chama payWithCreditCard
+        2. Se parcela 1 está CONFIRMED e demais PENDING: NÃO chama de novo, retorna ESTADO_FINANCEIRO_INCONCLUSIVO
+        3. Crash/timeout na chamada: reconsulta gateway e recupera se 5/5 ficaram CONFIRMED
+        """
+        import datetime
+        from decimal import Decimal
+        from unittest.mock import MagicMock
+        from core.models import BandSubscription, AnnualPlanPurchase, GatewayPaymentMethod
+        from core.services.payments.renewal import AnnualRenewalService
+
+        band = Band.objects.create(name="Banda Hardening Test", slug="banda-hardening-test")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_hard_01'
+        )
+        pm = GatewayPaymentMethod.objects.create(
+            subscription=sub,
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_hard_01',
+            is_active=True
+        )
+        pm.set_token('token_hard_123')
+        pm.save()
+
+        # Cria compra inicial confirmada com 5 parcelas para o sub preservar 5x na renovação
+        AnnualPlanPurchase.objects.create(
+            band_subscription=sub,
+            gateway_installment_id="inst_initial_01",
+            installment_count=5,
+            gross_amount=Decimal("199.90"),
+            status=AnnualPlanPurchase.Status.CONFIRMED,
+            purchase_type=AnnualPlanPurchase.PurchaseType.INITIAL,
+            coverage_start=datetime.date(2026, 9, 4),
+            coverage_end=datetime.date(2027, 9, 4)
+        )
+
+        # Cenário 1: 5/5 já confirmadas remotamente
+        mock_client1 = MagicMock()
+        mock_client1.create_installment.return_value = (True, {'id': 'inst_hard_1', 'installmentCount': 5, 'value': 199.90})
+        payments_confirmed_5 = [
+            {'id': f'pay_h1_{i}', 'installmentNumber': i, 'value': 39.98, 'dueDate': f'2027-{9+i-1:02d}-04' if (9+i-1) <= 12 else f'2028-{9+i-1-12:02d}-04', 'status': 'CONFIRMED'}
+            for i in range(1, 6)
+        ]
+        mock_client1.get_payments_by_installment.return_value = payments_confirmed_5
+
+        service1 = AnnualRenewalService(client=mock_client1)
+        ok1, msg1, _ = service1.process_subscription_renewal(sub, target_date=datetime.date(2027, 9, 4))
+        self.assertTrue(ok1)
+        mock_client1.pay_with_credit_card.assert_not_called()  # NÃO chamou!
+
+        # Cenário 2: Parcela 1 CONFIRMED mas parcelas 2..5 PENDING
+        sub.next_due_date = datetime.date(2027, 9, 4)
+        sub.save()
+        AnnualPlanPurchase.objects.filter(band_subscription=sub, purchase_type=AnnualPlanPurchase.PurchaseType.RENEWAL).delete()
+        sub.records.all().delete()
+
+        mock_client2 = MagicMock()
+        mock_client2.create_installment.return_value = (True, {'id': 'inst_hard_2', 'installmentCount': 5, 'value': 199.90})
+        payments_partial = [
+            {'id': 'pay_h2_1', 'installmentNumber': 1, 'value': 39.98, 'dueDate': '2027-09-04', 'status': 'CONFIRMED'}
+        ] + [
+            {'id': f'pay_h2_{i}', 'installmentNumber': i, 'value': 39.98, 'dueDate': f'2027-{9+i-1:02d}-04' if (9+i-1) <= 12 else f'2028-{9+i-1-12:02d}-04', 'status': 'PENDING'}
+            for i in range(2, 6)
+        ]
+        mock_client2.get_payments_by_installment.return_value = payments_partial
+
+        service2 = AnnualRenewalService(client=mock_client2)
+        ok2, msg2, _ = service2.process_subscription_renewal(sub, target_date=datetime.date(2027, 9, 4))
+        self.assertFalse(ok2)
+        self.assertEqual(msg2, "ESTADO_FINANCEIRO_INCONCLUSIVO")
+        mock_client2.pay_with_credit_card.assert_not_called()
+
+        # Cenário 3: Timeout na chamada de payWithCreditCard, mas reconsulta descobre que 5/5 ficaram confirmadas
+        AnnualPlanPurchase.objects.filter(band_subscription=sub, purchase_type=AnnualPlanPurchase.PurchaseType.RENEWAL).delete()
+        sub.records.all().delete()
+        mock_client3 = MagicMock()
+        mock_client3.create_installment.return_value = (True, {'id': 'inst_hard_3', 'installmentCount': 5, 'value': 199.90})
+        payments_before = [
+            {'id': f'pay_h3_{i}', 'installmentNumber': i, 'value': 39.98, 'dueDate': f'2027-{9+i-1:02d}-04' if (9+i-1) <= 12 else f'2028-{9+i-1-12:02d}-04', 'status': 'PENDING'}
+            for i in range(1, 6)
+        ]
+        payments_after = [
+            {'id': f'pay_h3_{i}', 'installmentNumber': i, 'value': 39.98, 'dueDate': f'2027-{9+i-1:02d}-04' if (9+i-1) <= 12 else f'2028-{9+i-1-12:02d}-04', 'status': 'CONFIRMED'}
+            for i in range(1, 6)
+        ]
+        # 1a e 2a consulta retornam before e after
+        mock_client3.get_payments_by_installment.side_effect = [payments_before, payments_after, payments_after]
+        mock_client3.pay_with_credit_card.return_value = (False, {'error': 'read timed out'})
+
+        service3 = AnnualRenewalService(client=mock_client3)
+        ok3, msg3, pur3 = service3.process_subscription_renewal(sub, target_date=datetime.date(2027, 9, 4))
+        self.assertTrue(ok3)
+        self.assertEqual(mock_client3.pay_with_credit_card.call_count, 1)  # Exatamente 1 chamada
+        self.assertEqual(pur3.status, AnnualPlanPurchase.Status.CONFIRMED)
+
+    def test_production_date_parameter_hard_block(self):
+        """
+        Testa que o parâmetro --date é bloqueado em ambiente de PRODUÇÃO
+        tanto no process_annual_renewals quanto no process_annual_renewal_notices.
+        """
+        import io
+        from django.core.management import call_command
+        from unittest.mock import patch
+
+        out = io.StringIO()
+        err = io.StringIO()
+
+        # Simula produção via settings
+        with patch('django.conf.settings.ASAAS_ENVIRONMENT', 'production'):
+            with patch('django.conf.settings.DJANGO_ENV', 'production'):
+                call_command('process_annual_renewals', date='2027-09-04', stdout=out, stderr=err)
+                self.assertIn("BLOQUEIO DE SEGURANÇA", err.getvalue())
+
+                err_notices = io.StringIO()
+                call_command('process_annual_renewal_notices', date='2027-08-05', stdout=out, stderr=err_notices)
+                self.assertIn("BLOQUEIO DE SEGURANÇA", err_notices.getvalue())
+
