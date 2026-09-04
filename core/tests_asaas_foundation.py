@@ -780,3 +780,205 @@ class AsaasFoundationTests(TestCase):
         self.assertIn('ref_insp_123', output_str)
         self.assertNotIn('DO_NOT_SHOW_THIS_TOKEN', output_str)
         self.assertNotIn('4111111111111111', output_str)
+
+    def test_real_order_four_events_reconciliation_lifecycle(self):
+        """
+        ASAAS-06: Validar o ciclo real dos 4 eventos recebidos na ordem:
+        1. PAYMENT_CREATED (chega antes de CHECKOUT_PAID -> fica pendente para reprocessamento)
+        2. PAYMENT_CONFIRMED (chega antes de CHECKOUT_PAID -> fica pendente para reprocessamento)
+        3. CHECKOUT_PAID -> consulta pagamentos por checkout no Asaas, vincula payment_id e subscription_id, provisiona Band + BandSubscription + BillingRecord (status=PAGO)
+        4. SUBSCRIPTION_CREATED -> reconcilia com BandSubscription existente via gateway_subscription_id sem duplicar
+        5. Reprocessamento de 1 e 2 -> reconcilia com BillingRecord existente via gateway_payment_id sem duplicar
+        """
+        from unittest.mock import patch
+        from django.core.management import call_command
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        checkout_id = '7d0a0681-282a-42b1-9c74-d0d47288ce18'
+        payment_id = 'pay_8ufmj8khm9i24ik1'
+        subscription_id = 'sub_2vjxr6kit10l68yr'
+        customer_id = 'cus_000009006807'
+        ext_ref = 'bp-homolog-17c1aba5cafe'
+
+        # Criar SignupOrder equivalente ao da homologacao
+        order = SignupOrder.objects.create(
+            band_name='Banda Homologacao Real',
+            responsible_name='Cliente Teste Homologacao',
+            email='cliente-homolog@example.com',
+            phone='(11) 99999-9999',
+            cpf_cnpj='12345678901',
+            amount=Decimal('19.90'),
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            status='PENDENTE',
+            gateway_provider='ASAAS',
+            gateway_customer_id=customer_id,
+            gateway_checkout_id=checkout_id,
+            external_reference=ext_ref
+        )
+
+        # 1. Evento PAYMENT_CREATED
+        evt1 = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_real_pay_created',
+            event_type='PAYMENT_CREATED',
+            payload={
+                'id': 'evt_real_pay_created',
+                'event': 'PAYMENT_CREATED',
+                'payment': {
+                    'id': payment_id,
+                    'customer': customer_id,
+                    'subscription': subscription_id,
+                    'checkoutSession': checkout_id,
+                    'value': 19.9,
+                    'billingType': 'CREDIT_CARD',
+                    'status': 'PENDING',
+                    'dueDate': '2026-09-04'
+                }
+            }
+        )
+        call_command('process_asaas_webhooks', event_id='evt_real_pay_created')
+        evt1.refresh_from_db()
+        self.assertFalse(evt1.processed)
+        self.assertIn('AGUARDANDO_PROVISIONAMENTO_CHECKOUT_PAID', evt1.error_message)
+        self.assertEqual(BillingRecord.objects.count(), 0)
+        self.assertEqual(Band.objects.count(), 0)
+
+        # 2. Evento PAYMENT_CONFIRMED
+        evt2 = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_real_pay_confirmed',
+            event_type='PAYMENT_CONFIRMED',
+            payload={
+                'id': 'evt_real_pay_confirmed',
+                'event': 'PAYMENT_CONFIRMED',
+                'payment': {
+                    'id': payment_id,
+                    'customer': customer_id,
+                    'subscription': subscription_id,
+                    'checkoutSession': checkout_id,
+                    'value': 19.9,
+                    'billingType': 'CREDIT_CARD',
+                    'status': 'CONFIRMED',
+                    'dueDate': '2026-09-04',
+                    'confirmedDate': '2026-09-04',
+                    'clientPaymentDate': '2026-09-04'
+                }
+            }
+        )
+        call_command('process_asaas_webhooks', event_id='evt_real_pay_confirmed')
+        evt2.refresh_from_db()
+        self.assertFalse(evt2.processed)
+        self.assertIn('AGUARDANDO_PROVISIONAMENTO_CHECKOUT_PAID', evt2.error_message)
+        self.assertEqual(BillingRecord.objects.count(), 0)
+        self.assertEqual(Band.objects.count(), 0)
+
+        # 3. Evento CHECKOUT_PAID (com mock da chamada get_payments_by_checkout para retornar o payment real)
+        mock_asaas_payments = [
+            {
+                'id': payment_id,
+                'customer': customer_id,
+                'subscription': subscription_id,
+                'checkoutSession': checkout_id,
+                'value': 19.9,
+                'billingType': 'CREDIT_CARD',
+                'status': 'CONFIRMED',
+                'dueDate': '2026-09-04',
+                'confirmedDate': '2026-09-04',
+                'clientPaymentDate': '2026-09-04'
+            }
+        ]
+
+        evt3 = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_real_checkout_paid',
+            event_type='CHECKOUT_PAID',
+            payload={
+                'id': 'evt_real_checkout_paid',
+                'event': 'CHECKOUT_PAID',
+                'checkout': {
+                    'id': checkout_id,
+                    'status': 'PAID',
+                    'customer': customer_id,
+                    'externalReference': ext_ref
+                }
+            }
+        )
+
+        with patch('core.services.payments.asaas.client.AsaasClient.get_payments_by_checkout', return_value=mock_asaas_payments):
+            call_command('process_asaas_webhooks', event_id='evt_real_checkout_paid')
+
+        evt3.refresh_from_db()
+        self.assertTrue(evt3.processed)
+        self.assertIsNone(evt3.error_message)
+
+        # Validar estado do banco apos CHECKOUT_PAID
+        order.refresh_from_db()
+        self.assertEqual(order.status, 'PAGO')
+        self.assertIsNotNone(order.band)
+
+        # 1 Band criada
+        band = order.band
+        self.assertEqual(Band.objects.count(), 1)
+        self.assertEqual(band.is_active, True)
+
+        # 1 BandSubscription criada com gateway_subscription_id reconciliado
+        self.assertEqual(BandSubscription.objects.count(), 1)
+        sub = BandSubscription.objects.first()
+        self.assertEqual(sub.band, band)
+        self.assertEqual(sub.gateway_subscription_id, subscription_id)
+        self.assertEqual(sub.gateway_customer_id, customer_id)
+        self.assertEqual(sub.status, 'ATIVO')
+
+        # 1 BillingRecord criado com gateway_payment_id reconciliado e status PAGO
+        self.assertEqual(BillingRecord.objects.count(), 1)
+        billing = BillingRecord.objects.first()
+        self.assertEqual(billing.subscription, sub)
+        self.assertEqual(billing.gateway_payment_id, payment_id)
+        self.assertEqual(billing.status, 'PAGO')
+        self.assertEqual(billing.amount, Decimal('19.90'))
+        self.assertIsNotNone(billing.paid_date)
+
+        # 1 BandActivationToken criado
+        self.assertEqual(BandActivationToken.objects.filter(band=band).count(), 1)
+
+        # 0 User criado
+        self.assertEqual(User.objects.filter(email='cliente-homolog@example.com').count(), 0)
+
+        # 4. Evento SUBSCRIPTION_CREATED
+        evt4 = PaymentWebhookEvent.objects.create(
+            gateway_event_id='evt_real_sub_created',
+            event_type='SUBSCRIPTION_CREATED',
+            payload={
+                'id': 'evt_real_sub_created',
+                'event': 'SUBSCRIPTION_CREATED',
+                'subscription': {
+                    'id': subscription_id,
+                    'customer': customer_id,
+                    'value': 19.9,
+                    'cycle': 'MONTHLY',
+                    'status': 'ACTIVE',
+                    'nextDueDate': '2026-10-04'
+                }
+            }
+        )
+        call_command('process_asaas_webhooks', event_id='evt_real_sub_created')
+        evt4.refresh_from_db()
+        self.assertTrue(evt4.processed)
+        self.assertIsNone(evt4.error_message)
+        # Nao deve criar BandSubscription duplicada
+        self.assertEqual(BandSubscription.objects.count(), 1)
+
+        # 5. Reprocessamento dos eventos 1 (PAYMENT_CREATED) e 2 (PAYMENT_CONFIRMED)
+        call_command('process_asaas_webhooks', event_id='evt_real_pay_created')
+        evt1.refresh_from_db()
+        self.assertTrue(evt1.processed)
+        self.assertIsNone(evt1.error_message)
+
+        call_command('process_asaas_webhooks', event_id='evt_real_pay_confirmed')
+        evt2.refresh_from_db()
+        self.assertTrue(evt2.processed)
+        self.assertIsNone(evt2.error_message)
+
+        self.assertEqual(Band.objects.count(), 1)
+        self.assertEqual(BandSubscription.objects.count(), 1)
+        self.assertEqual(BillingRecord.objects.count(), 1)
+        self.assertEqual(User.objects.filter(email='cliente-homolog@example.com').count(), 0)

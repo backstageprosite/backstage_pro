@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 from decimal import Decimal
 from typing import Dict, Any, Tuple, Optional
 from django.db import transaction
@@ -31,6 +31,27 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
 
     if not order:
         return False, f"SignupOrder nao encontrado para ref={external_reference} / checkout={checkout_id}", None
+
+    effective_checkout_id = checkout_id or order.gateway_checkout_id
+    payment_data = payload.get('payment') if isinstance(payload.get('payment'), dict) else {}
+    payment_id = payment_data.get('id') or payload.get('paymentId')
+
+    # Consulta de seguranca via API Asaas para obter payment.id e subscription.id exatos
+    if (not payment_id or not subscription_id) and effective_checkout_id:
+        try:
+            from core.services.payments.asaas.client import AsaasClient
+            client = AsaasClient()
+            payments_found = client.get_payments_by_checkout(effective_checkout_id)
+            if len(payments_found) == 1:
+                p_item = payments_found[0]
+                payment_id = payment_id or p_item.get('id')
+                subscription_id = subscription_id or p_item.get('subscription')
+                if not payment_data:
+                    payment_data = p_item
+            elif len(payments_found) > 1:
+                logger.warning("Multiplas cobrancas encontradas para checkout=%s", effective_checkout_id)
+        except Exception as e:
+            logger.warning("Erro ao consultar pagamentos da sessao %s no Asaas: %s", effective_checkout_id, str(e))
 
     with transaction.atomic():
         # Lock da ordem de contratação
@@ -74,7 +95,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             gateway_provider='ASAAS',
             gateway_customer_id=customer_id or order.gateway_customer_id,
             gateway_subscription_id=subscription_id or order.gateway_subscription_id,
-            gateway_checkout_id=checkout_id or order.gateway_checkout_id,
+            gateway_checkout_id=effective_checkout_id,
             gateway_external_reference=order.external_reference
         )
 
@@ -86,7 +107,6 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
         }
         ref_period = f"{month_names[today.month]}/{today.year}"
-        payment_id = payload.get('payment', {}).get('id') if isinstance(payload.get('payment'), dict) else payload.get('paymentId')
 
         BillingRecord.objects.create(
             subscription=sub,

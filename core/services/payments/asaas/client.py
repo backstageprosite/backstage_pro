@@ -1,6 +1,8 @@
 import json
 import logging
-from typing import Dict, Any, Optional
+import urllib.request
+import urllib.parse
+from typing import Dict, Any, Optional, List
 from core.services.payments.base import AsaasConfig
 
 logger = logging.getLogger(__name__)
@@ -35,3 +37,26 @@ class AsaasClient:
         Serializa payload garantindo preservação estrita de UTF-8 sem escape ASCII.
         """
         return json.dumps(data, ensure_ascii=False).encode('utf-8')
+
+    def get_payments_by_checkout(self, checkout_id: str) -> List[Dict[str, Any]]:
+        """
+        Consulta cobranças geradas por uma sessão de Checkout no Asaas.
+        Testa os parâmetros suportados (checkoutSessionId e checkout).
+        """
+        if not checkout_id or not self.config.api_key:
+            return []
+
+        encoded_id = urllib.parse.quote(str(checkout_id))
+        for param in ('checkoutSessionId', 'checkout', 'checkoutSession'):
+            url = f"{self.base_url}/payments?{param}={encoded_id}&limit=10"
+            req = urllib.request.Request(url, headers=self.get_headers())
+            try:
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = json.loads(resp.read().decode('utf-8'))
+                    payments = data.get('data', [])
+                    if payments:
+                        return payments
+            except Exception as e:
+                logger.warning("Falha na consulta de payments por %s=%s: %s", param, checkout_id, str(e))
+
+        return []

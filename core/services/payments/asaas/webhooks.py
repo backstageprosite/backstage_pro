@@ -69,16 +69,16 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
         elif matching_subs.count() > 1:
             return False, f'AMBIGUIDADE: Multiplas assinaturas locais para gateway_subscription_id={subscription_id}'
         else:
-            return False, f'BandSubscription nao encontrada para gateway_subscription_id={subscription_id}'
+            return False, f'AGUARDANDO_PROVISIONAMENTO_CHECKOUT_PAID: BandSubscription nao encontrada para gateway_subscription_id={subscription_id}'
 
     if not record:
-        return False, f'PAGAMENTO_SEM_VINCULO_UNIVOCO: payment_id={payment_id}, ref={external_ref}, sub={subscription_id}'
+        return False, f'AGUARDANDO_PROVISIONAMENTO_CHECKOUT_PAID: payment_id={payment_id}, ref={external_ref}, sub={subscription_id}'
 
     record.gateway_event_status = event_type
     if event_type in ('PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'):
         record.status = 'PAGO'
         if not record.paid_date:
-            record.paid_date = timezone.localdate()
+            record.paid_date = payment_data.get('paymentDate') or payment_data.get('clientPaymentDate') or payment_data.get('confirmedDate') or timezone.localdate()
     elif event_type in ('PAYMENT_OVERDUE',):
         if record.status != 'PAGO':
             record.status = 'PENDENTE'
