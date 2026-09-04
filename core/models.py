@@ -2548,6 +2548,74 @@ class EmailDelivery(models.Model):
         return f"[{self.get_email_type_display()}] -> {self.recipient_email} ({self.get_status_display()})"
 
 
+class ScheduledJobRun(models.Model):
+    """
+    Registro de observabilidade e auditoria para execuções de rotinas agendadas (Cron Jobs Railway).
+    NUNCA armazena dados de cartão, tokens ou segredos de clientes.
+    """
+    class Status(models.TextChoices):
+        RUNNING = 'RUNNING', 'Em Execução'
+        SUCCESS = 'SUCCESS', 'Sucesso'
+        PARTIAL = 'PARTIAL', 'Parcialmente Concluído'
+        FAILED = 'FAILED', 'Falha'
+        SKIPPED_LOCKED = 'SKIPPED_LOCKED', 'Ignorado (Lock Ativo)'
+
+    job_name = models.CharField(
+        max_length=100,
+        db_index=True,
+        verbose_name='Nome do Job'
+    )
+    started_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name='Iniciado Em'
+    )
+    finished_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Finalizado Em'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.RUNNING,
+        db_index=True,
+        verbose_name='Status da Execução'
+    )
+    processed_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Registros Processados'
+    )
+    success_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Sucessos'
+    )
+    skipped_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Ignorados'
+    )
+    failed_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Falhas'
+    )
+    error_summary = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Resumo de Erros (Sanitizado)'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Criado Em'
+    )
+
+    class Meta:
+        verbose_name = 'Execução de Job Agendado'
+        verbose_name_plural = 'Execuções de Jobs Agendados'
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"[{self.job_name}] {self.started_at.strftime('%Y-%m-%d %H:%M:%S')} - {self.get_status_display()} ({self.processed_count} processados)"
+
+
 
 # ============================================================
 # AUTOMATIC FILE DELETION ON RECORD DELETE

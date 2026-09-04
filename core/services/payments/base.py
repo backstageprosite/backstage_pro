@@ -1,12 +1,51 @@
 import os
 import re
 import unicodedata
+import contextlib
 from decimal import Decimal
 from datetime import date
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.db import connection
+from django.utils import timezone
+
+ANNUAL_NOTICE_JOB_LOCK_ID = 82001
+ANNUAL_RENEWAL_JOB_LOCK_ID = 82002
+
+
+def get_business_date() -> date:
+    """
+    Retorna a data de negócio canônica na timezone configurada do Backstage Pro (America/Sao_Paulo / UTC-3).
+    """
+    return timezone.localdate()
+
+
+@contextlib.contextmanager
+def acquire_job_advisory_lock(lock_id: int):
+    """
+    Context manager para lock distribuído exclusivo de rotinas agendadas (Cron Jobs Railway).
+    Utiliza pg_try_advisory_lock no PostgreSQL para impedir execuções simultâneas ou sobrepostas.
+    Em ambientes SQLite (testes), sempre adquire com sucesso.
+    """
+    is_postgres = (connection.vendor == 'postgresql')
+    acquired = True
+    if is_postgres:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT pg_try_advisory_lock(%s);", [lock_id])
+            row = cursor.fetchone()
+            acquired = bool(row and row[0])
+
+    try:
+        yield acquired
+    finally:
+        if is_postgres and acquired:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT pg_advisory_unlock(%s);", [lock_id])
+            except Exception:
+                pass
 
 
 @dataclass(frozen=True)
