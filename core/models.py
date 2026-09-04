@@ -2422,6 +2422,132 @@ class AnnualRenewalNotice(models.Model):
         return f"Aviso Renovação {self.get_notice_type_display()} - {band_name} ({self.renewal_date}) - {self.get_status_display()}"
 
 
+class EmailDelivery(models.Model):
+    """
+    Fila transacional persistente para entrega assíncrona de e-mails de negócio.
+    Garante desacoplamento total entre regras de negócio financeiras e a entrega SMTP do Gmail.
+    """
+    class EmailType(models.TextChoices):
+        SYSTEM_TEST = 'SYSTEM_TEST', 'Teste de Sistema'
+        ACCOUNT_ACTIVATION = 'ACCOUNT_ACTIVATION', 'Ativação de Conta'
+        ANNUAL_RENEWAL_NOTICE = 'ANNUAL_RENEWAL_NOTICE', 'Aviso Pré-Renovação Anual'
+        ANNUAL_RENEWAL_SUCCESS = 'ANNUAL_RENEWAL_SUCCESS', 'Renovação Anual Confirmada'
+        PAYMENT_OVERDUE = 'PAYMENT_OVERDUE', 'Aviso de Pagamento em Atraso'
+        SUBSCRIPTION_SUSPENDED = 'SUBSCRIPTION_SUSPENDED', 'Assinatura Suspensa'
+        SUBSCRIPTION_CANCELLATION_SCHEDULED = 'SUBSCRIPTION_CANCELLATION_SCHEDULED', 'Cancelamento Agendado'
+        CREDIT_CARD_CAPTURE_REFUSED = 'CREDIT_CARD_CAPTURE_REFUSED', 'Recusa de Captura do Cartão'
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pendente'
+        PROCESSING = 'PROCESSING', 'Em Processamento'
+        RETRY = 'RETRY', 'Aguardando Nova Tentativa'
+        SENT = 'SENT', 'Enviado com Sucesso'
+        FAILED = 'FAILED', 'Falha Definitiva'
+
+    email_type = models.CharField(
+        max_length=50,
+        choices=EmailType.choices,
+        db_index=True,
+        verbose_name='Tipo de E-mail'
+    )
+    recipient_email = models.EmailField(
+        verbose_name='E-mail do Destinatário'
+    )
+    subject = models.CharField(
+        max_length=255,
+        verbose_name='Assunto do E-mail'
+    )
+    template_name = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True,
+        verbose_name='Template Base'
+    )
+    context_data = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Contexto Sanitizado (JSON)'
+    )
+    related_object_type = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name='Tipo do Objeto Relacionado'
+    )
+    related_object_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='ID do Objeto Relacionado'
+    )
+    idempotency_key = models.CharField(
+        max_length=200,
+        unique=True,
+        db_index=True,
+        verbose_name='Chave de Idempotência'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+        verbose_name='Status da Entrega'
+    )
+    attempt_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Quantidade de Tentativas'
+    )
+    max_attempts = models.PositiveIntegerField(
+        default=6,
+        verbose_name='Máximo de Tentativas'
+    )
+    next_attempt_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name='Próxima Tentativa Em'
+    )
+    sending_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Início do Processamento'
+    )
+    sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Enviado Em'
+    )
+    last_error_code = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='Último Código de Erro (Sanitizado)'
+    )
+    last_error_message = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Última Mensagem de Erro (Sanitizada)'
+    )
+    message_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name='Message-ID SMTP Determinístico'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado Em')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado Em')
+
+    class Meta:
+        verbose_name = 'Entrega de E-mail'
+        verbose_name_plural = 'Entregas de E-mail'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.get_email_type_display()}] -> {self.recipient_email} ({self.get_status_display()})"
+
+
+
 # ============================================================
 # AUTOMATIC FILE DELETION ON RECORD DELETE
 # ============================================================

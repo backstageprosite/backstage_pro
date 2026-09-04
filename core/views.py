@@ -1275,6 +1275,31 @@ def minha_assinatura_view(request, band_slug):
                     "Assinatura %d da banda '%s' marcada para cancelamento ao fim do período pelo usuário %s após sucesso no Asaas.",
                     subscription.id, band.slug, request.user.username
                 )
+                try:
+                    from core.services.email_service import enqueue_email, resolve_subscription_recipient
+                    from core.models import EmailDelivery
+                    rec_email, rec_name = resolve_subscription_recipient(subscription)
+                    if rec_email:
+                        idemp_k = f"sub-cancel-scheduled-{subscription.id}-{timezone.localdate().isoformat()}"
+                        enqueue_email(
+                            email_type=EmailDelivery.EmailType.SUBSCRIPTION_CANCELLATION_SCHEDULED,
+                            recipient_email=rec_email,
+                            subject="Cancelamento agendado - Backstage Pro",
+                            idempotency_key=idemp_k,
+                            template_name="emails/subscription_cancellation_scheduled",
+                            context_data={
+                                "user_name": rec_name,
+                                "band_name": band.name,
+                                "plan_name": subscription.plan_name,
+                                "access_until_date": subscription.next_due_date.strftime("%d/%m/%Y") if subscription.next_due_date else "o fim do período",
+                                "reactivate_url": f"/bandas/{band.slug}/assinatura/",
+                            },
+                            related_object_type="BandSubscription",
+                            related_object_id=str(subscription.id)
+                        )
+                except Exception as eq_err:
+                    logger.error("Erro ao enfileirar email de cancelamento agendado: %s", eq_err)
+
                 messages.success(request, "Cancelamento confirmado com sucesso. O seu acesso permanecerá ativo até o fim do período contratado.")
                 return redirect('minha_assinatura', band_slug=band.slug)
 

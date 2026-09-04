@@ -498,7 +498,7 @@ class WebPushDeliveryAdmin(admin.ModelAdmin):
         return False
 
 
-from .models import SignupOrder, PaymentWebhookEvent, BandActivationToken
+from .models import SignupOrder, PaymentWebhookEvent, BandActivationToken, EmailDelivery
 
 @admin.register(SignupOrder)
 class SignupOrderAdmin(admin.ModelAdmin):
@@ -520,3 +520,18 @@ class BandActivationTokenAdmin(admin.ModelAdmin):
     list_filter = ('used_at', 'created_at')
     search_fields = ('band__name', 'email', 'responsible_name', 'token_hash')
     readonly_fields = ('token_hash', 'created_at', 'used_at')
+
+
+@admin.register(EmailDelivery)
+class EmailDeliveryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'email_type', 'recipient_email', 'subject', 'status', 'attempt_count', 'next_attempt_at', 'sent_at', 'created_at')
+    list_filter = ('email_type', 'status', 'created_at')
+    search_fields = ('recipient_email', 'subject', 'idempotency_key', 'related_object_id')
+    readonly_fields = (
+        'email_type', 'recipient_email', 'subject', 'template_name', 'context_data',
+        'related_object_type', 'related_object_id', 'idempotency_key', 'status',
+        'attempt_count', 'max_attempts', 'next_attempt_at', 'sending_started_at',
+        'sent_at', 'last_error_code', 'last_error_message', 'message_id',
+        'created_at', 'updated_at'
+    )
+

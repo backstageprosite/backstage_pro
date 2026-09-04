@@ -1,0 +1,10 @@
+Cobrança Recusada no Cartão — Backstage Pro
+
+Olá, {{ responsible_name|default:band_name }}!
+
+A cobrança do plano {{ plan_name }} no valor de R$ {{ amount }} foi recusada pela operadora.
+Atualize seus dados de pagamento em:
+{{ base_url }}/relatorios/assinatura/
+
+Atenciosamente,
+Equipe Backstage Pro

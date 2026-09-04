@@ -7,7 +7,8 @@ from django.test import TestCase, Client, override_settings
 from django.utils import timezone
 from core.models import (
     User, Band, BandSubscription, BillingRecord, SignupOrder,
-    PaymentWebhookEvent, BandActivationToken
+    PaymentWebhookEvent, BandActivationToken, EmailDelivery,
+    AnnualRenewalNotice, AnnualPlanPurchase, GatewayPaymentMethod, SystemSettings
 )
 from core.services.payments.base import (
     AsaasConfig, normalize_band_slug, generate_unique_band_slug,
@@ -4544,12 +4545,19 @@ class AsaasFoundationTests(TestCase):
         self.assertIsNotNone(notice1)
         self.assertEqual(notice1.notice_type, AnnualRenewalNotice.NoticeType.STANDARD)
         self.assertEqual(notice1.notified_renewal_price, Decimal('199.90'))
+        self.assertEqual(notice1.status, AnnualRenewalNotice.Status.PENDING)  # Enfileirado assincronamente na EmailDelivery
+        self.assertEqual(EmailDelivery.objects.filter(related_object_type='AnnualRenewalNotice', related_object_id=str(notice1.id)).count(), 1)
+
+        # Processa a fila com o worker
+        call_command('run_email_worker', once=True)
+        notice1.refresh_from_db()
         self.assertEqual(notice1.status, AnnualRenewalNotice.Status.SENT)
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("Renovação do Backstage Pro em 30 dias", mail.outbox[0].subject)
 
         # 2. TESTE IDEMPOTÊNCIA DO AVISO (segunda execução não envia outro e-mail)
         call_command('process_annual_renewal_notices', date='2027-08-05')
+        call_command('run_email_worker', once=True)
         self.assertEqual(len(mail.outbox), 1)  # Permanece 1
         self.assertEqual(AnnualRenewalNotice.objects.filter(band_subscription=sub).count(), 1)
 

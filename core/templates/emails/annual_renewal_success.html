@@ -1,0 +1,20 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+<h2 style="margin-top: 0; color: #0f172a;">Renovação Anual Confirmada!</h2>
+<p>Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
+<p>Sua assinatura do plano <strong>{{ plan_name }} Anual</strong> para a banda <strong>{{ band_name }}</strong> foi renovada com sucesso!</p>
+
+<div style="background-color: #f8fafc; border-left: 4px solid #6BD443; padding: 18px; margin: 25px 0; border-radius: 4px;">
+  <p style="margin: 0 0 6px 0;"><strong>Valor Total:</strong> R$ {{ gross_amount }} ({{ installment_count }}x)</p>
+  <p style="margin: 0 0 6px 0;"><strong>Nova Vigência:</strong> {{ coverage_start }} a {{ coverage_end }}</p>
+  <p style="margin: 0;"><strong>Próxima Renovação:</strong> {{ next_renewal_date }}</p>
+</div>
+
+<p>Todos os recursos do Backstage Pro continuam liberados para toda a sua equipe.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="{{ base_url }}/painel/" style="background-color: #6BD443; color: #0f172a; text-decoration: none; padding: 12px 25px; font-weight: 700; border-radius: 6px; display: inline-block; font-size: 15px;">Acessar Painel</a>
+</div>
+
+<p>Atenciosamente,<br><strong>Equipe Backstage Pro</strong></p>
+{% endblock %}

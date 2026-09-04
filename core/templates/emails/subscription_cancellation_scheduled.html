@@ -1,0 +1,15 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+<h2 style="margin-top: 0; color: #0f172a;">Cancelamento de Renovação Agendado</h2>
+<p>Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
+<p>Confirmamos a solicitação de cancelamento da <strong>renovação automática</strong> da assinatura do plano <strong>{{ plan_name }}</strong> para a banda <strong>{{ band_name }}</strong>.</p>
+
+<div style="background-color: #f8fafc; border-left: 4px solid #64748b; padding: 18px; margin: 25px 0; border-radius: 4px;">
+  <p style="margin: 0 0 6px 0;"><strong>Acesso Ativo Até:</strong> {{ access_until }}</p>
+  <p style="margin: 0;">Após essa data, nenhuma nova cobrança automática será realizada.</p>
+</div>
+
+<p>Você pode continuar utilizando normalmente todos os recursos do Backstage Pro até o término do período contratado.</p>
+
+<p>Atenciosamente,<br><strong>Equipe Backstage Pro</strong></p>
+{% endblock %}

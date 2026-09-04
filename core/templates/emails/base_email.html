@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ subject|default:"Backstage Pro" }}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f5f7; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+          <tr>
+            <td style="background-color: #0f172a; padding: 30px; text-align: center;">
+              <h1 style="margin: 0; color: #6BD443; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Backstage Pro</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px 35px; line-height: 1.6; font-size: 16px;">
+              {% block content %}{% endblock %}
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f8fafc; padding: 25px 35px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">
+              <p style="margin: 0 0 8px 0;">Este é um e-mail transacional do Backstage Pro.</p>
+              <p style="margin: 0;">&copy; Backstage Pro. Todos os direitos reservados.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

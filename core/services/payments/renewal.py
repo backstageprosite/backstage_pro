@@ -295,6 +295,32 @@ class AnnualRenewalService:
                 else:
                     err_msg = pay_resp.get('error') or pay_resp.get('errors') or "pagamento_recusado"
                     logger.warning("Falha ao pagar primeira parcela %s da renovação: %s", first_payment_id, err_msg)
+                    try:
+                        from core.services.email_service import enqueue_email, resolve_subscription_recipient
+                        from core.models import EmailDelivery
+                        recipient_email, recipient_name = resolve_subscription_recipient(sub)
+                        if recipient_email:
+                            idemp_key = f"cc-refused-renewal-{annual_purchase.id}-{timezone.localdate().isoformat()}"
+                            enqueue_email(
+                                email_type=EmailDelivery.EmailType.CREDIT_CARD_CAPTURE_REFUSED,
+                                recipient_email=recipient_email,
+                                subject="Não conseguimos processar o pagamento da sua assinatura - Backstage Pro",
+                                idempotency_key=idemp_key,
+                                template_name="emails/credit_card_capture_refused",
+                                context_data={
+                                    "user_name": recipient_name,
+                                    "band_name": sub.band.name,
+                                    "plan_name": sub.plan_name,
+                                    "amount": str(annual_purchase.gross_amount),
+                                    "due_date": annual_purchase.coverage_start.strftime("%d/%m/%Y"),
+                                    "error_reason": str(err_msg),
+                                    "manage_payment_url": "/assinatura/gerenciar/",
+                                },
+                                related_object_type="AnnualPlanPurchase",
+                                related_object_id=str(annual_purchase.id)
+                            )
+                    except Exception as eq_err:
+                        logger.error("Erro ao enfileirar email de cartão recusado para sub %s: %s", sub.id, eq_err)
                     return False, f"CARTAO_RECUSADO: {err_msg}", annual_purchase
         else:
             logger.error("Parcela 1 em estado incompatível com pagamento: %s", first_status)
@@ -360,6 +386,37 @@ class AnnualRenewalService:
                         'installment_number': inst_num,
                     }
                 )
+
+        # 7. Enfileirar e-mail transacional de sucesso na renovação
+        try:
+            from core.services.email_service import enqueue_email, resolve_subscription_recipient
+            from core.models import EmailDelivery
+            recipient_email, recipient_name = resolve_subscription_recipient(sub_locked)
+            if recipient_email:
+                idemp_key = f"annual-renewal-success-{annual_purchase.id}"
+                inst_text = f"{annual_purchase.installment_count}x de R$ {(annual_purchase.gross_amount / annual_purchase.installment_count):.2f}" if annual_purchase.installment_count > 1 else f"R$ {annual_purchase.gross_amount:.2f} à vista"
+                enqueue_email(
+                    email_type=EmailDelivery.EmailType.ANNUAL_RENEWAL_SUCCESS,
+                    recipient_email=recipient_email,
+                    subject=f"Renovação anual confirmada com sucesso! - Backstage Pro",
+                    idempotency_key=idemp_key,
+                    template_name="emails/annual_renewal_success",
+                    context_data={
+                        "user_name": recipient_name,
+                        "band_name": sub_locked.band.name,
+                        "plan_name": sub_locked.plan_name,
+                        "total_amount": str(annual_purchase.gross_amount),
+                        "installment_text": inst_text,
+                        "new_coverage_start": annual_purchase.coverage_start.strftime("%d/%m/%Y"),
+                        "new_coverage_end": annual_purchase.coverage_end.strftime("%d/%m/%Y"),
+                        "next_due_date": sub_locked.next_due_date.strftime("%d/%m/%Y") if sub_locked.next_due_date else "",
+                        "receipt_url": "/assinatura/historico/",
+                    },
+                    related_object_type="AnnualPlanPurchase",
+                    related_object_id=str(annual_purchase.id)
+                )
+        except Exception as e:
+            logger.error("Erro ao enfileirar email de sucesso de renovação para sub %s: %s", sub_locked.id, e)
 
         logger.info(
             "Renovação anual concluída com sucesso para subscription %s. Nova next_due_date: %s, Novo contracted_value: %s",

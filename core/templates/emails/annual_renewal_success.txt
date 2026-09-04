@@ -1,0 +1,14 @@
+Renovação Anual Confirmada!
+
+Olá, {{ responsible_name|default:band_name }}!
+
+Sua assinatura do plano {{ plan_name }} Anual foi renovada com sucesso!
+Valor: R$ {{ gross_amount }} em {{ installment_count }}x
+Nova Vigência: {{ coverage_start }} a {{ coverage_end }}
+Próxima Renovação: {{ next_renewal_date }}
+
+Acesse seu painel em:
+{{ base_url }}/painel/
+
+Atenciosamente,
+Equipe Backstage Pro

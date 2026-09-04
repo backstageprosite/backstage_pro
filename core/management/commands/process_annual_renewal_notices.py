@@ -168,57 +168,40 @@ class Command(BaseCommand):
                 failed_count += 1
                 continue
 
-            # Compor e-mail
-            if price_changed:
-                subject = "Atualização de valor da sua renovação — Backstage Pro"
-                body = (
-                    f"Olá, {sub.financial_responsible_name or sub.band.name}!\n\n"
-                    f"Sua assinatura do plano {sub.plan_name} Anual está próxima da renovação.\n\n"
-                    f"• Data prevista da renovação: {sub.next_due_date.strftime('%d/%m/%Y')}\n"
-                    f"• Valor atual contratado: R$ {current_price:.2f}\n"
-                    f"• Novo valor da renovação: R$ {notified_price:.2f}\n"
-                    f"• Parcelamento: em até {inst_count}x no cartão de crédito\n\n"
-                    f"Seu acesso atual permanece totalmente ativo até o fim do período vigente. "
-                    f"Caso não deseje renovar sua assinatura, você poderá cancelar a renovação "
-                    f"a qualquer momento antes da data prevista diretamente no painel do Backstage Pro.\n\n"
-                    f"Atenciosamente,\nEquipe Backstage Pro"
-                )
-            else:
-                subject = "Renovação do Backstage Pro em 30 dias"
-                body = (
-                    f"Olá, {sub.financial_responsible_name or sub.band.name}!\n\n"
-                    f"Sua assinatura do plano {sub.plan_name} Anual será renovada em {sub.next_due_date.strftime('%d/%m/%Y')} "
-                    f"no valor de R$ {notified_price:.2f}, mantendo o parcelamento em até {inst_count}x no cartão de crédito.\n\n"
-                    f"Seu acesso atual permanece totalmente ativo até o fim do período vigente. "
-                    f"Caso não deseje renovar sua assinatura, você poderá cancelar a renovação "
-                    f"a qualquer momento antes da data prevista diretamente no painel do Backstage Pro.\n\n"
-                    f"Atenciosamente,\nEquipe Backstage Pro"
-                )
-
-            from_address = getattr(settings, 'EMAIL_HOST_USER', 'no-reply@backstagepro.site')
-            from_email_formatted = f'Backstage Pro <{from_address}>'
-
+            # Enfileirar EmailDelivery na fila transacional (desacoplado de SMTP)
             try:
-                send_mail(
+                from core.services.email_service import enqueue_email
+                idemp_key = f"annual-notice-sub-{sub.id}-{sub.next_due_date.strftime('%Y%m%d')}"
+                ctx = {
+                    'responsible_name': sub.financial_responsible_name or sub.band.name,
+                    'band_name': sub.band.name,
+                    'plan_name': sub.plan_name,
+                    'renewal_date': sub.next_due_date.strftime('%d/%m/%Y'),
+                    'current_price': f"{current_price:.2f}",
+                    'notified_price': f"{notified_price:.2f}",
+                    'installment_count': inst_count,
+                    'price_changed': price_changed,
+                }
+                subject = "Atualização de valor da sua renovação — Backstage Pro" if price_changed else "Renovação do Backstage Pro em 30 dias"
+                
+                delivery, d_created = enqueue_email(
+                    email_type='ANNUAL_RENEWAL_NOTICE',
+                    recipient_email=recipient_email,
                     subject=subject,
-                    message=body,
-                    from_email=from_email_formatted,
-                    recipient_list=[recipient_email],
-                    fail_silently=False
+                    idempotency_key=idemp_key,
+                    template_name='emails/annual_renewal_notice',
+                    context_data=ctx,
+                    related_object_type='AnnualRenewalNotice',
+                    related_object_id=str(notice.id)
                 )
-                notice.status = AnnualRenewalNotice.Status.SENT
-                notice.sent_at = timezone.now()
-                notice.error_message = None
-                notice.save(update_fields=['status', 'sent_at', 'error_message', 'updated_at'])
-                self.stdout.write(self.style.SUCCESS(f"  Sub {sub.id}: Aviso de 30 dias enviado com sucesso para {recipient_email}!"))
+                self.stdout.write(self.style.SUCCESS(f"  Sub {sub.id}: Aviso de 30 dias enfileirado na EmailDelivery (ID={delivery.id}) para {recipient_email}!"))
                 sent_count += 1
             except Exception as e:
-                # Sanitiza erro sem expor dados sensíveis
                 clean_err = str(e).replace('\n', ' ')[:200]
                 notice.status = AnnualRenewalNotice.Status.FAILED
-                notice.error_message = f"FALHA_ENVIO_EMAIL: {clean_err}"
+                notice.error_message = f"FALHA_ENFILEIRAMENTO_EMAIL: {clean_err}"
                 notice.save(update_fields=['status', 'error_message', 'updated_at'])
-                self.stdout.write(self.style.ERROR(f"  Sub {sub.id}: Falha no envio do e-mail: {clean_err}"))
+                self.stdout.write(self.style.ERROR(f"  Sub {sub.id}: Falha ao enfileirar e-mail: {clean_err}"))
                 failed_count += 1
 
         self.stdout.write(self.style.SUCCESS(

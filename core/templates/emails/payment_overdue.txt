@@ -1,0 +1,12 @@
+Aviso de Pagamento Pendente — Backstage Pro
+
+Olá, {{ responsible_name|default:band_name }}!
+
+A fatura do plano {{ plan_name }} está em aberto no valor de R$ {{ amount }}.
+Tolerância de acesso até: {{ grace_until }}.
+
+Regularize em:
+{{ base_url }}/relatorios/assinatura/
+
+Atenciosamente,
+Equipe Backstage Pro

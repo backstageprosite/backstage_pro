@@ -1,0 +1,11 @@
+Backstage Pro — Teste de Fila e Worker
+
+Olá,
+
+Este e-mail confirma que a fila transacional e o worker de e-mail do Backstage Pro estão operacionais e conectados com sucesso.
+
+Ambiente: Homologação
+Status: Processado pelo worker assíncrono
+
+Atenciosamente,
+Equipe Backstage Pro

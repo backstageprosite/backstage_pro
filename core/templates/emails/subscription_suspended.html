@@ -1,0 +1,14 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+<h2 style="margin-top: 0; color: #dc2626;">Acesso Temporariamente Suspenso</h2>
+<p>Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
+<p>O período de tolerância para o pagamento da assinatura da banda <strong>{{ band_name }}</strong> expirou e o acesso ao painel de gestão foi temporariamente suspenso.</p>
+
+<p>Seus dados, escalas de shows, histórico financeiro e contatos permanecem seguros e intactos. O acesso será reestabelecido automaticamente assim que o pagamento for confirmado.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="{{ base_url }}/relatorios/assinatura/" style="background-color: #6BD443; color: #0f172a; text-decoration: none; padding: 14px 28px; font-weight: 700; border-radius: 8px; display: inline-block; font-size: 16px;">Reativar Minha Assinatura</a>
+</div>
+
+<p>Atenciosamente,<br><strong>Equipe Backstage Pro</strong></p>
+{% endblock %}

@@ -247,6 +247,32 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             valid_hours=48
         )
 
+        # 5.1 Enfileirar EmailDelivery ACCOUNT_ACTIVATION (desacoplado de SMTP)
+        try:
+            from core.services.email_service import enqueue_email, get_canonical_base_url
+            base_url = get_canonical_base_url()
+            activation_url = f"{base_url}/ativar-conta/{raw_token}/"
+            enqueue_email(
+                email_type='ACCOUNT_ACTIVATION',
+                recipient_email=order.email,
+                subject='Sua conta no Backstage Pro está pronta!',
+                idempotency_key=f"activation-signup-{order.id}",
+                template_name='emails/account_activation',
+                context_data={
+                    'responsible_name': order.responsible_name or band.name,
+                    'band_name': band.name,
+                    'plan_name': plan_display,
+                    'billing_cycle': 'Anual' if is_annual else 'Mensal',
+                    'amount': f"{order.amount:.2f}",
+                    'activation_url': activation_url,
+                },
+                related_object_type='BandActivationToken',
+                related_object_id=str(activation.pk)
+            )
+            del raw_token  # Limpa token em texto plano da memória após montagem do link
+        except Exception as e:
+            logger.warning("Falha ao enfileirar e-mail de ativação para pedido %s: %s", order.external_reference, str(e))
+
         # 6. Atualizar SignupOrder
         order.band = band
         order.status = 'PAGO'
@@ -259,3 +285,4 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
 
         logger.info("Band '%s' (slug=%s) provisionada com sucesso atraves do pedido %s", band.name, band.slug, order.external_reference)
         return True, "PROVISIONADO", band
+

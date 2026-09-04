@@ -1,0 +1,14 @@
+Sua conta no Backstage Pro está pronta!
+
+Olá, {{ responsible_name|default:"Produtor(a)" }}!
+
+Seu pagamento foi confirmado e a assinatura para a banda {{ band_name }} já está pronta.
+
+Plano: {{ plan_name }} ({{ billing_cycle }})
+Valor: R$ {{ amount }}
+
+Para criar sua conta de acesso, utilize o link pessoal abaixo (válido por 48h):
+{{ activation_url }}
+
+Atenciosamente,
+Equipe Backstage Pro

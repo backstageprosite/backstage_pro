@@ -1,0 +1,10 @@
+Cancelamento Agendado — Backstage Pro
+
+Olá, {{ responsible_name|default:band_name }}!
+
+A renovação automática do plano {{ plan_name }} foi cancelada.
+Seu acesso continuará liberado até: {{ access_until }}.
+Nenhuma nova cobrança será realizada.
+
+Atenciosamente,
+Equipe Backstage Pro

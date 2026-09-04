@@ -1,0 +1,14 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+<h2 style="margin-top: 0; color: #ea580c;">Não foi possível processar a cobrança no cartão</h2>
+<p>Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
+<p>Tentamos processar a cobrança do plano <strong>{{ plan_name }}</strong> da banda <strong>{{ band_name }}</strong> no valor de <strong>R$ {{ amount }}</strong>, mas a operadora do cartão recusou a transação.</p>
+
+<p>Recomendamos verificar com o emissor do seu cartão ou cadastrar um novo meio de pagamento diretamente no painel.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="{{ base_url }}/relatorios/assinatura/" style="background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 25px; font-weight: 600; border-radius: 6px; display: inline-block; font-size: 15px;">Atualizar Cartão</a>
+</div>
+
+<p>Atenciosamente,<br><strong>Equipe Backstage Pro</strong></p>
+{% endblock %}
