@@ -32,27 +32,17 @@ def get_static_image_base64(relative_path):
 from .decorators import advanced_plan_required
 from django.shortcuts import render, get_object_or_404, redirect
 
-from django.db import transaction
-
+from django.db import transaction, models
+from django.db.models import Sum, Case, When, IntegerField
 from django.contrib.auth.decorators import login_required
-
 from django.contrib.auth.views import LoginView
-
 from django.contrib.auth import logout
-
 from django.contrib.auth import views as auth_views
-
 from django.contrib import messages
-
 from django.core.exceptions import PermissionDenied
-
 from django.urls import reverse
-
 from functools import wraps
-
 from django.http import HttpResponseForbidden, HttpResponseNotAllowed, JsonResponse
-
-from django.db.models import Sum
 
 from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem, AdministrativeBandNotice, RiderDocument
 
@@ -1170,71 +1160,118 @@ class CustomPasswordResetCompleteView(auth_views.PasswordResetCompleteView):
 
 
 @login_required
-
 @band_required
-
 def relatorios_index_view(request, band_slug):
-
     if not request.user.is_produtor():
-
         return HttpResponseForbidden("Apenas produtores têm acesso aos relatórios.")
 
-
-
     band = get_object_or_404(Band, slug=band_slug)
-
-
-
-    subscription = None
-
-    if hasattr(band, 'subscription'):
-
-        subscription = band.subscriptions.filter(status='ATIVO', is_deleted=False).first()
-
-
+    subscription = band.subscriptions.filter(is_deleted=False).order_by(
+        models.Case(
+            models.When(status='ATIVO', then=0),
+            default=1,
+            output_field=models.IntegerField(),
+        ),
+        '-created_at'
+    ).first()
 
     context = {'band': band, 'subscription': subscription}
-
     return render(request, 'core/relatorios_index.html', context)
 
 
-
 @login_required
-
 @band_required
-
 def minha_assinatura_view(request, band_slug):
-
     if not request.user.is_produtor():
-
         return HttpResponseForbidden("Apenas produtores têm acesso aos relatórios.")
-
-
 
     band = get_object_or_404(Band, slug=band_slug)
 
+    # 1. Selecionar a assinatura principal de forma determinística
+    # Prioridade: não deletada, status ATIVO, mais recente por created_at
+    active_subs = band.subscriptions.filter(is_deleted=False, status='ATIVO').order_by('-created_at')
+    if active_subs.count() > 1:
+        logger.warning(
+            "Ambiguidade: Band '%s' (slug=%s) possui %d assinaturas ATIVAS. Exibindo a mais recente (ID=%d).",
+            band.name, band.slug, active_subs.count(), active_subs.first().id
+        )
 
+    subscription = active_subs.first()
+    if not subscription:
+        subscription = band.subscriptions.filter(is_deleted=False).order_by('-created_at').first()
 
-    if not hasattr(band, 'subscription'):
+    # 2. Histórico de cobranças (BillingRecord) ordenado pelo mais recente
+    faturas = []
+    if subscription:
+        faturas = subscription.records.all().order_by('-due_date', '-created_at')
+    else:
+        # Fallback: se houver faturas da banda sem subscription ativa
+        faturas = band.billing_records.all().order_by('-due_date', '-created_at')
 
-        return redirect('relatorios_index', band_slug=band.slug)
+    # 3. Nomes amigáveis calculados para o resumo da assinatura
+    plan_display = None
+    cycle_display = None
+    payment_method_display = None
+    status_display = None
 
+    if subscription:
+        # Plano
+        p_name = (subscription.plan_name or '').strip().upper()
+        if p_name in ['BASICO', 'BÁSICO']:
+            plan_display = 'Básico'
+        elif p_name in ['AVANCADO', 'AVANÇADO']:
+            plan_display = 'Avançado'
+        elif p_name in ['MENSAL', 'SEMESTRAL', 'ANUAL', 'PERSONALIZADO']:
+            # Caso plan_name tenha vindo como ciclo no legado
+            plan_display = 'Básico' if band.is_basic else 'Avançado'
+        else:
+            plan_display = subscription.plan_name or ('Básico' if band.is_basic else 'Avançado')
 
+        # Ciclo
+        c_name = (subscription.billing_cycle or '').strip().upper()
+        if c_name == 'MENSAL':
+            cycle_display = 'Mensal'
+        elif c_name == 'SEMESTRAL':
+            cycle_display = 'Semestral'
+        elif c_name == 'ANUAL':
+            cycle_display = 'Anual'
+        elif c_name == 'PERSONALIZADO':
+            cycle_display = 'Personalizado'
+        else:
+            cycle_display = subscription.get_billing_cycle_display() if hasattr(subscription, 'get_billing_cycle_display') else subscription.billing_cycle
 
-    subscription = band.subscriptions.filter(status='ATIVO', is_deleted=False).first()
+        # Forma de pagamento
+        pm_pref = (subscription.payment_method_preference or '').strip().upper()
+        if pm_pref == 'CARTAO' or pm_pref == 'CARTÃO':
+            payment_method_display = 'Cartão'
+        elif pm_pref == 'PIX':
+            payment_method_display = 'Pix'
+        elif pm_pref == 'BOLETO':
+            payment_method_display = 'Boleto'
+        elif pm_pref == 'TRANSFERENCIA' or pm_pref == 'TRANSFERÊNCIA':
+            payment_method_display = 'Transferência'
+        elif pm_pref == 'DINHEIRO':
+            payment_method_display = 'Dinheiro'
+        else:
+            payment_method_display = subscription.get_payment_method_preference_display() if hasattr(subscription, 'get_payment_method_preference_display') else (subscription.payment_method_preference or '-')
 
-    faturas = subscription.records.all().order_by('-due_date')
-
-
+        # Status
+        st = (subscription.status or '').strip().upper()
+        if st == 'ATIVO':
+            status_display = 'Ativo'
+        elif st == 'DESATIVADO':
+            status_display = 'Desativado'
+        else:
+            status_display = subscription.get_status_display() if hasattr(subscription, 'get_status_display') else subscription.status
 
     context = {
-
         'band': band,
-
         'subscription': subscription,
-
-        'faturas': faturas
-
+        'faturas': faturas,
+        'plan_display': plan_display,
+        'cycle_display': cycle_display,
+        'payment_method_display': payment_method_display,
+        'status_display': status_display,
     }
 
     return render(request, 'core/minha_assinatura.html', context)

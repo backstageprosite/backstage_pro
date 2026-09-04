@@ -1602,3 +1602,149 @@ class AsaasFoundationTests(TestCase):
         self.assertContains(resp_config_after, 'backstage-pro-logo.png')
         self.assertContains(resp_config_after, 'Logo da banda ainda não cadastrada.')
         self.assertNotContains(resp_config_after, 'modalRemoverLogo')
+
+    def test_relatorios_assinatura_view(self):
+        """ASAAS-08: Teste completo de visualização de Assinatura e Histórico de Pagamentos em Relatórios."""
+        from django.test import Client
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        client = Client()
+
+        # 1. Setup de Bandas e Usuários
+        band_a = Band.objects.create(name='Banda Teste Homologacao', slug='testehomologacao', plan_type='BASICO')
+        user_produtor_a = User.objects.create_user(username='prod_a', email='proda@test.com', password='123', band=band_a, role='PRODUTOR')
+        user_integrante_a = User.objects.create_user(username='integ_a', email='intega@test.com', password='123', band=band_a, role='INTEGRANTE')
+
+        band_b = Band.objects.create(name='Banda Outra', slug='bandaoutra', plan_type='AVANCADO')
+        user_produtor_b = User.objects.create_user(username='prod_b', email='prodb@test.com', password='123', band=band_b, role='PRODUTOR')
+
+        # 2. Permissão de Acesso:
+        # Integrante recebe 403
+        client.force_login(user_integrante_a)
+        resp_forbid = client.get(f'/{band_a.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_forbid.status_code, 403)
+
+        # 3. Band sem assinatura (Band B): exibe mensagem amigável e histórico vazio sem erro 500
+        client.force_login(user_produtor_b)
+        resp_no_sub = client.get(f'/{band_b.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_no_sub.status_code, 200)
+        self.assertContains(resp_no_sub, 'Não há uma assinatura cadastrada para esta banda.')
+        self.assertContains(resp_no_sub, 'Nenhum pagamento registrado.')
+
+        # 4. Band A com assinatura Asaas (dados da homologação real) e histórico de faturas
+        sub_a = BandSubscription.objects.create(
+            band=band_a,
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            start_date=date(2026, 9, 3),
+            next_due_date=date(2026, 10, 3),
+            status='ATIVO',
+            auto_renew=True,
+            payment_method_preference='CARTAO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_000009006807',
+            gateway_subscription_id='sub_2vjxr6kit10l68yr',
+            gateway_checkout_id='7d0a0681-282a-42b1-9c74-d0d47288ce18'
+        )
+
+        bill_a1 = BillingRecord.objects.create(
+            subscription=sub_a,
+            band=band_a,
+            reference_period='Setembro/2026',
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            due_date=date(2026, 9, 3),
+            paid_date=date(2026, 9, 3),
+            status='PAGO',
+            payment_method='CARTAO',
+            gateway_provider='ASAAS',
+            gateway_payment_id='pay_8ufmj8khm9i24ik1',
+            gateway_invoice_url='https://sandbox.asaas.com/i/8ufmj8khm9i24ik1'
+        )
+
+        client.force_login(user_produtor_a)
+        resp_a = client.get(f'/{band_a.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_a.status_code, 200)
+
+        # Validar exibição do Resumo com nomes amigáveis
+        self.assertContains(resp_a, 'Básico')
+        self.assertContains(resp_a, 'Ativo')
+        self.assertContains(resp_a, '19,90')
+        self.assertContains(resp_a, 'Mensal')
+        self.assertContains(resp_a, '03/09/2026')  # Início
+        self.assertContains(resp_a, '03/10/2026')  # Próxima Cobrança
+        self.assertContains(resp_a, 'Cartão')
+        self.assertContains(resp_a, 'Sim')
+
+        # Validar histórico com colunas e link seguro
+        self.assertContains(resp_a, 'Setembro/2026')
+        self.assertContains(resp_a, 'Pago')
+        self.assertContains(resp_a, 'Ver cobrança')
+        self.assertContains(resp_a, 'https://sandbox.asaas.com/i/8ufmj8khm9i24ik1')
+        self.assertContains(resp_a, 'rel="noopener noreferrer"')
+
+        # Validar que IDs técnicos Asaas NÃO são exibidos no HTML para o usuário
+        self.assertNotContains(resp_a, 'sub_2vjxr6kit10l68yr')
+        self.assertNotContains(resp_a, 'cus_000009006807')
+        self.assertNotContains(resp_a, 'pay_8ufmj8khm9i24ik1')
+        self.assertNotContains(resp_a, '7d0a0681-282a-42b1-9c74-d0d47288ce18')
+
+        # 5. Cancelamento agendado (cancel_at_period_end = True)
+        sub_a.cancel_at_period_end = True
+        sub_a.save()
+        resp_cancel = client.get(f'/{band_a.slug}/relatorios/assinatura/')
+        self.assertContains(resp_cancel, 'Cancelamento agendado')
+
+        # 6. Assinatura manual/legada sem gateway
+        band_manual = Band.objects.create(name='Banda Manual Teste', slug='manualteste', plan_type='AVANCADO')
+        user_manual = User.objects.create_user(username='prod_man', email='man@test.com', password='123', band=band_manual, role='PRODUTOR')
+        sub_manual = BandSubscription.objects.create(
+            band=band_manual,
+            plan_name='Avançado',
+            billing_cycle='ANUAL',
+            contracted_value=Decimal('299.00'),
+            start_date=date(2026, 1, 1),
+            next_due_date=date(2027, 1, 1),
+            status='ATIVO',
+            auto_renew=False,
+            payment_method_preference='PIX'
+        )
+        bill_manual = BillingRecord.objects.create(
+            subscription=sub_manual,
+            band=band_manual,
+            reference_period='Ano 2026',
+            plan_name='Avançado',
+            billing_cycle='ANUAL',
+            amount=Decimal('299.00'),
+            due_date=date(2026, 1, 1),
+            paid_date=date(2026, 1, 1),
+            status='PAGO',
+            payment_method='PIX'
+        )
+
+        client.force_login(user_manual)
+        resp_man = client.get(f'/{band_manual.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_man.status_code, 200)
+        self.assertContains(resp_man, 'Avançado')
+        self.assertContains(resp_man, 'Anual')
+        self.assertContains(resp_man, '299,00')
+        self.assertContains(resp_man, 'Pix')
+        self.assertContains(resp_man, 'Não')
+        self.assertContains(resp_man, 'Ano 2026')
+        # Sem gateway_invoice_url exibe '-' em vez do botão
+        self.assertNotContains(resp_man, 'Ver cobrança')
+
+        # 7. Isolamento Multi-Tenant: Usuário de uma banda não pode ver faturas de outra
+        resp_isolated = client.get(f'/{band_manual.slug}/relatorios/assinatura/')
+        self.assertNotContains(resp_isolated, 'Setembro/2026')
+        self.assertNotContains(resp_isolated, 'Banda Teste Homologacao')
+
+        # 8. Validação do Card Assinatura no Hub de Relatórios (relatorios_index)
+        resp_hub = client.get(f'/{band_manual.slug}/relatorios/')
+        self.assertEqual(resp_hub.status_code, 200)
+        self.assertContains(resp_hub, 'Assinatura')
+        self.assertContains(resp_hub, f'/{band_manual.slug}/relatorios/assinatura/')
+        self.assertContains(resp_hub, 'fa-credit-card')
+

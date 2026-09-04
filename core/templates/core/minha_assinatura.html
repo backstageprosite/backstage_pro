@@ -2,107 +2,295 @@
 {% load static %}
 {% load l10n %}
 
+{% block extra_head %}
+<style>
+    /* BP-COMPACTO-01: Estilos para Relatórios -> Assinatura */
+    .bp-reports-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-reports-page .btn-back {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-reports-page .kpi-card {
+        border-radius: 10px;
+    }
+    .bp-reports-page .kpi-card .card-body {
+        padding: 12px 14px;
+    }
+    .bp-reports-page .kpi-label {
+        font-size: 11px;
+        letter-spacing: 0.03em;
+        margin-bottom: 2px;
+    }
+    .bp-reports-page .kpi-value {
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .bp-reports-page .section-heading {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        margin-top: 20px;
+    }
+    .bp-reports-page .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 9px 12px;
+        text-transform: uppercase;
+    }
+    .bp-reports-page .table tbody td {
+        font-size: 13px;
+        padding: 9px 12px;
+    }
+    .bp-reports-page .status-pill {
+        min-width: 80px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        line-height: 1.1;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-reports-page .page-title {
+            font-size: 18px !important;
+        }
+        .bp-reports-page .btn-back {
+            height: 34px !important;
+            padding: 4px 14px !important;
+            font-size: 13px !important;
+        }
+        .bp-reports-page .kpi-value {
+            font-size: 16px !important;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-    <h4 class="fw-bold m-0"><i class="fa-solid fa-file-signature text-primary me-2"></i> Minha Assinatura</h4>
-    <div>
-        <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark rounded-pill fw-bold px-3 me-2">
-            <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-        </a>
+<div class="bp-reports-page">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+        <h4 class="page-title text-start mb-0">
+            <i class="fa-solid fa-credit-card text-primary me-2"></i>Assinatura
+        </h4>
+        <div>
+            <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-back fw-bold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
     </div>
-</div>
 
-<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; border-left: 5px solid #0f7fb1 !important;">
-    <div class="card-body p-4">
-        <h5 class="fw-bold mb-4 text-dark">Informações do Plano</h5>
-        <div class="row g-4">
-            <div class="col-md-3">
-                <p class="text-muted small fw-bold mb-1 text-uppercase">Plano</p>
-                <h5 class="fw-bold text-dark m-0">{{ subscription.plan_name }} <span class="badge bg-secondary ms-1">{{ subscription.get_billing_cycle_display }}</span></h5>
+    {% if subscription %}
+    <!-- Resumo da Assinatura (Cards Gerenciais / BP-COMPACTO-01) -->
+    <div class="row g-2 g-md-3 mb-3">
+        <!-- Linha 1 -->
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Plano Atual</p>
+                    <h4 class="kpi-value mb-0 text-primary">{{ plan_display }}</h4>
+                </div>
             </div>
-            <div class="col-md-3">
-                <p class="text-muted small fw-bold mb-1 text-uppercase">Valor</p>
-                <h5 class="fw-bold text-primary m-0">R$ {{ subscription.contracted_value|floatformat:"2" }}</h5>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-success h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Status</p>
+                    <div class="mt-1">
+                        {% if subscription.status == 'ATIVO' %}
+                            <span class="badge status-pill bg-success">Ativo</span>
+                        {% elif subscription.status == 'DESATIVADO' %}
+                            <span class="badge status-pill bg-secondary">Desativado</span>
+                        {% else %}
+                            <span class="badge status-pill bg-light text-dark border">{{ status_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-            <div class="col-md-3">
-                <p class="text-muted small fw-bold mb-1 text-uppercase">Próximo Vencimento</p>
-                <h5 class="fw-bold text-dark m-0">
-                    {% if subscription.next_due_date %}
-                        {{ subscription.next_due_date|date:"d/m/Y" }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </h5>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Valor</p>
+                    <h4 class="kpi-value mb-0 text-primary">R$ {{ subscription.contracted_value|floatformat:"2g" }}</h4>
+                </div>
             </div>
-            <div class="col-md-3">
-                <p class="text-muted small fw-bold mb-1 text-uppercase">Status</p>
-                {% if subscription.status == 'ATIVO' %}
-                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 fs-6"><i class="fa-solid fa-circle-check me-1"></i> Ativo</span>
-                {% elif subscription.status == 'VENCENDO' %}
-                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-3 py-2 fs-6"><i class="fa-solid fa-circle-exclamation me-1"></i> Vencendo</span>
-                {% elif subscription.status == 'VENCIDO' %}
-                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2 fs-6"><i class="fa-solid fa-circle-xmark me-1"></i> Vencido</span>
-                {% elif subscription.status == 'SUSPENSO' %}
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3 py-2 fs-6">Suspenso</span>
-                {% else %}
-                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2 fs-6">{{ subscription.get_status_display }}</span>
-                {% endif %}
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-info h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Ciclo</p>
+                    <h4 class="kpi-value mb-0 text-dark">{{ cycle_display }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Linha 2 -->
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-secondary h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Início</p>
+                    <h4 class="kpi-value mb-0 text-dark">
+                        {% if subscription.start_date %}
+                            {{ subscription.start_date|date:"d/m/Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Próxima Cobrança</p>
+                    <h4 class="kpi-value mb-0 text-warning">
+                        {% if subscription.next_due_date %}
+                            {{ subscription.next_due_date|date:"d/m/Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-4 border-info h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Forma de Pagamento</p>
+                    <h4 class="kpi-value mb-0 text-dark">{{ payment_method_display }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card shadow-sm border-0 border-start border-4 {% if subscription.cancel_at_period_end %}border-warning{% elif subscription.auto_renew %}border-success{% else %}border-secondary{% endif %} h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Renovação Automática</p>
+                    <h4 class="kpi-value mb-0 {% if subscription.cancel_at_period_end %}text-warning fs-6{% elif subscription.auto_renew %}text-success{% else %}text-muted{% endif %}">
+                        {% if subscription.cancel_at_period_end %}
+                            Cancelamento agendado
+                        {% elif subscription.auto_renew %}
+                            Sim
+                        {% else %}
+                            Não
+                        {% endif %}
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Estado de Banda sem assinatura cadastrada -->
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+        <div class="card-body text-center py-5">
+            <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
+                <i class="fa-solid fa-credit-card text-muted mb-3" style="font-size: 3rem;"></i>
+                <h5 class="text-muted fw-bold fs-6">Não há uma assinatura cadastrada para esta banda.</h5>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Seção Histórico de Pagamentos -->
+    <h5 class="section-heading"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Histórico de Pagamentos</h5>
+    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4 text-nowrap">Data</th>
+                            <th>Referência</th>
+                            <th>Forma</th>
+                            <th>Valor</th>
+                            <th class="text-center">Status</th>
+                            <th class="pe-4 text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fatura in faturas %}
+                        <tr>
+                            <td class="ps-4 text-nowrap fw-medium" style="width: 110px;">
+                                {% if fatura.status == 'PAGO' and fatura.paid_date %}
+                                    {{ fatura.paid_date|date:"d/m/Y" }}
+                                {% elif fatura.due_date %}
+                                    {{ fatura.due_date|date:"d/m/Y" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="fw-medium text-dark">{{ fatura.reference_period|default:"-" }}</td>
+                            <td class="text-muted">
+                                {% if fatura.payment_method == 'CARTAO' %}
+                                    Cartão
+                                {% elif fatura.payment_method == 'PIX' %}
+                                    Pix
+                                {% elif fatura.payment_method == 'BOLETO' %}
+                                    Boleto
+                                {% elif fatura.payment_method == 'TRANSFERENCIA' %}
+                                    Transferência
+                                {% elif fatura.payment_method == 'DINHEIRO' %}
+                                    Dinheiro
+                                {% else %}
+                                    {{ fatura.get_payment_method_display|default:"-" }}
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold text-primary text-nowrap">
+                                R$ {{ fatura.amount|floatformat:"2g" }}
+                            </td>
+                            <td class="text-center">
+                                {% if fatura.status == 'PAGO' %}
+                                    <span class="badge status-pill bg-success">Pago</span>
+                                {% elif fatura.status == 'PENDENTE' %}
+                                    <span class="badge status-pill bg-warning text-dark">Pendente</span>
+                                {% elif fatura.status == 'CANCELADO' %}
+                                    <span class="badge status-pill bg-secondary">Cancelado</span>
+                                {% elif fatura.status == 'ISENTO' %}
+                                    <span class="badge status-pill bg-info text-dark">Isento</span>
+                                {% else %}
+                                    <span class="badge status-pill bg-light text-dark border">{{ fatura.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 text-end text-nowrap">
+                                {% if fatura.gateway_invoice_url %}
+                                    <a href="{{ fatura.gateway_invoice_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary fw-medium" style="font-size: 12px; padding: 2px 10px;">
+                                        Ver cobrança <i class="fa-solid fa-arrow-up-right-from-square ms-1"></i>
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
+                                    <i class="fa-solid fa-receipt text-muted mb-3" style="font-size: 3rem;"></i>
+                                    <h5 class="text-muted fw-bold fs-6">Nenhum pagamento registrado.</h5>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
-
-<h4 class="fw-bold mb-3 mt-5"><i class="fa-solid fa-clock-rotate-left me-2"></i> Histórico de Faturas</h4>
-<div class="card shadow-sm border-0" style="border-radius: 12px;">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light text-uppercase text-muted" style="font-size: 0.85rem;">
-                    <tr>
-                        <th class="ps-4 py-3">Período de Referência</th>
-                        <th class="py-3">Valor</th>
-                        <th class="py-3">Vencimento</th>
-                        <th class="py-3">Data Pagamento</th>
-                        <th class="py-3">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for fatura in faturas %}
-                    <tr>
-                        <td class="ps-4 fw-medium">{{ fatura.reference_period }}</td>
-                        <td class="fw-bold">R$ {{ fatura.amount|floatformat:"2" }}</td>
-                        <td>{{ fatura.due_date|date:"d/m/Y" }}</td>
-                        <td>{% if fatura.paid_date %}{{ fatura.paid_date|date:"d/m/Y" }}{% else %}-{% endif %}</td>
-                        <td>
-                            {% if fatura.status == 'PAGO' %}
-                                <span class="badge bg-success">Pago</span>
-                            {% elif fatura.status == 'PENDENTE' %}
-                                <span class="badge bg-warning text-dark">Pendente</span>
-                            {% elif fatura.status == 'ATRASADO' %}
-                                <span class="badge bg-danger">Atrasado</span>
-                            {% elif fatura.status == 'CANCELADO' %}
-                                <span class="badge bg-secondary">Cancelado</span>
-                            {% elif fatura.status == 'ISENTO' %}
-                                <span class="badge bg-info text-dark">Isento</span>
-                            {% else %}
-                                <span class="badge bg-light text-dark">{{ fatura.get_status_display }}</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-5">
-                            <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
-                                <i class="fa-solid fa-file-invoice-dollar text-muted mb-3" style="font-size: 3rem;"></i>
-                                <h5 class="text-muted fw-bold">Nenhuma fatura encontrada.</h5>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
 {% endblock %}
