@@ -1248,12 +1248,16 @@ def minha_assinatura_view(request, band_slug):
                         messages.error(request, "Inconsistência de titularidade identificada na assinatura. Cancelamento abortado por segurança.")
                         return redirect('minha_assinatura', band_slug=band.slug)
 
-                    # Executa DELETE na recorrência do Asaas
-                    success, resp_data = client.cancel_subscription(subscription.gateway_subscription_id)
-                    if not success:
-                        logger.error("Falha no DELETE da assinatura %s no Asaas: %s", subscription.gateway_subscription_id, resp_data)
-                        messages.error(request, "Não foi possível cancelar a renovação junto ao gateway de pagamento. Nenhuma alteração foi realizada.")
-                        return redirect('minha_assinatura', band_slug=band.slug)
+                    # Se a assinatura já estiver deletada/inativa no Asaas, consideramos a deleção remota atendida
+                    if sub_info.get('deleted') is True or sub_info.get('status') == 'INACTIVE':
+                        success = True
+                    else:
+                        # Executa DELETE na recorrência do Asaas
+                        success, resp_data = client.cancel_subscription(subscription.gateway_subscription_id)
+                        if not success:
+                            logger.error("Falha no DELETE da assinatura %s no Asaas: %s", subscription.gateway_subscription_id, resp_data)
+                            messages.error(request, "Não foi possível cancelar a renovação junto ao gateway de pagamento. Nenhuma alteração foi realizada.")
+                            return redirect('minha_assinatura', band_slug=band.slug)
 
                 with transaction.atomic():
                     sub_locked = BandSubscription.objects.select_for_update().filter(id=subscription.id).first()
