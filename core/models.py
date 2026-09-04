@@ -2337,6 +2337,7 @@ class AnnualRenewalNotice(models.Model):
         PENDING = 'PENDING', 'Pendente'
         SENT = 'SENT', 'Enviado com Sucesso'
         FAILED = 'FAILED', 'Falha no Envio'
+        SKIPPED = 'SKIPPED', 'Ignorado / Não Entregue'
 
     band_subscription = models.ForeignKey(
         'BandSubscription',

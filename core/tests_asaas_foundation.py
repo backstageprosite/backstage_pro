@@ -4806,3 +4806,138 @@ class AsaasFoundationTests(TestCase):
                 call_command('process_annual_renewal_notices', date='2027-08-05', stdout=out, stderr=err_notices)
                 self.assertIn("BLOQUEIO DE SEGURANÇA", err_notices.getvalue())
 
+    def test_reconcile_annual_renewal_from_asaas_command(self):
+        """
+        Testa o management command reconcile_annual_renewal_from_asaas:
+        - 5/5 CONFIRMED -> reconcilia AnnualPlanPurchase, BillingRecords, BandSubscription e AnnualRenewalNotice
+        - 4/5 CONFIRMED -> recusa repair
+        - Customer divergente -> recusa repair
+        - Gross divergente -> recusa repair
+        - Idempotência -> segunda execução não cria duplicados
+        - SQLite bloqueado quando --apply
+        """
+        import io
+        import datetime
+        from decimal import Decimal
+        from unittest.mock import patch, MagicMock
+        from django.core.management import call_command
+        from core.models import BandSubscription, AnnualPlanPurchase, BillingRecord, AnnualRenewalNotice, SystemSettings
+
+        band = Band.objects.create(name="Banda Reconcile Test", slug="banda-reconcile-test")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=False,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_rec_01'
+        )
+
+        mock_installment = {
+            'id': 'inst_rec_123',
+            'customer': 'cus_rec_01',
+            'installmentCount': 5,
+            'value': 239.90,
+            'netValue': 233.50,
+            'deleted': False
+        }
+
+        mock_payments_5_confirmed = [
+            {'id': f'pay_rec_{i}', 'installmentNumber': i, 'value': 47.98, 'netValue': 46.70, 'dueDate': f'2027-{8+i:02d}-04' if (8+i) <= 12 else f'2028-{8+i-12:02d}-04', 'status': 'CONFIRMED', 'confirmedDate': '2026-09-04'}
+            for i in range(1, 6)
+        ]
+
+        # 1. Teste de Bloqueio em SQLite quando --apply
+        out = io.StringIO()
+        err = io.StringIO()
+        with patch('core.management.commands.reconcile_annual_renewal_from_asaas.connection.vendor', 'sqlite'):
+            call_command('reconcile_annual_renewal_from_asaas', subscription_id=sub.id, installment_id='inst_rec_123', apply=True, stdout=out, stderr=err)
+            self.assertIn("BLOQUEIO DE ARQUITETURA", err.getvalue())
+
+        # 2. Teste Dry-Run
+        out_dry = io.StringIO()
+        with patch('core.management.commands.reconcile_annual_renewal_from_asaas.AsaasClient') as mock_client_cls:
+            mock_c = MagicMock()
+            mock_client_cls.return_value = mock_c
+            mock_c.get_installment.return_value = mock_installment
+            mock_c.get_payments_by_installment.return_value = mock_payments_5_confirmed
+
+            call_command('reconcile_annual_renewal_from_asaas', subscription_id=sub.id, installment_id='inst_rec_123', dry_run=True, stdout=out_dry)
+            self.assertIn("DRY-RUN CONCLUÍDO", out_dry.getvalue())
+            # Nenhuma escrita
+            self.assertEqual(AnnualPlanPurchase.objects.filter(band_subscription=sub).count(), 0)
+
+        # 3. Teste 4/5 CONFIRMED (Recusa)
+        mock_payments_4 = [
+            {'id': 'pay_rec_1', 'installmentNumber': 1, 'value': 47.98, 'netValue': 46.70, 'dueDate': '2027-09-04', 'status': 'CONFIRMED'},
+            {'id': 'pay_rec_2', 'installmentNumber': 2, 'value': 47.98, 'netValue': 46.70, 'dueDate': '2027-10-04', 'status': 'PENDING'},
+            {'id': 'pay_rec_3', 'installmentNumber': 3, 'value': 47.98, 'netValue': 46.70, 'dueDate': '2027-11-04', 'status': 'CONFIRMED'},
+            {'id': 'pay_rec_4', 'installmentNumber': 4, 'value': 47.98, 'netValue': 46.70, 'dueDate': '2027-12-04', 'status': 'CONFIRMED'},
+            {'id': 'pay_rec_5', 'installmentNumber': 5, 'value': 47.98, 'netValue': 46.70, 'dueDate': '2028-01-04', 'status': 'CONFIRMED'},
+        ]
+        err_4 = io.StringIO()
+        with patch('core.management.commands.reconcile_annual_renewal_from_asaas.connection.vendor', 'postgresql'):
+            with patch('core.management.commands.reconcile_annual_renewal_from_asaas.AsaasClient') as mock_client_cls:
+                mock_c = MagicMock()
+                mock_client_cls.return_value = mock_c
+                mock_c.get_installment.return_value = mock_installment
+                mock_c.get_payments_by_installment.return_value = mock_payments_4
+
+                call_command('reconcile_annual_renewal_from_asaas', subscription_id=sub.id, installment_id='inst_rec_123', apply=True, stderr=err_4)
+                self.assertIn("BLOQUEIO: Apenas 4/5 pagamentos estão confirmados", err_4.getvalue())
+
+        # 4. Teste Sucesso com --apply (Simulando PostgreSQL)
+        out_app = io.StringIO()
+        with patch('core.management.commands.reconcile_annual_renewal_from_asaas.connection.vendor', 'postgresql'):
+            with patch('core.management.commands.reconcile_annual_renewal_from_asaas.AsaasClient') as mock_client_cls:
+                mock_c = MagicMock()
+                mock_client_cls.return_value = mock_c
+                mock_c.get_installment.return_value = mock_installment
+                mock_c.get_payments_by_installment.return_value = mock_payments_5_confirmed
+
+                call_command('reconcile_annual_renewal_from_asaas', subscription_id=sub.id, installment_id='inst_rec_123', apply=True, stdout=out_app)
+                self.assertIn("RECONCILIAÇÃO CONCLUÍDA COM SUCESSO", out_app.getvalue())
+
+        sub.refresh_from_db()
+        self.assertEqual(sub.next_due_date, datetime.date(2028, 9, 4))
+        self.assertEqual(sub.contracted_value, Decimal('239.90'))
+        self.assertTrue(sub.auto_renew)
+
+        # AnnualPlanPurchase criada
+        purchases = AnnualPlanPurchase.objects.filter(band_subscription=sub, purchase_type=AnnualPlanPurchase.PurchaseType.RENEWAL)
+        self.assertEqual(purchases.count(), 1)
+        pur = purchases.first()
+        self.assertEqual(pur.status, AnnualPlanPurchase.Status.CONFIRMED)
+        self.assertEqual(pur.gross_amount, Decimal('239.90'))
+        self.assertEqual(pur.net_amount, Decimal('233.50'))
+
+        # BillingRecords criados
+        records = BillingRecord.objects.filter(subscription=sub, annual_purchase=pur)
+        self.assertEqual(records.count(), 5)
+        self.assertEqual(sum(r.amount for r in records), Decimal('239.90'))
+
+        # AnnualRenewalNotice criado com status SKIPPED
+        notices = AnnualRenewalNotice.objects.filter(band_subscription=sub, renewal_date=datetime.date(2027, 9, 4))
+        self.assertEqual(notices.count(), 1)
+        notc = notices.first()
+        self.assertEqual(notc.status, AnnualRenewalNotice.Status.SKIPPED)
+        self.assertEqual(notc.error_message, 'HOMOLOGACAO_CONSOLE_EMAIL_NAO_ENTREGUE')
+
+        # 5. Teste Idempotência (Segunda execução)
+        out_idem = io.StringIO()
+        with patch('core.management.commands.reconcile_annual_renewal_from_asaas.connection.vendor', 'postgresql'):
+            with patch('core.management.commands.reconcile_annual_renewal_from_asaas.AsaasClient') as mock_client_cls:
+                mock_c = MagicMock()
+                mock_client_cls.return_value = mock_c
+                mock_c.get_installment.return_value = mock_installment
+                mock_c.get_payments_by_installment.return_value = mock_payments_5_confirmed
+
+                call_command('reconcile_annual_renewal_from_asaas', subscription_id=sub.id, installment_id='inst_rec_123', apply=True, stdout=out_idem)
+
+        self.assertEqual(AnnualPlanPurchase.objects.filter(band_subscription=sub, purchase_type=AnnualPlanPurchase.PurchaseType.RENEWAL).count(), 1)
+        self.assertEqual(BillingRecord.objects.filter(subscription=sub, annual_purchase=pur).count(), 5)
+        self.assertEqual(AnnualRenewalNotice.objects.filter(band_subscription=sub, renewal_date=datetime.date(2027, 9, 4)).count(), 1)

@@ -54,6 +54,16 @@ class Command(BaseCommand):
                 self.stderr.write(self.style.ERROR(f"Data inválida: {date_str}. Use YYYY-MM-DD."))
                 return
 
+        if not dry_run:
+            from django.db import connection
+            # PROTEÇÃO DE ARQUITETURA: Testes financeiros reais integrados com Asaas Sandbox não podem rodar em SQLite.
+            if connection.vendor == 'sqlite' and not getattr(settings, 'IS_RUNNING_TESTS', False):
+                self.stderr.write(self.style.ERROR(
+                    "BLOQUEIO DE ARQUITETURA: Testes financeiros reais integrados com Asaas Sandbox não podem utilizar SQLite. "
+                    "Utilize o PostgreSQL canônico do ambiente de homologação Railway."
+                ))
+                return
+
         self.stdout.write(f"Iniciando processamento de renovações anuais para a data-base: {target_date}")
         if dry_run:
             self.stdout.write(self.style.WARNING("MODO DRY-RUN ATIVADO: Nenhuma cobrança real será realizada."))
