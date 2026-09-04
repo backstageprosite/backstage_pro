@@ -123,6 +123,24 @@
     </div>
 
     {% if subscription %}
+    {% if alert_suspended %}
+    <!-- Alerta de Assinatura Suspensa por Inadimplência -->
+    <div class="alert alert-danger d-flex align-items-center mb-3 shadow-sm" role="alert" style="border-radius: 10px; font-size: 14px;">
+        <i class="fa-solid fa-triangle-exclamation flex-shrink-0 me-2" style="font-size: 18px;"></i>
+        <div>
+            Assinatura suspensa por pagamento em atraso. Regularize o pagamento para recuperar o acesso ao Backstage Pro.
+        </div>
+    </div>
+    {% elif alert_overdue_tolerance %}
+    <!-- Alerta de Tolerância de Pagamento em Atraso (Dias 1 a 4) -->
+    <div class="alert alert-warning d-flex align-items-center mb-3 shadow-sm" role="alert" style="border-radius: 10px; font-size: 14px;">
+        <i class="fa-solid fa-triangle-exclamation flex-shrink-0 me-2" style="font-size: 18px;"></i>
+        <div>
+            Existe um pagamento em atraso. Regularize até {% if overdue_limit_date %}{{ overdue_limit_date|date:"d/m/Y" }}{% else %}breve{% endif %} para evitar a suspensão do acesso ao Backstage Pro.
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Resumo da Assinatura (Cards Gerenciais / Padrão Dashboard KPI) -->
     <div class="row g-2 g-md-3 mb-3">
         <!-- Linha 1: AZUL | VERDE | AMARELO | VERMELHO -->
@@ -207,6 +225,8 @@
                         <h3 class="kpi-value text-dark">
                             {% if subscription.status != 'ATIVO' %}
                                 Sem cobrança agendada
+                            {% elif alert_overdue_tolerance or alert_suspended %}
+                                {% if subscription.next_due_date %}{{ subscription.next_due_date|date:"d/m/Y" }} - Vencida{% else %}Sem cobrança agendada{% endif %}
                             {% elif subscription.next_due_date %}
                                 {{ subscription.next_due_date|date:"d/m/Y" }}
                             {% else %}

@@ -57,12 +57,17 @@ class Band(models.Model):
         """
         Retorna se a banda possui assinatura ativa.
         Executa verificação e sincronização de encerramento automático caso aplicável.
+        Retorna False se estiver desativada ou suspensa financeiramente por inadimplência (>= 5 dias).
         """
         sub = self.subscriptions.filter(is_deleted=False).order_by('-created_at').first()
         if not sub:
             return self.is_active
         sub.check_and_sync_auto_expiration()
-        return sub.status == 'ATIVO'
+        if sub.status != 'ATIVO':
+            return False
+        if sub.is_financially_suspended:
+            return False
+        return True
 
     @property
     def dynamic_status(self):
@@ -629,6 +634,33 @@ class BandSubscription(models.Model):
                 name='unique_checkout_per_gateway_provider'
             ),
         ]
+
+    def days_overdue(self):
+        """
+        Calcula a quantidade de dias em atraso para assinaturas ativas e em renovação automática.
+        Retorna 0 se em dia ou se cancelamento já agendado.
+        """
+        from django.utils import timezone
+        if self.status != 'ATIVO' or self.cancel_at_period_end or not self.auto_renew or not self.next_due_date:
+            return 0
+        today = timezone.localdate()
+        diff = (today - self.next_due_date).days
+        return max(0, diff)
+
+    @property
+    def is_overdue_tolerance(self):
+        """
+        Tolerância de 1 a 4 dias de atraso.
+        Acesso operacional normal mantido, mas sinalização visual na Assinatura.
+        """
+        return 1 <= self.days_overdue() < 5
+
+    @property
+    def is_financially_suspended(self):
+        """
+        Suspensão financeira a partir do 5º dia de atraso (dias >= 5).
+        """
+        return self.days_overdue() >= 5
 
     def check_and_sync_auto_expiration(self):
         """

@@ -1266,6 +1266,9 @@ def minha_assinatura_view(request, band_slug):
     can_cancel = False
     can_reactivate = False
     can_resubscribe = False
+    alert_overdue_tolerance = False
+    alert_suspended = False
+    overdue_limit_date = None
 
     if subscription:
         # Sincronizar encerramento automático se aplicável
@@ -1309,17 +1312,28 @@ def minha_assinatura_view(request, band_slug):
         else:
             payment_method_display = subscription.get_payment_method_preference_display() if hasattr(subscription, 'get_payment_method_preference_display') else (subscription.payment_method_preference or '-')
 
-        # Status
+        # Status e Inadimplência
         st = (subscription.status or '').strip().upper()
+
         if st == 'ATIVO':
-            status_display = 'Ativo'
+            if subscription.is_financially_suspended:
+                status_display = 'Suspensa'
+                alert_suspended = True
+            elif subscription.is_overdue_tolerance:
+                status_display = 'Pagamento em atraso'
+                alert_overdue_tolerance = True
+                if subscription.next_due_date:
+                    from datetime import timedelta
+                    overdue_limit_date = subscription.next_due_date + timedelta(days=5)
+            else:
+                status_display = 'Ativo'
         elif st == 'DESATIVADO':
             status_display = 'Inativo'
         else:
             status_display = subscription.get_status_display() if hasattr(subscription, 'get_status_display') else subscription.status
 
         # Estados dos botões de ação:
-        if subscription.status == 'ATIVO':
+        if subscription.status == 'ATIVO' and not subscription.is_financially_suspended:
             if subscription.cancel_at_period_end:
                 can_reactivate = True
             else:
@@ -1337,6 +1351,9 @@ def minha_assinatura_view(request, band_slug):
         'cycle_display': cycle_display,
         'payment_method_display': payment_method_display,
         'status_display': status_display,
+        'alert_overdue_tolerance': alert_overdue_tolerance,
+        'alert_suspended': alert_suspended,
+        'overdue_limit_date': overdue_limit_date,
         'can_cancel': can_cancel,
         'can_reactivate': can_reactivate,
         'can_resubscribe': can_resubscribe,

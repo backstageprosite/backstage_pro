@@ -1897,4 +1897,186 @@ class AsaasFoundationTests(TestCase):
         resp_admin_dash = client.get(f'/{band_b.slug}/painel/')
         self.assertEqual(resp_admin_dash.status_code, 200)
 
+    def test_overdue_tolerance_and_automatic_suspension_scenarios(self):
+        """
+        Testes de Inadimplência e Suspensão Automática após 5 dias:
+        - Cenário A: Dia 0 (data de vencimento) -> normal, sem alerta, acesso total
+        - Cenário B: 1 dia de atraso -> tolerância, 'Pagamento em atraso', banner amarelo, acesso operacional liberado
+        - Cenário C: 4 dias de atraso -> tolerância, data limite calculada (+5 dias), acesso operacional liberado
+        - Cenário D: 5 dias de atraso -> suspensão automática, 'Suspensa', banner vermelho, acesso operacional bloqueado
+        - Cenário E: 10 dias de atraso -> permanece 'Suspensa', idempotente
+        - Cenário F: Pagamento realizado durante tolerância -> volta a Ativo, normalizado
+        - Cenário G: Cancelamento agendado -> NÃO entra no fluxo de atraso (dias_overdue=0)
+        - Cenário H: Superuser bypassa bloqueio de suspensão
+        - Cenário I: Suspensão administrativa (is_active=False) vs Suspensão financeira
+        - Cenário J: Webhook PAYMENT_OVERDUE idempotente e não suspende imediatamente
+        """
+        from django.test import Client
+        from core.models import User
+        client = Client()
+        today = timezone.localdate()
+
+        # --- Cenário A: Dia 0 (Vencimento hoje) ---
+        band_a = Band.objects.create(name='Banda Dia 0', slug='bandadia0')
+        user_a = User.objects.create_user(username='prod_a', email='a@test.com', password='123', band=band_a, role='PRODUTOR')
+        sub_a = BandSubscription.objects.create(
+            band=band_a, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=today - timedelta(days=30), next_due_date=today,
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO'
+        )
+        self.assertEqual(sub_a.days_overdue(), 0)
+        self.assertFalse(sub_a.is_overdue_tolerance)
+        self.assertFalse(sub_a.is_financially_suspended)
+        self.assertTrue(band_a.has_active_subscription)
+
+        client.force_login(user_a)
+        resp_a = client.get(f'/{band_a.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_a.status_code, 200)
+        self.assertContains(resp_a, 'Ativo')
+        self.assertNotContains(resp_a, 'Pagamento em atraso')
+        self.assertNotContains(resp_a, 'Existe um pagamento em atraso')
+
+        # --- Cenário B: 1 dia de atraso (Tolerância) ---
+        band_b = Band.objects.create(name='Banda Dia 1', slug='bandadia1')
+        user_b = User.objects.create_user(username='prod_b', email='b@test.com', password='123', band=band_b, role='PRODUTOR')
+        sub_b = BandSubscription.objects.create(
+            band=band_b, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=today - timedelta(days=31), next_due_date=today - timedelta(days=1),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO'
+        )
+        self.assertEqual(sub_b.days_overdue(), 1)
+        self.assertTrue(sub_b.is_overdue_tolerance)
+        self.assertFalse(sub_b.is_financially_suspended)
+        self.assertTrue(band_b.has_active_subscription)
+
+        client.force_login(user_b)
+        # Acesso operacional liberado
+        resp_dash_b = client.get(f'/{band_b.slug}/painel/')
+        self.assertEqual(resp_dash_b.status_code, 200)
+
+        # Página de assinatura exibe alerta amarelo e status de atraso
+        resp_assina_b = client.get(f'/{band_b.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_assina_b.status_code, 200)
+        self.assertContains(resp_assina_b, 'Pagamento em atraso')
+        self.assertContains(resp_assina_b, 'Existe um pagamento em atraso')
+        self.assertContains(resp_assina_b, '- Vencida')
+
+        # --- Cenário C: 4 dias de atraso (Último dia de tolerância) ---
+        band_c = Band.objects.create(name='Banda Dia 4', slug='bandadia4')
+        user_c = User.objects.create_user(username='prod_c', email='c@test.com', password='123', band=band_c, role='PRODUTOR')
+        sub_c = BandSubscription.objects.create(
+            band=band_c, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=today - timedelta(days=34), next_due_date=today - timedelta(days=4),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO'
+        )
+        self.assertEqual(sub_c.days_overdue(), 4)
+        self.assertTrue(sub_c.is_overdue_tolerance)
+        self.assertFalse(sub_c.is_financially_suspended)
+        self.assertTrue(band_c.has_active_subscription)
+
+        client.force_login(user_c)
+        resp_assina_c = client.get(f'/{band_c.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_assina_c.status_code, 200)
+        self.assertContains(resp_assina_c, 'Pagamento em atraso')
+        limit_date_c = (sub_c.next_due_date + timedelta(days=5)).strftime('%d/%m/%Y')
+        self.assertContains(resp_assina_c, limit_date_c)
+
+        # --- Cenário D: 5 dias de atraso (Suspensão Automática) ---
+        band_d = Band.objects.create(name='Banda Dia 5', slug='bandadia5')
+        user_d = User.objects.create_user(username='prod_d', email='d@test.com', password='123', band=band_d, role='PRODUTOR')
+        sub_d = BandSubscription.objects.create(
+            band=band_d, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=today - timedelta(days=35), next_due_date=today - timedelta(days=5),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO'
+        )
+        self.assertEqual(sub_d.days_overdue(), 5)
+        self.assertFalse(sub_d.is_overdue_tolerance)
+        self.assertTrue(sub_d.is_financially_suspended)
+        self.assertFalse(band_d.has_active_subscription)
+
+        client.force_login(user_d)
+        # Acesso operacional bloqueado -> redireciona para Assinatura
+        resp_dash_d = client.get(f'/{band_d.slug}/painel/')
+        self.assertEqual(resp_dash_d.status_code, 302)
+        self.assertEqual(resp_dash_d.url, f'/{band_d.slug}/relatorios/assinatura/')
+
+        # Tela de assinatura exibe alerta vermelho e status 'Suspensa'
+        resp_assina_d = client.get(f'/{band_d.slug}/relatorios/assinatura/')
+        self.assertEqual(resp_assina_d.status_code, 200)
+        self.assertContains(resp_assina_d, 'Suspensa')
+        self.assertContains(resp_assina_d, 'Assinatura suspensa por pagamento em atraso')
+        self.assertContains(resp_assina_d, '- Vencida')
+        self.assertContains(resp_assina_d, 'Assinar Novamente')
+
+        # --- Cenário E: 10 dias de atraso (Permanece Suspensa) ---
+        band_e = Band.objects.create(name='Banda Dia 10', slug='bandadia10')
+        sub_e = BandSubscription.objects.create(
+            band=band_e, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=today - timedelta(days=40), next_due_date=today - timedelta(days=10),
+            status='ATIVO', auto_renew=True, cancel_at_period_end=False, payment_method_preference='CARTAO'
+        )
+        self.assertEqual(sub_e.days_overdue(), 10)
+        self.assertTrue(sub_e.is_financially_suspended)
+        self.assertFalse(band_e.has_active_subscription)
+
+        # --- Cenário F: Pagamento e regularização ---
+        # Quando a fatura é paga e next_due_date avança para o próximo mês
+        sub_b.next_due_date = today + timedelta(days=29)
+        sub_b.save(update_fields=['next_due_date'])
+        self.assertEqual(sub_b.days_overdue(), 0)
+        self.assertFalse(sub_b.is_overdue_tolerance)
+        self.assertFalse(sub_b.is_financially_suspended)
+        self.assertTrue(band_b.has_active_subscription)
+
+        # --- Cenário G: Cancelamento agendado (cancel_at_period_end=True) ---
+        # Não entra no fluxo de atraso (dias_overdue retorna 0)
+        band_g = Band.objects.create(name='Banda Cancel Agendado', slug='bandacancel')
+        sub_g = BandSubscription.objects.create(
+            band=band_g, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
+            start_date=today - timedelta(days=20), next_due_date=today - timedelta(days=2),
+            status='ATIVO', auto_renew=False, cancel_at_period_end=True, payment_method_preference='CARTAO'
+        )
+        self.assertEqual(sub_g.days_overdue(), 0)
+        self.assertFalse(sub_g.is_overdue_tolerance)
+        self.assertFalse(sub_g.is_financially_suspended)
+
+        # --- Cenário H: Superuser bypassa suspensão financeira ---
+        super_user = User.objects.create_superuser(username='superadm_test', email='superadm@test.com', password='123')
+        client.force_login(super_user)
+        resp_admin_dash = client.get(f'/{band_d.slug}/painel/')
+        self.assertEqual(resp_admin_dash.status_code, 200)
+
+        # --- Cenário I: Suspensão administrativa vs financeira ---
+        band_admin_off = Band.objects.create(name='Banda Admin Off', slug='bandaadminoff', is_active=False)
+        user_admin_off = User.objects.create_user(username='prod_off', email='off@test.com', password='123', band=band_admin_off, role='PRODUTOR')
+        client.force_login(user_admin_off)
+        resp_admin_off = client.get(f'/{band_admin_off.slug}/painel/')
+        self.assertEqual(resp_admin_off.status_code, 403)
+
+        # --- Cenário J: Webhook PAYMENT_OVERDUE idempotente ---
+        event_overdue = {
+            "id": "evt_test_overdue_999",
+            "event": "PAYMENT_OVERDUE",
+            "payment": {
+                "id": "pay_test_overdue_123",
+                "customer": "cus_test_123",
+                "value": 19.90,
+                "netValue": 19.90,
+                "status": "OVERDUE",
+                "externalReference": "ext_test_overdue"
+            }
+        }
+        BillingRecord.objects.create(
+            subscription=sub_d, band=band_d, reference_period='Setembro/2026',
+            plan_name='Básico', billing_cycle='MENSAL', amount=Decimal('19.90'),
+            due_date=today - timedelta(days=5), status='PENDENTE', payment_method='CARTAO',
+            gateway_provider='ASAAS', gateway_payment_id='pay_test_overdue_123'
+        )
+        ok, msg = handle_asaas_webhook_payload(event_overdue)
+        self.assertTrue(ok)
+        rec = BillingRecord.objects.get(gateway_payment_id='pay_test_overdue_123')
+        self.assertEqual(rec.status, 'PENDENTE')
+        self.assertEqual(rec.gateway_event_status, 'PAYMENT_OVERDUE')
+
+
 

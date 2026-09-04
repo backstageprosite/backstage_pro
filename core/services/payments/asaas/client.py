@@ -60,3 +60,39 @@ class AsaasClient:
                 logger.warning("Falha na consulta de payments por %s=%s: %s", param, checkout_id, str(e))
 
         return []
+
+    def get_subscription(self, subscription_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Consulta dados de uma assinatura diretamente na API do Asaas.
+        """
+        if not subscription_id or not self.config.api_key:
+            return None
+
+        encoded_id = urllib.parse.quote(str(subscription_id))
+        url = f"{self.base_url}/subscriptions/{encoded_id}"
+        req = urllib.request.Request(url, headers=self.get_headers())
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return json.loads(resp.read().decode('utf-8'))
+        except Exception as e:
+            logger.warning("Falha na consulta de assinatura %s no Asaas: %s", subscription_id, str(e))
+            return None
+
+    def get_payments_by_subscription(self, subscription_id: str) -> List[Dict[str, Any]]:
+        """
+        Consulta pagamentos vinculados a uma assinatura no Asaas.
+        """
+        if not subscription_id or not self.config.api_key:
+            return []
+
+        encoded_id = urllib.parse.quote(str(subscription_id))
+        url = f"{self.base_url}/subscriptions/{encoded_id}/payments"
+        req = urllib.request.Request(url, headers=self.get_headers())
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                return data.get('data', [])
+        except Exception as e:
+            logger.warning("Falha na consulta de pagamentos da assinatura %s no Asaas: %s", subscription_id, str(e))
+            return []
+
