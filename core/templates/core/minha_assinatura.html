@@ -102,7 +102,12 @@
         <h4 class="page-title text-start mb-0">
             <i class="fa-solid fa-credit-card text-primary me-2"></i>Assinatura
         </h4>
-        <div>
+        <div class="d-flex align-items-center gap-2">
+            {% if subscription and not subscription.cancel_at_period_end and subscription.status == 'ATIVO' %}
+                <button type="button" class="btn btn-danger btn-back fw-bold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCancelarAssinatura">
+                    <i class="fa-solid fa-ban me-1"></i> Cancelar Assinatura
+                </button>
+            {% endif %}
             <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-back fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
             </a>
@@ -225,7 +230,7 @@
                         <p class="kpi-label">Renovação Automática</p>
                         <h3 class="kpi-value text-dark">
                             {% if subscription.cancel_at_period_end %}
-                                Cancelamento agendado
+                                Não{% if subscription.next_due_date %} <span class="text-muted fw-normal" style="font-size: 10px; font-weight: 400 !important;">- Acesso até {{ subscription.next_due_date|date:"d/m/Y" }}</span>{% endif %}
                             {% elif subscription.auto_renew %}
                                 Sim
                             {% else %}
@@ -337,5 +342,43 @@
             </div>
         </div>
     </div>
+
+    {% if subscription and not subscription.cancel_at_period_end and subscription.status == 'ATIVO' %}
+    <!-- Modal Confirmar Cancelamento da Assinatura -->
+    <div class="modal fade" id="modalCancelarAssinatura" tabindex="-1" aria-labelledby="modalCancelarAssinaturaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 12px; border: none;">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger" id="modalCancelarAssinaturaLabel" style="font-size: 16px;">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>Cancelar Assinatura
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3 pb-2 text-dark" style="font-size: 14px; line-height: 1.5;">
+                    <p class="mb-2">Tem certeza de que deseja cancelar a assinatura da sua banda?</p>
+                    <p class="text-muted mb-0" style="font-size: 13px;">
+                        {% if subscription.next_due_date %}
+                            O plano continuará ativo e seu acesso permanecerá liberado até <strong>{{ subscription.next_due_date|date:"d/m/Y" }}</strong>. A partir dessa data, nenhuma nova cobrança será realizada.
+                        {% else %}
+                            A renovação automática será cancelada e nenhuma nova cobrança será gerada ao final do ciclo atual.
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="modal-footer border-top-0 pt-2 pb-3 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 35px; font-size: 13px;">
+                        Voltar
+                    </button>
+                    <form method="post" action="{% url 'minha_assinatura' band.slug %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="cancel_subscription">
+                        <button type="submit" class="btn btn-danger fw-bold rounded-pill px-3 text-white" style="height: 35px; font-size: 13px;">
+                            Confirmar Cancelamento
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

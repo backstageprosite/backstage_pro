@@ -1,11 +1,10 @@
 from django.views.decorators.http import require_POST
-from django.views.decorators.http import require_POST
-
+import logging
 import datetime
-
-
 import base64
 import os
+
+logger = logging.getLogger(__name__)
 
 def get_image_base64(image_field):
     if not image_field or not image_field.name:
@@ -1199,6 +1198,23 @@ def minha_assinatura_view(request, band_slug):
     subscription = active_subs.first()
     if not subscription:
         subscription = band.subscriptions.filter(is_deleted=False).order_by('-created_at').first()
+
+    # Processar cancelamento solicitado pelo produtor
+    if request.method == 'POST' and request.POST.get('action') == 'cancel_subscription':
+        if subscription and subscription.status == 'ATIVO' and not subscription.cancel_at_period_end:
+            from django.utils import timezone
+            subscription.cancel_at_period_end = True
+            subscription.auto_renew = False
+            subscription.canceled_at = timezone.now()
+            subscription.save(update_fields=['cancel_at_period_end', 'auto_renew', 'canceled_at', 'updated_at'])
+
+            # Log para auditoria
+            logger.info(
+                "Assinatura %d da banda '%s' marcada para cancelamento ao fim do período pelo usuário %s.",
+                subscription.id, band.slug, request.user.username
+            )
+            messages.success(request, "Cancelamento confirmado com sucesso. O seu acesso permanecerá ativo até o fim do período contratado.")
+            return redirect('minha_assinatura', band_slug=band.slug)
 
     # 2. Histórico de cobranças (BillingRecord) ordenado pelo mais recente
     faturas = []

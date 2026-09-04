@@ -1695,7 +1695,24 @@ class AsaasFoundationTests(TestCase):
         sub_a.cancel_at_period_end = True
         sub_a.save()
         resp_cancel = client.get(f'/{band_a.slug}/relatorios/assinatura/')
-        self.assertContains(resp_cancel, 'Cancelamento agendado')
+        self.assertContains(resp_cancel, 'Não')
+        self.assertContains(resp_cancel, '- Acesso até 03/10/2026')
+        # Quando já está cancelado, botão de cancelar não deve ser exibido
+        self.assertNotContains(resp_cancel, 'modalCancelarAssinatura')
+
+        # Testar POST cancel_subscription
+        sub_a.cancel_at_period_end = False
+        sub_a.auto_renew = True
+        sub_a.save()
+        resp_before = client.get(f'/{band_a.slug}/relatorios/assinatura/')
+        self.assertContains(resp_before, 'Cancelar Assinatura')
+
+        post_cancel = client.post(f'/{band_a.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        self.assertEqual(post_cancel.status_code, 200)
+        sub_a.refresh_from_db()
+        self.assertTrue(sub_a.cancel_at_period_end)
+        self.assertFalse(sub_a.auto_renew)
+        self.assertContains(post_cancel, '- Acesso até 03/10/2026')
 
         # 6. Assinatura manual/legada sem gateway
         band_manual = Band.objects.create(name='Banda Manual Teste', slug='manualteste', plan_type='AVANCADO')
