@@ -1877,6 +1877,15 @@ class SignupOrder(models.Model):
     band = models.OneToOneField(Band, on_delete=models.SET_NULL, null=True, blank=True, related_name='signup_order', verbose_name='Banda Provisionada')
     provisioned_at = models.DateTimeField(null=True, blank=True, verbose_name='Data do Provisionamento')
 
+    activated_user = models.OneToOneField(
+        'User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='activated_signup_order',
+        verbose_name='Usuário Inicial Ativado'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
 

@@ -13,7 +13,8 @@ from core.services.payments.base import (
     calculate_next_billing_date
 )
 from core.services.payments.activation import (
-    create_band_activation_token, verify_activation_token, generate_activation_token_pair
+    create_band_activation_token, verify_activation_token, generate_activation_token_pair,
+    reissue_activation_token
 )
 from core.services.payments.asaas.webhooks import handle_asaas_webhook_payload
 
@@ -1315,7 +1316,7 @@ class AsaasFoundationTests(TestCase):
         with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox'):
             with self.assertRaises(CommandError) as cm:
                 call_command('create_asaas_activation_test_link', order_id=order.id)
-            self.assertIn('ja possui usuario inicial de Produtor ativado', str(cm.exception))
+            self.assertIn('ja possui uma conta inicial ativada', str(cm.exception))
 
         # 10d. Execucao autorizada em novo pedido sem produtor
         band_new = Band.objects.create(name='Banda Sem Produtor', slug='semprodutor')
@@ -1342,6 +1343,172 @@ class AsaasFoundationTests(TestCase):
         self.assertIn('LINK DE ATIVACAO GERADO COM SUCESSO', out_val)
         self.assertIn('https://backstage-pro-web-homologacao.up.railway.app/ativar-conta/', out_val)
         self.assertIn('Banda Sem Produtor', out_val)
+
+    def test_signuporder_activated_user_idempotency_and_repair(self):
+        """ASAAS-07 Passo 4: Testes completos de associacao direta SignupOrder -> activated_user, idempotencia e reparo."""
+        from django.test import Client
+        from django.contrib.auth import get_user_model
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        from io import StringIO
+        User = get_user_model()
+        client = Client()
+
+        # Cenário A: SignupOrder PAGO + Band sem produtores -> Ativação cria User e preenche order.activated_user
+        band_a = Band.objects.create(name='Banda Alpha', slug='bandaalpha')
+        order_a = SignupOrder.objects.create(
+            band=band_a,
+            band_name='Banda Alpha',
+            responsible_name='Produtor Alpha',
+            email='alpha@test.com',
+            amount=Decimal('49.90'),
+            plan_type='AVANCADO',
+            billing_cycle='MENSAL',
+            status='PAGO',
+            gateway_provider='ASAAS',
+            external_reference='bp-alpha-001'
+        )
+        act_a, raw_a = create_band_activation_token(band=band_a, email=order_a.email, responsible_name=order_a.responsible_name, signup_order=order_a)
+
+        resp_a = client.post(f'/ativar-conta/{raw_a}/', {
+            'username': 'user_alpha',
+            'password': '123',
+            'confirm_password': '123'
+        })
+        self.assertEqual(resp_a.status_code, 200)
+        self.assertContains(resp_a, 'Conta criada com sucesso')
+
+        order_a.refresh_from_db()
+        user_alpha = User.objects.get(username='user_alpha')
+        self.assertEqual(order_a.activated_user, user_alpha)
+        self.assertEqual(user_alpha.role, 'PRODUTOR')
+        self.assertEqual(user_alpha.band, band_a)
+
+        # Cenário B: Band com produtor manual pré-existente + SignupOrder novo sem activated_user
+        # A ativação DEVE ser permitida pois order.activated_user é None
+        band_b = Band.objects.create(name='Banda Beta', slug='bandabeta')
+        User.objects.create_user(username='produtor_manual_b', email='manual@test.com', password='123', band=band_b, role='PRODUTOR')
+        order_b = SignupOrder.objects.create(
+            band=band_b,
+            band_name='Banda Beta',
+            responsible_name='Produtor Beta',
+            email='beta@test.com',
+            amount=Decimal('49.90'),
+            plan_type='AVANCADO',
+            billing_cycle='MENSAL',
+            status='PAGO',
+            gateway_provider='ASAAS',
+            external_reference='bp-beta-002'
+        )
+        self.assertIsNone(order_b.activated_user)
+        self.assertEqual(band_b.users.filter(role='PRODUTOR').count(), 1)
+
+        act_b, raw_b = create_band_activation_token(band=band_b, email=order_b.email, responsible_name=order_b.responsible_name, signup_order=order_b)
+        resp_b = client.post(f'/ativar-conta/{raw_b}/', {
+            'username': 'user_beta_ativado',
+            'password': '123',
+            'confirm_password': '123'
+        })
+        self.assertEqual(resp_b.status_code, 200)
+        self.assertContains(resp_b, 'Conta criada com sucesso')
+
+        order_b.refresh_from_db()
+        user_beta = User.objects.get(username='user_beta_ativado')
+        self.assertEqual(order_b.activated_user, user_beta)
+        self.assertEqual(band_b.users.filter(role='PRODUTOR').count(), 2)
+
+        # Cenário C: SignupOrder já com activated_user preenchido -> tentativa de ativação não cria 2º usuário e liquida token
+        act_c, raw_c = create_band_activation_token(band=band_a, email=order_a.email, responsible_name=order_a.responsible_name, signup_order=order_a)
+        resp_c = client.post(f'/ativar-conta/{raw_c}/', {
+            'username': 'user_alpha_tentativa2',
+            'password': '123',
+            'confirm_password': '123'
+        })
+        self.assertEqual(resp_c.status_code, 200)
+        self.assertContains(resp_c, 'Conta criada com sucesso')
+        self.assertContains(resp_c, '/bandaalpha/login/')
+        # Nenhum segundo usuário criado
+        self.assertFalse(User.objects.filter(username='user_alpha_tentativa2').exists())
+        self.assertEqual(band_a.users.count(), 1)
+        act_c.refresh_from_db()
+        self.assertIsNotNone(act_c.used_at)
+
+        # Cenário D: reissue_activation_token bloqueia se order.activated_user estiver preenchido
+        with self.assertRaises(ValueError) as ctx:
+            reissue_activation_token(band=band_a, signup_order=order_a)
+        self.assertIn('Esta contratação já possui uma conta inicial ativada', str(ctx.exception))
+
+        # Cenário E: create_asaas_activation_test_link bloqueia se order.activated_user estiver preenchido
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox'):
+            with self.assertRaises(CommandError) as ctx_cmd:
+                call_command('create_asaas_activation_test_link', order_id=order_a.id)
+            self.assertIn('ja possui uma conta inicial ativada', str(ctx_cmd.exception))
+
+        # Cenário F: repair_asaas_activation_user bloqueia fora de staging / fora de sandbox
+        band_rep = Band.objects.create(name='Banda Reparo', slug='bandareparo')
+        user_rep = User.objects.create_user(username='prod_rep', email='rep@test.com', password='123', band=band_rep, role='PRODUTOR')
+        order_rep = SignupOrder.objects.create(
+            band=band_rep,
+            band_name='Banda Reparo',
+            responsible_name='Produtor Rep',
+            email='rep@test.com',
+            amount=Decimal('49.90'),
+            plan_type='AVANCADO',
+            billing_cycle='MENSAL',
+            status='PAGO',
+            gateway_provider='ASAAS',
+            external_reference='bp-rep-001'
+        )
+
+        with override_settings(DJANGO_ENV='production', ASAAS_ENVIRONMENT='sandbox'):
+            with self.assertRaises(CommandError):
+                call_command('repair_asaas_activation_user', order_id=order_rep.id)
+
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='production'):
+            with self.assertRaises(CommandError):
+                call_command('repair_asaas_activation_user', order_id=order_rep.id)
+
+        # Cenário G: repair_asaas_activation_user executa com sucesso em staging+sandbox e repara activated_user
+        out_rep = StringIO()
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox'):
+            call_command('repair_asaas_activation_user', order_id=order_rep.id, stdout=out_rep)
+
+        self.assertIn('REPARO DE ATIVACAO EXECUTADO COM SUCESSO', out_rep.getvalue())
+        order_rep.refresh_from_db()
+        self.assertEqual(order_rep.activated_user, user_rep)
+
+        # Cenário H: repair_asaas_activation_user em ordem já associada informa que nada precisa ser feito
+        out_rep2 = StringIO()
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox'):
+            call_command('repair_asaas_activation_user', order_id=order_rep.id, stdout=out_rep2)
+        self.assertIn('ja possui activated_user', out_rep2.getvalue())
+
+        # Cenário I: repair_asaas_activation_user falha se houver ambiguidade (múltiplos produtores)
+        band_amb = Band.objects.create(name='Banda Ambigua', slug='bandaambigua')
+        User.objects.create_user(username='prod_amb_1', email='amb1@test.com', password='123', band=band_amb, role='PRODUTOR')
+        User.objects.create_user(username='prod_amb_2', email='amb2@test.com', password='123', band=band_amb, role='PRODUTOR')
+        order_amb = SignupOrder.objects.create(
+            band=band_amb,
+            band_name='Banda Ambigua',
+            responsible_name='Produtor Amb',
+            email='amb@test.com',
+            amount=Decimal('49.90'),
+            plan_type='AVANCADO',
+            billing_cycle='MENSAL',
+            status='PAGO',
+            gateway_provider='ASAAS',
+            external_reference='bp-amb-001'
+        )
+        with override_settings(DJANGO_ENV='staging', ASAAS_ENVIRONMENT='sandbox'):
+            with self.assertRaises(CommandError) as ctx_amb:
+                call_command('repair_asaas_activation_user', order_id=order_amb.id)
+            self.assertIn('Ambiguidade', str(ctx_amb.exception))
+
+        # Cenário J: Band sem SignupOrder (legada/manual) continua operando sem erros
+        band_legacy = Band.objects.create(name='Banda Legada', slug='bandalegada')
+        user_leg = User.objects.create_user(username='prod_leg', email='leg@test.com', password='123', band=band_legacy, role='PRODUTOR')
+        self.assertEqual(SignupOrder.objects.filter(band=band_legacy).count(), 0)
+        self.assertFalse(hasattr(user_leg, 'activated_signup_order') and user_leg.activated_signup_order is not None)
 
     def test_band_logo_fallback_and_removal(self):
         """ASAAS-07 Passo 3: Identidade visual sem repeticao de nome no branding e remocao de logo."""

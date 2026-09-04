@@ -80,7 +80,7 @@ class ActivateAccountView(View):
         # 3. Criação atômica do User e liquidação do Token de Ativação
         with transaction.atomic():
             # Revalidação e Lock do activation token
-            from core.models import BandActivationToken
+            from core.models import BandActivationToken, SignupOrder
             activation = BandActivationToken.objects.select_for_update().get(pk=activation.pk)
 
             if activation.used_at is not None:
@@ -101,17 +101,19 @@ class ActivateAccountView(View):
                     'band': band,
                 })
 
-            # Verificar idempotência: se o usuário para este email/banda já foi criado
-            existing_user = User.objects.filter(band=band, email__iexact=activation.email, role='PRODUTOR').first()
-            if existing_user:
-                activation.used_at = timezone.now()
-                activation.save(update_fields=['used_at'])
-                return render(request, self.template_name, {
-                    'success': True,
-                    'band': band,
-                    'username': existing_user.username,
-                    'login_url': f"/{band.slug}/login/",
-                })
+            # Lock e verificação explícita do SignupOrder
+            signup_order = None
+            if activation.signup_order_id:
+                signup_order = SignupOrder.objects.select_for_update().get(pk=activation.signup_order_id)
+                if signup_order.activated_user:
+                    activation.used_at = timezone.now()
+                    activation.save(update_fields=['used_at'])
+                    return render(request, self.template_name, {
+                        'success': True,
+                        'band': band,
+                        'username': signup_order.activated_user.username,
+                        'login_url': f"/{band.slug}/login/",
+                    })
 
             # Criar User como PRODUTOR vinculado à Band
             user = User.objects.create_user(
@@ -122,6 +124,11 @@ class ActivateAccountView(View):
                 role='PRODUTOR',
                 first_name=activation.responsible_name or ''
             )
+
+            # Vincular usuário inicial ao SignupOrder
+            if signup_order:
+                signup_order.activated_user = user
+                signup_order.save(update_fields=['activated_user'])
 
             # Marcar o token como utilizado
             activation.used_at = timezone.now()

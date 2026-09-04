@@ -74,6 +74,9 @@ def reissue_activation_token(
     Invalida tokens ativos anteriores da mesma contratação/banda e gera um novo BandActivationToken.
     Retorna: (new_activation_instance, raw_token)
     """
+    if signup_order and signup_order.activated_user:
+        raise ValueError("Esta contratação já possui uma conta inicial ativada.")
+
     now = timezone.now()
 
     # Invalida tokens anteriores não utilizados da mesma banda/pedido marcando used_at ou expirando

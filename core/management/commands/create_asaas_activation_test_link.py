@@ -45,11 +45,10 @@ class Command(BaseCommand):
         if not band:
             raise CommandError(f'SignupOrder ID {order_id} nao possui Band vinculada.')
 
-        # 2. Verificar se já existe conta inicial de produtor criada para esta Band
-        existing_producer = User.objects.filter(band=band, role='PRODUTOR').first()
-        if existing_producer:
+        # 2. Verificar se já existe conta inicial ativada para esta contratação
+        if order.activated_user:
             raise CommandError(
-                f'A Band {band.name} (slug={band.slug}) ja possui usuario inicial de Produtor ativado ({existing_producer.username}).'
+                f'O SignupOrder ID {order.id} ja possui uma conta inicial ativada ({order.activated_user.username}).'
             )
 
         # 3. Emitir novo token de ativação (invalidando anteriores de forma limpa)
