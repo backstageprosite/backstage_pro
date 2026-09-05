@@ -54,6 +54,7 @@ class AsaasConfig:
     base_url: str
     api_key: Optional[str]
     webhook_token: Optional[str]
+    live_payments_enabled: bool = True
 
     @classmethod
     def from_settings(cls) -> "AsaasConfig":
@@ -84,15 +85,22 @@ class AsaasConfig:
             raw_webhook_token = os.getenv("ASAAS_WEBHOOK_TOKEN", None)
         webhook_token = str(raw_webhook_token).strip() if raw_webhook_token else None
 
+        live_enabled = getattr(settings, "PAYMENTS_LIVE_ENABLED", None)
+        if live_enabled is None:
+            raw_live = os.getenv("PAYMENTS_LIVE_ENABLED", "true" if env == "sandbox" else "false")
+            live_enabled = raw_live.strip().lower() in ("true", "1", "t", "yes")
+
         return cls(
             environment=env,
             base_url=base_url,
             api_key=api_key,
-            webhook_token=webhook_token
+            webhook_token=webhook_token,
+            live_payments_enabled=bool(live_enabled)
         )
 
     def is_configured(self) -> bool:
         return bool(self.api_key and self.api_key.strip())
+
 
 
 def normalize_band_slug(band_name: str) -> str:

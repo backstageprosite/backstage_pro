@@ -333,6 +333,8 @@ ASAAS_API_KEY = os.getenv('ASAAS_API_KEY', None)
 ASAAS_WEBHOOK_TOKEN = os.getenv('ASAAS_WEBHOOK_TOKEN', None)
 PAYMENT_TOKEN_ENCRYPTION_KEY = os.getenv('PAYMENT_TOKEN_ENCRYPTION_KEY', None)
 ACTIVATION_TOKEN_ENCRYPTION_KEY = os.getenv('ACTIVATION_TOKEN_ENCRYPTION_KEY', None)
+PAYMENTS_LIVE_ENABLED = env_bool('PAYMENTS_LIVE_ENABLED', default=(ASAAS_ENVIRONMENT == 'sandbox'))
+
 
 # ==============================================================================
 # EMAIL SETTINGS

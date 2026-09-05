@@ -238,10 +238,15 @@ class AsaasClient:
         Cria um parcelamento no Asaas via POST /v3/installments sem informar cartão/token.
         Retorna (sucesso: bool, resposta_ou_erro: dict).
         """
+        if not self.config.live_payments_enabled:
+            logger.warning("Operação de escrita financeira bloqueada pelo safety gate (PAYMENTS_LIVE_ENABLED=False).")
+            return False, {"error": "payments_live_disabled", "message": "Operações financeiras públicas estão temporariamente desabilitadas."}
+
         if not self.config.api_key:
             return False, {"error": "api_key_ausente"}
 
         url = f"{self.base_url}/installments"
+
         body_bytes = self.encode_payload(data)
         req = urllib.request.Request(url, data=body_bytes, headers=self.get_headers(), method='POST')
         try:
@@ -288,12 +293,17 @@ class AsaasClient:
         O credit_card_token nunca é logado ou exposto em exceções.
         Retorna (sucesso: bool, resposta_ou_erro: dict).
         """
+        if not self.config.live_payments_enabled:
+            logger.warning("Operação payWithCreditCard bloqueada pelo safety gate (PAYMENTS_LIVE_ENABLED=False).")
+            return False, {"error": "payments_live_disabled", "message": "Operações financeiras públicas estão temporariamente desabilitadas."}
+
         if not payment_id:
             return False, {"error": "payment_id_invalido"}
         if not credit_card_token:
             return False, {"error": "credit_card_token_ausente"}
         if not self.config.api_key:
             return False, {"error": "api_key_ausente"}
+
 
         encoded_id = urllib.parse.quote(str(payment_id))
         url = f"{self.base_url}/payments/{encoded_id}/payWithCreditCard"
