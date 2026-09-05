@@ -535,7 +535,8 @@ class EmailDeliveryQueueTestCase(TestCase):
 
         self.assertIn("Olá, Carlos Financeiro!", sent_msg.body)
         self.assertIn("Acesso temporariamente suspenso", sent_msg.body)
-        self.assertIn("Dados preservados.", sent_msg.body)
+        self.assertIn("Seus dados e informações permanecem seguros e intactos. O acesso será restabelecido automaticamente assim que o pagamento for confirmado.", sent_msg.body)
+        self.assertIn("Regularize em:", sent_msg.body)
 
     def test_resolve_subscription_recipient_hierarchy(self):
         # 1. Billing email
