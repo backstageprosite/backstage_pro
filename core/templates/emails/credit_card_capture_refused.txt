@@ -4,7 +4,7 @@ Olá, {{ responsible_name|default:band_name }}!
 
 A cobrança do plano {{ plan_name }} no valor de R$ {{ amount }} foi recusada pela operadora.
 Atualize seus dados de pagamento em:
-{{ base_url }}/relatorios/assinatura/
+{{ subscription_url }}
 
 Atenciosamente,
 Equipe Backstage Pro

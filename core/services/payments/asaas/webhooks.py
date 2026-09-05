@@ -435,21 +435,29 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                     from core.services.email_service import enqueue_email, resolve_subscription_recipient
                     sub = record.subscription
                     recip_email, recip_name = resolve_subscription_recipient(sub)
-                    if recip_email:
+                    if recip_email and sub.band and sub.band.slug:
+                        from django.urls import reverse
+                        from core.services.email_service import get_canonical_base_url
+                        base_url = get_canonical_base_url()
+                        sub_path = reverse('minha_assinatura', kwargs={'band_slug': sub.band.slug})
+                        subscription_url = f"{base_url}{sub_path}"
+
                         refusal_reason = payment_data.get('creditCard', {}).get('creditCardBrand') or payment_data.get('refusalReason') or 'Transação não autorizada pela emissora do cartão.'
                         enqueue_email(
                             email_type='CREDIT_CARD_CAPTURE_REFUSED',
                             recipient_email=recip_email,
-                            subject=f"Falha na Captura do Cartão — Backstage Pro ({sub.band.name if sub.band else 'Assinatura'})",
+                            subject=f"Falha na Captura do Cartão — Backstage Pro ({sub.band.name})",
                             idempotency_key=f"cc-refused-webhook-{payment_id}",
                             template_name='emails/credit_card_capture_refused',
                             context_data={
                                 'user_name': recip_name,
-                                'band_name': sub.band.name if sub.band else 'Sua Banda',
+                                'responsible_name': recip_name,
+                                'band_name': sub.band.name,
                                 'plan_name': sub.plan_name,
                                 'amount': f"{record.amount:.2f}",
                                 'reason': refusal_reason,
                                 'invoice_url': record.gateway_invoice_url or '',
+                                'subscription_url': subscription_url,
                             },
                             related_object_type='BillingRecord',
                             related_object_id=str(record.id)

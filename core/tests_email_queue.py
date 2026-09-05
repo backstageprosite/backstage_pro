@@ -1220,6 +1220,119 @@ class ResendTransportTestCase(TestCase):
         self.assertNotIn('{{ base_url }}/painel/', rendered_txt)
         self.assertNotIn('https://backstagepro.site/painel/', rendered_txt)
 
+    def test_credit_card_capture_refused_cta_url_contract(self):
+        """
+        Valida que:
+        - A) reverse('minha_assinatura', kwargs={'band_slug': 'banda-teste'}) resolve para '/banda-teste/relatorios/assinatura/'
+        - B) context_data do CREDIT_CARD_CAPTURE_REFUSED recebe subscription_url band-scoped
+        - C) HTML renderizado contém '/banda-teste/relatorios/assinatura/'
+        - D) TXT renderizado contém '/banda-teste/relatorios/assinatura/'
+        - E) HTML NÃO utiliza como destino do CTA rota genérica sem band_slug
+        - F) TXT NÃO utiliza rota genérica sem band_slug
+        - G) Garantir que subscription_url seja derivada da banda da própria assinatura,
+             isolando duas bandas para provar que a banda A nunca recebe slug da banda B.
+        """
+        from django.urls import reverse
+        from django.template.loader import render_to_string
+        from core.models import Band, BandSubscription, BillingRecord
+        from core.services.email_service import get_canonical_base_url
+        from core.services.payments.asaas.webhooks import handle_asaas_webhook_payload
+
+        # A) reverse test
+        resolved_path = reverse('minha_assinatura', kwargs={'band_slug': 'banda-teste'})
+        self.assertEqual(resolved_path, '/banda-teste/relatorios/assinatura/')
+
+        # G) Garantir isolamento entre duas bandas distintas
+        band_a = Band.objects.create(name="Banda Recusa A", slug="banda-recusa-a")
+        band_b = Band.objects.create(name="Banda Recusa B", slug="banda-recusa-b")
+
+        today = datetime.date.today()
+
+        sub_a = BandSubscription.objects.create(
+            band=band_a,
+            plan_name="Pro A",
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("199.90"),
+            start_date=today,
+            next_due_date=today + datetime.timedelta(days=30),
+            status="ATIVO",
+            billing_email="responsavel@recusa-a.com",
+            financial_responsible_name="Resp Recusa A"
+        )
+        sub_b = BandSubscription.objects.create(
+            band=band_b,
+            plan_name="Pro B",
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("299.90"),
+            start_date=today,
+            next_due_date=today + datetime.timedelta(days=30),
+            status="ATIVO",
+            billing_email="responsavel@recusa-b.com",
+            financial_responsible_name="Resp Recusa B"
+        )
+
+        record_a = BillingRecord.objects.create(
+            subscription=sub_a,
+            band=band_a,
+            reference_period="09/2026",
+            plan_name="Pro A",
+            billing_cycle="MENSAL",
+            amount=Decimal("199.90"),
+            due_date=today,
+            status="PENDENTE",
+            gateway_provider="ASAAS",
+            gateway_payment_id="pay_recusa_a_123"
+        )
+
+        payload_a = {
+            "id": "evt_recusa_a",
+            "event": "PAYMENT_CREDIT_CARD_CAPTURE_REFUSED",
+            "payment": {
+                "id": "pay_recusa_a_123",
+                "customer": "cus_recusa_a",
+                "value": 199.90,
+                "dueDate": today.strftime("%Y-%m-%d"),
+                "refusalReason": "Cartão bloqueado pelo emissor",
+                "invoiceUrl": "https://sandbox.asaas.com/i/test-recusa-a"
+            }
+        }
+
+        success, _ = handle_asaas_webhook_payload(payload_a)
+        self.assertTrue(success)
+
+        delivery_a = EmailDelivery.objects.filter(
+            email_type=EmailDelivery.EmailType.CREDIT_CARD_CAPTURE_REFUSED,
+            idempotency_key="cc-refused-webhook-pay_recusa_a_123"
+        ).first()
+        self.assertIsNotNone(delivery_a)
+
+        # B) context_data recebe subscription_url com slug da banda A
+        sub_url_a = delivery_a.context_data.get('subscription_url')
+        self.assertIsNotNone(sub_url_a)
+        base_url = get_canonical_base_url()
+        expected_url = f"{base_url}/{band_a.slug}/relatorios/assinatura/"
+        self.assertEqual(sub_url_a, expected_url)
+        self.assertIn(f"/{band_a.slug}/relatorios/assinatura/", sub_url_a)
+        self.assertNotIn(f"/{band_b.slug}/", sub_url_a)
+
+        # C & E) Render HTML
+        rendered_html = render_to_string("emails/credit_card_capture_refused.html", delivery_a.context_data)
+        self.assertIn(f'href="{sub_url_a}"', rendered_html)
+        self.assertIn(f"/{band_a.slug}/relatorios/assinatura/", rendered_html)
+        self.assertNotIn(f"/{band_b.slug}/", rendered_html)
+        self.assertNotIn('href="{{ base_url }}/relatorios/assinatura/"', rendered_html)
+        self.assertNotIn('href="https://backstagepro.site/relatorios/assinatura/"', rendered_html)
+        self.assertNotIn('href="/relatorios/assinatura/"', rendered_html)
+
+        # D & F) Render TXT
+        rendered_txt = render_to_string("emails/credit_card_capture_refused.txt", delivery_a.context_data)
+        self.assertIn(sub_url_a, rendered_txt)
+        self.assertIn(f"/{band_a.slug}/relatorios/assinatura/", rendered_txt)
+        self.assertNotIn(f"/{band_b.slug}/", rendered_txt)
+        self.assertNotIn('{{ base_url }}/relatorios/assinatura/', rendered_txt)
+        self.assertNotIn('https://backstagepro.site/relatorios/assinatura/', rendered_txt)
+
+
 
 
 

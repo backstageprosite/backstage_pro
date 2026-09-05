@@ -299,7 +299,13 @@ class AnnualRenewalService:
                         from core.services.email_service import enqueue_email, resolve_subscription_recipient
                         from core.models import EmailDelivery
                         recipient_email, recipient_name = resolve_subscription_recipient(sub)
-                        if recipient_email:
+                        if recipient_email and sub.band and sub.band.slug:
+                            from django.urls import reverse
+                            from core.services.email_service import get_canonical_base_url
+                            base_url = get_canonical_base_url()
+                            sub_path = reverse('minha_assinatura', kwargs={'band_slug': sub.band.slug})
+                            subscription_url = f"{base_url}{sub_path}"
+
                             idemp_key = f"cc-refused-renewal-{annual_purchase.id}-{timezone.localdate().isoformat()}"
                             enqueue_email(
                                 email_type=EmailDelivery.EmailType.CREDIT_CARD_CAPTURE_REFUSED,
@@ -309,12 +315,14 @@ class AnnualRenewalService:
                                 template_name="emails/credit_card_capture_refused",
                                 context_data={
                                     "user_name": recipient_name,
+                                    "responsible_name": recipient_name,
                                     "band_name": sub.band.name,
                                     "plan_name": sub.plan_name,
                                     "amount": str(annual_purchase.gross_amount),
                                     "due_date": annual_purchase.coverage_start.strftime("%d/%m/%Y"),
                                     "error_reason": str(err_msg),
                                     "manage_payment_url": "/assinatura/gerenciar/",
+                                    "subscription_url": subscription_url,
                                 },
                                 related_object_type="AnnualPlanPurchase",
                                 related_object_id=str(annual_purchase.id)
