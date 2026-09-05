@@ -8,7 +8,7 @@ Nova Vigência: {{ coverage_start }} a {{ coverage_end }}
 Próxima Renovação: {{ next_renewal_date }}
 
 Acesse seu painel em:
-{{ base_url }}/painel/
+{{ dashboard_url }}
 
 Atenciosamente,
 Equipe Backstage Pro

@@ -392,7 +392,13 @@ class AnnualRenewalService:
             from core.services.email_service import enqueue_email, resolve_subscription_recipient
             from core.models import EmailDelivery
             recipient_email, recipient_name = resolve_subscription_recipient(sub_locked)
-            if recipient_email:
+            if recipient_email and sub_locked.band and sub_locked.band.slug:
+                from django.urls import reverse
+                from core.services.email_service import get_canonical_base_url
+                base_url = get_canonical_base_url()
+                dash_path = reverse('dashboard', kwargs={'band_slug': sub_locked.band.slug})
+                dashboard_url = f"{base_url}{dash_path}"
+
                 idemp_key = f"annual-renewal-success-{annual_purchase.id}"
                 inst_text = f"{annual_purchase.installment_count}x de R$ {(annual_purchase.gross_amount / annual_purchase.installment_count):.2f}" if annual_purchase.installment_count > 1 else f"R$ {annual_purchase.gross_amount:.2f} à vista"
                 enqueue_email(
@@ -411,6 +417,7 @@ class AnnualRenewalService:
                         "new_coverage_end": annual_purchase.coverage_end.strftime("%d/%m/%Y"),
                         "next_due_date": sub_locked.next_due_date.strftime("%d/%m/%Y") if sub_locked.next_due_date else "",
                         "receipt_url": "/assinatura/historico/",
+                        "dashboard_url": dashboard_url,
                     },
                     related_object_type="AnnualPlanPurchase",
                     related_object_id=str(annual_purchase.id)
