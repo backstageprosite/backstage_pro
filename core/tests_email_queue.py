@@ -679,6 +679,64 @@ class ResendTransportTestCase(TestCase):
         self.assertIn("Ambiente:</strong> Sistema", html_f)
         self.assertIn("Ambiente: Sistema", txt_f)
 
+    def test_account_activation_real_flow_amount_formatting(self):
+        """
+        Garante que o provisionamento real de ACCOUNT_ACTIVATION enfileira amount formatado
+        com vírgula brasileira ('49,90'), sem prefixo 'R$' e sem ponto decimal ('49.90').
+        E confirma que os templates HTML e TXT renderizam exatamente 'R$ 49,90'.
+        """
+        from core.models import SignupOrder
+        from core.services.payments.provisioning import process_checkout_paid_event
+        from django.template.loader import render_to_string
+
+        order = SignupOrder.objects.create(
+            external_reference="order-fmt-test-01",
+            gateway_checkout_id="checkout-fmt-01",
+            band_name="Banda Formato Real",
+            responsible_name="Produtor Formato",
+            email="formato@teste.com",
+            plan_type="AVANCADO",
+            billing_cycle="MENSAL",
+            amount=Decimal("49.90"),
+            status="PENDENTE"
+        )
+
+        payload = {
+            "checkout": {
+                "id": "checkout-fmt-01",
+                "externalReference": "order-fmt-test-01",
+                "status": "PAID"
+            }
+        }
+
+        success, msg, band = process_checkout_paid_event(payload)
+        self.assertTrue(success)
+
+        delivery = EmailDelivery.objects.filter(
+            email_type=EmailDelivery.EmailType.ACCOUNT_ACTIVATION,
+            recipient_email="formato@teste.com"
+        ).first()
+        self.assertIsNotNone(delivery)
+
+        # 1. Contrato estrito no context_data:
+        self.assertEqual(delivery.context_data.get("amount"), "49,90")
+        self.assertNotEqual(delivery.context_data.get("amount"), "49.90")
+        self.assertNotEqual(delivery.context_data.get("amount"), "R$ 49,90")
+        self.assertNotIn("R$", delivery.context_data.get("amount"))
+
+        # 2. Renderização final nos templates:
+        rendered_html = render_to_string("emails/account_activation.html", delivery.context_data)
+        rendered_txt = render_to_string("emails/account_activation.txt", delivery.context_data)
+
+        self.assertIn("Valor:</strong> R$ 49,90", rendered_html)
+        self.assertNotIn("R$ R$", rendered_html)
+        self.assertNotIn("R$ 49.90", rendered_html)
+
+        self.assertIn("Valor: R$ 49,90", rendered_txt)
+        self.assertNotIn("R$ R$", rendered_txt)
+        self.assertNotIn("R$ 49.90", rendered_txt)
+
+
 
 
 

@@ -261,7 +261,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
                     'band_name': band.name,
                     'plan_name': plan_display,
                     'billing_cycle': 'Anual' if is_annual else 'Mensal',
-                    'amount': f"{order.amount:.2f}",
+                    'amount': f"{order.amount:.2f}".replace('.', ','),
                 },
                 related_object_type='BandActivationToken',
                 related_object_id=str(activation.pk)
