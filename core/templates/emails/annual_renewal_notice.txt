@@ -6,7 +6,7 @@ Sua assinatura do plano {{ plan_name }} Anual será renovada em {{ renewal_date 
 Valor: R$ {{ notified_price }} em até {{ installment_count }}x no cartão de crédito.
 
 Caso não deseje renovar automaticamente, você poderá cancelar antes da data prevista em:
-{{ base_url }}/relatorios/assinatura/
+{{ subscription_url }}
 
 Atenciosamente,
 Equipe Backstage Pro

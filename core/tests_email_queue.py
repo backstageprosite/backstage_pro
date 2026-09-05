@@ -1007,6 +1007,93 @@ class ResendTransportTestCase(TestCase):
         self.assertNotIn('{{ base_url }}/relatorios/assinatura/', rendered_txt)
         self.assertNotIn('https://backstagepro.site/relatorios/assinatura/', rendered_txt)
 
+    def test_annual_renewal_notice_cta_url_contract(self):
+        """
+        Valida que:
+        - A) reverse('minha_assinatura', kwargs={'band_slug': 'banda-teste'}) resolve para '/banda-teste/relatorios/assinatura/'
+        - B) context_data do ANNUAL_RENEWAL_NOTICE recebe subscription_url band-scoped
+        - C) HTML renderizado contém '/banda-teste/relatorios/assinatura/'
+        - D) TXT renderizado contém '/banda-teste/relatorios/assinatura/'
+        - E) CTA HTML NÃO contém a antiga URL genérica sem band_slug
+        - F) TXT NÃO contém a antiga URL genérica sem band_slug
+        - G) O CTA é baseado na banda da própria assinatura anual e nunca usa slug de outra banda
+        """
+        from django.urls import reverse
+        from django.template.loader import render_to_string
+        from core.models import Band, BandSubscription, EmailDelivery
+        from core.services.email_service import get_canonical_base_url
+
+        # A) reverse test
+        resolved_path = reverse('minha_assinatura', kwargs={'band_slug': 'banda-teste'})
+        self.assertEqual(resolved_path, '/banda-teste/relatorios/assinatura/')
+
+        # G) Garantir isolamento entre duas bandas distintas
+        band_a = Band.objects.create(name="Banda Anual A", slug="banda-anual-a")
+        band_b = Band.objects.create(name="Banda Anual B", slug="banda-anual-b")
+
+        today = datetime.date.today()
+        renewal_date = today + datetime.timedelta(days=30)
+
+        sub_a = BandSubscription.objects.create(
+            band=band_a,
+            plan_name="Pro Anual A",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal("599.90"),
+            start_date=today - datetime.timedelta(days=335),
+            next_due_date=renewal_date,
+            status="ATIVO",
+            auto_renew=True,
+            billing_email="gestor@banda-a.com",
+            financial_responsible_name="Gestor Banda A"
+        )
+        sub_b = BandSubscription.objects.create(
+            band=band_b,
+            plan_name="Pro Anual B",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal("899.90"),
+            start_date=today - datetime.timedelta(days=335),
+            next_due_date=renewal_date,
+            status="ATIVO",
+            auto_renew=True,
+            billing_email="gestor@banda-b.com",
+            financial_responsible_name="Gestor Banda B"
+        )
+
+        call_command('process_annual_renewal_notices', date=today.strftime('%Y-%m-%d'), subscription_id=sub_a.id)
+
+        delivery_a = EmailDelivery.objects.filter(
+            email_type=EmailDelivery.EmailType.ANNUAL_RENEWAL_NOTICE,
+            recipient_email="gestor@banda-a.com"
+        ).first()
+        self.assertIsNotNone(delivery_a)
+
+        # B) context_data recebe subscription_url com slug da banda A
+        sub_url_a = delivery_a.context_data.get('subscription_url')
+        self.assertIsNotNone(sub_url_a)
+        base_url = get_canonical_base_url()
+        expected_url = f"{base_url}/{band_a.slug}/relatorios/assinatura/"
+        self.assertEqual(sub_url_a, expected_url)
+        self.assertIn(f"/{band_a.slug}/relatorios/assinatura/", sub_url_a)
+        self.assertNotIn(f"/{band_b.slug}/", sub_url_a)
+
+        # C & E) Render HTML
+        rendered_html = render_to_string("emails/annual_renewal_notice.html", delivery_a.context_data)
+        self.assertIn(f'href="{sub_url_a}"', rendered_html)
+        self.assertIn(f"/{band_a.slug}/relatorios/assinatura/", rendered_html)
+        self.assertNotIn(f"/{band_b.slug}/", rendered_html)
+        self.assertNotIn('href="{{ base_url }}/relatorios/assinatura/"', rendered_html)
+        self.assertNotIn('href="https://backstagepro.site/relatorios/assinatura/"', rendered_html)
+        self.assertNotIn('href="/relatorios/assinatura/"', rendered_html)
+
+        # D & F) Render TXT
+        rendered_txt = render_to_string("emails/annual_renewal_notice.txt", delivery_a.context_data)
+        self.assertIn(sub_url_a, rendered_txt)
+        self.assertIn(f"/{band_a.slug}/relatorios/assinatura/", rendered_txt)
+        self.assertNotIn(f"/{band_b.slug}/", rendered_txt)
+        self.assertNotIn('{{ base_url }}/relatorios/assinatura/', rendered_txt)
+        self.assertNotIn('https://backstagepro.site/relatorios/assinatura/', rendered_txt)
+
+
 
 
 

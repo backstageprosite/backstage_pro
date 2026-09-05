@@ -215,7 +215,12 @@ class Command(BaseCommand):
 
                     # Enfileirar EmailDelivery na fila transacional (totalmente desacoplado de SMTP)
                     try:
-                        from core.services.email_service import enqueue_email
+                        from core.services.email_service import enqueue_email, get_canonical_base_url
+                        from django.urls import reverse
+                        base_url = get_canonical_base_url()
+                        sub_path = reverse('minha_assinatura', kwargs={'band_slug': sub.band.slug})
+                        subscription_url = f"{base_url}{sub_path}"
+
                         idemp_key = f"annual-notice-sub-{sub.id}-{sub.next_due_date.strftime('%Y%m%d')}"
                         ctx = {
                             'responsible_name': sub.financial_responsible_name or sub.band.name,
@@ -226,6 +231,7 @@ class Command(BaseCommand):
                             'notified_price': f"{notified_price:.2f}",
                             'installment_count': inst_count,
                             'price_changed': price_changed,
+                            'subscription_url': subscription_url,
                         }
                         subject = "Atualização de valor da sua renovação — Backstage Pro" if price_changed else "Renovação do Backstage Pro em 30 dias"
 
