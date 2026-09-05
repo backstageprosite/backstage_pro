@@ -198,6 +198,60 @@ class AsaasClient:
             logger.warning("Exceção ao atualizar assinatura %s no Asaas: %s", subscription_id, str(e))
             return False, {"error": str(e)}
 
+    def update_subscription_credit_card(
+        self,
+        subscription_id: str,
+        credit_card_token: str,
+        remote_ip: str
+    ) -> Tuple[bool, Dict[str, Any]]:
+        """
+        Atualiza o cartão de crédito vinculado a uma assinatura recorrente no Asaas via
+        PUT /v3/subscriptions/{id}/creditCard utilizando exclusivamente creditCardToken.
+        
+        NUNCA aceita PAN, CVV ou dados brutos de cartão.
+        Exige explicitamente remote_ip do pagador (sem fallback para IP de servidor).
+        Retorna (sucesso: bool, resposta_ou_erro: dict).
+        """
+        if not subscription_id or not isinstance(subscription_id, str) or not subscription_id.strip():
+            return False, {"error": "subscription_id_invalido"}
+
+        if not credit_card_token or not isinstance(credit_card_token, str) or not credit_card_token.strip():
+            return False, {"error": "credit_card_token_invalido"}
+
+        if not remote_ip or not isinstance(remote_ip, str) or not remote_ip.strip():
+            return False, {"error": "remote_ip_invalido"}
+
+        if not self.config.api_key:
+            return False, {"error": "api_key_ausente"}
+
+        encoded_id = urllib.parse.quote(subscription_id.strip())
+        url = f"{self.base_url}/subscriptions/{encoded_id}/creditCard"
+        payload = {
+            "creditCardToken": credit_card_token.strip(),
+            "remoteIp": remote_ip.strip()
+        }
+        body_bytes = self.encode_payload(payload)
+        req = urllib.request.Request(url, data=body_bytes, headers=self.get_headers(), method='PUT')
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                status_code = resp.getcode()
+                raw_body = resp.read().decode('utf-8')
+                resp_data = json.loads(raw_body) if raw_body else {}
+                if status_code in (200, 204) or resp_data.get('id') or resp_data.get('status') == 'ACTIVE':
+                    return True, resp_data
+                return False, resp_data
+        except urllib.error.HTTPError as http_err:
+            raw_err = http_err.read().decode('utf-8') if hasattr(http_err, 'read') else str(http_err)
+            try:
+                err_data = json.loads(raw_err)
+            except Exception:
+                err_data = {"error": str(http_err), "status": http_err.code}
+            logger.warning("Erro HTTP %s ao atualizar cartao da assinatura %s no Asaas", http_err.code, subscription_id)
+            return False, err_data
+        except Exception as e:
+            logger.warning("Exceção ao atualizar cartao da assinatura %s no Asaas: %s", subscription_id, str(e))
+            return False, {"error": str(e)}
+
     def update_payment(self, payment_id: str, data: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
         """
         Atualiza dados de uma cobrança na API do Asaas utilizando PUT /v3/payments/{id}.

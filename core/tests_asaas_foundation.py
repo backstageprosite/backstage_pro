@@ -4982,3 +4982,213 @@ class AsaasFoundationTests(TestCase):
                 self.assertEqual(email_message.subject, 'Backstage Pro — Teste de Email Homologação')
                 self.assertEqual(email_message.from_email, 'Backstage Pro <backstagepro.site@gmail.com>')
                 self.assertEqual(email_message.to, ['destinatario_autorizado@exemplo.com'])
+
+    def test_update_subscription_credit_card_client(self):
+        """
+        CARD-UPDATE-02A: Valida cliente Asaas update_subscription_credit_card.
+        Gera PUT /v3/subscriptions/{id}/creditCard com payload seguro e sem PAN/CVV.
+        """
+        from core.services.payments.asaas.client import AsaasClient
+        from core.services.payments.base import AsaasConfig
+        from unittest.mock import patch, MagicMock
+        import json
+
+        cfg = AsaasConfig(
+            environment='sandbox',
+            base_url='https://api-sandbox.asaas.com/v3',
+            api_key='$aact_test_key_card_update',
+            webhook_token='test_token',
+            live_payments_enabled=True
+        )
+        client = AsaasClient(config=cfg)
+
+        # 1. Validações prévias de argumentos vazios (sem HTTP)
+        ok, res = client.update_subscription_credit_card("", "tok_123", "200.100.50.25")
+        self.assertFalse(ok)
+        self.assertEqual(res.get("error"), "subscription_id_invalido")
+
+        ok, res = client.update_subscription_credit_card("sub_123", "", "200.100.50.25")
+        self.assertFalse(ok)
+        self.assertEqual(res.get("error"), "credit_card_token_invalido")
+
+        ok, res = client.update_subscription_credit_card("sub_123", "tok_123", "")
+        self.assertFalse(ok)
+        self.assertEqual(res.get("error"), "remote_ip_invalido")
+
+        # 2. Chamada válida mockada
+        with patch('urllib.request.urlopen') as mock_urlopen:
+            mock_resp = MagicMock()
+            mock_resp.getcode.return_value = 200
+            mock_resp.read.return_value = json.dumps({"id": "sub_123", "status": "ACTIVE"}).encode('utf-8')
+            mock_resp.__enter__.return_value = mock_resp
+            mock_urlopen.return_value = mock_resp
+
+            ok, res = client.update_subscription_credit_card("sub_123", "token_abc_safe", "200.100.50.25")
+            self.assertTrue(ok)
+            self.assertEqual(res.get("id"), "sub_123")
+
+            # Verifica Request gerada
+            req = mock_urlopen.call_args[0][0]
+            self.assertEqual(req.get_method(), 'PUT')
+            self.assertTrue(req.full_url.endswith('/subscriptions/sub_123/creditCard'))
+            
+            payload_sent = json.loads(req.data.decode('utf-8'))
+            self.assertEqual(payload_sent.get("creditCardToken"), "token_abc_safe")
+            self.assertEqual(payload_sent.get("remoteIp"), "200.100.50.25")
+
+            # NUNCA deve incluir PAN, CVV ou creditCard completo
+            self.assertNotIn("creditCard", payload_sent)
+            self.assertNotIn("creditCardHolderInfo", payload_sent)
+            self.assertNotIn("number", payload_sent)
+            self.assertNotIn("cvv", payload_sent)
+            self.assertNotIn("ccv", payload_sent)
+
+    def test_extract_card_metadata_from_webhook(self):
+        """
+        CARD-UPDATE-02A: Testa extração pura e segura de metadados de cartão do webhook.
+        """
+        from core.services.payments.methods import extract_card_metadata_from_webhook
+
+        # 1. Payload normal do Asaas
+        payload_normal = {
+            "payment": {
+                "creditCard": {
+                    "creditCardNumber": "8829",
+                    "creditCardBrand": "MASTERCARD",
+                    "creditCardToken": "fake-token-test-123"
+                }
+            }
+        }
+        meta = extract_card_metadata_from_webhook(payload_normal)
+        self.assertEqual(meta['credit_card_token'], "fake-token-test-123")
+        self.assertEqual(meta['card_brand'], "MASTERCARD")
+        self.assertEqual(meta['card_last4'], "8829")
+
+        # 2. Payload com número com mais de 4 dígitos -> trunca para últimos 4
+        payload_long = {
+            "payment": {
+                "creditCard": {
+                    "creditCardNumber": "************4321",
+                    "creditCardBrand": "VISA",
+                    "creditCardToken": "token-xyz"
+                }
+            }
+        }
+        meta_long = extract_card_metadata_from_webhook(payload_long)
+        self.assertEqual(meta_long['card_last4'], "4321")
+        self.assertEqual(meta_long['card_brand'], "VISA")
+
+        # 3. Payload sem creditCard
+        payload_no_card = {"payment": {"id": "pay_123", "billingType": "BOLETO"}}
+        meta_empty = extract_card_metadata_from_webhook(payload_no_card)
+        self.assertIsNone(meta_empty['credit_card_token'])
+        self.assertIsNone(meta_empty['card_brand'])
+        self.assertIsNone(meta_empty['card_last4'])
+
+        # 4. Payload com valores None ou não dict
+        meta_none = extract_card_metadata_from_webhook(None)
+        self.assertIsNone(meta_none['credit_card_token'])
+
+    def test_replace_active_gateway_payment_method_service(self):
+        """
+        CARD-UPDATE-02A: Testa service replace_active_gateway_payment_method com:
+        - Criação de método ativo
+        - Criptografia Fernet em repouso
+        - Desativação do método antigo
+        - Idempotência de token idêntico
+        - Isolamento entre subscriptions
+        """
+        import datetime
+        from decimal import Decimal
+        from core.models import Band, BandSubscription, GatewayPaymentMethod
+        from core.services.payments.methods import replace_active_gateway_payment_method
+
+        band1 = Band.objects.create(name="Banda Card Test 1", slug="banda-card-test-1")
+        sub1 = BandSubscription.objects.create(
+            band=band1,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_test_1'
+        )
+
+        band2 = Band.objects.create(name="Banda Card Test 2", slug="banda-card-test-2")
+        sub2 = BandSubscription.objects.create(
+            band=band2,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_test_2'
+        )
+
+        # 1. Cria primeiro método para sub1
+        pm1 = replace_active_gateway_payment_method(
+            subscription=sub1,
+            credit_card_token="token_cartao_inicial",
+            card_brand="VISA",
+            card_last4="1111",
+            expiration_month="12",
+            expiration_year="2028"
+        )
+        self.assertTrue(pm1.is_active)
+        self.assertEqual(pm1.card_brand, "VISA")
+        self.assertEqual(pm1.card_last4, "1111")
+        # Token criptografado no banco
+        self.assertNotEqual(pm1.encrypted_token, "token_cartao_inicial")
+        # Descriptografia em memória funciona
+        self.assertEqual(pm1.get_decrypted_token(), "token_cartao_inicial")
+
+        # 2. Idempotência: Chamar novamente com o MESMO token para sub1
+        pm1_dup = replace_active_gateway_payment_method(
+            subscription=sub1,
+            credit_card_token="token_cartao_inicial",
+            card_brand="VISA",
+            card_last4="1111"
+        )
+        self.assertEqual(pm1.id, pm1_dup.id)
+        self.assertEqual(GatewayPaymentMethod.objects.filter(subscription=sub1).count(), 1)
+
+        # 3. Substituição por novo token para sub1
+        pm2 = replace_active_gateway_payment_method(
+            subscription=sub1,
+            credit_card_token="token_cartao_novo",
+            card_brand="MASTERCARD",
+            card_last4="9999",
+            expiration_month="08",
+            expiration_year="2030"
+        )
+        self.assertNotEqual(pm1.id, pm2.id)
+        self.assertTrue(pm2.is_active)
+        self.assertEqual(pm2.get_decrypted_token(), "token_cartao_novo")
+
+        # Cartão antigo pm1 deve estar inativo
+        pm1.refresh_from_db()
+        self.assertFalse(pm1.is_active)
+
+        # Apenas 1 ativo para sub1
+        self.assertEqual(GatewayPaymentMethod.objects.filter(subscription=sub1, is_active=True).count(), 1)
+        self.assertEqual(GatewayPaymentMethod.objects.filter(subscription=sub1).count(), 2)
+
+        # 4. Isolamento: sub2 não interfere em sub1
+        pm_sub2 = replace_active_gateway_payment_method(
+            subscription=sub2,
+            credit_card_token="token_sub2",
+            card_brand="ELO",
+            card_last4="5555"
+        )
+        self.assertTrue(pm_sub2.is_active)
+        self.assertEqual(GatewayPaymentMethod.objects.filter(subscription=sub2, is_active=True).count(), 1)
+        # sub1 continua tendo pm2 como ativo
+        pm2.refresh_from_db()
+        self.assertTrue(pm2.is_active)
+
