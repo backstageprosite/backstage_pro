@@ -1,6 +1,6 @@
 Aviso de pagamento pendente — Backstage Pro
 
-Olá, {{ responsible_name|default:band_name }}!
+Olá, {% firstof responsible_name band_name "Cliente" %}!
 
 Identificamos que o pagamento da sua assinatura do {{ plan_name }} ainda não foi confirmado na data de vencimento.
 Valor pendente: R$ {{ amount }}

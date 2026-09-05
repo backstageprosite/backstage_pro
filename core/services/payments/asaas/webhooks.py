@@ -406,6 +406,7 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                             template_name='emails/payment_overdue',
                             context_data={
                                 'user_name': recip_name,
+                                'responsible_name': recip_name,
                                 'band_name': sub.band.name if sub.band else 'Sua Banda',
                                 'plan_name': sub.plan_name,
                                 'amount': f"{record.amount:.2f}".replace('.', ','),

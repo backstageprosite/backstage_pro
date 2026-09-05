@@ -423,7 +423,9 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertEqual(delivery.recipient_email, "financeiro@teste.com")
         self.assertEqual(delivery.status, EmailDelivery.Status.PENDING)
 
-        # Contrato de contexto pt-BR:
+        # Contrato de contexto pt-BR e saudação (CASO D):
+        self.assertEqual(delivery.context_data.get("responsible_name"), "Carlos Financeiro")
+        self.assertEqual(delivery.context_data.get("user_name"), "Carlos Financeiro")
         self.assertEqual(delivery.context_data.get("amount"), "499,90")
         self.assertNotEqual(delivery.context_data.get("amount"), "499.90")
         self.assertNotEqual(delivery.context_data.get("amount"), "R$ 499,90")
@@ -438,12 +440,14 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         sent_msg = mail.outbox[0]
         html_content = sent_msg.alternatives[0][0] if sent_msg.alternatives else sent_msg.body
+        self.assertIn("Olá, <strong>Carlos Financeiro</strong>!", html_content)
         self.assertIn("Valor pendente:</strong> R$ 499,90", html_content)
         self.assertIn("Acesso mantido até:</strong> 08/09/2026", html_content)
         self.assertNotIn("R$ R$", html_content)
         self.assertNotIn("R$ 499.90", html_content)
 
         # Plain text
+        self.assertIn("Olá, Carlos Financeiro!", sent_msg.body)
         self.assertIn("Valor pendente: R$ 499,90", sent_msg.body)
         self.assertIn("Acesso mantido até: 08/09/2026", sent_msg.body)
         self.assertNotIn("R$ R$", sent_msg.body)
@@ -756,6 +760,51 @@ class ResendTransportTestCase(TestCase):
         self.assertIn("Valor: R$ 49,90", rendered_txt)
         self.assertNotIn("R$ R$", rendered_txt)
         self.assertNotIn("R$ 49.90", rendered_txt)
+
+    def test_payment_overdue_greeting_fallback_and_context_contract(self):
+        """
+        Valida que o template payment_overdue possui fallback seguro para a saudação
+        (responsible_name -> band_name -> 'Cliente') sem falhar caso chaves estejam ausentes,
+        e garante que o webhook real fornece tanto responsible_name quanto user_name.
+        """
+        from django.template.loader import render_to_string
+
+        # CASO A: responsible_name presente
+        ctx_a = {
+            'responsible_name': 'Vinicius',
+            'band_name': 'Banda Teste',
+            'plan_name': 'Avançado',
+            'amount': '49,90',
+            'grace_until': '10/09/2026',
+        }
+        html_a = render_to_string("emails/payment_overdue.html", ctx_a)
+        txt_a = render_to_string("emails/payment_overdue.txt", ctx_a)
+        self.assertIn("Olá, <strong>Vinicius</strong>!", html_a)
+        self.assertIn("Olá, Vinicius!", txt_a)
+
+        # CASO B: responsible_name ausente, band_name presente
+        ctx_b = {
+            'band_name': 'Banda Teste',
+            'plan_name': 'Avançado',
+            'amount': '49,90',
+            'grace_until': '10/09/2026',
+        }
+        html_b = render_to_string("emails/payment_overdue.html", ctx_b)
+        txt_b = render_to_string("emails/payment_overdue.txt", ctx_b)
+        self.assertIn("Olá, <strong>Banda Teste</strong>!", html_b)
+        self.assertIn("Olá, Banda Teste!", txt_b)
+
+        # CASO C: responsible_name e band_name ambos ausentes
+        ctx_c = {
+            'plan_name': 'Avançado',
+            'amount': '49,90',
+            'grace_until': '10/09/2026',
+        }
+        html_c = render_to_string("emails/payment_overdue.html", ctx_c)
+        txt_c = render_to_string("emails/payment_overdue.txt", ctx_c)
+        self.assertIn("Olá, <strong>Cliente</strong>!", html_c)
+        self.assertIn("Olá, Cliente!", txt_c)
+
 
 
 

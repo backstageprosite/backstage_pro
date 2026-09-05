@@ -1,7 +1,7 @@
 {% extends "emails/base_email.html" %}
 {% block content %}
 <h2 class="content-title" style="margin-top: 0; margin-bottom: 16px; color: #ea580c; font-size: 20px; font-weight: 700; line-height: 1.35;">Aviso de pagamento pendente</h2>
-<p class="lead-text" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; line-height: 1.6; color: #334155;">Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
+<p class="lead-text" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; line-height: 1.6; color: #334155;">Olá, <strong>{% firstof responsible_name band_name "Cliente" %}</strong>!</p>
 <p class="support-text" style="margin-top: 0; margin-bottom: 18px; font-size: 14px; line-height: 1.6; color: #475569;">Identificamos que o pagamento da sua assinatura do {{ plan_name }} ainda não foi confirmado na data de vencimento.</p>
 
 <div class="info-card info-card-due" style="background-color: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #ea580c; border-radius: 8px; padding: 18px 20px; margin: 22px 0;">
