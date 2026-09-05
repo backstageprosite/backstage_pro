@@ -408,7 +408,7 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                                 'user_name': recip_name,
                                 'band_name': sub.band.name if sub.band else 'Sua Banda',
                                 'plan_name': sub.plan_name,
-                                'amount': f"{record.amount:.2f}",
+                                'amount': f"{record.amount:.2f}".replace('.', ','),
                                 'due_date': due_fmt,
                                 'grace_until': grace_fmt,
                                 'invoice_url': record.gateway_invoice_url or '',

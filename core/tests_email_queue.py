@@ -423,10 +423,31 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertEqual(delivery.recipient_email, "financeiro@teste.com")
         self.assertEqual(delivery.status, EmailDelivery.Status.PENDING)
 
+        # Contrato de contexto pt-BR:
+        self.assertEqual(delivery.context_data.get("amount"), "499,90")
+        self.assertNotEqual(delivery.context_data.get("amount"), "499.90")
+        self.assertNotEqual(delivery.context_data.get("amount"), "R$ 499,90")
+        self.assertNotIn("R$", delivery.context_data.get("amount"))
+        self.assertEqual(delivery.context_data.get("grace_until"), "08/09/2026")
+
         # Execute worker
         call_command('run_email_worker', once=True)
         delivery.refresh_from_db()
         self.assertEqual(delivery.status, EmailDelivery.Status.SENT)
+
+        self.assertEqual(len(mail.outbox), 1)
+        sent_msg = mail.outbox[0]
+        html_content = sent_msg.alternatives[0][0] if sent_msg.alternatives else sent_msg.body
+        self.assertIn("Valor pendente:</strong> R$ 499,90", html_content)
+        self.assertIn("Acesso mantido até:</strong> 08/09/2026", html_content)
+        self.assertNotIn("R$ R$", html_content)
+        self.assertNotIn("R$ 499.90", html_content)
+
+        # Plain text
+        self.assertIn("Valor pendente: R$ 499,90", sent_msg.body)
+        self.assertIn("Acesso mantido até: 08/09/2026", sent_msg.body)
+        self.assertNotIn("R$ R$", sent_msg.body)
+        self.assertNotIn("R$ 499.90", sent_msg.body)
 
     def test_payment_credit_card_capture_refused_webhook_enqueues_email(self):
         from core.models import BillingRecord
