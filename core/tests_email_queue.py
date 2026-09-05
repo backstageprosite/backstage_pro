@@ -431,6 +431,9 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertNotEqual(delivery.context_data.get("amount"), "R$ 499,90")
         self.assertNotIn("R$", delivery.context_data.get("amount"))
         self.assertEqual(delivery.context_data.get("grace_until"), "08/09/2026")
+        from core.services.email_service import get_canonical_base_url
+        expected_sub_url = f"{get_canonical_base_url()}/{self.band.slug}/relatorios/assinatura/"
+        self.assertEqual(delivery.context_data.get("subscription_url"), expected_sub_url)
 
         # Execute worker
         call_command('run_email_worker', once=True)
@@ -443,6 +446,8 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertIn("Olá, <strong>Carlos Financeiro</strong>!", html_content)
         self.assertIn("Valor pendente:</strong> R$ 499,90", html_content)
         self.assertIn("Acesso mantido até:</strong> 08/09/2026", html_content)
+        self.assertIn(f'href="{expected_sub_url}"', html_content)
+        self.assertNotIn("href=\"{{ base_url }}/relatorios/assinatura/\"", html_content)
         self.assertNotIn("R$ R$", html_content)
         self.assertNotIn("R$ 499.90", html_content)
 
@@ -450,6 +455,8 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertIn("Olá, Carlos Financeiro!", sent_msg.body)
         self.assertIn("Valor pendente: R$ 499,90", sent_msg.body)
         self.assertIn("Acesso mantido até: 08/09/2026", sent_msg.body)
+        self.assertIn(expected_sub_url, sent_msg.body)
+        self.assertNotIn("{{ base_url }}/relatorios/assinatura/", sent_msg.body)
         self.assertNotIn("R$ R$", sent_msg.body)
         self.assertNotIn("R$ 499.90", sent_msg.body)
 
@@ -894,6 +901,112 @@ class ResendTransportTestCase(TestCase):
         self.assertIn(expected_sub_url, rendered_txt)
         self.assertNotIn(f"/{other_slug}/", rendered_txt)
         self.assertNotIn('{{ base_url }}/relatorios/assinatura/', rendered_txt)
+
+    def test_payment_overdue_cta_url_contract(self):
+        """
+        Valida que:
+        - A) reverse('minha_assinatura', kwargs={'band_slug': 'banda-teste'}) resolve para '/banda-teste/relatorios/assinatura/'
+        - B) context_data do PAYMENT_OVERDUE recebe subscription_url band-scoped
+        - C) HTML renderizado contém '/banda-teste/relatorios/assinatura/'
+        - D) TXT renderizado contém '/banda-teste/relatorios/assinatura/'
+        - E) HTML NÃO contém a antiga URL genérica sem band_slug
+        - F) TXT NÃO contém a antiga URL genérica sem band_slug
+        - G) O CTA é baseado exclusivamente na banda relacionada à assinatura/cobrança do evento,
+             e não em outra banda pertencente ao mesmo usuário.
+        """
+        from django.urls import reverse
+        from django.template.loader import render_to_string
+        from core.models import Band, BandSubscription, BillingRecord
+        from core.services.payments.asaas.webhooks import handle_asaas_webhook_payload
+
+        # A) reverse test
+        resolved_path = reverse('minha_assinatura', kwargs={'band_slug': 'banda-teste'})
+        self.assertEqual(resolved_path, '/banda-teste/relatorios/assinatura/')
+
+        # G) Garantir que duas bandas para o mesmo usuário/produtor não troquem seus slugs
+        band_a = Band.objects.create(name="Banda Alvo A", slug="banda-alvo-a")
+        band_b = Band.objects.create(name="Banda Intruso B", slug="banda-intruso-b")
+
+        sub_a = BandSubscription.objects.create(
+            band=band_a,
+            plan_name="Plano A",
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("199.90"),
+            start_date=datetime.date(2026, 9, 1),
+            next_due_date=datetime.date(2026, 10, 1),
+            status="ATIVO",
+            billing_email="responsavel@banda-a.com",
+            financial_responsible_name="Resp Banda A"
+        )
+        sub_b = BandSubscription.objects.create(
+            band=band_b,
+            plan_name="Plano B",
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("299.90"),
+            start_date=datetime.date(2026, 9, 1),
+            next_due_date=datetime.date(2026, 10, 1),
+            status="ATIVO",
+            billing_email="responsavel@banda-b.com",
+            financial_responsible_name="Resp Banda B"
+        )
+
+        record_a = BillingRecord.objects.create(
+            subscription=sub_a,
+            band=band_a,
+            reference_period="09/2026",
+            plan_name="Plano A",
+            billing_cycle="MENSAL",
+            amount=Decimal("199.90"),
+            due_date=datetime.date(2026, 9, 4),
+            status="PENDENTE",
+            gateway_provider="ASAAS",
+            gateway_payment_id="pay_band_a_overdue"
+        )
+
+        payload_a = {
+            "id": "evt_overdue_a",
+            "event": "PAYMENT_OVERDUE",
+            "payment": {
+                "id": "pay_band_a_overdue",
+                "customer": "cus_band_a",
+                "value": 199.90,
+                "dueDate": "2026-09-04",
+                "invoiceUrl": "https://sandbox.asaas.com/i/test-overdue-a"
+            }
+        }
+
+        success, _ = handle_asaas_webhook_payload(payload_a)
+        self.assertTrue(success)
+
+        delivery_a = EmailDelivery.objects.filter(
+            email_type=EmailDelivery.EmailType.PAYMENT_OVERDUE,
+            idempotency_key="overdue-payment-pay_band_a_overdue"
+        ).first()
+        self.assertIsNotNone(delivery_a)
+
+        # B) context_data recebe subscription_url com band_slug da banda A
+        sub_url_a = delivery_a.context_data.get('subscription_url')
+        self.assertIsNotNone(sub_url_a)
+        self.assertIn(f"/{band_a.slug}/relatorios/assinatura/", sub_url_a)
+        self.assertNotIn(f"/{band_b.slug}/", sub_url_a)
+
+        # C & E) Render HTML
+        rendered_html = render_to_string("emails/payment_overdue.html", delivery_a.context_data)
+        self.assertIn(f'href="{sub_url_a}"', rendered_html)
+        self.assertIn(f"/{band_a.slug}/relatorios/assinatura/", rendered_html)
+        self.assertNotIn(f"/{band_b.slug}/", rendered_html)
+        self.assertNotIn('href="{{ base_url }}/relatorios/assinatura/"', rendered_html)
+        self.assertNotIn('href="https://backstagepro.site/relatorios/assinatura/"', rendered_html)
+        self.assertNotIn('href="/relatorios/assinatura/"', rendered_html)
+
+        # D & F) Render TXT
+        rendered_txt = render_to_string("emails/payment_overdue.txt", delivery_a.context_data)
+        self.assertIn(sub_url_a, rendered_txt)
+        self.assertIn(f"/{band_a.slug}/relatorios/assinatura/", rendered_txt)
+        self.assertNotIn(f"/{band_b.slug}/", rendered_txt)
+        self.assertNotIn('{{ base_url }}/relatorios/assinatura/', rendered_txt)
+        self.assertNotIn('https://backstagepro.site/relatorios/assinatura/', rendered_txt)
+
 
 
 

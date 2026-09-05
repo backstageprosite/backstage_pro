@@ -393,7 +393,13 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                     from core.services.email_service import enqueue_email, resolve_subscription_recipient
                     sub = record.subscription
                     recip_email, recip_name = resolve_subscription_recipient(sub)
-                    if recip_email:
+                    if recip_email and sub.band and sub.band.slug:
+                        from django.urls import reverse
+                        from core.services.email_service import get_canonical_base_url
+                        base_url = get_canonical_base_url()
+                        sub_path = reverse('minha_assinatura', kwargs={'band_slug': sub.band.slug})
+                        subscription_url = f"{base_url}{sub_path}"
+
                         due_fmt = record.due_date.strftime('%d/%m/%Y') if record.due_date else ''
                         import datetime
                         grace_until_date = record.due_date + datetime.timedelta(days=4) if record.due_date else None
@@ -401,18 +407,19 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                         enqueue_email(
                             email_type='PAYMENT_OVERDUE',
                             recipient_email=recip_email,
-                            subject=f"Aviso de Vencimento — Backstage Pro ({sub.band.name if sub.band else 'Assinatura'})",
+                            subject=f"Aviso de Vencimento — Backstage Pro ({sub.band.name})",
                             idempotency_key=f"overdue-payment-{payment_id}",
                             template_name='emails/payment_overdue',
                             context_data={
                                 'user_name': recip_name,
                                 'responsible_name': recip_name,
-                                'band_name': sub.band.name if sub.band else 'Sua Banda',
+                                'band_name': sub.band.name,
                                 'plan_name': sub.plan_name,
                                 'amount': f"{record.amount:.2f}".replace('.', ','),
                                 'due_date': due_fmt,
                                 'grace_until': grace_fmt,
                                 'invoice_url': record.gateway_invoice_url or '',
+                                'subscription_url': subscription_url,
                             },
                             related_object_type='BillingRecord',
                             related_object_id=str(record.id)

@@ -7,7 +7,7 @@ Valor pendente: R$ {{ amount }}
 Acesso mantido até: {{ grace_until }}
 
 Regularize em:
-{{ base_url }}/relatorios/assinatura/
+{{ subscription_url }}
 
 Atenciosamente,
 Equipe Backstage Pro
