@@ -1,9 +1,10 @@
-Aviso de Pagamento Pendente — Backstage Pro
+Aviso de pagamento pendente — Backstage Pro
 
 Olá, {{ responsible_name|default:band_name }}!
 
-A fatura do plano {{ plan_name }} está em aberto no valor de R$ {{ amount }}.
-Tolerância de acesso até: {{ grace_until }}.
+Identificamos que o pagamento da sua assinatura do {{ plan_name }} ainda não foi confirmado na data de vencimento.
+Valor pendente: R$ {{ amount }}
+Acesso mantido até: {{ grace_until }}
 
 Regularize em:
 {{ base_url }}/relatorios/assinatura/

@@ -2,7 +2,7 @@ Sua conta no Backstage Pro está pronta!
 
 Olá, {{ responsible_name|default:"Produtor(a)" }}!
 
-Seu pagamento foi confirmado e a assinatura para a banda {{ band_name }} já está pronta.
+Seu pagamento foi confirmado e a assinatura da {{ band_name }} já está ativa.
 
 Plano: {{ plan_name }} ({{ billing_cycle }})
 Valor: R$ {{ amount }}

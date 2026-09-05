@@ -1,9 +1,9 @@
-Acesso Suspenso — Backstage Pro
+Acesso temporariamente suspenso — Backstage Pro
 
 Olá, {{ responsible_name|default:band_name }}!
 
 O acesso da banda {{ band_name }} foi temporariamente suspenso por pendência financeira.
-Seus dados estão preservados. Reative a assinatura em:
+Dados preservados. Reative a assinatura em:
 {{ base_url }}/relatorios/assinatura/
 
 Atenciosamente,
