@@ -339,6 +339,14 @@ PAYMENTS_LIVE_ENABLED = env_bool('PAYMENTS_LIVE_ENABLED', default=(ASAAS_ENVIRON
 # ==============================================================================
 # EMAIL SETTINGS
 # ==============================================================================
+EMAIL_PROVIDER = os.getenv('EMAIL_PROVIDER', 'smtp').strip().lower()
+
+# 1. Resend HTTPS Provider Settings
+RESEND_API_KEY = os.getenv('RESEND_API_KEY', None)
+RESEND_FROM_EMAIL = os.getenv('RESEND_FROM_EMAIL', None)
+RESEND_REPLY_TO_EMAIL = os.getenv('RESEND_REPLY_TO_EMAIL', None)
+
+# 2. Django SMTP Settings (Legado / Fallback)
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend').strip()
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com').strip()
 EMAIL_PORT = env_int('EMAIL_PORT', default=587)
@@ -350,11 +358,12 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Backstage Pro <backstagepr
 SERVER_EMAIL = os.getenv('SERVER_EMAIL', DEFAULT_FROM_EMAIL).strip()
 EMAIL_TIMEOUT = env_int('EMAIL_TIMEOUT', default=10)
 
-# FAIL-CLOSED VALIDATION: Se o backend configurado for explicitamente SMTP,
+# FAIL-CLOSED VALIDATION: Se o provider for SMTP e o backend for explicitamente SMTP,
 # exige que EMAIL_HOST_USER e EMAIL_HOST_PASSWORD estejam definidos.
-if 'smtp.EmailBackend' in EMAIL_BACKEND:
+if EMAIL_PROVIDER == 'smtp' and 'smtp.EmailBackend' in EMAIL_BACKEND:
     if not EMAIL_HOST_USER:
         raise ImproperlyConfigured("EMAIL_HOST_USER must be configured when using SMTP EmailBackend.")
     if not EMAIL_HOST_PASSWORD:
         raise ImproperlyConfigured("EMAIL_HOST_PASSWORD must be configured when using SMTP EmailBackend.")
+
 

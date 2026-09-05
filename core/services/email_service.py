@@ -1,3 +1,4 @@
+import os
 import hashlib
 import logging
 from decimal import Decimal
@@ -6,6 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
+
 
 from core.models import EmailDelivery, BandSubscription, Band, BandActivationToken
 
@@ -192,6 +194,18 @@ def render_and_send_email_delivery(delivery: EmailDelivery) -> Tuple[bool, Optio
 
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'Backstage Pro <backstagepro.site@gmail.com>')
 
+    provider = (getattr(settings, 'EMAIL_PROVIDER', None) or os.getenv('EMAIL_PROVIDER', 'smtp')).strip().lower()
+
+    if provider == 'resend':
+        return _send_via_resend(delivery, body_html, body_txt)
+    else:
+        return _send_via_smtp(delivery, body_html, body_txt, from_email)
+
+
+def _send_via_smtp(delivery: EmailDelivery, body_html: Optional[str], body_txt: str, from_email: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    """
+    Transporte legado/fallback via Django EmailBackend (SMTP / LocMem / Console).
+    """
     headers = {}
     if delivery.message_id:
         headers['Message-ID'] = delivery.message_id
@@ -218,3 +232,65 @@ def render_and_send_email_delivery(delivery: EmailDelivery) -> Tuple[bool, Optio
         err_type = type(e).__name__
         logger.error("Falha no envio SMTP para delivery %s (%s): %s", delivery.id, delivery.recipient_email, err_str)
         return False, err_type, err_str[:500]
+
+
+def _send_via_resend(delivery: EmailDelivery, body_html: Optional[str], body_txt: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    """
+    Transporte oficial via Resend HTTPS API com Idempotency-Key.
+    """
+    resend_api_key = getattr(settings, 'RESEND_API_KEY', None) or os.getenv('RESEND_API_KEY')
+    if not resend_api_key or not str(resend_api_key).strip():
+        logger.error("Envio via Resend abortado: RESEND_API_KEY não configurada no servidor.")
+        return False, 'RESEND_API_KEY_MISSING', 'A chave de API do Resend (RESEND_API_KEY) não está configurada.'
+
+    resend_from = getattr(settings, 'RESEND_FROM_EMAIL', None) or os.getenv('RESEND_FROM_EMAIL')
+    if not resend_from or not str(resend_from).strip():
+        logger.error("Envio via Resend abortado: RESEND_FROM_EMAIL não configurada no servidor.")
+        return False, 'RESEND_FROM_EMAIL_MISSING', 'O remetente do Resend (RESEND_FROM_EMAIL) não está configurado.'
+
+    try:
+        import resend
+    except ImportError:
+        logger.error("Pacote 'resend' não está instalado no ambiente Python.")
+        return False, 'RESEND_PACKAGE_MISSING', "O pacote oficial 'resend' não está instalado."
+
+    resend.api_key = str(resend_api_key).strip()
+
+    params: Dict[str, Any] = {
+        'from': str(resend_from).strip(),
+        'to': [delivery.recipient_email],
+        'subject': delivery.subject,
+        'text': body_txt,
+    }
+
+    if body_html:
+        params['html'] = body_html
+
+    reply_to = getattr(settings, 'RESEND_REPLY_TO_EMAIL', None) or os.getenv('RESEND_REPLY_TO_EMAIL')
+    if reply_to and str(reply_to).strip():
+        params['reply_to'] = str(reply_to).strip()
+
+    options = None
+    if delivery.idempotency_key:
+        options = {'idempotency_key': str(delivery.idempotency_key)}
+
+    try:
+        if options:
+            resp = resend.Emails.send(params, options=options)
+        else:
+            resp = resend.Emails.send(params)
+
+        resend_id = getattr(resp, 'id', None) or (resp.get('id') if isinstance(resp, dict) else None)
+        if resend_id:
+            logger.info("E-mail delivery %s enviado com sucesso via Resend (ID=%s).", delivery.id, resend_id)
+            return True, None, None
+        else:
+            logger.warning("Resposta do Resend não retornou ID válido: %s", resp)
+            return False, 'RESEND_EMPTY_RESPONSE', 'A API do Resend não retornou identificador de envio.'
+
+    except Exception as e:
+        err_str = str(e)
+        err_type = type(e).__name__
+        logger.error("Erro na API do Resend para delivery %s (%s): %s", delivery.id, delivery.recipient_email, err_str)
+        return False, err_type, err_str[:500]
+

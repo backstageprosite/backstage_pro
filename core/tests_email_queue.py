@@ -511,3 +511,147 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertEqual(email2, "produtor@teste.com")
         self.assertEqual(name2, "Carlos Silva")
 
+
+class ResendTransportTestCase(TestCase):
+    def setUp(self):
+        self.band = Band.objects.create(
+            name="Banda Resend Teste",
+            slug="banda-resend-teste",
+            plan_type=Band.PlanType.AVANCADO,
+        )
+
+    @override_settings(
+        EMAIL_PROVIDER='resend',
+        RESEND_API_KEY=None,
+        RESEND_FROM_EMAIL='Backstage Pro <nao-responda@backstagepro.site>'
+    )
+    def test_resend_api_key_missing_fails_controlled(self):
+        delivery, _ = enqueue_email(
+            email_type=EmailDelivery.EmailType.SYSTEM_TEST,
+            recipient_email="teste@dominio.com",
+            subject="Teste Sem API Key",
+            idempotency_key="resend-no-key-01",
+            template_name="emails/system_test",
+            context_data={"user_name": "Testador", "environment_name": "Homologação"}
+        )
+        with patch('resend.Emails.send') as mock_send:
+            success, err_code, err_msg = render_and_send_email_delivery(delivery)
+            self.assertFalse(success)
+            self.assertEqual(err_code, 'RESEND_API_KEY_MISSING')
+            mock_send.assert_not_called()
+
+    @override_settings(
+        EMAIL_PROVIDER='resend',
+        RESEND_API_KEY='re_test_mock_key_123',
+        RESEND_FROM_EMAIL=None
+    )
+    def test_resend_from_email_missing_fails_controlled(self):
+        delivery, _ = enqueue_email(
+            email_type=EmailDelivery.EmailType.SYSTEM_TEST,
+            recipient_email="teste@dominio.com",
+            subject="Teste Sem From",
+            idempotency_key="resend-no-from-01",
+            template_name="emails/system_test",
+            context_data={"user_name": "Testador", "environment_name": "Homologação"}
+        )
+        with patch('resend.Emails.send') as mock_send:
+            success, err_code, err_msg = render_and_send_email_delivery(delivery)
+            self.assertFalse(success)
+            self.assertEqual(err_code, 'RESEND_FROM_EMAIL_MISSING')
+            mock_send.assert_not_called()
+
+    @override_settings(
+        EMAIL_PROVIDER='resend',
+        RESEND_API_KEY='re_test_mock_key_123',
+        RESEND_FROM_EMAIL='Backstage Pro <nao-responda@backstagepro.site>',
+        RESEND_REPLY_TO_EMAIL='contato@backstagepro.site'
+    )
+    def test_resend_success_payload_and_idempotency_key(self):
+        delivery, _ = enqueue_email(
+            email_type=EmailDelivery.EmailType.SYSTEM_TEST,
+            recipient_email="destinatario@externo.com",
+            subject="Assunto Resend Teste",
+            idempotency_key="resend-success-key-001",
+            template_name="emails/system_test",
+            context_data={"user_name": "Carlos", "environment_name": "Produção"}
+        )
+
+        with patch('resend.Emails.send', return_value={'id': 're_msg_mock_998877'}) as mock_send:
+            success, err_code, err_msg = render_and_send_email_delivery(delivery)
+            self.assertTrue(success)
+            self.assertIsNone(err_code)
+            self.assertIsNone(err_msg)
+
+            mock_send.assert_called_once()
+            called_params, called_kwargs = mock_send.call_args
+
+            params = called_params[0]
+            self.assertEqual(params['from'], 'Backstage Pro <nao-responda@backstagepro.site>')
+            self.assertEqual(params['to'], ['destinatario@externo.com'])
+            self.assertEqual(params['subject'], 'Assunto Resend Teste')
+            self.assertEqual(params['reply_to'], 'contato@backstagepro.site')
+            self.assertIn('html', params)
+            self.assertIn('text', params)
+
+            # Validar options / idempotency_key
+            options = called_kwargs.get('options')
+            self.assertIsNotNone(options)
+            self.assertEqual(options.get('idempotency_key'), 'resend-success-key-001')
+
+    @override_settings(
+        EMAIL_PROVIDER='resend',
+        RESEND_API_KEY='re_test_mock_key_123',
+        RESEND_FROM_EMAIL='Backstage Pro <nao-responda@backstagepro.site>'
+    )
+    def test_resend_api_exception_handled_safely(self):
+        delivery, _ = enqueue_email(
+            email_type=EmailDelivery.EmailType.SYSTEM_TEST,
+            recipient_email="destinatario@externo.com",
+            subject="Assunto Resend Erro",
+            idempotency_key="resend-error-key-001",
+            template_name="emails/system_test",
+            context_data={"user_name": "Carlos", "environment_name": "Produção"}
+        )
+
+        with patch('resend.Emails.send', side_effect=Exception("Resend 429: Rate limit exceeded")):
+            success, err_code, err_msg = render_and_send_email_delivery(delivery)
+            self.assertFalse(success)
+            self.assertEqual(err_code, 'Exception')
+            self.assertIn("Rate limit exceeded", err_msg)
+            # Garantir que a API Key não vazou na mensagem de erro
+            self.assertNotIn("re_test_mock_key_123", err_msg)
+
+    @override_settings(
+        EMAIL_PROVIDER='resend',
+        RESEND_API_KEY='re_test_mock_key_123',
+        RESEND_FROM_EMAIL='Backstage Pro <nao-responda@backstagepro.site>'
+    )
+    def test_account_activation_in_memory_url_with_resend(self):
+        from core.services.payments.security import encrypt_activation_token
+        enc_tok = encrypt_activation_token("test-resend-raw-token-12345")
+        activation = BandActivationToken.objects.create(
+            band=self.band,
+            email="produtor_resend@teste.com",
+            responsible_name="Produtor Resend",
+            token_hash="hash_mock_resend_01",
+            encrypted_token=enc_tok,
+            expires_at=timezone.now() + datetime.timedelta(hours=48)
+        )
+
+        delivery, _ = enqueue_email(
+            email_type=EmailDelivery.EmailType.ACCOUNT_ACTIVATION,
+            recipient_email=activation.email,
+            subject="Ative sua Conta — Backstage Pro",
+            idempotency_key="resend-activation-key-01",
+            related_object_type="BandActivationToken",
+            related_object_id=str(activation.id)
+        )
+
+        with patch('resend.Emails.send', return_value={'id': 're_act_mock_112233'}) as mock_send:
+            success, err_code, err_msg = render_and_send_email_delivery(delivery)
+            self.assertTrue(success)
+            called_params = mock_send.call_args[0][0]
+            self.assertIn("/ativar-conta/test-resend-raw-token-12345/", called_params['html'])
+            self.assertIn("/ativar-conta/test-resend-raw-token-12345/", called_params['text'])
+
+
