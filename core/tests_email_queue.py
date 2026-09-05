@@ -654,4 +654,31 @@ class ResendTransportTestCase(TestCase):
             self.assertIn("/ativar-conta/test-resend-raw-token-12345/", called_params['html'])
             self.assertIn("/ativar-conta/test-resend-raw-token-12345/", called_params['text'])
 
+    def test_system_test_template_renders_environment_dynamically(self):
+        from django.template.loader import render_to_string
+        # 1. Environment 'Production'
+        ctx_prod = {"user_name": "Carlos", "environment_name": "Production"}
+        html_p = render_to_string("emails/system_test.html", ctx_prod)
+        txt_p = render_to_string("emails/system_test.txt", ctx_prod)
+        self.assertIn("Ambiente:</strong> Production", html_p)
+        self.assertIn("Ambiente: Production", txt_p)
+        self.assertNotIn("Homologação", html_p)
+        self.assertNotIn("Homologação", txt_p)
+
+        # 2. Environment 'Homologação'
+        ctx_homo = {"user_name": "Carlos", "environment_name": "Homologação"}
+        html_h = render_to_string("emails/system_test.html", ctx_homo)
+        txt_h = render_to_string("emails/system_test.txt", ctx_homo)
+        self.assertIn("Ambiente:</strong> Homologação", html_h)
+        self.assertIn("Ambiente: Homologação", txt_h)
+
+        # 3. Fallback neutro 'Sistema' quando environment_name omitido
+        ctx_fallback = {"user_name": "Carlos"}
+        html_f = render_to_string("emails/system_test.html", ctx_fallback)
+        txt_f = render_to_string("emails/system_test.txt", ctx_fallback)
+        self.assertIn("Ambiente:</strong> Sistema", html_f)
+        self.assertIn("Ambiente: Sistema", txt_f)
+
+
+
 

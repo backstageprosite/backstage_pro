@@ -4,7 +4,7 @@ Olá,
 
 Este e-mail confirma que a fila transacional e o worker de e-mail do Backstage Pro estão operacionais e conectados com sucesso.
 
-Ambiente: Homologação
+Ambiente: {{ environment_name|default:"Sistema" }}
 Status: Processado pelo worker assíncrono
 
 Atenciosamente,
