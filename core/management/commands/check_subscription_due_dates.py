@@ -68,21 +68,28 @@ class Command(BaseCommand):
                 try:
                     from core.services.email_service import enqueue_email, resolve_subscription_recipient
                     recip_email, recip_name = resolve_subscription_recipient(sub)
-                    if recip_email and sub.next_due_date:
+                    if recip_email and sub.next_due_date and sub.band and sub.band.slug:
+                        from django.urls import reverse
+                        from core.services.email_service import get_canonical_base_url
+                        base_url = get_canonical_base_url()
+                        sub_path = reverse('minha_assinatura', kwargs={'band_slug': sub.band.slug})
+                        subscription_url = f"{base_url}{sub_path}"
+
                         enqueue_email(
                             email_type='SUBSCRIPTION_SUSPENDED',
                             recipient_email=recip_email,
-                            subject=f"Acesso Suspenso por Pendência — Backstage Pro ({sub.band.name if sub.band else 'Assinatura'})",
+                            subject=f"Acesso Suspenso por Pendência — Backstage Pro ({sub.band.name})",
                             idempotency_key=f"sub-suspended-{sub.id}-{sub.next_due_date.isoformat()}",
                             template_name='emails/subscription_suspended',
                             context_data={
                                 'user_name': recip_name,
                                 'responsible_name': recip_name,
-                                'band_name': sub.band.name if sub.band else 'Sua Banda',
+                                'band_name': sub.band.name,
                                 'plan_name': sub.plan_name,
                                 'contracted_value': f"{sub.contracted_value:.2f}",
                                 'days_overdue': sub.days_overdue(),
                                 'next_due_date': sub.next_due_date.strftime('%d/%m/%Y'),
+                                'subscription_url': subscription_url,
                             },
                             related_object_type='BandSubscription',
                             related_object_id=str(sub.id)

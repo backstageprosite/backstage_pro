@@ -5,7 +5,7 @@ Olá, {% firstof responsible_name band_name "Cliente" %}!
 O acesso da banda {{ band_name }} foi temporariamente suspenso por pendência financeira.
 Seus dados e informações permanecem seguros e intactos. O acesso será restabelecido automaticamente assim que o pagamento for confirmado.
 Regularize em:
-{{ base_url }}/relatorios/assinatura/
+{{ subscription_url }}
 
 Atenciosamente,
 Equipe Backstage Pro

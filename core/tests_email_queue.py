@@ -521,6 +521,10 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertEqual(delivery.context_data.get("user_name"), "Carlos Financeiro")
         self.assertEqual(delivery.context_data.get("band_name"), self.band.name)
 
+        expected_url = f"https://backstage-pro-web-homologacao.up.railway.app/{self.band.slug}/relatorios/assinatura/"
+        self.assertEqual(delivery.context_data.get("subscription_url"), expected_url)
+        self.assertIn(f"/{self.band.slug}/relatorios/assinatura/", delivery.context_data.get("subscription_url"))
+
         # Execute worker
         call_command('run_email_worker', once=True)
         delivery.refresh_from_db()
@@ -532,11 +536,13 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertIn("Olá, <strong>Carlos Financeiro</strong>!", html_content)
         self.assertIn("Acesso temporariamente suspenso", html_content)
         self.assertIn("Dados preservados:</strong> Seus dados e informações permanecem seguros e intactos.", html_content)
+        self.assertIn(f'href="{expected_url}"', html_content)
+        self.assertNotIn("/relatorios/assinatura/\"", html_content.replace(expected_url, ""))
 
         self.assertIn("Olá, Carlos Financeiro!", sent_msg.body)
         self.assertIn("Acesso temporariamente suspenso", sent_msg.body)
         self.assertIn("Seus dados e informações permanecem seguros e intactos. O acesso será restabelecido automaticamente assim que o pagamento for confirmado.", sent_msg.body)
-        self.assertIn("Regularize em:", sent_msg.body)
+        self.assertIn(f"Regularize em:\n{expected_url}", sent_msg.body)
 
     def test_resolve_subscription_recipient_hierarchy(self):
         # 1. Billing email
@@ -854,6 +860,41 @@ class ResendTransportTestCase(TestCase):
         txt_c = render_to_string("emails/subscription_suspended.txt", ctx_c)
         self.assertIn("Olá, <strong>Cliente</strong>!", html_c)
         self.assertIn("Olá, Cliente!", txt_c)
+
+    def test_subscription_suspended_cta_url_contract(self):
+        """
+        Valida que:
+        - CASO A: band_slug='banda-teste' gera subscription_url contendo '/banda-teste/relatorios/assinatura/'
+        - CASO B: template HTML usa subscription_url no href do CTA
+        - CASO C: template TXT usa subscription_url no corpo
+        - CASO D: não existe rota genérica hardcoded '/relatorios/assinatura/' sem slug
+        - CASO E: o CTA é estritamente específico da banda da assinatura e nunca usa slug de outra banda
+        """
+        from django.template.loader import render_to_string
+
+        target_slug = "banda-teste-especifica"
+        other_slug = "outra-banda-estranha"
+        expected_sub_url = f"https://backstagepro.site/{target_slug}/relatorios/assinatura/"
+
+        ctx = {
+            'responsible_name': 'Vinicius',
+            'band_name': 'Banda Específica',
+            'subscription_url': expected_sub_url,
+        }
+
+        # Render HTML
+        rendered_html = render_to_string("emails/subscription_suspended.html", ctx)
+        self.assertIn(f'href="{expected_sub_url}"', rendered_html)
+        self.assertNotIn(f"/{other_slug}/", rendered_html)
+        self.assertNotIn('href="{{ base_url }}/relatorios/assinatura/"', rendered_html)
+        self.assertNotIn('href="/relatorios/assinatura/"', rendered_html)
+
+        # Render TXT
+        rendered_txt = render_to_string("emails/subscription_suspended.txt", ctx)
+        self.assertIn(expected_sub_url, rendered_txt)
+        self.assertNotIn(f"/{other_slug}/", rendered_txt)
+        self.assertNotIn('{{ base_url }}/relatorios/assinatura/', rendered_txt)
+
 
 
 
