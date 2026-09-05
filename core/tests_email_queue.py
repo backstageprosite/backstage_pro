@@ -531,7 +531,7 @@ class EmailDeliveryQueueTestCase(TestCase):
         html_content = sent_msg.alternatives[0][0] if sent_msg.alternatives else sent_msg.body
         self.assertIn("Olá, <strong>Carlos Financeiro</strong>!", html_content)
         self.assertIn("Acesso temporariamente suspenso", html_content)
-        self.assertIn("Dados preservados:", html_content)
+        self.assertIn("Dados preservados:</strong> Seus dados e informações permanecem seguros e intactos.", html_content)
 
         self.assertIn("Olá, Carlos Financeiro!", sent_msg.body)
         self.assertIn("Acesso temporariamente suspenso", sent_msg.body)
