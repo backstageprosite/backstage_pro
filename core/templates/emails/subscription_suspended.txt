@@ -1,6 +1,6 @@
 Acesso temporariamente suspenso — Backstage Pro
 
-Olá, {{ responsible_name|default:band_name }}!
+Olá, {% firstof responsible_name band_name "Cliente" %}!
 
 O acesso da banda {{ band_name }} foi temporariamente suspenso por pendência financeira.
 Dados preservados. Reative a assinatura em:

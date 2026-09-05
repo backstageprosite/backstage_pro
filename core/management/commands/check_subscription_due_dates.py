@@ -77,6 +77,7 @@ class Command(BaseCommand):
                             template_name='emails/subscription_suspended',
                             context_data={
                                 'user_name': recip_name,
+                                'responsible_name': recip_name,
                                 'band_name': sub.band.name if sub.band else 'Sua Banda',
                                 'plan_name': sub.plan_name,
                                 'contracted_value': f"{sub.contracted_value:.2f}",

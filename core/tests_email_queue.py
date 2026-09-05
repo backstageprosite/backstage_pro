@@ -516,10 +516,26 @@ class EmailDeliveryQueueTestCase(TestCase):
         self.assertIsNotNone(delivery)
         self.assertEqual(delivery.recipient_email, "financeiro@teste.com")
 
+        # CASO D: Contrato do context_data no comando real
+        self.assertEqual(delivery.context_data.get("responsible_name"), "Carlos Financeiro")
+        self.assertEqual(delivery.context_data.get("user_name"), "Carlos Financeiro")
+        self.assertEqual(delivery.context_data.get("band_name"), self.band.name)
+
         # Execute worker
         call_command('run_email_worker', once=True)
         delivery.refresh_from_db()
         self.assertEqual(delivery.status, EmailDelivery.Status.SENT)
+
+        self.assertEqual(len(mail.outbox), 1)
+        sent_msg = mail.outbox[0]
+        html_content = sent_msg.alternatives[0][0] if sent_msg.alternatives else sent_msg.body
+        self.assertIn("Olá, <strong>Carlos Financeiro</strong>!", html_content)
+        self.assertIn("Acesso temporariamente suspenso", html_content)
+        self.assertIn("Dados preservados:", html_content)
+
+        self.assertIn("Olá, Carlos Financeiro!", sent_msg.body)
+        self.assertIn("Acesso temporariamente suspenso", sent_msg.body)
+        self.assertIn("Dados preservados.", sent_msg.body)
 
     def test_resolve_subscription_recipient_hierarchy(self):
         # 1. Billing email
@@ -804,6 +820,40 @@ class ResendTransportTestCase(TestCase):
         txt_c = render_to_string("emails/payment_overdue.txt", ctx_c)
         self.assertIn("Olá, <strong>Cliente</strong>!", html_c)
         self.assertIn("Olá, Cliente!", txt_c)
+
+    def test_subscription_suspended_greeting_fallback_scenarios(self):
+        """
+        Valida que o template subscription_suspended possui fallback seguro para a saudação
+        (responsible_name -> band_name -> 'Cliente') sem falhar caso chaves estejam ausentes.
+        """
+        from django.template.loader import render_to_string
+
+        # CASO A: responsible_name presente
+        ctx_a = {
+            'responsible_name': 'Vinicius',
+            'band_name': 'Banda Teste',
+        }
+        html_a = render_to_string("emails/subscription_suspended.html", ctx_a)
+        txt_a = render_to_string("emails/subscription_suspended.txt", ctx_a)
+        self.assertIn("Olá, <strong>Vinicius</strong>!", html_a)
+        self.assertIn("Olá, Vinicius!", txt_a)
+
+        # CASO B: responsible_name ausente, band_name presente
+        ctx_b = {
+            'band_name': 'Banda Teste',
+        }
+        html_b = render_to_string("emails/subscription_suspended.html", ctx_b)
+        txt_b = render_to_string("emails/subscription_suspended.txt", ctx_b)
+        self.assertIn("Olá, <strong>Banda Teste</strong>!", html_b)
+        self.assertIn("Olá, Banda Teste!", txt_b)
+
+        # CASO C: responsible_name e band_name ambos ausentes
+        ctx_c = {}
+        html_c = render_to_string("emails/subscription_suspended.html", ctx_c)
+        txt_c = render_to_string("emails/subscription_suspended.txt", ctx_c)
+        self.assertIn("Olá, <strong>Cliente</strong>!", html_c)
+        self.assertIn("Olá, Cliente!", txt_c)
+
 
 
 
