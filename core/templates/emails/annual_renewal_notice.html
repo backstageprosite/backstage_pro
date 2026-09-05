@@ -1,21 +1,21 @@
 {% extends "emails/base_email.html" %}
 {% block content %}
-<h2 style="margin-top: 0; color: #0f172a;">Aviso de Renovação Anual — 30 Dias</h2>
-<p>Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
-<p>Sua assinatura do plano <strong>{{ plan_name }} Anual</strong> da banda <strong>{{ band_name }}</strong> está próxima da data de renovação anual.</p>
+<h2 class="content-title" style="margin-top: 0; margin-bottom: 16px; color: #0f172a; font-size: 20px; font-weight: 700; line-height: 1.35;">Aviso de Renovação Anual — 30 Dias</h2>
+<p class="lead-text" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; line-height: 1.6; color: #334155;">Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 18px; font-size: 14px; line-height: 1.6; color: #475569;">Sua assinatura do plano <strong>{{ plan_name }} Anual</strong> da banda <strong>{{ band_name }}</strong> está próxima da data de renovação anual.</p>
 
-<div style="background-color: #f8fafc; border-left: 4px solid #6BD443; padding: 18px; margin: 25px 0; border-radius: 4px;">
-  <p style="margin: 0 0 6px 0;"><strong>Data Prevista da Renovação:</strong> {{ renewal_date }}</p>
-  <p style="margin: 0 0 6px 0;"><strong>Valor da Renovação:</strong> R$ {{ notified_price }}</p>
-  <p style="margin: 0;"><strong>Parcelamento:</strong> em até {{ installment_count }}x no cartão de crédito</p>
+<div class="info-card info-card-success" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #6BD443; border-radius: 8px; padding: 18px 20px; margin: 22px 0;">
+  <p class="info-item" style="margin: 0 0 6px 0; font-size: 14px; color: #166534;"><strong>Data Prevista da Renovação:</strong> {{ renewal_date }}</p>
+  <p class="info-item" style="margin: 0 0 6px 0; font-size: 14px; color: #166534;"><strong>Valor da Renovação:</strong> R$ {{ notified_price }}</p>
+  <p class="info-item" style="margin: 0; font-size: 14px; color: #166534;"><strong>Parcelamento:</strong> em até {{ installment_count }}x no cartão de crédito</p>
 </div>
 
-<p>Seu acesso permanece totalmente ativo. A renovação será processada automaticamente na data prevista no seu cartão cadastrado.</p>
-<p>Caso não deseje renovar, você poderá cancelar a renovação automática a qualquer momento antes da data prevista no painel da sua conta.</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 14px; font-size: 14px; line-height: 1.6; color: #475569;">Seu acesso permanece totalmente ativo. A renovação será processada automaticamente na data prevista no seu cartão cadastrado.</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 24px; font-size: 14px; line-height: 1.6; color: #475569;">Caso não deseje renovar, você poderá cancelar a renovação automática a qualquer momento antes da data prevista no painel da sua conta.</p>
 
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{ base_url }}/relatorios/assinatura/" style="background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 25px; font-weight: 600; border-radius: 6px; display: inline-block; font-size: 15px;">Gerenciar Assinatura</a>
+<div style="text-align: center; margin: 28px 0;">
+  <a href="{{ base_url }}/relatorios/assinatura/" class="btn-cta" style="background-color: #6BD443; color: #0f172a !important; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 8px; display: inline-block; text-align: center; letter-spacing: 0.3px; border: 1px solid #5ec437;">GERENCIAR ASSINATURA</a>
 </div>
 
-<p>Atenciosamente,<br><strong>Equipe Backstage Pro</strong></p>
+<p class="support-text" style="margin-top: 24px; margin-bottom: 0; font-size: 14px; line-height: 1.6; color: #475569;">Atenciosamente,<br><strong style="color: #0f172a;">Equipe Backstage Pro</strong></p>
 {% endblock %}

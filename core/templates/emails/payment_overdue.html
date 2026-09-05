@@ -1,19 +1,19 @@
 {% extends "emails/base_email.html" %}
 {% block content %}
-<h2 style="margin-top: 0; color: #dc2626;">Aviso de Pagamento Pendente</h2>
-<p>Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
-<p>Identificamos que a fatura da sua assinatura do plano <strong>{{ plan_name }}</strong> não teve o pagamento confirmado na data de vencimento.</p>
+<h2 class="content-title" style="margin-top: 0; margin-bottom: 16px; color: #ea580c; font-size: 20px; font-weight: 700; line-height: 1.35;">Aviso de Pagamento Pendente</h2>
+<p class="lead-text" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; line-height: 1.6; color: #334155;">Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 18px; font-size: 14px; line-height: 1.6; color: #475569;">Identificamos que a fatura da sua assinatura do plano <strong>{{ plan_name }}</strong> não teve o pagamento confirmado na data de vencimento.</p>
 
-<div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 18px; margin: 25px 0; border-radius: 4px;">
-  <p style="margin: 0 0 6px 0; color: #991b1b;"><strong>Valor Pendente:</strong> R$ {{ amount }}</p>
-  <p style="margin: 0; color: #991b1b;"><strong>Tolerância de Acesso Até:</strong> {{ grace_until }}</p>
+<div class="info-card info-card-due" style="background-color: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #ea580c; border-radius: 8px; padding: 18px 20px; margin: 22px 0;">
+  <p class="info-item" style="margin: 0 0 6px 0; font-size: 14px; color: #9a3412;"><strong>Valor Pendente:</strong> R$ {{ amount }}</p>
+  <p class="info-item" style="margin: 0; font-size: 14px; color: #9a3412;"><strong>Tolerância de Acesso Até:</strong> {{ grace_until }}</p>
 </div>
 
-<p>Para evitar a suspensão temporária do acesso aos shows, custos e logística da sua banda, regularize seu pagamento o quanto antes.</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 24px; font-size: 14px; line-height: 1.6; color: #475569;">Para evitar a suspensão temporária do acesso aos shows, custos e logística da sua banda, regularize seu pagamento o quanto antes.</p>
 
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{ base_url }}/relatorios/assinatura/" style="background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 12px 25px; font-weight: 700; border-radius: 6px; display: inline-block; font-size: 15px;">Regularizar Assinatura</a>
+<div style="text-align: center; margin: 28px 0;">
+  <a href="{{ base_url }}/relatorios/assinatura/" class="btn-cta" style="background-color: #6BD443; color: #0f172a !important; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 8px; display: inline-block; text-align: center; letter-spacing: 0.3px; border: 1px solid #5ec437;">REGULARIZAR ASSINATURA</a>
 </div>
 
-<p>Atenciosamente,<br><strong>Equipe Backstage Pro</strong></p>
+<p class="support-text" style="margin-top: 24px; margin-bottom: 0; font-size: 14px; line-height: 1.6; color: #475569;">Atenciosamente,<br><strong style="color: #0f172a;">Equipe Backstage Pro</strong></p>
 {% endblock %}

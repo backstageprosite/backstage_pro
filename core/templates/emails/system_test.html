@@ -1,11 +1,13 @@
 {% extends "emails/base_email.html" %}
 {% block content %}
-<h2 style="margin-top: 0; color: #0f172a;">Teste de Fila e Worker</h2>
-<p>Olá,</p>
-<p>Este e-mail confirma que a <strong>fila transacional</strong> e o <strong>worker de e-mail</strong> do Backstage Pro estão operacionais e conectados com sucesso.</p>
-<div style="background-color: #f1f5f9; border-radius: 8px; padding: 15px; margin: 25px 0;">
-  <p style="margin: 0; font-size: 14px; color: #475569;"><strong>Ambiente:</strong> {{ environment_name|default:"Sistema" }}</p>
-  <p style="margin: 6px 0 0 0; font-size: 14px; color: #475569;"><strong>Status:</strong> Processado pelo worker assíncrono</p>
+<h2 class="content-title" style="margin-top: 0; margin-bottom: 16px; color: #0f172a; font-size: 20px; font-weight: 700; line-height: 1.35;">Teste de Fila e Worker</h2>
+<p class="lead-text" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; line-height: 1.6; color: #334155;">Olá,</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 18px; font-size: 14px; line-height: 1.6; color: #475569;">Este e-mail confirma que a <strong>fila transacional</strong> e o <strong>worker de e-mail</strong> do Backstage Pro estão operacionais e conectados com sucesso.</p>
+
+<div class="info-card info-card-success" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #6BD443; border-radius: 8px; padding: 18px 20px; margin: 22px 0;">
+  <p class="info-item" style="margin: 0 0 6px 0; font-size: 14px; color: #166534;"><strong>Ambiente:</strong> {{ environment_name|default:"Sistema" }}</p>
+  <p class="info-item" style="margin: 0; font-size: 14px; color: #166534;"><strong>Status:</strong> Processado pelo worker assíncrono</p>
 </div>
-<p>Atenciosamente,<br><strong>Equipe Backstage Pro</strong></p>
+
+<p class="support-text" style="margin-top: 24px; margin-bottom: 0; font-size: 14px; line-height: 1.6; color: #475569;">Atenciosamente,<br><strong style="color: #0f172a;">Equipe Backstage Pro</strong></p>
 {% endblock %}

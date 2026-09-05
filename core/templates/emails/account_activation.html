@@ -1,20 +1,20 @@
 {% extends "emails/base_email.html" %}
 {% block content %}
-<h2 style="margin-top: 0; color: #0f172a;">Sua conta no Backstage Pro está pronta!</h2>
-<p>Olá, <strong>{{ responsible_name|default:"Produtor(a)" }}</strong>!</p>
-<p>Seu pagamento foi confirmado e a assinatura para a banda <strong>{{ band_name }}</strong> já está pronta.</p>
+<h2 class="content-title" style="margin-top: 0; margin-bottom: 16px; color: #0f172a; font-size: 20px; font-weight: 700; line-height: 1.35;">Sua conta no Backstage Pro está pronta!</h2>
+<p class="lead-text" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; line-height: 1.6; color: #334155;">Olá, <strong>{{ responsible_name|default:"Produtor(a)" }}</strong>!</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 18px; font-size: 14px; line-height: 1.6; color: #475569;">Seu pagamento foi confirmado e a assinatura para a banda <strong>{{ band_name }}</strong> já está pronta.</p>
 
-<div style="background-color: #f8fafc; border-left: 4px solid #6BD443; padding: 18px; margin: 25px 0; border-radius: 4px;">
-  <p style="margin: 0 0 6px 0;"><strong>Plano:</strong> {{ plan_name }} ({{ billing_cycle }})</p>
-  <p style="margin: 0;"><strong>Valor:</strong> R$ {{ amount }}</p>
+<div class="info-card info-card-success" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #6BD443; border-radius: 8px; padding: 18px 20px; margin: 22px 0;">
+  <p class="info-item" style="margin: 0 0 6px 0; font-size: 14px; color: #166534;"><strong>Plano:</strong> {{ plan_name }} ({{ billing_cycle }})</p>
+  <p class="info-item" style="margin: 0; font-size: 14px; color: #166534;"><strong>Valor:</strong> R$ {{ amount }}</p>
 </div>
 
-<p>Para criar seu acesso e definir sua senha pessoal com total segurança, clique no botão abaixo:</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 24px; font-size: 14px; line-height: 1.6; color: #475569;">Para criar seu acesso e definir sua senha pessoal com total segurança, clique no botão abaixo:</p>
 
-<div style="text-align: center; margin: 35px 0;">
-  <a href="{{ activation_url }}" style="background-color: #6BD443; color: #0f172a; text-decoration: none; padding: 14px 30px; font-weight: 700; border-radius: 8px; display: inline-block; font-size: 16px;">Criar minha conta</a>
+<div style="text-align: center; margin: 28px 0;">
+  <a href="{{ activation_url }}" class="btn-cta" style="background-color: #6BD443; color: #0f172a !important; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 8px; display: inline-block; text-align: center; letter-spacing: 0.3px; border: 1px solid #5ec437;">CRIAR MINHA CONTA</a>
 </div>
 
-<p style="font-size: 13px; color: #64748b;">* Este link é de uso pessoal e intransferível, válido por 48 horas. Você definirá sua própria senha no primeiro acesso.</p>
-<p>Atenciosamente,<br><strong>Equipe Backstage Pro</strong></p>
+<p style="font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 20px 0 24px 0;">* Este link é de uso pessoal e intransferível, válido por 48 horas. Você definirá sua própria senha no primeiro acesso.</p>
+<p class="support-text" style="margin-top: 24px; margin-bottom: 0; font-size: 14px; line-height: 1.6; color: #475569;">Atenciosamente,<br><strong style="color: #0f172a;">Equipe Backstage Pro</strong></p>
 {% endblock %}

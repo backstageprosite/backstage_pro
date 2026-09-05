@@ -3,29 +3,214 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>{{ subject|default:"Backstage Pro" }}</title>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, p, a, h1, h2, h3, div, span { font-family: Arial, Helvetica, sans-serif !important; }
+  </style>
+  <![endif]-->
+  <style type="text/css">
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-text-size-adjust: 100% !important;
+      -ms-text-size-adjust: 100% !important;
+      background-color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+    }
+    table {
+      border-spacing: 0 !important;
+      border-collapse: collapse !important;
+      mso-table-lspace: 0pt !important;
+      mso-table-rspace: 0pt !important;
+    }
+    img {
+      border: 0 !important;
+      outline: none !important;
+      text-decoration: none !important;
+      -ms-interpolation-mode: bicubic !important;
+    }
+    a {
+      text-decoration: none;
+    }
+    /* Estilos de Componentes Padronizados */
+    .email-container {
+      max-width: 580px !important;
+      width: 100% !important;
+    }
+    .content-title {
+      margin-top: 0;
+      margin-bottom: 18px;
+      color: #0f172a;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.35;
+      letter-spacing: -0.3px;
+    }
+    .lead-text {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #334155;
+    }
+    .support-text {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #475569;
+    }
+    
+    /* Botão CTA Oficial */
+    .btn-cta {
+      background-color: #6BD443;
+      color: #0f172a !important;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      display: inline-block;
+      text-align: center;
+      letter-spacing: 0.3px;
+      mso-padding-alt: 0;
+      border: 1px solid #5ec437;
+    }
+    
+    /* Caixas Informativas & Alertas */
+    .info-card {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 22px 0;
+      text-align: left;
+    }
+    .info-card-success {
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid #6BD443;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 22px 0;
+      text-align: left;
+    }
+    .info-card-warning {
+      background-color: #fefce8;
+      border: 1px solid #fef08a;
+      border-left: 4px solid #eab308;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 22px 0;
+      text-align: left;
+    }
+    .info-card-due {
+      background-color: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-left: 4px solid #ea580c;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 22px 0;
+      text-align: left;
+    }
+    .info-card-danger {
+      background-color: #fef2f2;
+      border: 1px solid #fecaca;
+      border-left: 4px solid #dc2626;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 22px 0;
+      text-align: left;
+    }
+    
+    .info-item {
+      margin: 6px 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #334155;
+    }
+    .info-item strong {
+      color: #0f172a;
+      font-weight: 600;
+    }
+    
+    /* Mobile Overrides */
+    @media screen and (max-width: 600px) {
+      .outer-padding {
+        padding: 15px 10px !important;
+      }
+      .content-padding {
+        padding: 26px 20px !important;
+      }
+      .header-padding {
+        padding: 22px 20px 20px 20px !important;
+      }
+      .content-title {
+        font-size: 18px !important;
+      }
+      .btn-cta {
+        display: block !important;
+        width: auto !important;
+        padding: 14px 20px !important;
+      }
+      .info-card, .info-card-success, .info-card-warning, .info-card-due, .info-card-danger {
+        padding: 15px 16px !important;
+      }
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f5f7; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f1f5f9; padding: 36px 16px;" class="outer-padding">
     <tr>
       <td align="center">
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <!-- Container Principal -->
+        <table border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.08); border: 1px solid #e2e8f0;" class="email-container">
+          
+          <!-- Cabeçalho Navy com Cartão da Marca -->
           <tr>
-            <td style="background-color: #0f172a; padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #6BD443; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Backstage Pro</h1>
+            <td align="center" style="background-color: #0f172a; padding: 26px 30px 24px 30px;" class="header-padding">
+              <table border="0" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+                <tr>
+                  <td align="center">
+                    <!-- Selo Branco da Logo -->
+                    <table border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 10px; padding: 6px 14px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);">
+                      <tr>
+                        <td align="center" style="padding: 2px 4px;">
+                          <img src="{{ base_url|default:'https://backstagepro.site' }}/static/images/backstage-pro-logo.png" alt="Backstage Pro" width="140" style="display: block; width: 140px; max-width: 140px; height: auto; border: 0;" />
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center">
+                    <span style="font-size: 13px; font-weight: 800; color: #f8fafc; letter-spacing: 2.2px; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                      BACKSTAGE PRO
+                    </span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
+
+          <!-- Corpo do Conteúdo -->
           <tr>
-            <td style="padding: 40px 35px; line-height: 1.6; font-size: 16px;">
+            <td style="padding: 36px 32px 30px 32px; line-height: 1.6; font-size: 15px; color: #334155; text-align: left;" class="content-padding">
               {% block content %}{% endblock %}
             </td>
           </tr>
+
+          <!-- Rodapé Discreto -->
           <tr>
-            <td style="background-color: #f8fafc; padding: 25px 35px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">
-              <p style="margin: 0 0 8px 0;">Este é um e-mail transacional do Backstage Pro.</p>
-              <p style="margin: 0;">&copy; Backstage Pro. Todos os direitos reservados.</p>
+            <td style="background-color: #f8fafc; padding: 20px 30px; text-align: center; border-top: 1px solid #edf2f7; font-size: 12px; color: #94a3b8; line-height: 1.5;">
+              <p style="margin: 0 0 4px 0; font-weight: 500;">Este é um e-mail transacional do Backstage Pro.</p>
+              <p style="margin: 0; font-size: 11px; color: #cbd5e1;">&copy; Backstage Pro &bull; Todos os direitos reservados.</p>
             </td>
           </tr>
+
         </table>
       </td>
     </tr>

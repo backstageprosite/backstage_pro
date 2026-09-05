@@ -1,20 +1,20 @@
 {% extends "emails/base_email.html" %}
 {% block content %}
-<h2 style="margin-top: 0; color: #0f172a;">Renovação Anual Confirmada!</h2>
-<p>Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
-<p>Sua assinatura do plano <strong>{{ plan_name }} Anual</strong> para a banda <strong>{{ band_name }}</strong> foi renovada com sucesso!</p>
+<h2 class="content-title" style="margin-top: 0; margin-bottom: 16px; color: #0f172a; font-size: 20px; font-weight: 700; line-height: 1.35;">Renovação Anual Confirmada!</h2>
+<p class="lead-text" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; line-height: 1.6; color: #334155;">Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 18px; font-size: 14px; line-height: 1.6; color: #475569;">Sua assinatura do plano <strong>{{ plan_name }} Anual</strong> para a banda <strong>{{ band_name }}</strong> foi renovada com sucesso!</p>
 
-<div style="background-color: #f8fafc; border-left: 4px solid #6BD443; padding: 18px; margin: 25px 0; border-radius: 4px;">
-  <p style="margin: 0 0 6px 0;"><strong>Valor Total:</strong> R$ {{ gross_amount }} ({{ installment_count }}x)</p>
-  <p style="margin: 0 0 6px 0;"><strong>Nova Vigência:</strong> {{ coverage_start }} a {{ coverage_end }}</p>
-  <p style="margin: 0;"><strong>Próxima Renovação:</strong> {{ next_renewal_date }}</p>
+<div class="info-card info-card-success" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #6BD443; border-radius: 8px; padding: 18px 20px; margin: 22px 0;">
+  <p class="info-item" style="margin: 0 0 6px 0; font-size: 14px; color: #166534;"><strong>Valor Total:</strong> R$ {{ gross_amount }} ({{ installment_count }}x)</p>
+  <p class="info-item" style="margin: 0 0 6px 0; font-size: 14px; color: #166534;"><strong>Nova Vigência:</strong> {{ coverage_start }} a {{ coverage_end }}</p>
+  <p class="info-item" style="margin: 0; font-size: 14px; color: #166534;"><strong>Próxima Renovação:</strong> {{ next_renewal_date }}</p>
 </div>
 
-<p>Todos os recursos do Backstage Pro continuam liberados para toda a sua equipe.</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 24px; font-size: 14px; line-height: 1.6; color: #475569;">Todos os recursos do Backstage Pro continuam liberados para toda a sua equipe.</p>
 
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{ base_url }}/painel/" style="background-color: #6BD443; color: #0f172a; text-decoration: none; padding: 12px 25px; font-weight: 700; border-radius: 6px; display: inline-block; font-size: 15px;">Acessar Painel</a>
+<div style="text-align: center; margin: 28px 0;">
+  <a href="{{ base_url }}/painel/" class="btn-cta" style="background-color: #6BD443; color: #0f172a !important; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 8px; display: inline-block; text-align: center; letter-spacing: 0.3px; border: 1px solid #5ec437;">ACESSAR PAINEL</a>
 </div>
 
-<p>Atenciosamente,<br><strong>Equipe Backstage Pro</strong></p>
+<p class="support-text" style="margin-top: 24px; margin-bottom: 0; font-size: 14px; line-height: 1.6; color: #475569;">Atenciosamente,<br><strong style="color: #0f172a;">Equipe Backstage Pro</strong></p>
 {% endblock %}

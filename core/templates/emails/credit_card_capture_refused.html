@@ -1,14 +1,18 @@
 {% extends "emails/base_email.html" %}
 {% block content %}
-<h2 style="margin-top: 0; color: #ea580c;">Não foi possível processar a cobrança no cartão</h2>
-<p>Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
-<p>Tentamos processar a cobrança do plano <strong>{{ plan_name }}</strong> da banda <strong>{{ band_name }}</strong> no valor de <strong>R$ {{ amount }}</strong>, mas a operadora do cartão recusou a transação.</p>
+<h2 class="content-title" style="margin-top: 0; margin-bottom: 16px; color: #ea580c; font-size: 20px; font-weight: 700; line-height: 1.35;">Não foi possível processar a cobrança no cartão</h2>
+<p class="lead-text" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; line-height: 1.6; color: #334155;">Olá, <strong>{{ responsible_name|default:band_name }}</strong>!</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 18px; font-size: 14px; line-height: 1.6; color: #475569;">Tentamos processar a cobrança do plano <strong>{{ plan_name }}</strong> da banda <strong>{{ band_name }}</strong> no valor de <strong>R$ {{ amount }}</strong>, mas a operadora do cartão recusou a transação.</p>
 
-<p>Recomendamos verificar com o emissor do seu cartão ou cadastrar um novo meio de pagamento diretamente no painel.</p>
-
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{ base_url }}/relatorios/assinatura/" style="background-color: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 25px; font-weight: 600; border-radius: 6px; display: inline-block; font-size: 15px;">Atualizar Cartão</a>
+<div class="info-card info-card-warning" style="background-color: #fefce8; border: 1px solid #fef08a; border-left: 4px solid #eab308; border-radius: 8px; padding: 18px 20px; margin: 22px 0;">
+  <p class="info-item" style="margin: 0; font-size: 14px; color: #854d0e; line-height: 1.5;">
+    <strong>Orientação:</strong> Recomendamos verificar com a instituição emissora do cartão de crédito ou atualizar para um novo meio de pagamento diretamente no painel.
+  </p>
 </div>
 
-<p>Atenciosamente,<br><strong>Equipe Backstage Pro</strong></p>
+<div style="text-align: center; margin: 28px 0;">
+  <a href="{{ base_url }}/relatorios/assinatura/" class="btn-cta" style="background-color: #6BD443; color: #0f172a !important; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 8px; display: inline-block; text-align: center; letter-spacing: 0.3px; border: 1px solid #5ec437;">ATUALIZAR CARTÃO</a>
+</div>
+
+<p class="support-text" style="margin-top: 24px; margin-bottom: 0; font-size: 14px; line-height: 1.6; color: #475569;">Atenciosamente,<br><strong style="color: #0f172a;">Equipe Backstage Pro</strong></p>
 {% endblock %}
