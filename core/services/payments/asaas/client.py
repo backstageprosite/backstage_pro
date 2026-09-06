@@ -8,6 +8,14 @@ from core.services.payments.base import AsaasConfig
 logger = logging.getLogger(__name__)
 
 
+class PaymentsLiveDisabledError(Exception):
+    """
+    Exceção levantada quando uma operação de escrita mutável contra a API do Asaas
+    é solicitada com PAYMENTS_LIVE_ENABLED=False (ou live_payments_enabled=False).
+    """
+    pass
+
+
 class AsaasClient:
     """
     Cliente HTTP seguro para comunicação com a API do Asaas.
@@ -15,6 +23,20 @@ class AsaasClient:
     """
     def __init__(self, config: Optional[AsaasConfig] = None):
         self.config = config or AsaasConfig.from_settings()
+
+    def _ensure_writes_enabled(self, operation: str = "write") -> None:
+        """
+        Safety gate central para operações de escrita contra o gateway Asaas.
+        Bloqueia estritamente POST, PUT, DELETE se live_payments_enabled for False.
+        """
+        if not self.config.live_payments_enabled:
+            logger.warning(
+                "Operação Asaas '%s' bloqueada pelo safety gate (PAYMENTS_LIVE_ENABLED=False).",
+                operation
+            )
+            raise PaymentsLiveDisabledError(
+                f"Operação financeira externa '{operation}' está desabilitada (PAYMENTS_LIVE_ENABLED=False)."
+            )
 
     @property
     def base_url(self) -> str:
@@ -135,6 +157,11 @@ class AsaasClient:
         Cancela uma assinatura na API do Asaas utilizando DELETE /v3/subscriptions/{id}.
         Retorna (sucesso: bool, resposta_ou_erro: dict).
         """
+        try:
+            self._ensure_writes_enabled("cancel_subscription")
+        except PaymentsLiveDisabledError as e:
+            return False, {"error": "payments_live_disabled", "message": str(e)}
+
         if not subscription_id:
             return False, {"error": "subscription_id_invalido"}
         if not self.config.api_key:
@@ -169,6 +196,11 @@ class AsaasClient:
         Ex: atualizar nextDueDate.
         Retorna (sucesso: bool, resposta_ou_erro: dict).
         """
+        try:
+            self._ensure_writes_enabled("update_subscription")
+        except PaymentsLiveDisabledError as e:
+            return False, {"error": "payments_live_disabled", "message": str(e)}
+
         if not subscription_id:
             return False, {"error": "subscription_id_invalido"}
         if not self.config.api_key:
@@ -212,6 +244,11 @@ class AsaasClient:
         Exige explicitamente remote_ip do pagador (sem fallback para IP de servidor).
         Retorna (sucesso: bool, resposta_ou_erro: dict).
         """
+        try:
+            self._ensure_writes_enabled("update_subscription_credit_card")
+        except PaymentsLiveDisabledError as e:
+            return False, {"error": "payments_live_disabled", "message": str(e)}
+
         if not subscription_id or not isinstance(subscription_id, str) or not subscription_id.strip():
             return False, {"error": "subscription_id_invalido"}
 
@@ -258,6 +295,11 @@ class AsaasClient:
         Ex: atualizar dueDate.
         Retorna (sucesso: bool, resposta_ou_erro: dict).
         """
+        try:
+            self._ensure_writes_enabled("update_payment")
+        except PaymentsLiveDisabledError as e:
+            return False, {"error": "payments_live_disabled", "message": str(e)}
+
         if not payment_id:
             return False, {"error": "payment_id_invalido"}
         if not self.config.api_key:
@@ -292,9 +334,10 @@ class AsaasClient:
         Cria um parcelamento no Asaas via POST /v3/installments sem informar cartão/token.
         Retorna (sucesso: bool, resposta_ou_erro: dict).
         """
-        if not self.config.live_payments_enabled:
-            logger.warning("Operação de escrita financeira bloqueada pelo safety gate (PAYMENTS_LIVE_ENABLED=False).")
-            return False, {"error": "payments_live_disabled", "message": "Operações financeiras públicas estão temporariamente desabilitadas."}
+        try:
+            self._ensure_writes_enabled("create_installment")
+        except PaymentsLiveDisabledError as e:
+            return False, {"error": "payments_live_disabled", "message": str(e)}
 
         if not self.config.api_key:
             return False, {"error": "api_key_ausente"}
@@ -347,9 +390,10 @@ class AsaasClient:
         O credit_card_token nunca é logado ou exposto em exceções.
         Retorna (sucesso: bool, resposta_ou_erro: dict).
         """
-        if not self.config.live_payments_enabled:
-            logger.warning("Operação payWithCreditCard bloqueada pelo safety gate (PAYMENTS_LIVE_ENABLED=False).")
-            return False, {"error": "payments_live_disabled", "message": "Operações financeiras públicas estão temporariamente desabilitadas."}
+        try:
+            self._ensure_writes_enabled("pay_with_credit_card")
+        except PaymentsLiveDisabledError as e:
+            return False, {"error": "payments_live_disabled", "message": str(e)}
 
         if not payment_id:
             return False, {"error": "payment_id_invalido"}

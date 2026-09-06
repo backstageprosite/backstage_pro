@@ -5354,3 +5354,169 @@ class AsaasFoundationTests(TestCase):
         self.assertNotIn("Validade None", html1_alt)
 
 
+class AsaasWriteHardeningSafetyTests(TestCase):
+    """
+    PAYMENTS-SAFETY-03: Hardening Global das Operações de Escrita Asaas.
+    Garante que:
+    1. Com live_payments_enabled=False (PAYMENTS_LIVE_ENABLED=False), NENHUMA chamada HTTP
+       de escrita (POST, PUT, DELETE) é disparada contra o gateway Asaas (zero transporte HTTP).
+    2. _ensure_writes_enabled levanta PaymentsLiveDisabledError.
+    3. Todos os métodos WRITE retornam (False, {"error": "payments_live_disabled", ...})
+       preservando compatibilidade com callers existentes.
+    4. Com live_payments_enabled=True, as operações de escrita são autorizadas a alcançar o transporte HTTP.
+    5. Métodos de LEITURA (GET) continuam operando normalmente mesmo com live_payments_enabled=False.
+    """
+
+    def setUp(self):
+        from core.services.payments.asaas.client import AsaasClient, PaymentsLiveDisabledError
+        from core.services.payments.base import AsaasConfig
+
+        self.disabled_config = AsaasConfig(
+            environment="sandbox",
+            base_url="https://api-sandbox.asaas.com/v3",
+            api_key="fake_key_123",
+            webhook_token="fake_token_456",
+            live_payments_enabled=False
+        )
+        self.disabled_client = AsaasClient(config=self.disabled_config)
+
+        self.enabled_config = AsaasConfig(
+            environment="sandbox",
+            base_url="https://api-sandbox.asaas.com/v3",
+            api_key="fake_key_123",
+            webhook_token="fake_token_456",
+            live_payments_enabled=True
+        )
+        self.enabled_client = AsaasClient(config=self.enabled_config)
+
+    def test_ensure_writes_enabled_raises_when_disabled(self):
+        """Verifica que _ensure_writes_enabled levanta PaymentsLiveDisabledError quando desabilitado."""
+        from core.services.payments.asaas.client import PaymentsLiveDisabledError
+
+        with self.assertRaises(PaymentsLiveDisabledError) as ctx:
+            self.disabled_client._ensure_writes_enabled("test_operation")
+        self.assertIn("test_operation", str(ctx.exception))
+        self.assertIn("PAYMENTS_LIVE_ENABLED=False", str(ctx.exception))
+
+    def test_ensure_writes_enabled_passes_when_enabled(self):
+        """Verifica que _ensure_writes_enabled passa silenciosamente quando live_payments_enabled=True."""
+        try:
+            self.enabled_client._ensure_writes_enabled("test_operation")
+        except Exception as e:
+            self.fail(f"_ensure_writes_enabled levantou exceção inesperada: {e}")
+
+    @patch('urllib.request.urlopen')
+    def test_cancel_subscription_blocked_when_payments_disabled(self, mock_urlopen):
+        """cancel_subscription deve ser bloqueado sem tocar no transporte HTTP quando desabilitado."""
+        ok, data = self.disabled_client.cancel_subscription("sub_test_123")
+        self.assertFalse(ok)
+        self.assertEqual(data.get("error"), "payments_live_disabled")
+        self.assertIn("cancel_subscription", data.get("message", ""))
+        self.assertEqual(mock_urlopen.call_count, 0)
+
+    @patch('urllib.request.urlopen')
+    def test_update_subscription_blocked_when_payments_disabled(self, mock_urlopen):
+        """update_subscription deve ser bloqueado sem tocar no transporte HTTP quando desabilitado."""
+        ok, data = self.disabled_client.update_subscription("sub_test_123", {"nextDueDate": "2026-12-01"})
+        self.assertFalse(ok)
+        self.assertEqual(data.get("error"), "payments_live_disabled")
+        self.assertIn("update_subscription", data.get("message", ""))
+        self.assertEqual(mock_urlopen.call_count, 0)
+
+    @patch('urllib.request.urlopen')
+    def test_update_subscription_credit_card_blocked_when_payments_disabled(self, mock_urlopen):
+        """update_subscription_credit_card deve ser bloqueado sem tocar no transporte HTTP quando desabilitado."""
+        ok, data = self.disabled_client.update_subscription_credit_card(
+            "sub_test_123",
+            credit_card_token="tok_safe_cc_999",
+            remote_ip="200.100.50.25"
+        )
+        self.assertFalse(ok)
+        self.assertEqual(data.get("error"), "payments_live_disabled")
+        self.assertIn("update_subscription_credit_card", data.get("message", ""))
+        self.assertEqual(mock_urlopen.call_count, 0)
+
+    @patch('urllib.request.urlopen')
+    def test_update_payment_blocked_when_payments_disabled(self, mock_urlopen):
+        """update_payment deve ser bloqueado sem tocar no transporte HTTP quando desabilitado."""
+        ok, data = self.disabled_client.update_payment("pay_test_123", {"dueDate": "2026-12-01"})
+        self.assertFalse(ok)
+        self.assertEqual(data.get("error"), "payments_live_disabled")
+        self.assertIn("update_payment", data.get("message", ""))
+        self.assertEqual(mock_urlopen.call_count, 0)
+
+    @patch('urllib.request.urlopen')
+    def test_create_installment_blocked_when_payments_disabled(self, mock_urlopen):
+        """create_installment deve ser bloqueado sem tocar no transporte HTTP quando desabilitado."""
+        ok, data = self.disabled_client.create_installment({"customer": "cus_123", "value": 100})
+        self.assertFalse(ok)
+        self.assertEqual(data.get("error"), "payments_live_disabled")
+        self.assertIn("create_installment", data.get("message", ""))
+        self.assertEqual(mock_urlopen.call_count, 0)
+
+    @patch('urllib.request.urlopen')
+    def test_pay_with_credit_card_blocked_when_payments_disabled(self, mock_urlopen):
+        """pay_with_credit_card deve ser bloqueado sem tocar no transporte HTTP quando desabilitado."""
+        ok, data = self.disabled_client.pay_with_credit_card("pay_test_123", credit_card_token="tok_safe_999")
+        self.assertFalse(ok)
+        self.assertEqual(data.get("error"), "payments_live_disabled")
+        self.assertIn("pay_with_credit_card", data.get("message", ""))
+        self.assertEqual(mock_urlopen.call_count, 0)
+
+    @patch('urllib.request.urlopen')
+    def test_read_methods_remain_operational_when_payments_disabled(self, mock_urlopen):
+        """Métodos de leitura (GET) não sofrem bloqueio do safety gate de escrita."""
+        from unittest.mock import MagicMock
+
+        mock_resp = MagicMock()
+        mock_resp.getcode.return_value = 200
+        mock_resp.read.return_value = b'{"id": "sub_read_123", "status": "ACTIVE"}'
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+        sub_info = self.disabled_client.get_subscription("sub_read_123")
+        self.assertIsNotNone(sub_info)
+        self.assertEqual(sub_info.get("id"), "sub_read_123")
+        self.assertEqual(mock_urlopen.call_count, 1)
+
+    @patch('urllib.request.urlopen')
+    def test_all_write_methods_reach_transport_when_payments_enabled(self, mock_urlopen):
+        """Com live_payments_enabled=True, as operações de escrita são enviadas para a API."""
+        from unittest.mock import MagicMock
+
+        mock_resp = MagicMock()
+        mock_resp.getcode.return_value = 200
+        mock_resp.read.return_value = b'{"id": "obj_123", "deleted": true, "status": "ACTIVE"}'
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+        # 1. cancel_subscription
+        ok, data = self.enabled_client.cancel_subscription("sub_123")
+        self.assertTrue(ok)
+        self.assertEqual(mock_urlopen.call_count, 1)
+
+        # 2. update_subscription
+        ok, data = self.enabled_client.update_subscription("sub_123", {"nextDueDate": "2026-12-01"})
+        self.assertTrue(ok)
+        self.assertEqual(mock_urlopen.call_count, 2)
+
+        # 3. update_subscription_credit_card
+        ok, data = self.enabled_client.update_subscription_credit_card("sub_123", "tok_123", "1.1.1.1")
+        self.assertTrue(ok)
+        self.assertEqual(mock_urlopen.call_count, 3)
+
+        # 4. update_payment
+        ok, data = self.enabled_client.update_payment("pay_123", {"dueDate": "2026-12-01"})
+        self.assertTrue(ok)
+        self.assertEqual(mock_urlopen.call_count, 4)
+
+        # 5. create_installment
+        ok, data = self.enabled_client.create_installment({"customer": "cus_123"})
+        self.assertTrue(ok)
+        self.assertEqual(mock_urlopen.call_count, 5)
+
+        # 6. pay_with_credit_card
+        ok, data = self.enabled_client.pay_with_credit_card("pay_123", "tok_123")
+        self.assertTrue(ok)
+        self.assertEqual(mock_urlopen.call_count, 6)
+
+
+
