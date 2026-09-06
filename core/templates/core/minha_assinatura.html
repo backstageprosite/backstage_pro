@@ -198,7 +198,7 @@
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
                         <p class="kpi-label">Valor</p>
-                        <h3 class="kpi-value text-dark">R$ {{ subscription.contracted_value|floatformat:"2g" }}</h3>
+                        <h3 class="kpi-value text-dark">{% if is_partnership %}Isento{% else %}R$ {{ subscription.contracted_value|floatformat:"2g" }}{% endif %}</h3>
                     </div>
                     <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
                         <i class="fa-solid fa-dollar-sign text-warning"></i>
@@ -210,8 +210,8 @@
             <div class="card shadow-sm border-0 border-start border-4 border-danger h-100" style="border-radius: 12px;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
-                        <p class="kpi-label">Ciclo</p>
-                        <h3 class="kpi-value text-dark">{{ cycle_display }}</h3>
+                        <p class="kpi-label">{% if is_partnership %}Condição Comercial{% else %}Ciclo{% endif %}</p>
+                        <h3 class="kpi-value text-dark">{% if is_partnership %}Parceria{% else %}{{ cycle_display }}{% endif %}</h3>
                     </div>
                     <div class="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
                         <i class="fa-solid fa-rotate text-danger"></i>
@@ -244,9 +244,11 @@
             <div class="card shadow-sm border-0 border-start border-4 border-success h-100" style="border-radius: 12px;">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between">
                     <div>
-                        <p class="kpi-label">{% if subscription.cancel_at_period_end or subscription.status != 'ATIVO' or not subscription.auto_renew %}Acesso até{% elif subscription.billing_cycle == 'ANUAL' %}Próxima Renovação{% else %}Próxima Cobrança{% endif %}</p>
+                        <p class="kpi-label">{% if is_partnership %}Acesso{% elif subscription.cancel_at_period_end or subscription.status != 'ATIVO' or not subscription.auto_renew %}Acesso até{% elif subscription.billing_cycle == 'ANUAL' %}Próxima Renovação{% else %}Próxima Cobrança{% endif %}</p>
                         <h3 class="kpi-value text-dark">
-                            {% if subscription.status != 'ATIVO' %}
+                            {% if is_partnership %}
+                                Sem prazo definido
+                            {% elif subscription.status != 'ATIVO' %}
                                 {% if subscription.next_due_date %}{{ subscription.next_due_date|date:"d/m/Y" }}{% else %}Sem cobrança agendada{% endif %}
                             {% elif subscription.cancel_at_period_end %}
                                 {% if subscription.next_due_date %}{{ subscription.next_due_date|date:"d/m/Y" }}{% else %}-{% endif %}
@@ -271,13 +273,13 @@
                     <div>
                         <div class="d-flex align-items-center gap-2">
                             <p class="kpi-label mb-0">Forma de Pagamento</p>
-                            {% if subscription %}
+                            {% if subscription and not is_partnership %}
                             <button type="button" class="btn btn-link p-0 text-decoration-none text-muted fw-bold" data-bs-toggle="modal" data-bs-target="#modalFormaPagamento" style="font-size: 11px; line-height: 1;" title="Gerenciar forma de pagamento">
                                 <i class="fa-solid fa-pen-to-square me-1"></i>Editar
                             </button>
                             {% endif %}
                         </div>
-                        <h3 class="kpi-value text-dark mt-1">{{ payment_method_display }}</h3>
+                        <h3 class="kpi-value text-dark mt-1">{% if is_partnership %}Não se aplica{% else %}{{ payment_method_display }}{% endif %}</h3>
                     </div>
                     <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center kpi-icon-box">
                         <i class="fa-solid fa-credit-card text-warning"></i>
@@ -291,7 +293,9 @@
                     <div>
                         <p class="kpi-label">Renovação Automática</p>
                         <h3 class="kpi-value text-dark">
-                            {% if subscription.status != 'ATIVO' %}
+                            {% if is_partnership %}
+                                Não se aplica
+                            {% elif subscription.status != 'ATIVO' %}
                                 Não
                             {% elif subscription.cancel_at_period_end %}
                                 Cancelamento agendado
@@ -396,7 +400,13 @@
                             <td colspan="6" class="text-center py-5">
                                 <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
                                     <i class="fa-solid fa-receipt text-muted mb-3" style="font-size: 3rem;"></i>
-                                    <h5 class="text-muted fw-bold fs-6">Nenhum pagamento registrado.</h5>
+                                    <h5 class="text-muted fw-bold fs-6">
+                                        {% if is_partnership %}
+                                            Nenhum pagamento registrado. Esta conta opera sob condição de Parceria.
+                                        {% else %}
+                                            Nenhum pagamento registrado.
+                                        {% endif %}
+                                    </h5>
                                 </div>
                             </td>
                         </tr>
@@ -530,7 +540,7 @@
     </div>
     {% endif %}
 
-    {% if subscription %}
+    {% if subscription and not is_partnership %}
     <!-- Modal Forma de Pagamento -->
     <div class="modal fade" id="modalFormaPagamento" tabindex="-1" aria-labelledby="modalFormaPagamentoLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">

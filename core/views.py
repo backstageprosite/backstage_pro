@@ -1443,12 +1443,24 @@ def minha_assinatura_view(request, band_slug):
 
                         if pre_renewal_next_price != pre_renewal_current_price:
                             pre_renewal_price_changed = True
+
+        # BLINDAGEM DE INTERFACE PARA PARCERIA:
+        if subscription.is_partnership:
+            can_cancel = False
+            can_reactivate = False
+            can_resubscribe = False
+            can_regularize = False
+            alert_overdue_tolerance = False
+            alert_suspended = False
+            alert_pre_renewal = False
+            pre_renewal_price_changed = False
+            status_display = 'Ativo'
     else:
         can_resubscribe = True
 
     # 4. Obter forma de pagamento ativa de forma segura e com escopo estrito na assinatura
     active_payment_method = None
-    if subscription:
+    if subscription and not subscription.is_partnership:
         from core.models import GatewayPaymentMethod
         active_payment_method = GatewayPaymentMethod.objects.filter(
             subscription=subscription,
@@ -1458,7 +1470,7 @@ def minha_assinatura_view(request, band_slug):
 
     # 5. Localizar cobrança pendente/vencida com invoice_url para regularização imediata
     pending_invoice = None
-    if subscription:
+    if subscription and not subscription.is_partnership:
         pending_invoice = subscription.records.filter(
             status='PENDENTE'
         ).exclude(
@@ -1470,6 +1482,7 @@ def minha_assinatura_view(request, band_slug):
     context = {
         'band': band,
         'subscription': subscription,
+        'is_partnership': getattr(subscription, 'is_partnership', False) if subscription else False,
         'faturas': faturas,
         'active_payment_method': active_payment_method,
         'pending_invoice': pending_invoice,

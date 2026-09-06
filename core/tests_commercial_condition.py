@@ -1,4 +1,4 @@
-﻿import datetime
+import datetime
 from decimal import Decimal
 from unittest.mock import patch, MagicMock
 from django.test import TestCase
@@ -311,3 +311,217 @@ class CommercialConditionTests(TestCase):
                 credit_card_token="tok_test_part_123"
             )
         self.assertIn("partnership_not_billable", str(ctx.exception))
+
+    def test_minha_assinatura_ui_partnership_scenarios(self):
+        """
+        PARCERIA-02C: Testes de interface da página Minha Assinatura (/relatorios/assinatura/):
+        1. Parceria Básico:
+           - Exibe Plano Atual Básico
+           - Exibe Status Ativo
+           - Exibe Valor Isento
+           - Exibe Condição Comercial: Parceria
+           - Exibe Início formatado
+           - Exibe Acesso: Sem prazo definido
+           - Exibe Forma de Pagamento: Não se aplica
+           - Exibe Renovação Automática: Não se aplica
+           - Não exibe link/botão de regularização, renovação, cancelamento ou reativação
+           - Não exibe controle Editar no KPI de pagamento
+           - Não renderiza o modal de forma de pagamento
+        2. Parceria Avançado:
+           - Mesmas blindagens, exibindo Plano Atual Avançado
+        3. Blindagem contra dados residuais legados:
+           - contracted_value residual ignorado (renderiza Isento)
+           - next_due_date no passado ignorada (não renderiza alerta de vencimento nem suspensão)
+           - BillingRecord pendente com gateway_invoice_url não renderiza CTA de regularização
+        4. Histórico com pagamentos legados anteriores:
+           - Mantém tabela de histórico preservada
+        5. Histórico vazio em parceria:
+           - Exibe empty state neutro específico de parceria
+        6. Regressão visual de PAGO:
+           - Mantém rótulos originais: Ciclo, Próxima Cobrança, Formas de Pagamento, botão Editar, modal e botões de ação
+        """
+        from django.test import Client
+        from django.urls import reverse
+        from core.models import User
+
+        client = Client()
+
+        # 1. Parceria Básico
+        user_basic = User.objects.create_user(
+            username="user_part_basic",
+            email="upb@teste.com",
+            password="pass",
+            role="PRODUTOR",
+            band=self.band_basic
+        )
+        sub_basic = BandSubscription.objects.create(
+            band=self.band_basic,
+            plan_name="Básico",
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            status="ATIVO",
+            start_date=datetime.date(2026, 1, 1),
+            contracted_value=Decimal("0.00")
+        )
+
+        client.force_login(user_basic)
+        url_basic = reverse("minha_assinatura", kwargs={"band_slug": self.band_basic.slug})
+        resp_basic = client.get(url_basic)
+        self.assertEqual(resp_basic.status_code, 200)
+        content_basic = resp_basic.content.decode("utf-8")
+
+        # Verificações básicas
+        self.assertIn("Básico", content_basic)
+        self.assertIn("Ativo", content_basic)
+        self.assertIn("Isento", content_basic)
+        self.assertIn("Condição Comercial", content_basic)
+        self.assertIn("Parceria", content_basic)
+        self.assertIn("Sem prazo definido", content_basic)
+        self.assertIn("Não se aplica", content_basic)
+        self.assertIn("01/01/2026", content_basic)
+
+        # Não deve conter botões/controles de pagamento ou cancelamento
+        self.assertNotIn("modalFormaPagamento", content_basic)
+        self.assertNotIn("Regularizar Pagamento", content_basic)
+        self.assertNotIn("Cancelar Assinatura", content_basic)
+        self.assertNotIn("Reativar Assinatura", content_basic)
+        self.assertNotIn("data-bs-target=\"#modalFormaPagamento\"", content_basic)
+        # Empty state de histórico específico
+        self.assertIn("Nenhum pagamento registrado. Esta conta opera sob condição de Parceria.", content_basic)
+
+        # 2. Parceria Avançado
+        user_adv = User.objects.create_user(
+            username="user_part_adv",
+            email="upa@teste.com",
+            password="pass",
+            role="PRODUTOR",
+            band=self.band_advanced
+        )
+        sub_adv = BandSubscription.objects.create(
+            band=self.band_advanced,
+            plan_name="Avançado",
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            status="ATIVO",
+            start_date=datetime.date(2026, 2, 1),
+            contracted_value=Decimal("0.00")
+        )
+        client.force_login(user_adv)
+        url_adv = reverse("minha_assinatura", kwargs={"band_slug": self.band_advanced.slug})
+        resp_adv = client.get(url_adv)
+        self.assertEqual(resp_adv.status_code, 200)
+        content_adv = resp_adv.content.decode("utf-8")
+        self.assertIn("Avançado", content_adv)
+        self.assertIn("Isento", content_adv)
+        self.assertIn("Parceria", content_adv)
+        self.assertIn("Sem prazo definido", content_adv)
+        self.assertNotIn("modalFormaPagamento", content_adv)
+
+        # 3. Blindagem contra dados residuais legados em parceria
+        band_resid = Band.objects.create(name="Banda Residual", slug="banda-residual", is_active=True)
+        user_resid = User.objects.create_user(
+            username="user_resid",
+            email="uresid@teste.com",
+            password="pass",
+            role="PRODUTOR",
+            band=band_resid
+        )
+        sub_resid = BandSubscription.objects.create(
+            band=band_resid,
+            plan_name="Avançado",
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            status="ATIVO",
+            contracted_value=Decimal("999.00"),
+            next_due_date=timezone.localdate() - datetime.timedelta(days=30),
+            billing_cycle="ANUAL",
+            auto_renew=True
+        )
+        # BillingRecord pendente residual com link de fatura
+        BillingRecord.objects.create(
+            band=band_resid,
+            subscription=sub_resid,
+            amount=Decimal("999.00"),
+            due_date=timezone.localdate() - datetime.timedelta(days=30),
+            status="PENDENTE",
+            gateway_invoice_url="https://gateway.asaas.com/i/residual123"
+        )
+        client.force_login(user_resid)
+        url_resid = reverse("minha_assinatura", kwargs={"band_slug": band_resid.slug})
+        resp_resid = client.get(url_resid)
+        self.assertEqual(resp_resid.status_code, 200)
+        content_resid = resp_resid.content.decode("utf-8")
+
+        # Não deve mostrar R$ 999,00 no KPI de Valor (deve mostrar Isento)
+        self.assertIn("Isento", content_resid)
+        self.assertNotIn(">R$ 999,00<", content_resid)
+        self.assertIn("Sem prazo definido", content_resid)
+        # Não deve renderizar alertas de atraso nem modal de regularização
+        self.assertNotIn("Regularizar Pagamento", content_resid)
+        self.assertNotIn("modalFormaPagamento", content_resid)
+
+        # 4. Histórico com pagamentos legados anteriores preservados
+        BillingRecord.objects.create(
+            band=band_resid,
+            subscription=sub_resid,
+            reference_period="01/2025",
+            amount=Decimal("199.90"),
+            due_date=datetime.date(2025, 1, 10),
+            paid_date=datetime.date(2025, 1, 10),
+            status="PAGO",
+            payment_method="CARTAO"
+        )
+        resp_resid_hist = client.get(url_resid)
+        content_resid_hist = resp_resid_hist.content.decode("utf-8")
+        self.assertIn("01/2025", content_resid_hist)
+        self.assertIn("199,90", content_resid_hist)
+        self.assertIn("Pago", content_resid_hist)
+
+        # 6. Regressão visual de PAGO
+        user_paid = User.objects.create_user(
+            username="user_paid",
+            email="upaid@teste.com",
+            password="pass",
+            role="PRODUTOR",
+            band=self.band_paid
+        )
+        sub_paid = BandSubscription.objects.create(
+            band=self.band_paid,
+            plan_name="Básico",
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
+            status="ATIVO",
+            billing_cycle="MENSAL",
+            payment_method_preference="CARTAO",
+            contracted_value=Decimal("150.00"),
+            start_date=datetime.date(2026, 1, 1),
+            next_due_date=datetime.date(2026, 10, 1),
+            auto_renew=True
+        )
+        pm_paid = GatewayPaymentMethod.objects.create(
+            subscription=sub_paid,
+            gateway_provider="ASAAS",
+            gateway_customer_id="cus_paid_test",
+            card_brand="Visa",
+            card_last4="4321",
+            expiration_month="12",
+            expiration_year="2028",
+            is_active=True
+        )
+        pm_paid.set_token("tok_paid_secret")
+        pm_paid.save()
+
+        client.force_login(user_paid)
+        url_paid = reverse("minha_assinatura", kwargs={"band_slug": self.band_paid.slug})
+        resp_paid = client.get(url_paid)
+        self.assertEqual(resp_paid.status_code, 200)
+        content_paid = resp_paid.content.decode("utf-8")
+
+        # Deve conter dados normais de PAGO
+        self.assertIn("Ciclo", content_paid)
+        self.assertIn("Mensal", content_paid)
+        self.assertIn("R$ 150,00", content_paid)
+        self.assertIn("Próxima Cobrança", content_paid)
+        self.assertIn("01/10/2026", content_paid)
+        self.assertIn("Visa", content_paid)
+        self.assertIn("•••• 4321", content_paid)
+        self.assertIn("modalFormaPagamento", content_paid)
+        self.assertIn("data-bs-target=\"#modalFormaPagamento\"", content_paid)
+        self.assertIn("Editar", content_paid)
+
