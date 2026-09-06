@@ -291,4 +291,51 @@ class ScheduledJobsTestCase(TestCase):
         records_2 = BillingRecord.objects.filter(subscription=sub_due).count()
         self.assertEqual(records_2, 1)  # Idempotente: não duplicou!
 
+    def test_check_subscription_due_dates_dry_run_zero_writes(self):
+        """
+        BILLING-SCHEDULER-01D.1: Garante que --dry-run NÃO executa qualquer write no banco:
+        - DELTA BillingRecord = 0
+        - DELTA EmailDelivery = 0
+        - BandSubscription inalterada
+        - Em seguida, sem --dry-run, o comportamento normal cria o registro normalmente.
+        """
+        import io
+        from core.models import BillingRecord, EmailDelivery
+
+        band_dry = Band.objects.create(name="Banda Dry Run", slug="banda-dry-run")
+        sub_dry = BandSubscription.objects.create(
+            band=band_dry,
+            plan_name="Plano Trimestral",
+            billing_cycle="TRIMESTRAL",
+            contracted_value=Decimal("199.90"),
+            next_due_date=timezone.localdate() + datetime.timedelta(days=2),
+            status="ATIVO",
+            auto_renew=True,
+            billing_email="financeiro@bandadryrun.com"
+        )
+
+        billing_count_before = BillingRecord.objects.count()
+        email_count_before = EmailDelivery.objects.count()
+        sub_updated_before = sub_dry.updated_at if hasattr(sub_dry, 'updated_at') else None
+
+        out = io.StringIO()
+        call_command('check_subscription_due_dates', '--dry-run', stdout=out)
+        output_str = out.getvalue()
+
+        self.assertIn("DRY-RUN", output_str)
+        self.assertIn("Dry-run concluido: 1 faturas seriam criadas", output_str)
+
+        # Asserção de ZERO writes
+        self.assertEqual(BillingRecord.objects.count(), billing_count_before)
+        self.assertEqual(EmailDelivery.objects.count(), email_count_before)
+
+        sub_dry.refresh_from_db()
+        self.assertEqual(sub_dry.status, "ATIVO")
+
+        # Execução NORMAL subsequente deve criar o BillingRecord normalmente
+        call_command('check_subscription_due_dates')
+        self.assertEqual(BillingRecord.objects.count(), billing_count_before + 1)
+        self.assertTrue(BillingRecord.objects.filter(subscription=sub_dry, due_date=sub_dry.next_due_date).exists())
+
+
 
