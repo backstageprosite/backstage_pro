@@ -180,6 +180,14 @@
                     <input type="text" name="q" class="form-control" placeholder="Nome da banda..." value="{{ q|default:'' }}">
                 </div>
                 <div class="col-6 col-md-2">
+                    <label class="form-label">Condição</label>
+                    <select name="commercial_condition" class="form-select">
+                        <option value="">Todas</option>
+                        <option value="PAGO" {% if commercial_condition == 'PAGO' %}selected{% endif %}>Pago</option>
+                        <option value="PARCERIA" {% if commercial_condition == 'PARCERIA' %}selected{% endif %}>Parceria</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
                         <option value="">Todos</option>
@@ -199,15 +207,15 @@
                         <option value="ANUAL" {% if billing_cycle == 'ANUAL' %}selected{% endif %}>Anual</option>
                     </select>
                 </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label">Reativação Auto</label>
+                <div class="col-6 col-md-1">
+                    <label class="form-label">Reativação</label>
                     <select name="auto_renew" class="form-select">
                         <option value="">Todas</option>
                         <option value="1" {% if auto_renew == '1' %}selected{% endif %}>Ativada</option>
                         <option value="0" {% if auto_renew == '0' %}selected{% endif %}>Desativada</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-3 text-end d-flex gap-2 justify-content-end align-items-center">
+                <div class="col-12 col-md-2 text-end d-flex gap-2 justify-content-end align-items-center">
                     <a href="{% url 'admin_painel:assinaturas' %}" class="btn btn-sm btn-outline-secondary px-3" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 16px; border-radius: 4px; border: 1px solid #6C757D; color: #6C757D; background-color: transparent; display: inline-flex; align-items: center; white-space: nowrap;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='#FFFFFF';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';">
                         <i class="fa-solid fa-eraser me-1" style="font-size: 14px; font-weight: 900;"></i> Limpar
                     </a>
@@ -227,6 +235,7 @@
                         <tr>
                             <th class="ps-4">Banda</th>
                             <th>Responsável</th>
+                            <th class="text-center">Condição</th>
                             <th>Plano</th>
                             <th>Valor</th>
                             <th>Vencimento</th>
@@ -239,10 +248,21 @@
                         <tr>
                             <td class="ps-4">
                                 <div class="fw-bold text-dark" style="font-size: 13px;">{{ sub.band.name }}</div>
-                                <div class="small text-muted" style="font-size: 11px;">Início: {{ sub.start_date|date:"d/m/Y" }}</div>
+                                <div class="small text-muted" style="font-size: 11px;">Início: {{ sub.start_date|date:"d/m/Y"|default:"-" }}</div>
                             </td>
                             <td>
                                 <div class="text-muted" style="font-size: 13px;"><i class="fa-solid fa-user-tie me-1"></i>{{ sub.financial_responsible_name|default:"Não informado" }}</div>
+                            </td>
+                            <td class="text-center">
+                                {% if sub.is_partnership %}
+                                    <span class="badge cycle-pill" style="background-color: #E0CFFC; border: 1px solid #C5A3F8; color: #3D0A91;">
+                                        <i class="fa-solid fa-handshake me-1"></i>Parceria
+                                    </span>
+                                {% else %}
+                                    <span class="badge cycle-pill" style="background-color: #E2E3E5; border: 1px solid #D3D6D8; color: #41464B;">
+                                        Pago
+                                    </span>
+                                {% endif %}
                             </td>
                             <td>
                                 {% if sub.billing_cycle == 'MENSAL' %}
@@ -264,11 +284,17 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div class="fw-bold text-success" style="font-size: 13px;">R$ {{ sub.contracted_value }}</div>
+                                {% if sub.is_partnership %}
+                                    <div class="fw-bold text-muted" style="font-size: 13px;">Isento</div>
+                                {% else %}
+                                    <div class="fw-bold text-success" style="font-size: 13px;">R$ {{ sub.contracted_value }}</div>
+                                {% endif %}
                             </td>
                             <td>
                                 <div class="fw-semibold text-dark" style="font-size: 13px;">
-                                    {% if sub.next_due_date %}
+                                    {% if sub.is_partnership %}
+                                        <span class="text-muted" style="font-size: 12px;">Sem prazo</span>
+                                    {% elif sub.next_due_date %}
                                         {{ sub.next_due_date|date:"d/m/Y" }}
                                     {% else %}
                                         <span class="text-muted">Não definido</span>
@@ -349,6 +375,26 @@
                                         {% csrf_token %}
                                         <div class="modal-body p-3 p-md-4 text-start">
                                             <input type="hidden" name="band" value="{{ sub.band.id }}">
+                                            <input type="hidden" name="commercial_condition" value="{{ sub.commercial_condition }}">
+
+                                            <!-- Condição Comercial (somente leitura / blindada) -->
+                                            <div class="mb-3 p-2 bg-light rounded border d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <span class="text-muted small fw-bold d-block">Condição Comercial</span>
+                                                    {% if sub.is_partnership %}
+                                                        <span class="badge" style="background-color: #E0CFFC; color: #3D0A91; border: 1px solid #C5A3F8; font-size: 12px;">
+                                                            <i class="fa-solid fa-handshake me-1"></i>Parceria
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge" style="background-color: #E2E3E5; color: #41464B; border: 1px solid #D3D6D8; font-size: 12px;">
+                                                            Pago
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                                <small class="text-muted fst-italic">
+                                                    <i class="fa-solid fa-lock me-1"></i>A alteração da condição comercial exige um procedimento específico.
+                                                </small>
+                                            </div>
 
                                             <div class="row g-3 mb-3">
                                                 <input type="hidden" name="plan_name" value="{{ sub.plan_name }}">
@@ -362,7 +408,10 @@
                                                 </div>
                                                 <div class="col-6 col-md-4">
                                                     <label class="form-label">Valor Contratado</label>
-                                                    <input type="number" step="0.01" name="contracted_value" class="form-control" value="{{ sub.contracted_value|stringformat:'s' }}">
+                                                    <input type="number" step="0.01" name="contracted_value" class="form-control" value="{{ sub.contracted_value|stringformat:'s' }}" {% if sub.is_partnership %}readonly style="background-color: #f8f9fa;"{% endif %}>
+                                                    {% if sub.is_partnership %}
+                                                        <small class="text-muted" style="font-size: 11px;">Sem cobrança (Isento).</small>
+                                                    {% endif %}
                                                 </div>
                                                 <div class="col-12 col-md-4">
                                                     <label class="form-label">Status</label>
@@ -420,11 +469,17 @@
                                             </div>
 
                                             <div class="form-check form-switch mt-2">
-                                                <input class="form-check-input" type="checkbox" id="auto_renew_edit_{{ sub.id }}" name="auto_renew" value="1" {% if sub.auto_renew %}checked{% endif %}>
+                                                <input class="form-check-input" type="checkbox" id="auto_renew_edit_{{ sub.id }}" name="auto_renew" value="1" {% if sub.auto_renew %}checked{% endif %} {% if sub.is_partnership %}disabled{% endif %}>
                                                 <label class="form-check-label fw-bold small ms-2" for="auto_renew_edit_{{ sub.id }}" style="font-size: 12px;">
                                                     <i class="fa-solid fa-rotate me-1 text-success"></i> Reativação Automática
                                                 </label>
-                                                <div class="form-text text-muted" style="font-size: 11px;">Ao chegar na data de vencimento, a assinatura será renovada automaticamente.</div>
+                                                <div class="form-text text-muted" style="font-size: 11px;">
+                                                    {% if sub.is_partnership %}
+                                                        Não se aplica para contas sob condição de Parceria.
+                                                    {% else %}
+                                                        Ao chegar na data de vencimento, a assinatura será renovada automaticamente.
+                                                    {% endif %}
+                                                </div>
                                             </div>
 
                                         </div>
@@ -438,7 +493,7 @@
                         </div>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
+                            <td colspan="8" class="text-center py-4 text-muted">
                                 <i class="fa-solid fa-file-contract fa-2x mb-2 text-secondary opacity-50"></i>
                                 <h6 class="fw-bold mb-1">Nenhuma assinatura cadastrada</h6>
                                 <p class="mb-0 small">As assinaturas aparecerão aqui.</p>
@@ -460,18 +515,30 @@
                 <h5 class="modal-title fw-bold" style="font-size: 16px; color: #198754;"><i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Nova Assinatura</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST" action="{% url 'admin_painel:assinaturas_nova' %}">
+            <form method="POST" action="{% url 'admin_painel:assinaturas_nova' %}" id="formCreateSubscription">
                 {% csrf_token %}
                 <div class="modal-body p-3 p-md-4 text-start">
 
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Banda Cliente</label>
-                        <select name="band" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
-                            <option value="">-- Selecione --</option>
-                            {% for band in form_create.fields.band.queryset %}
-                                <option value="{{ band.id }}">{{ band.name }}</option>
-                            {% endfor %}
-                        </select>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-7">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Banda Cliente</label>
+                            <select name="band" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                                <option value="">-- Selecione --</option>
+                                {% for band in form_create.fields.band.queryset %}
+                                    <option value="{{ band.id }}">{{ band.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Condição Comercial</label>
+                            <select name="commercial_condition" id="create_commercial_condition" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                                <option value="PAGO" selected>Pago</option>
+                                <option value="PARCERIA">Parceria</option>
+                            </select>
+                            <div id="partnership_hint" class="small text-primary mt-1 d-none" style="font-size: 11px;">
+                                <i class="fa-solid fa-handshake me-1"></i>Sem cobrança financeira (Isento).
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row g-3 mb-3">
@@ -485,9 +552,9 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-6 col-md-4">
+                        <div class="col-6 col-md-4" id="col_contracted_value">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Valor Contratado</label>
-                            <input type="number" step="0.01" name="contracted_value" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="number" step="0.01" name="contracted_value" id="create_contracted_value" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-12 col-md-4">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Status Inicial</label>
@@ -510,33 +577,35 @@
                         </div>
                     </div>
 
-                    <hr class="my-3">
-                    <h6 class="fw-bold mb-3 text-secondary" style="font-size: 13px;">Dados Financeiros e Contato</h6>
+                    <div id="wrapper_financial_fields">
+                        <hr class="my-3">
+                        <h6 class="fw-bold mb-3 text-secondary" style="font-size: 13px;">Dados Financeiros e Contato</h6>
 
-                    <div class="row g-3 mb-3">
-                        <div class="col-6 col-md-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Responsável Financeiro</label>
-                            <input type="text" name="financial_responsible_name" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        <div class="row g-3 mb-3">
+                            <div class="col-6 col-md-6">
+                                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Responsável Financeiro</label>
+                                <input type="text" name="financial_responsible_name" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            </div>
+                            <div class="col-6 col-md-6">
+                                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">E-mail de Cobrança</label>
+                                <input type="email" name="billing_email" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            </div>
                         </div>
-                        <div class="col-6 col-md-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">E-mail de Cobrança</label>
-                            <input type="email" name="billing_email" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
-                        </div>
-                    </div>
 
-                    <div class="row g-3 mb-3">
-                        <div class="col-6 col-md-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Método Pgt.</label>
-                            <select name="payment_method_preference" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
-                                <option value="">-- Selecione --</option>
-                                {% for val, display in form_create.fields.payment_method_preference.choices %}
-                                    <option value="{{ val }}">{{ display }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-6 col-md-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Tel. Cobrança</label>
-                            <input type="text" name="billing_phone" class="form-control whatsapp-mask" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        <div class="row g-3 mb-3">
+                            <div class="col-6 col-md-6" id="col_payment_method">
+                                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Método Pgt.</label>
+                                <select name="payment_method_preference" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                                    <option value="">-- Selecione --</option>
+                                    {% for val, display in form_create.fields.payment_method_preference.choices %}
+                                        <option value="{{ val }}">{{ display }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-6">
+                                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Tel. Cobrança</label>
+                                <input type="text" name="billing_phone" class="form-control whatsapp-mask" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            </div>
                         </div>
                     </div>
 
@@ -545,12 +614,12 @@
                         <textarea name="internal_notes" class="form-control" rows="2" style="font-size: 14px; padding: 5px 10px;"></textarea>
                     </div>
 
-                    <div class="form-check form-switch mt-2">
+                    <div class="form-check form-switch mt-2" id="wrapper_auto_renew">
                         <input class="form-check-input" type="checkbox" id="auto_renew_create" name="auto_renew" value="1">
                         <label class="form-check-label fw-bold small ms-2" for="auto_renew_create" style="font-size: 12px;">
                             <i class="fa-solid fa-rotate me-1 text-success"></i> Reativação Automática
                         </label>
-                        <div class="form-text text-muted" style="font-size: 11px;">Ao chegar na data de vencimento, a assinatura será renovada automaticamente.</div>
+                        <div class="form-text text-muted" id="auto_renew_hint" style="font-size: 11px;">Ao chegar na data de vencimento, a assinatura será renovada automaticamente.</div>
                     </div>
 
                 </div>
@@ -563,49 +632,56 @@
     </div>
 </div>
 
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Dynamic Partnership / Paid toggle in Create Modal
+    var conditionSelect = document.getElementById('create_commercial_condition');
+    var valInput = document.getElementById('create_contracted_value');
+    var hint = document.getElementById('partnership_hint');
+    var autoRenew = document.getElementById('auto_renew_create');
+    var autoRenewHint = document.getElementById('auto_renew_hint');
 
-    <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Date auto-calc logic for all modals
-        document.querySelectorAll('input[name="start_date"]').forEach(function(startInput) {
-            startInput.addEventListener('change', function() {
-                var form = this.closest('form');
-                var cycleSelect = form.querySelector('select[name="billing_cycle"]');
-                var endInput = form.querySelector('input[name="next_due_date"]');
-                if (this.value && cycleSelect && cycleSelect.value) {
-                    var d = new Date(this.value + "T00:00:00");
-                    if (cycleSelect.value === 'MENSAL') {
-                        d.setMonth(d.getMonth() + 1);
-                    } else if (cycleSelect.value === 'SEMESTRAL') {
-                        d.setMonth(d.getMonth() + 6);
-                    } else if (cycleSelect.value === 'ANUAL') {
-                        d.setFullYear(d.getFullYear() + 1);
-                    }
-                    endInput.value = d.toISOString().split('T')[0];
-                }
-            });
-        });
+    function toggleConditionFields() {
+        if (!conditionSelect) return;
+        var isPartnership = conditionSelect.value === 'PARCERIA';
+        if (isPartnership) {
+            if (valInput) {
+                valInput.value = '0.00';
+                valInput.readOnly = true;
+                valInput.required = false;
+                valInput.style.backgroundColor = '#f8f9fa';
+            }
+            if (hint) hint.classList.remove('d-none');
+            if (autoRenew) {
+                autoRenew.checked = false;
+                autoRenew.disabled = true;
+            }
+            if (autoRenewHint) {
+                autoRenewHint.textContent = 'Não se aplica para contas sob condição de Parceria.';
+            }
+        } else {
+            if (valInput) {
+                if (valInput.value === '0.00') valInput.value = '';
+                valInput.readOnly = false;
+                valInput.required = true;
+                valInput.style.backgroundColor = '';
+            }
+            if (hint) hint.classList.add('d-none');
+            if (autoRenew) {
+                autoRenew.disabled = false;
+            }
+            if (autoRenewHint) {
+                autoRenewHint.textContent = 'Ao chegar na data de vencimento, a assinatura será renovada automaticamente.';
+            }
+        }
+    }
 
-        document.querySelectorAll('select[name="billing_cycle"]').forEach(function(cycleSelect) {
-            cycleSelect.addEventListener('change', function() {
-                var form = this.closest('form');
-                var startInput = form.querySelector('input[name="start_date"]');
-                if (startInput) {
-                    var evt = new Event('change');
-                    startInput.dispatchEvent(evt);
-
-                    // Update hidden plan_name
-                    var hiddenPlan = form.querySelector('input[name="plan_name"]');
-                    if (hiddenPlan) {
-                        if (this.value === 'MENSAL') hiddenPlan.value = 'Mensal';
-                        if (this.value === 'SEMESTRAL') hiddenPlan.value = 'Semestral';
-                        if (this.value === 'ANUAL') hiddenPlan.value = 'Anual';
-                    }
-                }
-            });
-        });
-    });
-    </script>
+    if (conditionSelect) {
+        conditionSelect.addEventListener('change', toggleConditionFields);
+        toggleConditionFields();
+    }
+});
+</script>
 
 {% endblock %}
 

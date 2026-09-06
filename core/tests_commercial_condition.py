@@ -525,3 +525,175 @@ class CommercialConditionTests(TestCase):
         self.assertIn("data-bs-target=\"#modalFormaPagamento\"", content_paid)
         self.assertIn("Editar", content_paid)
 
+    def test_admin_commercial_condition_creation_and_restrictions(self):
+        """Testa criação e restrições de condição comercial no painel administrativo."""
+        from django.contrib.auth import get_user_model
+        from django.test import Client
+        from django.urls import reverse
+
+        User = get_user_model()
+        admin_user = User.objects.create_superuser(
+            username="admin_test_parceria",
+            email="admin_parceria@teste.com",
+            password="admin_password"
+        )
+        client = Client()
+        client.force_login(admin_user)
+
+        band_new_basic = Band.objects.create(
+            name="Banda Admin Nova Básico",
+            slug="banda-admin-nova-basico",
+            plan_type=Band.PlanType.BASICO,
+            is_active=True
+        )
+
+        band_new_adv = Band.objects.create(
+            name="Banda Admin Nova Avançado",
+            slug="banda-admin-nova-avancado",
+            plan_type=Band.PlanType.AVANCADO,
+            is_active=True
+        )
+
+        # 1. Criação Básico + Parceria
+        resp_create_basic = client.post(reverse("admin_painel:assinaturas_nova"), data={
+            "band": band_new_basic.pk,
+            "commercial_condition": BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            "status": "ATIVO",
+            "billing_cycle": "MENSAL",
+            "start_date": "2026-09-01",
+            "next_due_date": "",
+            "contracted_value": "",
+            "auto_renew": False,
+        })
+        self.assertEqual(resp_create_basic.status_code, 302)
+        sub_basic = BandSubscription.objects.get(band=band_new_basic)
+        self.assertEqual(sub_basic.commercial_condition, BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP)
+        self.assertEqual(sub_basic.contracted_value, Decimal("0.00"))
+        self.assertFalse(sub_basic.auto_renew)
+        self.assertIsNone(sub_basic.next_due_date)
+        self.assertEqual(BillingRecord.objects.filter(subscription=sub_basic).count(), 0)
+        self.assertEqual(GatewayPaymentMethod.objects.filter(subscription=sub_basic).count(), 0)
+
+        # 2. Criação Avançado + Parceria
+        resp_create_adv = client.post(reverse("admin_painel:assinaturas_nova"), data={
+            "band": band_new_adv.pk,
+            "commercial_condition": BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            "status": "ATIVO",
+            "billing_cycle": "MENSAL",
+            "start_date": "2026-09-01",
+            "next_due_date": "",
+            "contracted_value": "",
+            "auto_renew": False,
+        })
+        self.assertEqual(resp_create_adv.status_code, 302)
+        sub_adv = BandSubscription.objects.get(band=band_new_adv)
+        self.assertEqual(sub_adv.commercial_condition, BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP)
+        self.assertEqual(sub_adv.contracted_value, Decimal("0.00"))
+        self.assertFalse(sub_adv.auto_renew)
+        self.assertEqual(BillingRecord.objects.filter(subscription=sub_adv).count(), 0)
+        self.assertEqual(GatewayPaymentMethod.objects.filter(subscription=sub_adv).count(), 0)
+
+        # 3. Tentativa de manipulação de POST com contracted_value e auto_renew em Parceria
+        band_tamper = Band.objects.create(
+            name="Banda Tamper Parceria",
+            slug="banda-tamper-parceria",
+            plan_type=Band.PlanType.AVANCADO,
+            is_active=True
+        )
+        resp_create_tamper = client.post(reverse("admin_painel:assinaturas_nova"), data={
+            "band": band_tamper.pk,
+            "commercial_condition": BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            "status": "ATIVO",
+            "billing_cycle": "MENSAL",
+            "start_date": "2026-09-01",
+            "next_due_date": "2026-10-01",
+            "contracted_value": "999.99",
+            "auto_renew": "on",
+        })
+        self.assertEqual(resp_create_tamper.status_code, 302)
+        sub_tamper = BandSubscription.objects.get(band=band_tamper)
+        self.assertEqual(sub_tamper.commercial_condition, BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP)
+        self.assertEqual(sub_tamper.contracted_value, Decimal("0.00"))
+        self.assertFalse(sub_tamper.auto_renew)
+
+        # 4. Criação de Assinatura PAGO preservada
+        band_paid_new = Band.objects.create(
+            name="Banda Admin Nova Pago",
+            slug="banda-admin-nova-pago",
+            plan_type=Band.PlanType.AVANCADO,
+            is_active=True
+        )
+        resp_create_paid = client.post(reverse("admin_painel:assinaturas_nova"), data={
+            "band": band_paid_new.pk,
+            "commercial_condition": BandSubscription.COMMERCIAL_CONDITION_PAID,
+            "status": "ATIVO",
+            "billing_cycle": "MENSAL",
+            "start_date": "2026-09-01",
+            "next_due_date": "2026-10-01",
+            "contracted_value": "199.90",
+            "payment_method_preference": "PIX",
+            "auto_renew": "on",
+        })
+        self.assertEqual(resp_create_paid.status_code, 302)
+        sub_paid_created = BandSubscription.objects.get(band=band_paid_new)
+        self.assertEqual(sub_paid_created.commercial_condition, BandSubscription.COMMERCIAL_CONDITION_PAID)
+        self.assertEqual(sub_paid_created.contracted_value, Decimal("199.90"))
+        self.assertTrue(sub_paid_created.auto_renew)
+
+        # 5. Bloqueio estrito de conversão PAGO -> PARCERIA via edição de assinatura existente
+        resp_edit_pago_to_parceria = client.post(reverse("admin_painel:assinaturas_editar", kwargs={"pk": sub_paid_created.pk}), data={
+            "band": band_paid_new.pk,
+            "commercial_condition": BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            "status": "ATIVO",
+            "billing_cycle": "MENSAL",
+            "start_date": "2026-09-01",
+            "next_due_date": "2026-10-01",
+            "contracted_value": "0.00",
+            "payment_method_preference": "PIX",
+            "auto_renew": False,
+        })
+        self.assertEqual(resp_edit_pago_to_parceria.status_code, 302)
+        sub_paid_created.refresh_from_db()
+        # Não pode ter mudado para PARCERIA
+        self.assertEqual(sub_paid_created.commercial_condition, BandSubscription.COMMERCIAL_CONDITION_PAID)
+
+        # 6. Bloqueio estrito de conversão PARCERIA -> PAGO via edição de assinatura existente
+        resp_edit_parceria_to_pago = client.post(reverse("admin_painel:assinaturas_editar", kwargs={"pk": sub_basic.pk}), data={
+            "band": band_new_basic.pk,
+            "commercial_condition": BandSubscription.COMMERCIAL_CONDITION_PAID,
+            "status": "ATIVO",
+            "billing_cycle": "MENSAL",
+            "start_date": "2026-09-01",
+            "next_due_date": "2026-10-01",
+            "contracted_value": "150.00",
+            "payment_method_preference": "PIX",
+            "auto_renew": "on",
+        })
+        self.assertEqual(resp_edit_parceria_to_pago.status_code, 302)
+        sub_basic.refresh_from_db()
+        # Não pode ter mudado para PAGO
+        self.assertEqual(sub_basic.commercial_condition, BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP)
+
+        # 7. Listagem e Filtros por Condição Comercial
+        resp_list_all = client.get(reverse("admin_painel:assinaturas"))
+        self.assertEqual(resp_list_all.status_code, 200)
+        content_all = resp_list_all.content.decode("utf-8")
+        self.assertIn("Parceria", content_all)
+        self.assertIn("Pago", content_all)
+        self.assertIn("Isento", content_all)
+
+        # Filtro SOMENTE PARCERIA
+        resp_filter_parceria = client.get(reverse("admin_painel:assinaturas"), {"commercial_condition": "PARCERIA"})
+        self.assertEqual(resp_filter_parceria.status_code, 200)
+        subs_parceria = list(resp_filter_parceria.context['assinaturas'])
+        self.assertTrue(any(s.band == band_new_basic for s in subs_parceria))
+        self.assertFalse(any(s.band == band_paid_new for s in subs_parceria))
+
+        # Filtro SOMENTE PAGO
+        resp_filter_pago = client.get(reverse("admin_painel:assinaturas"), {"commercial_condition": "PAGO"})
+        self.assertEqual(resp_filter_pago.status_code, 200)
+        subs_pago = list(resp_filter_pago.context['assinaturas'])
+        self.assertTrue(any(s.band == band_paid_new for s in subs_pago))
+        self.assertFalse(any(s.band == band_new_basic for s in subs_pago))
+
+

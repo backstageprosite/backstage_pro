@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django import forms
 from django.db import models
 from core.models import Band, User, BandSubscription, BillingRecord
@@ -78,7 +79,7 @@ class AdminSubscriptionForm(forms.ModelForm):
     class Meta:
         model = BandSubscription
         fields = [
-            'band', 'billing_cycle', 'contracted_value', 
+            'band', 'commercial_condition', 'billing_cycle', 'contracted_value', 
             'start_date', 'next_due_date', 'status', 'payment_method_preference', 'auto_renew',
             'financial_responsible_name', 'billing_phone', 'billing_email', 'internal_notes'
         ]
@@ -86,6 +87,44 @@ class AdminSubscriptionForm(forms.ModelForm):
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'next_due_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'commercial_condition' in self.fields:
+            self.fields['commercial_condition'].label = 'Condição Comercial'
+            self.fields['commercial_condition'].initial = BandSubscription.COMMERCIAL_CONDITION_PAID
+        if 'contracted_value' in self.fields:
+            self.fields['contracted_value'].required = False
+        if 'payment_method_preference' in self.fields:
+            self.fields['payment_method_preference'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        condition = cleaned_data.get('commercial_condition') or BandSubscription.COMMERCIAL_CONDITION_PAID
+
+        # Se for edição de assinatura existente, travar conversão entre PAGO e PARCERIA
+        if self.instance and self.instance.pk:
+            original_condition = self.instance.commercial_condition
+            if original_condition and condition != original_condition:
+                raise forms.ValidationError(
+                    "A alteração da condição comercial desta assinatura não pode ser realizada por este formulário."
+                )
+
+        if condition == BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP:
+            # Força backend para Parceria
+            cleaned_data['contracted_value'] = Decimal('0.00')
+            cleaned_data['auto_renew'] = False
+            if not cleaned_data.get('payment_method_preference'):
+                cleaned_data['payment_method_preference'] = 'PIX'
+        else:
+            # Para PAGO, contracted_value e payment_method_preference são obrigatórios
+            val = cleaned_data.get('contracted_value')
+            if val is None:
+                self.add_error('contracted_value', 'O valor contratado é obrigatório para assinaturas pagas.')
+            if not cleaned_data.get('payment_method_preference'):
+                self.add_error('payment_method_preference', 'A preferência de pagamento é obrigatória para assinaturas pagas.')
+
+        return cleaned_data
         
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -97,6 +136,12 @@ class AdminSubscriptionForm(forms.ModelForm):
             'ANUAL': 'Anual'
         }
         instance.plan_name = cycle_to_plan.get(instance.billing_cycle, 'Mensal')
+
+        # Blindagem de backend mandatória para Parceria
+        if instance.commercial_condition == BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP:
+            instance.contracted_value = Decimal('0.00')
+            instance.auto_renew = False
+
         if commit:
             instance.save()
         return instance

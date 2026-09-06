@@ -317,7 +317,8 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
         qs = super().get_queryset().filter(is_deleted=False)
         q = self.request.GET.get('q', '')
         status = self.request.GET.get('status', '')
-        cycle = self.request.GET.get('cycle', '')
+        cycle = self.request.GET.get('billing_cycle') or self.request.GET.get('cycle', '')
+        condition = self.request.GET.get('commercial_condition', '')
 
         if q:
             qs = qs.filter(band__name__icontains=q) | qs.filter(financial_responsible_name__icontains=q)
@@ -329,6 +330,8 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
                 qs = qs.filter(status=status)
         if cycle:
             qs = qs.filter(billing_cycle=cycle)
+        if condition:
+            qs = qs.filter(commercial_condition=condition)
 
         return qs.distinct()
 
@@ -337,6 +340,11 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
         context['form_create'] = AdminSubscriptionForm()
         context['today'] = datetime.date.today()
         context['seven_days'] = datetime.date.today() + datetime.timedelta(days=7)
+        context['commercial_condition'] = self.request.GET.get('commercial_condition', '')
+        context['billing_cycle'] = self.request.GET.get('billing_cycle') or self.request.GET.get('cycle', '')
+        context['status'] = self.request.GET.get('status', '')
+        context['q'] = self.request.GET.get('q', '')
+        context['auto_renew'] = self.request.GET.get('auto_renew', '')
         return context
 
 class AdminCobrancasView(AdminRequiredMixin, ListView):
@@ -759,8 +767,8 @@ def admin_assinatura_edit(request, pk):
         if form.is_valid():
             sub = form.save()
             
-            # Sincroniza faturas pendentes com a nova data da assinatura
-            if sub.next_due_date:
+            # Sincroniza faturas pendentes com a nova data da assinatura (SOMENTE para assinaturas PAGO)
+            if not sub.is_partnership and sub.next_due_date:
                 today = timezone.localdate()
                 seven_days = today + datetime.timedelta(days=7)
                 
