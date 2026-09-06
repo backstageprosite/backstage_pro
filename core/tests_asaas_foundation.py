@@ -2716,7 +2716,8 @@ class AsaasFoundationTests(TestCase):
         self.assertEqual(sub_abandon.status, 'DESATIVADO')
         self.assertFalse(band_abandon.has_active_subscription)
 
-    def test_overdue_grace_period_deadline_and_suspension(self):
+    @patch('django.utils.timezone.localdate', return_value=date(2026, 9, 4))
+    def test_overdue_grace_period_deadline_and_suspension(self, mock_localdate):
         """
         BACKSTAGE PRO — ASAAS-09: Valida prazo de tolerância (next_due_date + 4 dias)
         e suspensão a partir do 5º dia.
@@ -5286,6 +5287,8 @@ class AsaasFoundationTests(TestCase):
         self.assertIn("Forma de Pagamento", html1)
         self.assertIn('data-bs-target="#modalFormaPagamento"', html1)
         self.assertIn("Editar", html1)
+        self.assertNotIn('href="#"', html1)
+        self.assertIn('<button type="button"', html1)
 
         # 2. Modal presente com título correto
         self.assertIn('id="modalFormaPagamento"', html1)
@@ -5300,12 +5303,17 @@ class AsaasFoundationTests(TestCase):
         self.assertNotIn(secret_token_1, html1)
         self.assertNotIn(pm1.encrypted_token, html1)
 
-        # 5. Botão Atualizar Cartão no modal: disabled, aria-disabled e sem href/action
+        # 5. Botão Atualizar Cartão no modal: disabled, aria-disabled e sem href/action/endpoint
         self.assertIn("Atualizar Cartão", html1)
         self.assertIn("disabled", html1)
         self.assertIn('aria-disabled="true"', html1)
         self.assertIn("Funcionalidade em configuração", html1)
-        self.assertNotIn('href="/', html1[html1.find('modalFormaPagamento'):])
+        modal_start = html1.find('id="modalFormaPagamento"')
+        modal_end = html1.find('</div>\n    {% endif %}', modal_start) if '</div>\n    {% endif %}' in html1[modal_start:] else html1.find('</div>', html1.find('modal-footer', modal_start))
+        modal_html = html1[modal_start:modal_start + 2000]
+        self.assertNotIn('href=', modal_html[:modal_html.find('Atualizar Cartão')])
+        self.assertNotIn('action=', modal_html[:modal_html.find('Fechar')])
+        self.assertNotIn('POST', modal_html[:modal_html.find('Fechar')])
 
         # 6. Histórico de Pagamentos contém ação de fatura pendente
         self.assertIn("Ver cobrança", html1)
