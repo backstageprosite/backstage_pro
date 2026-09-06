@@ -558,7 +558,10 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
         # Tabela 1: Resumo por Banda
         band_summaries = []
-        all_bands = Band.objects.filter(subscriptions__is_deleted=False).distinct()
+        all_bands = Band.objects.filter(
+            subscriptions__is_deleted=False,
+            subscriptions__commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID
+        ).distinct()
         if band_id:
             all_bands = all_bands.filter(id=band_id)
 
@@ -571,7 +574,11 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
             band_summaries.append({
                 'band': band,
-                'subscription': band.subscriptions.filter(status='ATIVO', is_deleted=False).first(),
+                'subscription': band.subscriptions.filter(
+                    status='ATIVO',
+                    commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
+                    is_deleted=False
+                ).first(),
                 'recebido': rec,
                 'pendente': pend,
                 'futuro': fut,

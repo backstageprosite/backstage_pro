@@ -877,5 +877,64 @@ class FinancialReportsParceriaAndShowsFilterTests(TestCase):
         mensal_idx = cycle_labels.index("MENSAL")
         self.assertEqual(cycle_values[mensal_idx], 150.00)
 
+        # Resumo por Banda deve conter SOMENTE bandas PAGO
+        band_summaries = response.context["band_summaries"]
+        summary_bands = [item["band"] for item in band_summaries]
+        self.assertIn(band_paga, summary_bands)
+        self.assertNotIn(band_parceria, summary_bands)
+
+    def test_admin_financial_report_band_summary_excludes_partnership_even_with_high_contracted_value(self):
+        """Mesmo que a parceria tenha contracted_value=9999.99 por anomalia, deve ser excluída de band_summaries."""
+        from django.contrib.auth import get_user_model
+        from django.test import Client
+        from django.urls import reverse
+
+        User = get_user_model()
+        admin_user = User.objects.create_superuser(
+            username="admin_fin_summary",
+            email="admin_summary@teste.com",
+            password="admin_password"
+        )
+        client = Client()
+        client.force_login(admin_user)
+
+        band_pago = Band.objects.create(
+            name="Banda Paga Summary",
+            slug="banda-paga-summary",
+            plan_type=Band.PlanType.BASICO,
+            is_active=True
+        )
+        BandSubscription.objects.create(
+            band=band_pago,
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("150.00"),
+            status="ATIVO",
+            auto_renew=True
+        )
+
+        band_parceria = Band.objects.create(
+            name="Banda Parceria Summary",
+            slug="banda-parceria-summary",
+            plan_type=Band.PlanType.AVANCADO,
+            is_active=True
+        )
+        BandSubscription.objects.create(
+            band=band_parceria,
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("9999.99"),
+            status="ATIVO",
+            auto_renew=False
+        )
+
+        response = client.get(reverse("admin_painel:relatorio_financeiro"))
+        self.assertEqual(response.status_code, 200)
+
+        band_summaries = response.context["band_summaries"]
+        summary_bands = [item["band"] for item in band_summaries]
+        self.assertIn(band_pago, summary_bands)
+        self.assertNotIn(band_parceria, summary_bands)
+
 
 
