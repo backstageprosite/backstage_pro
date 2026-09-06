@@ -5252,7 +5252,7 @@ class AsaasFoundationTests(TestCase):
             gateway_invoice_url='https://sandbox.asaas.com/i/invoice_band1_safe_url'
         )
 
-        # 2. Usuário Produtor 2 e Banda 2
+        # 2. Usuário Produtor 2 e Banda 2 (Mensal + Cartão + Sem GatewayPaymentMethod local)
         band2 = Band.objects.create(name="Banda Card UI 2", slug="banda-card-ui-2")
         user2 = User.objects.create_user(username='produtor_card_2', email='p2@teste.com', password='pass', role='PRODUTOR', band=band2)
 
@@ -5265,40 +5265,56 @@ class AsaasFoundationTests(TestCase):
             next_due_date=datetime.date(2026, 10, 4),
             auto_renew=True,
             status='ATIVO',
+            payment_method_preference='CARTAO',
             gateway_provider='ASAAS',
             gateway_customer_id='cus_ui_2'
         )
-        # Banda 2 NÃO tem cartão ativo
+        # Banda 2 NÃO tem GatewayPaymentMethod local
 
         client = Client()
 
         # A) Requisição da Banda 1 logado como user1
         client.force_login(user1)
+        sub1.payment_method_preference = 'CARTAO'
+        sub1.save()
+
         resp1 = client.get(reverse('minha_assinatura', kwargs={'band_slug': band1.slug}))
         self.assertEqual(resp1.status_code, 200)
         html1 = resp1.content.decode('utf-8')
 
-        # Metadados visíveis
+        # 1. KPI superior com botão Editar apontando para #modalFormaPagamento
+        self.assertIn("Forma de Pagamento", html1)
+        self.assertIn('data-bs-target="#modalFormaPagamento"', html1)
+        self.assertIn("Editar", html1)
+
+        # 2. Modal presente com título correto
+        self.assertIn('id="modalFormaPagamento"', html1)
         self.assertIn("Forma de pagamento", html1)
+
+        # 3. Metadados do cartão ativo exibidos no modal
         self.assertIn("Mastercard", html1)
         self.assertIn("•••• 7890", html1)
         self.assertIn("Validade 09/2029", html1)
 
-        # B) SEGURANÇA: Token NUNCA pode aparecer no HTML
+        # 4. SEGURANÇA: Token NUNCA pode aparecer no HTML
         self.assertNotIn(secret_token_1, html1)
         self.assertNotIn(pm1.encrypted_token, html1)
 
-        # F) Botão Atualizar Cartão disabled e sem endpoint financeiro
+        # 5. Botão Atualizar Cartão no modal: disabled, aria-disabled e sem href/action
         self.assertIn("Atualizar Cartão", html1)
         self.assertIn("disabled", html1)
         self.assertIn('aria-disabled="true"', html1)
         self.assertIn("Funcionalidade em configuração", html1)
+        self.assertNotIn('href="/', html1[html1.find('modalFormaPagamento'):])
 
-        # G) Regularizar Pagamento presente com a URL exata
-        self.assertIn("Regularizar Pagamento", html1)
+        # 6. Histórico de Pagamentos contém ação de fatura pendente
+        self.assertIn("Ver cobrança", html1)
         self.assertIn("https://sandbox.asaas.com/i/invoice_band1_safe_url", html1)
 
-        # C & D) Requisição da Banda 2 logado como user2
+        # 7. Card redundante NÃO existe mais
+        self.assertNotIn("Nenhum cartão salvo para renovações automáticas.", html1)
+
+        # C & D) Requisição da Banda 2 logado como user2 (Mensal Asaas sem GatewayPaymentMethod)
         client.force_login(user2)
         resp2 = client.get(reverse('minha_assinatura', kwargs={'band_slug': band2.slug}))
         self.assertEqual(resp2.status_code, 200)
@@ -5307,8 +5323,10 @@ class AsaasFoundationTests(TestCase):
         # Banda 2 não deve ver dados da Banda 1
         self.assertNotIn("•••• 7890", html2)
         self.assertNotIn("invoice_band1_safe_url", html2)
-        # Banda 2 mostra mensagem de ausência de cartão
-        self.assertIn("Nenhum cartão salvo para renovações automáticas.", html2)
+
+        # Mensagem correta para mensal Asaas sem GatewayPaymentMethod local
+        self.assertIn("Dados do cartão gerenciados com segurança pelo Asaas.", html2)
+        self.assertNotIn("Nenhum cartão salvo para renovações automáticas.", html2)
 
         # E) Cartão sem brand e sem validade não quebra nem renderiza "None"
         pm1.card_brand = None
