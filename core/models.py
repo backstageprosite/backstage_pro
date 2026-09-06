@@ -587,7 +587,21 @@ class BandSubscription(models.Model):
         ('OUTRO', 'Outro'),
     )
 
+    COMMERCIAL_CONDITION_PAID = 'PAGO'
+    COMMERCIAL_CONDITION_PARTNERSHIP = 'PARCERIA'
+    COMMERCIAL_CONDITION_CHOICES = (
+        (COMMERCIAL_CONDITION_PAID, 'Pago'),
+        (COMMERCIAL_CONDITION_PARTNERSHIP, 'Parceria'),
+    )
+
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='subscriptions', verbose_name='Banda')
+    commercial_condition = models.CharField(
+        max_length=20,
+        choices=COMMERCIAL_CONDITION_CHOICES,
+        default=COMMERCIAL_CONDITION_PAID,
+        db_index=True,
+        verbose_name='Condição Comercial'
+    )
     plan_name = models.CharField(max_length=100, default='Mensal', verbose_name='Nome do Plano')
     billing_cycle = models.CharField(max_length=20, choices=CYCLE_CHOICES, default='MENSAL', verbose_name='Ciclo de Cobrança')
     contracted_value = models.DecimalField(max_digits=10, decimal_places=2, default=300.00, verbose_name='Valor Contratado')
@@ -635,11 +649,21 @@ class BandSubscription(models.Model):
             ),
         ]
 
+    @property
+    def is_partnership(self):
+        return self.commercial_condition == self.COMMERCIAL_CONDITION_PARTNERSHIP
+
+    @property
+    def is_paid_commercial_condition(self):
+        return self.commercial_condition == self.COMMERCIAL_CONDITION_PAID
+
     def days_overdue(self):
         """
         Calcula a quantidade de dias em atraso para assinaturas ativas e em renovação automática.
-        Retorna 0 se em dia ou se cancelamento já agendado.
+        Retorna 0 se em dia, se cancelamento já agendado ou se for condição comercial de Parceria.
         """
+        if self.is_partnership:
+            return 0
         from django.utils import timezone
         if self.status != 'ATIVO' or self.cancel_at_period_end or not self.auto_renew or not self.next_due_date:
             return 0
@@ -734,7 +758,10 @@ class BandSubscription(models.Model):
         Regra de encerramento automático do período já pago:
         Quando cancel_at_period_end=True e auto_renew=False, ou plano anual sem renovação automática,
         e today > next_due_date (após o dia final pago), a assinatura passa automaticamente para DESATIVADO.
+        Assinaturas sob condição de Parceria nunca expiram automaticamente por lógica financeira.
         """
+        if self.is_partnership:
+            return False
         from django.utils import timezone
         today = timezone.localdate()
         if self.status == 'ATIVO':
