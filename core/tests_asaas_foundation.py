@@ -5519,4 +5519,492 @@ class AsaasWriteHardeningSafetyTests(TestCase):
         self.assertEqual(mock_urlopen.call_count, 6)
 
 
+class AsaasWebhookWorkerHardeningTests(TestCase):
+    """
+    ASAAS-WEBHOOK-01B: Hardening e validação do receptor + worker Asaas.
+    Testa rigorosamente:
+    - Autenticação por token (ausente no servidor, ausente no header, header incorreto, válido).
+    - Validação de métodos HTTP (GET, PUT, PATCH, DELETE rejeitados; POST aceito).
+    - Validação sintática do payload (JSON quebrado, body vazio, array JSON, sem id, sem event, campos extras aceitos).
+    - Sanitização de dados sensíveis de cartão antes da persistência.
+    - Idempotência nível 1 no receptor (mesmo ID retorna 200 duplicate=True, payload alterado não sobrescreve).
+    - Comportamento do receptor: persistência rápida sem processar regra pesada sincronicamente.
+    - Worker e concorrência:
+      - Evento desconhecido: processado como True (ignorado), não causa retentativas infinitas.
+      - Evento com erro: processed=False, error_message preenchido, outros eventos da fila avançam (backoff).
+      - Reconciliação PAYMENT_RECEIVED normal: atualiza BillingRecord para PAGO e avança ciclo.
+      - Reconciliação PAYMENT_RECEIVED de assinatura suspensa com PAYMENTS_LIVE_ENABLED=False:
+        conciliação local é concluída, sub é reativada, salto de sync remoto é registrado com segurança, ZERO chamadas HTTP Asaas.
+      - Reconciliação PAYMENT_RECEIVED de assinatura suspensa com PAYMENTS_LIVE_ENABLED=True:
+        se sincronização remota falhar, acesso local não é liberado e evento permanece reprocessável.
+      - Eventos de inadimplência/cancelamento respeitam status de PARCERIA (não bloqueiam nem disparam emails).
+    """
+
+    def setUp(self):
+        from django.test import Client
+        self.client = Client()
+        self.webhook_token = "secret_webhook_token_xyz"
+
+    def test_webhook_auth_missing_server_token(self):
+        """Se ASAAS_WEBHOOK_TOKEN não estiver configurado no servidor, rejeita com 401."""
+        with override_settings(ASAAS_WEBHOOK_TOKEN=""):
+            response = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps({"id": "evt_1", "event": "PAYMENT_RECEIVED"}),
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(response.status_code, 401)
+            data = response.json()
+            self.assertEqual(data.get("error"), "Unauthorized")
+
+    def test_webhook_auth_missing_header_or_invalid_token(self):
+        """Header ausente ou token diferente deve retornar 401."""
+        with override_settings(ASAAS_WEBHOOK_TOKEN=self.webhook_token):
+            # Sem header
+            resp_no_header = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps({"id": "evt_1", "event": "PAYMENT_RECEIVED"}),
+                content_type="application/json"
+            )
+            self.assertEqual(resp_no_header.status_code, 401)
+            self.assertEqual(resp_no_header.json().get("error"), "Unauthorized")
+
+            # Token incorreto
+            resp_wrong = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps({"id": "evt_1", "event": "PAYMENT_RECEIVED"}),
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN="wrong_token_value"
+            )
+            self.assertEqual(resp_wrong.status_code, 401)
+            self.assertEqual(resp_wrong.json().get("error"), "Unauthorized")
+
+    def test_webhook_http_methods_restriction(self):
+        """Apenas POST deve ser aceito. GET, PUT, PATCH, DELETE retornam 405."""
+        with override_settings(ASAAS_WEBHOOK_TOKEN=self.webhook_token):
+            for method in ['get', 'put', 'patch', 'delete']:
+                caller = getattr(self.client, method)
+                resp = caller(
+                    "/webhooks/asaas/",
+                    HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+                )
+                self.assertEqual(resp.status_code, 405)
+
+    def test_webhook_payload_validation_and_extra_fields(self):
+        """Valida JSON malformado, body vazio, payload lista, ausência de id/event, e aceitação de campos extras."""
+        with override_settings(ASAAS_WEBHOOK_TOKEN=self.webhook_token):
+            # JSON quebrado
+            resp_broken = self.client.post(
+                "/webhooks/asaas/",
+                data="invalid json {",
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(resp_broken.status_code, 400)
+            self.assertEqual(resp_broken.json().get("error"), "Invalid JSON")
+
+            # Body vazio
+            resp_empty = self.client.post(
+                "/webhooks/asaas/",
+                data="",
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(resp_empty.status_code, 400)
+
+            # JSON array (não dicionário)
+            resp_array = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps([{"id": "evt_1"}]),
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(resp_array.status_code, 400)
+            self.assertEqual(resp_array.json().get("error"), "Invalid payload format")
+
+            # Sem id
+            resp_no_id = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps({"event": "PAYMENT_RECEIVED"}),
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(resp_no_id.status_code, 400)
+            self.assertEqual(resp_no_id.json().get("error"), "Missing id or event in payload")
+
+            # Sem event
+            resp_no_event = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps({"id": "evt_test_no_event"}),
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(resp_no_event.status_code, 400)
+            self.assertEqual(resp_no_event.json().get("error"), "Missing id or event in payload")
+
+            # Payload válido com campos extras desconhecidos -> aceito com 200
+            resp_ok_extra = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps({
+                    "id": "evt_with_extra_fields",
+                    "event": "PAYMENT_CREATED",
+                    "customField": 12345,
+                    "metadata": {"foo": "bar"}
+                }),
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(resp_ok_extra.status_code, 200)
+            self.assertEqual(resp_ok_extra.json().get("status"), "received")
+            evt = PaymentWebhookEvent.objects.get(gateway_event_id="evt_with_extra_fields")
+            self.assertEqual(evt.event_type, "PAYMENT_CREATED")
+            self.assertEqual(evt.processed, False)  # Receptor rápido: salva processed=False para o worker
+
+    def test_webhook_payload_sanitization(self):
+        """Garante que dados sensíveis de cartão são sanitizados/removidos antes de persistir no banco."""
+        with override_settings(ASAAS_WEBHOOK_TOKEN=self.webhook_token):
+            payload_with_sensitive = {
+                "id": "evt_sensitive_data",
+                "event": "PAYMENT_RECEIVED",
+                "payment": {
+                    "id": "pay_sens_1",
+                    "creditCardToken": "tok_super_secret_123",
+                    "creditCardNumber": "4111111111111111",
+                    "cvv": "123",
+                    "creditCardHolderInfo": {
+                        "name": "Titular",
+                        "cpfCnpj": "00000000000"
+                    },
+                    "creditCard": {
+                        "creditCardBrand": "MASTERCARD",
+                        "creditCardNumber": "1234567812345678",
+                        "cvv": "999"
+                    }
+                }
+            }
+            resp = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps(payload_with_sensitive),
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(resp.status_code, 200)
+
+            evt = PaymentWebhookEvent.objects.get(gateway_event_id="evt_sensitive_data")
+            saved_payment = evt.payload.get("payment", {})
+            # Chaves sensíveis diretas são completamente omitidas do JSON gravado
+            self.assertNotIn("creditCardToken", saved_payment)
+            self.assertNotIn("creditCardNumber", saved_payment)
+            self.assertNotIn("cvv", saved_payment)
+            self.assertNotIn("creditCardHolderInfo", saved_payment)
+            # O objeto 'creditCard' preserva apenas brand e os 4 últimos dígitos
+            self.assertEqual(saved_payment["creditCard"]["creditCardBrand"], "MASTERCARD")
+            self.assertEqual(saved_payment["creditCard"]["creditCardNumber"], "5678")
+            self.assertNotIn("cvv", saved_payment["creditCard"])
+
+    def test_webhook_idempotency_level_1(self):
+        """Garante idempotência nível 1: mesmo gateway_event_id retorna 200 duplicate=True sem sobrescrever."""
+        with override_settings(ASAAS_WEBHOOK_TOKEN=self.webhook_token):
+            payload1 = {
+                "id": "evt_idempotency_test",
+                "event": "PAYMENT_CONFIRMED",
+                "payment": {"id": "pay_orig_1"}
+            }
+            resp1 = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps(payload1),
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(resp1.status_code, 200)
+            self.assertEqual(resp1.json().get("duplicate"), False)
+
+            # Reenvio idêntico
+            resp2 = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps(payload1),
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(resp2.status_code, 200)
+            self.assertEqual(resp2.json().get("duplicate"), True)
+
+            # Reenvio com payload alterado para o mesmo event ID
+            payload_tampered = {
+                "id": "evt_idempotency_test",
+                "event": "PAYMENT_DELETED",
+                "payment": {"id": "pay_tampered_999"}
+            }
+            resp3 = self.client.post(
+                "/webhooks/asaas/",
+                data=json.dumps(payload_tampered),
+                content_type="application/json",
+                HTTP_ASAAS_ACCESS_TOKEN=self.webhook_token
+            )
+            self.assertEqual(resp3.status_code, 200)
+            self.assertEqual(resp3.json().get("duplicate"), True)
+
+            # O registro original não foi corrompido
+            self.assertEqual(PaymentWebhookEvent.objects.filter(gateway_event_id="evt_idempotency_test").count(), 1)
+            evt = PaymentWebhookEvent.objects.get(gateway_event_id="evt_idempotency_test")
+            self.assertEqual(evt.event_type, "PAYMENT_CONFIRMED")
+            self.assertEqual(evt.payload["payment"]["id"], "pay_orig_1")
+
+    def test_worker_unknown_event_handled_gracefully(self):
+        """Evento desconhecido é processado como True (ignorado) para não travar a fila."""
+        from core.services.payments.asaas.webhooks import process_webhook_event
+
+        evt = PaymentWebhookEvent.objects.create(
+            gateway_event_id="evt_future_unknown",
+            event_type="TRANSFER_CREATED",
+            payload={"id": "evt_future_unknown", "event": "TRANSFER_CREATED"},
+            processed=False
+        )
+        success, msg = process_webhook_event(evt)
+        self.assertTrue(success)
+        self.assertIn("IGNORADO", msg)
+
+        evt.refresh_from_db()
+        self.assertTrue(evt.processed)
+        self.assertIsNone(evt.error_message)
+
+    def test_worker_failure_backoff_and_queue_advancement(self):
+        """Se um evento falhar no processamento, fica processed=False com error_message e não bloqueia os seguintes."""
+        from core.management.commands.run_asaas_webhook_worker import Command
+        from core.services.payments.asaas.webhooks import process_webhook_event
+
+        # Criar evento 1 (falho - checkout não encontrado)
+        evt_fail = PaymentWebhookEvent.objects.create(
+            gateway_event_id="evt_will_fail_1",
+            event_type="CHECKOUT_PAID",
+            payload={
+                "id": "evt_will_fail_1",
+                "event": "CHECKOUT_PAID",
+                "checkout": {"id": "chk_nonexistent", "externalReference": "ref_none"}
+            },
+            processed=False
+        )
+
+        # Criar evento 2 (sucesso - evento ignorável ou válido)
+        evt_success = PaymentWebhookEvent.objects.create(
+            gateway_event_id="evt_will_succeed_2",
+            event_type="CUSTOM_EVENT",
+            payload={"id": "evt_will_succeed_2", "event": "CUSTOM_EVENT"},
+            processed=False
+        )
+
+        cmd = Command()
+        cmd.running = True
+        cmd._process_batch(batch_size=10, backoff_seconds=30)
+
+        evt_fail.refresh_from_db()
+        evt_success.refresh_from_db()
+
+        self.assertFalse(evt_fail.processed)
+        self.assertIsNotNone(evt_fail.error_message)
+        self.assertIn("evt_will_fail_1", cmd.error_backoff)
+
+        # O segundo evento avançou e foi processado!
+        self.assertTrue(evt_success.processed)
+        self.assertIsNone(evt_success.error_message)
+
+    @patch('urllib.request.urlopen')
+    def test_payment_received_suspended_sub_with_live_payments_disabled(self, mock_urlopen):
+        """
+        Garante que quando PAYMENTS_LIVE_ENABLED=False:
+        1. A reconciliação local do pagamento ocorre (BillingRecord -> PAGO, sub regularizada).
+        2. A sincronização remota do billing anchor no Asaas é suprimida com segurança (log de aviso).
+        3. O evento de webhook é marcado como processed=True.
+        4. NENHUMA chamada HTTP de escrita é feita contra o Asaas real (mock_urlopen.call_count == 0).
+        """
+        import datetime
+        from core.services.payments.asaas.webhooks import process_webhook_event
+
+        band = Band.objects.create(name="Banda Regulariza Gate Off", slug="reg-gate-off")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Plano Pro",
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("89.90"),
+            gateway_provider="ASAAS",
+            gateway_subscription_id="sub_reg_gate_off_1",
+            gateway_customer_id="cus_reg_1",
+            status="DESATIVADO",
+            next_due_date=timezone.now().date() - datetime.timedelta(days=15)
+        )
+        record = BillingRecord.objects.create(
+            band=band,
+            subscription=sub,
+            gateway_provider="ASAAS",
+            gateway_payment_id="pay_reg_gate_off_1",
+            amount=Decimal("89.90"),
+            due_date=timezone.now().date() - datetime.timedelta(days=15),
+            status="PENDENTE"
+        )
+
+        evt = PaymentWebhookEvent.objects.create(
+            gateway_event_id="evt_pay_reg_gate_off",
+            event_type="PAYMENT_RECEIVED",
+            payload={
+                "id": "evt_pay_reg_gate_off",
+                "event": "PAYMENT_RECEIVED",
+                "payment": {
+                    "id": "pay_reg_gate_off_1",
+                    "subscription": "sub_reg_gate_off_1",
+                    "customer": "cus_reg_1",
+                    "value": 89.90,
+                    "paymentDate": timezone.now().date().isoformat()
+                }
+            },
+            processed=False
+        )
+
+        with override_settings(PAYMENTS_LIVE_ENABLED=False):
+            success, msg = process_webhook_event(evt)
+            self.assertTrue(success)
+
+            evt.refresh_from_db()
+            self.assertTrue(evt.processed)
+            self.assertIsNone(evt.error_message)
+
+            record.refresh_from_db()
+            self.assertEqual(record.status, "PAGO")
+
+            sub.refresh_from_db()
+            self.assertEqual(sub.status, "ATIVO")
+
+            # Nenhuma chamada de escrita remota executada
+            self.assertEqual(mock_urlopen.call_count, 0)
+
+    @patch('urllib.request.urlopen')
+    def test_payment_received_suspended_sub_with_live_payments_enabled_failure_blocks_access(self, mock_urlopen):
+        """
+        Quando PAYMENTS_LIVE_ENABLED=True:
+        Se a sincronização remota do anchor falhar (erro de PUT no Asaas),
+        o acesso local NÃO deve ser liberado e o webhook deve permanecer não-processado para retry.
+        """
+        import datetime
+        from core.services.payments.asaas.webhooks import process_webhook_event
+        from core.services.payments.asaas.client import AsaasClient
+        from unittest.mock import MagicMock
+
+        band = Band.objects.create(name="Banda Regulariza Gate On", slug="reg-gate-on")
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name="Plano Pro",
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("89.90"),
+            gateway_provider="ASAAS",
+            gateway_subscription_id="sub_reg_gate_on_1",
+            gateway_customer_id="cus_reg_2",
+            status="DESATIVADO",
+            next_due_date=timezone.now().date() - datetime.timedelta(days=15)
+        )
+        record = BillingRecord.objects.create(
+            band=band,
+            subscription=sub,
+            gateway_provider="ASAAS",
+            gateway_payment_id="pay_reg_gate_on_1",
+            amount=Decimal("89.90"),
+            due_date=timezone.now().date() - datetime.timedelta(days=15),
+            status="PENDENTE"
+        )
+
+        evt = PaymentWebhookEvent.objects.create(
+            gateway_event_id="evt_pay_reg_gate_on",
+            event_type="PAYMENT_RECEIVED",
+            payload={
+                "id": "evt_pay_reg_gate_on",
+                "event": "PAYMENT_RECEIVED",
+                "payment": {
+                    "id": "pay_reg_gate_on_1",
+                    "subscription": "sub_reg_gate_on_1",
+                    "customer": "cus_reg_2",
+                    "value": 89.90,
+                    "paymentDate": timezone.now().date().isoformat()
+                }
+            },
+            processed=False
+        )
+
+        with override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY="test_api_key_valid"):
+            with patch.object(AsaasClient, 'get_payments_by_subscription', return_value=[]):
+                with patch.object(AsaasClient, 'update_subscription', return_value=(False, {"error": "remote_gateway_error"})):
+                    success, msg = process_webhook_event(evt)
+                    self.assertFalse(success)
+                    self.assertIn("ANCHOR_SYNC_FALHOU", msg)
+
+                    evt.refresh_from_db()
+                    self.assertFalse(evt.processed)
+                    self.assertIsNotNone(evt.error_message)
+
+                    # Acesso não é liberado e status não é marcado como pago
+                    record.refresh_from_db()
+                    self.assertEqual(record.status, "PENDENTE")
+
+                    sub.refresh_from_db()
+                    self.assertEqual(sub.status, "DESATIVADO")
+
+    def test_partnership_safeguards_on_overdue_and_inactivated(self):
+        """Garante que assinaturas de PARCERIA nunca sofrem bloqueio ou desativação por webhooks de atraso ou cancelamento."""
+        import datetime
+        from core.services.payments.asaas.webhooks import process_webhook_event
+
+        band_partner = Band.objects.create(name="Banda Parceira VIP", slug="parceira-vip")
+        sub_partner = BandSubscription.objects.create(
+            band=band_partner,
+            plan_name="Parceria Gratuita",
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("0.00"),
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            gateway_provider="ASAAS",
+            gateway_subscription_id="sub_partner_1",
+            status="ATIVO"
+        )
+        record_partner = BillingRecord.objects.create(
+            band=band_partner,
+            subscription=sub_partner,
+            gateway_provider="ASAAS",
+            gateway_payment_id="pay_partner_1",
+            amount=Decimal("0.00"),
+            due_date=timezone.now().date() - datetime.timedelta(days=5),
+            status="PENDENTE"
+        )
+
+        # 1. PAYMENT_OVERDUE em parceria
+        evt_overdue = PaymentWebhookEvent.objects.create(
+            gateway_event_id="evt_partner_overdue",
+            event_type="PAYMENT_OVERDUE",
+            payload={
+                "id": "evt_partner_overdue",
+                "event": "PAYMENT_OVERDUE",
+                "payment": {"id": "pay_partner_1", "subscription": "sub_partner_1"}
+            },
+            processed=False
+        )
+        success_ov, msg_ov = process_webhook_event(evt_overdue)
+        self.assertTrue(success_ov)
+        sub_partner.refresh_from_db()
+        self.assertEqual(sub_partner.status, "ATIVO")
+        self.assertFalse(sub_partner.is_financially_suspended)
+
+        # 2. SUBSCRIPTION_INACTIVATED em parceria
+        evt_inact = PaymentWebhookEvent.objects.create(
+            gateway_event_id="evt_partner_inactivated",
+            event_type="SUBSCRIPTION_INACTIVATED",
+            payload={
+                "id": "evt_partner_inactivated",
+                "event": "SUBSCRIPTION_INACTIVATED",
+                "subscription": {"id": "sub_partner_1"}
+            },
+            processed=False
+        )
+        success_inact, msg_inact = process_webhook_event(evt_inact)
+        self.assertTrue(success_inact)
+        sub_partner.refresh_from_db()
+        self.assertEqual(sub_partner.status, "ATIVO")
+
+
+
 

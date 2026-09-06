@@ -143,6 +143,13 @@ def synchronize_asaas_subscription_anchor(
     if not client:
         client = AsaasClient()
 
+    if not client.config.live_payments_enabled:
+        logger.warning(
+            "Sincronizacao remota do billing anchor ignorada para sub %s pois PAYMENTS_LIVE_ENABLED=False.",
+            sub.gateway_subscription_id
+        )
+        return True, 'ASAAS_ANCHOR_SKIPPED_SAFETY_GATE'
+
     cycle = sub.billing_cycle or 'MENSAL'
     remote_payments = client.get_payments_by_subscription(sub.gateway_subscription_id)
 
