@@ -697,3 +697,185 @@ class CommercialConditionTests(TestCase):
         self.assertFalse(any(s.band == band_new_basic for s in subs_pago))
 
 
+class FinancialReportsParceriaAndShowsFilterTests(TestCase):
+    """
+    Testes de blindagem dos relatórios financeiros:
+    1. Relatório Financeiro da Banda (/relatorios/relatorio-financeiro/):
+       - Somente shows 'CONFIRMADO' devem entrar no relatório financeiro.
+       - 'PRE_RESERVADO' (Orçamento / Reserva) e 'CANCELADO' não devem aparecer nem somar valores previstos/recebidos/custos.
+       - Ao converter uma proposta de RESERVA para FECHADO (status passa para CONFIRMADO), o show entra automaticamente.
+    2. Relatório Financeiro do Admin (/painel/relatorios/financeiro/):
+       - Assinaturas com condição PARCERIA não entram na receita por ciclo, clientes pagantes ou faturamento de assinaturas.
+    """
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.band = Band.objects.create(
+            name="Banda Financeiro Teste",
+            slug="banda-fin-teste",
+            plan_type=Band.PlanType.AVANCADO,
+            is_active=True
+        )
+        self.user = User.objects.create_user(
+            username="produtor_fin",
+            email="produtor_fin@teste.com",
+            password="password123",
+            role="PRODUTOR",
+            band=self.band
+        )
+
+    def test_band_financial_report_excludes_orcamento_and_reserva(self):
+        """Shows PRE_RESERVADO (Orçamento e Reserva) e CANCELADO não entram no relatório financeiro da banda."""
+        from django.test import Client
+        from django.urls import reverse
+        from core.models import Show, CommercialProposal
+
+        client = Client()
+        client.force_login(self.user)
+
+        # Show confirmado (R$ 5.000)
+        show_confirmado = Show.objects.create(
+            band=self.band,
+            title="Show Confirmado",
+            date=timezone.localdate(),
+            fee=Decimal("5000.00"),
+            status=Show.STATUS_CONFIRMADO
+        )
+
+        # Show reserva / orçamento (R$ 3.000)
+        show_reserva = Show.objects.create(
+            band=self.band,
+            title="Show em Reserva / Orçamento",
+            date=timezone.localdate() + datetime.timedelta(days=10),
+            fee=Decimal("3000.00"),
+            status=Show.STATUS_PRE_RESERVADO
+        )
+
+        # Show cancelado (R$ 2.000)
+        show_cancelado = Show.objects.create(
+            band=self.band,
+            title="Show Cancelado",
+            date=timezone.localdate() + datetime.timedelta(days=20),
+            fee=Decimal("2000.00"),
+            status=Show.STATUS_CANCELADO
+        )
+
+        response = client.get(reverse("relatorio_financeiro", kwargs={"band_slug": self.band.slug}))
+        self.assertEqual(response.status_code, 200)
+
+        context_shows = list(response.context["shows"])
+        self.assertIn(show_confirmado, context_shows)
+        self.assertNotIn(show_reserva, context_shows)
+        self.assertNotIn(show_cancelado, context_shows)
+
+        self.assertEqual(response.context["qtd_shows"], 1)
+        self.assertEqual(response.context["total_receita"], Decimal("5000.00"))
+        self.assertEqual(response.context["resultado_previsto_total"], Decimal("5000.00"))
+
+    def test_proposal_conversion_dynamically_updates_financial_report(self):
+        """Conversão de Orçamento/Reserva para Confirmado/Fechado reflete dinamicamente no relatório."""
+        from django.test import Client
+        from django.urls import reverse
+        from core.models import Show, CommercialProposal
+
+        client = Client()
+        client.force_login(self.user)
+
+        # Criar proposta na fase RESERVA (Show com status PRE_RESERVADO)
+        proposal = CommercialProposal.objects.create(
+            band=self.band,
+            name="Orçamento Corporativo",
+            date=timezone.localdate() + datetime.timedelta(days=15),
+            contact_name="Cliente Corporativo",
+            contact="11999999999",
+            fee=Decimal("8000.00"),
+            phase=CommercialProposal.Phase.RESERVA,
+            created_by=self.user
+        )
+        show = Show.objects.create(
+            band=self.band,
+            title=proposal.name,
+            date=proposal.date,
+            status=Show.STATUS_PRE_RESERVADO,
+            fee=proposal.fee
+        )
+        proposal.show = show
+        proposal.save()
+
+        # Verifica que não está no relatório
+        response_before = client.get(reverse("relatorio_financeiro", kwargs={"band_slug": self.band.slug}))
+        self.assertEqual(response_before.context["qtd_shows"], 0)
+        self.assertEqual(response_before.context["total_receita"], Decimal("0.00"))
+
+        # Atualiza proposta para FECHADO (status do show muda para CONFIRMADO)
+        proposal.phase = CommercialProposal.Phase.FECHADO
+        proposal.save()
+        show.status = Show.STATUS_CONFIRMADO
+        show.save()
+
+        # Agora deve aparecer no relatório e somar na receita
+        response_after = client.get(reverse("relatorio_financeiro", kwargs={"band_slug": self.band.slug}))
+        self.assertEqual(response_after.context["qtd_shows"], 1)
+        self.assertIn(show, list(response_after.context["shows"]))
+        self.assertEqual(response_after.context["total_receita"], Decimal("8000.00"))
+
+    def test_admin_financial_report_excludes_partnerships_from_cycle_revenue(self):
+        """Relatório financeiro admin não inclui assinaturas PARCERIA no faturamento por ciclo."""
+        from django.contrib.auth import get_user_model
+        from django.test import Client
+        from django.urls import reverse
+        import json
+
+        User = get_user_model()
+        admin_user = User.objects.create_superuser(
+            username="admin_fin_relatorio",
+            email="admin_fin@teste.com",
+            password="admin_password"
+        )
+        client = Client()
+        client.force_login(admin_user)
+
+        band_paga = Band.objects.create(
+            name="Banda Paga Fin",
+            slug="banda-paga-fin",
+            plan_type=Band.PlanType.BASICO,
+            is_active=True
+        )
+        sub_paga = BandSubscription.objects.create(
+            band=band_paga,
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("150.00"),
+            status="ATIVO",
+            auto_renew=True
+        )
+
+        band_parceria = Band.objects.create(
+            name="Banda Parceria Fin",
+            slug="banda-parceria-fin",
+            plan_type=Band.PlanType.AVANCADO,
+            is_active=True
+        )
+        # Cria parceria mesmo que tenha contracted_value diferente de zero no banco (defesa em profundidade)
+        sub_parceria = BandSubscription.objects.create(
+            band=band_parceria,
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("500.00"),
+            status="ATIVO",
+            auto_renew=False
+        )
+
+        response = client.get(reverse("admin_painel:relatorio_financeiro"))
+        self.assertEqual(response.status_code, 200)
+
+        chart_cycle_data = json.loads(response.context["chart_cycle"])
+        cycle_labels = chart_cycle_data["labels"]
+        cycle_values = chart_cycle_data["data"]
+
+        # O valor do ciclo MENSAL deve ser apenas 150.00 (sub_paga), nunca 650.00
+        mensal_idx = cycle_labels.index("MENSAL")
+        self.assertEqual(cycle_values[mensal_idx], 150.00)
+
+
+

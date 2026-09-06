@@ -446,7 +446,10 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
                 # Base Querysets
         billings = BillingRecord.objects.filter(subscription__is_deleted=False)
-        subs = BandSubscription.objects.all()
+        subs = BandSubscription.objects.filter(
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
+            is_deleted=False
+        )
         from .models import Expense
         expenses = Expense.objects.all()
 

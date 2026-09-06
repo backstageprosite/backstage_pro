@@ -1523,7 +1523,10 @@ def relatorios_view(request, band_slug):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    shows = Show.objects.filter(band=band).prefetch_related('payments', 'team_costs').annotate(total_receipts=Sum('receipts__value')).order_by('date')
+    shows = Show.objects.filter(
+        band=band,
+        status__in=Show.STATUS_FINANCIALLY_ELIGIBLE
+    ).prefetch_related('payments', 'team_costs').annotate(total_receipts=Sum('receipts__value')).order_by('date')
 
 
 

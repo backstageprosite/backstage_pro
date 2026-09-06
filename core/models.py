@@ -119,11 +119,17 @@ class User(AbstractUser):
         verbose_name_plural = "Usuários"
 
 class Show(models.Model):
+    STATUS_PRE_RESERVADO = 'PRE_RESERVADO'
+    STATUS_CONFIRMADO = 'CONFIRMADO'
+    STATUS_CANCELADO = 'CANCELADO'
+
     STATUS_CHOICES = (
-        ('PRE_RESERVADO', 'Reserva'),
-        ('CONFIRMADO', 'Confirmado'),
-        ('CANCELADO', 'Cancelado'),
+        (STATUS_PRE_RESERVADO, 'Reserva'),
+        (STATUS_CONFIRMADO, 'Confirmado'),
+        (STATUS_CANCELADO, 'Cancelado'),
     )
+
+    STATUS_FINANCIALLY_ELIGIBLE = (STATUS_CONFIRMADO,)
 
     PAYMENT_CHOICES = (
         ('PENDENTE', 'Pendente'),
