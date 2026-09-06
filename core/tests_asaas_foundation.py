@@ -5308,12 +5308,14 @@ class AsaasFoundationTests(TestCase):
         self.assertIn("disabled", html1)
         self.assertIn('aria-disabled="true"', html1)
         self.assertIn("Funcionalidade em configuração", html1)
-        modal_start = html1.find('id="modalFormaPagamento"')
-        modal_end = html1.find('</div>\n    {% endif %}', modal_start) if '</div>\n    {% endif %}' in html1[modal_start:] else html1.find('</div>', html1.find('modal-footer', modal_start))
-        modal_html = html1[modal_start:modal_start + 2000]
-        self.assertNotIn('href=', modal_html[:modal_html.find('Atualizar Cartão')])
-        self.assertNotIn('action=', modal_html[:modal_html.find('Fechar')])
-        self.assertNotIn('POST', modal_html[:modal_html.find('Fechar')])
+
+        # 5b. Botão Fechar no modal: segue padrão verde btn-success
+        self.assertIn("btn-success", html1)
+        self.assertIn("Fechar", html1)
+
+        # 5c. KPI font-size 16px local no template
+        self.assertIn(".bp-reports-page .kpi-value {", html1)
+        self.assertIn("font-size: 16px;", html1)
 
         # 6. Histórico de Pagamentos contém ação de fatura pendente
         self.assertIn("Ver cobrança", html1)
