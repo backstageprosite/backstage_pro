@@ -5192,3 +5192,137 @@ class AsaasFoundationTests(TestCase):
         pm2.refresh_from_db()
         self.assertTrue(pm2.is_active)
 
+    def test_minha_assinatura_view_payment_method_ui(self):
+        """
+        CARD-UPDATE-02B: Valida a interface de forma de pagamento em minha_assinatura_view:
+        A) Exibe bandeira, last4 e validade do cartão ativo da banda autorizada.
+        B) NUNCA expõe token criptografado ou descriptografado no HTML.
+        C) Isolamento estrito: Banda B não vê o cartão da Banda A.
+        D) Banda sem cartão ativo exibe mensagem neutra e renderiza normalmente.
+        E) Cartão sem brand ou sem validade não quebra nem renderiza "None".
+        F) Botão 'Atualizar Cartão' existe, está disabled e não possui endpoint financeiro.
+        G) Cobrança pendente com invoice_url exibe botão 'Regularizar Pagamento'.
+        H) Cobrança de outra banda nunca é exibida na regularização.
+        """
+        from django.test import Client
+        from django.urls import reverse
+        from decimal import Decimal
+        import datetime
+        from core.models import User, Band, BandSubscription, GatewayPaymentMethod, BillingRecord
+
+        # 1. Usuário Produtor 1 e Banda 1
+        band1 = Band.objects.create(name="Banda Card UI 1", slug="banda-card-ui-1")
+        user1 = User.objects.create_user(username='produtor_card_1', email='p1@teste.com', password='pass', role='PRODUTOR', band=band1)
+
+        sub1 = BandSubscription.objects.create(
+            band=band1,
+            plan_name="Básico",
+            billing_cycle="ANUAL",
+            contracted_value=Decimal('199.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2027, 9, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_ui_1'
+        )
+
+        secret_token_1 = "secret-token-band-1-123456"
+        pm1 = GatewayPaymentMethod.objects.create(
+            subscription=sub1,
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_ui_1',
+            card_brand='Mastercard',
+            card_last4='7890',
+            expiration_month='09',
+            expiration_year='2029',
+            is_active=True
+        )
+        pm1.set_token(secret_token_1)
+        pm1.save()
+
+        # Fatura pendente com gateway_invoice_url para banda 1
+        bill1 = BillingRecord.objects.create(
+            band=band1,
+            subscription=sub1,
+            amount=Decimal('199.90'),
+            due_date=datetime.date(2027, 9, 4),
+            status='PENDENTE',
+            gateway_payment_id='pay_ui_1',
+            gateway_invoice_url='https://sandbox.asaas.com/i/invoice_band1_safe_url'
+        )
+
+        # 2. Usuário Produtor 2 e Banda 2
+        band2 = Band.objects.create(name="Banda Card UI 2", slug="banda-card-ui-2")
+        user2 = User.objects.create_user(username='produtor_card_2', email='p2@teste.com', password='pass', role='PRODUTOR', band=band2)
+
+        sub2 = BandSubscription.objects.create(
+            band=band2,
+            plan_name="Avançado",
+            billing_cycle="MENSAL",
+            contracted_value=Decimal('49.90'),
+            start_date=datetime.date(2026, 9, 4),
+            next_due_date=datetime.date(2026, 10, 4),
+            auto_renew=True,
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_ui_2'
+        )
+        # Banda 2 NÃO tem cartão ativo
+
+        client = Client()
+
+        # A) Requisição da Banda 1 logado como user1
+        client.force_login(user1)
+        resp1 = client.get(reverse('minha_assinatura', kwargs={'band_slug': band1.slug}))
+        self.assertEqual(resp1.status_code, 200)
+        html1 = resp1.content.decode('utf-8')
+
+        # Metadados visíveis
+        self.assertIn("Forma de pagamento", html1)
+        self.assertIn("Mastercard", html1)
+        self.assertIn("•••• 7890", html1)
+        self.assertIn("Validade 09/2029", html1)
+
+        # B) SEGURANÇA: Token NUNCA pode aparecer no HTML
+        self.assertNotIn(secret_token_1, html1)
+        self.assertNotIn(pm1.encrypted_token, html1)
+
+        # F) Botão Atualizar Cartão disabled e sem endpoint financeiro
+        self.assertIn("Atualizar Cartão", html1)
+        self.assertIn("disabled", html1)
+        self.assertIn('aria-disabled="true"', html1)
+        self.assertIn("Funcionalidade em configuração", html1)
+
+        # G) Regularizar Pagamento presente com a URL exata
+        self.assertIn("Regularizar Pagamento", html1)
+        self.assertIn("https://sandbox.asaas.com/i/invoice_band1_safe_url", html1)
+
+        # C & D) Requisição da Banda 2 logado como user2
+        client.force_login(user2)
+        resp2 = client.get(reverse('minha_assinatura', kwargs={'band_slug': band2.slug}))
+        self.assertEqual(resp2.status_code, 200)
+        html2 = resp2.content.decode('utf-8')
+
+        # Banda 2 não deve ver dados da Banda 1
+        self.assertNotIn("•••• 7890", html2)
+        self.assertNotIn("invoice_band1_safe_url", html2)
+        # Banda 2 mostra mensagem de ausência de cartão
+        self.assertIn("Nenhum cartão salvo para renovações automáticas.", html2)
+
+        # E) Cartão sem brand e sem validade não quebra nem renderiza "None"
+        pm1.card_brand = None
+        pm1.expiration_month = None
+        pm1.expiration_year = None
+        pm1.save()
+
+        client.force_login(user1)
+        resp1_alt = client.get(reverse('minha_assinatura', kwargs={'band_slug': band1.slug}))
+        self.assertEqual(resp1_alt.status_code, 200)
+        html1_alt = resp1_alt.content.decode('utf-8')
+        self.assertIn("Cartão", html1_alt)
+        self.assertIn("•••• 7890", html1_alt)
+        self.assertNotIn("None/None", html1_alt)
+        self.assertNotIn("Validade None", html1_alt)
+
+

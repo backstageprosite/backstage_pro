@@ -1446,10 +1446,33 @@ def minha_assinatura_view(request, band_slug):
     else:
         can_resubscribe = True
 
+    # 4. Obter forma de pagamento ativa de forma segura e com escopo estrito na assinatura
+    active_payment_method = None
+    if subscription:
+        from core.models import GatewayPaymentMethod
+        active_payment_method = GatewayPaymentMethod.objects.filter(
+            subscription=subscription,
+            gateway_provider='ASAAS',
+            is_active=True
+        ).order_by('-created_at').first()
+
+    # 5. Localizar cobrança pendente/vencida com invoice_url para regularização imediata
+    pending_invoice = None
+    if subscription:
+        pending_invoice = subscription.records.filter(
+            status='PENDENTE'
+        ).exclude(
+            gateway_invoice_url__isnull=True
+        ).exclude(
+            gateway_invoice_url=''
+        ).order_by('-due_date', '-created_at').first()
+
     context = {
         'band': band,
         'subscription': subscription,
         'faturas': faturas,
+        'active_payment_method': active_payment_method,
+        'pending_invoice': pending_invoice,
         'plan_display': plan_display,
         'cycle_display': cycle_display,
         'payment_method_display': payment_method_display,
