@@ -689,14 +689,17 @@ class BandSubscription(models.Model):
     def apply_payment_success(self, paid_date=None):
         """
         Aplica a quitação de um pagamento na assinatura:
-        1. Se o pagamento ocorreu DENTRO da tolerância (< 5 dias de atraso em relação a next_due_date):
+        1. Se for condição comercial de Parceria: ignora quitação/avanço financeiro com segurança.
+        2. Se o pagamento ocorreu DENTRO da tolerância (< 5 dias de atraso em relação a next_due_date):
            - Preserva a data-base (billing anchor) original da assinatura.
            - next_due_date avança +1 período a partir da data de vencimento atual (ou original).
-        2. Se o pagamento ocorreu APÓS a suspensão financeira (>= 5 dias de atraso em relação a next_due_date ou desativada):
+        3. Se o pagamento ocorreu APÓS a suspensão financeira (>= 5 dias de atraso em relação a next_due_date ou desativada):
            - REGULARIZAÇÃO COM REATIVAÇÃO: a data do pagamento aprovado passa a ser a NOVA DATA-BASE.
            - next_due_date é recalculado a partir de paid_date (+1 mês ou +1 ano).
-        3. Restaura o status para 'ATIVO' e auto_renew=True.
+        4. Restaura o status para 'ATIVO' e auto_renew=True.
         """
+        if self.is_partnership:
+            return False
         from django.utils import timezone
         from core.services.payments.base import calculate_next_billing_date
         import datetime

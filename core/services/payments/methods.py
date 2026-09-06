@@ -65,6 +65,9 @@ def replace_active_gateway_payment_method(
     if not subscription or not getattr(subscription, 'id', None):
         raise ValueError("subscription_invalida: Assinatura obrigatoria para registrar metodo de pagamento.")
 
+    if getattr(subscription, 'is_partnership', False):
+        raise ValueError("partnership_not_billable: Assinatura sob condicao de parceria nao utiliza metodo de pagamento em gateway.")
+
     if not credit_card_token or not isinstance(credit_card_token, str) or not credit_card_token.strip():
         raise ValueError("credit_card_token_invalido: Token de cartao obrigatorio.")
 

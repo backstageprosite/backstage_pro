@@ -76,6 +76,9 @@ class AnnualRenewalService:
         if not sub or sub.is_deleted:
             return False, "SUBSCRIPTION_INEXISTENTE_OU_DELETADA"
 
+        if getattr(sub, 'is_partnership', False):
+            return False, "PARTNERSHIP_NOT_BILLABLE"
+
         if sub.billing_cycle != 'ANUAL':
             return False, "CICLO_NAO_ANUAL"
 

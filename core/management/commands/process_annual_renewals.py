@@ -90,6 +90,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING("MODO DRY-RUN ATIVADO: Nenhuma cobrança real será realizada."))
 
             qs = BandSubscription.objects.filter(
+                commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
                 billing_cycle='ANUAL',
                 status='ATIVO',
                 auto_renew=True,
@@ -111,6 +112,10 @@ class Command(BaseCommand):
 
             try:
                 for sub in qs:
+                    if sub.is_partnership:
+                        skipped_count += 1
+                        continue
+
                     eligible, reason = service.is_eligible_for_renewal(sub, target_date=target_date)
                     if not eligible:
                         self.stdout.write(f"Sub {sub.id} ({sub.band.name}): Ignorada -> {reason}")

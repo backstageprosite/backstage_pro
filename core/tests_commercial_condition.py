@@ -1,8 +1,13 @@
 ﻿import datetime
 from decimal import Decimal
+from unittest.mock import patch, MagicMock
 from django.test import TestCase
 from django.utils import timezone
-from core.models import Band, BandSubscription
+from django.core.management import call_command
+from core.models import Band, BandSubscription, BillingRecord, AnnualPlanPurchase, AnnualRenewalNotice, EmailDelivery, GatewayPaymentMethod
+from core.services.payments.renewal import AnnualRenewalService
+from core.services.payments.methods import replace_active_gateway_payment_method
+from core.services.payments.asaas.webhooks import reconcile_and_update_billing_record, handle_subscription_event
 
 
 class CommercialConditionTests(TestCase):
@@ -134,3 +139,175 @@ class CommercialConditionTests(TestCase):
         sub.refresh_from_db()
         self.assertEqual(sub.status, "ATIVO")
         self.assertTrue(self.band_basic.has_active_subscription)
+
+    def test_check_subscription_due_dates_ignores_partnership_completely(self):
+        """
+        Job check_subscription_due_dates ignora Parceria:
+        Mesmo com dados deliberadamente inconsistentes (auto_renew=True, contracted_value>0, next_due_date no passado),
+        não gera BillingRecord, não suspende e não envia e-mails transacionais.
+        """
+        today = timezone.localdate()
+        sub_partnership = BandSubscription.objects.create(
+            band=self.band_basic,
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            status="ATIVO",
+            billing_cycle="MENSAL",
+            auto_renew=True,
+            contracted_value=Decimal("500.00"),
+            next_due_date=today - datetime.timedelta(days=10),
+            billing_email="parceiro@teste.com"
+        )
+        sub_paid = BandSubscription.objects.create(
+            band=self.band_paid,
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
+            status="ATIVO",
+            billing_cycle="MENSAL",
+            auto_renew=True,
+            contracted_value=Decimal("300.00"),
+            next_due_date=today + datetime.timedelta(days=2),
+            billing_email="pago@teste.com"
+        )
+
+        call_command("check_subscription_due_dates")
+
+        # Não deve haver BillingRecord para a parceria
+        self.assertFalse(BillingRecord.objects.filter(subscription=sub_partnership).exists())
+        # Deve haver BillingRecord para a assinatura paga
+        self.assertTrue(BillingRecord.objects.filter(subscription=sub_paid).exists())
+
+        # Não deve haver e-mail de suspensão financeira para a parceria
+        self.assertFalse(EmailDelivery.objects.filter(recipient_email="parceiro@teste.com").exists())
+        sub_partnership.refresh_from_db()
+        self.assertEqual(sub_partnership.status, "ATIVO")
+
+    def test_annual_renewal_notices_command_ignores_partnership(self):
+        """
+        process_annual_renewal_notices ignora Parceria mesmo se billing_cycle=ANUAL,
+        auto_renew=True e na janela D-30.
+        """
+        today = timezone.localdate()
+        target_due = today + datetime.timedelta(days=30)
+        sub_partnership = BandSubscription.objects.create(
+            band=self.band_basic,
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            status="ATIVO",
+            billing_cycle="ANUAL",
+            auto_renew=True,
+            next_due_date=target_due,
+            billing_email="parceiro_anual@teste.com"
+        )
+
+        call_command("process_annual_renewal_notices", dry_run=True)
+
+        self.assertFalse(AnnualRenewalNotice.objects.filter(band_subscription=sub_partnership).exists())
+        self.assertFalse(EmailDelivery.objects.filter(recipient_email="parceiro_anual@teste.com").exists())
+
+    def test_annual_renewal_service_direct_call_blocks_partnership(self):
+        """
+        Defesa em profundidade: Chamada direta ao AnnualRenewalService para uma Parceria
+        retorna PARTNERSHIP_NOT_BILLABLE e não realiza nenhuma cobrança ou installment.
+        """
+        today = timezone.localdate()
+        sub = BandSubscription.objects.create(
+            band=self.band_basic,
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            status="ATIVO",
+            billing_cycle="ANUAL",
+            auto_renew=True,
+            next_due_date=today,
+            gateway_customer_id="cus_part_test_01"
+        )
+
+        service = AnnualRenewalService()
+        eligible, reason = service.is_eligible_for_renewal(sub)
+        self.assertFalse(eligible)
+        self.assertEqual(reason, "PARTNERSHIP_NOT_BILLABLE")
+
+        with patch.object(service.client, "create_installment") as mock_inst, \
+             patch.object(service.client, "pay_with_credit_card") as mock_pay:
+            success, msg, purchase = service.process_subscription_renewal(sub)
+            self.assertFalse(success)
+            self.assertEqual(msg, "PARTNERSHIP_NOT_BILLABLE")
+            self.assertIsNone(purchase)
+            mock_inst.assert_not_called()
+            mock_pay.assert_not_called()
+
+    def test_legacy_webhooks_on_partnership_ignored_without_financial_side_effects(self):
+        """
+        Webhook legado recebido apontando para BillingRecord/Subscription de Parceria
+        não altera status, não suspende e não envia e-mails financeiros.
+        """
+        today = timezone.localdate()
+        sub = BandSubscription.objects.create(
+            band=self.band_basic,
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            status="ATIVO",
+            auto_renew=False,
+            next_due_date=today,
+            gateway_provider="ASAAS",
+            gateway_subscription_id="sub_part_webhook_123"
+        )
+        record = BillingRecord.objects.create(
+            subscription=sub,
+            band=self.band_basic,
+            reference_period="09/2026",
+            amount=Decimal("150.00"),
+            due_date=today,
+            status="PENDENTE",
+            gateway_provider="ASAAS",
+            gateway_payment_id="pay_part_overdue_999"
+        )
+
+        # 1. Teste PAYMENT_OVERDUE
+        payload_overdue = {
+            "event": "PAYMENT_OVERDUE",
+            "payment": {
+                "id": "pay_part_overdue_999",
+                "status": "OVERDUE",
+                "value": 150.00
+            }
+        }
+        ok, msg = reconcile_and_update_billing_record(payload_overdue, "PAYMENT_OVERDUE")
+        self.assertTrue(ok)
+        self.assertFalse(EmailDelivery.objects.filter(email_type="PAYMENT_OVERDUE", related_object_id=str(record.id)).exists())
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, "ATIVO")
+
+        # 2. Teste PAYMENT_CREDIT_CARD_CAPTURE_REFUSED
+        payload_cc_refused = {
+            "event": "PAYMENT_CREDIT_CARD_CAPTURE_REFUSED",
+            "payment": {
+                "id": "pay_part_overdue_999",
+                "refusalReason": "Cartão bloqueado"
+            }
+        }
+        ok_cc, msg_cc = reconcile_and_update_billing_record(payload_cc_refused, "PAYMENT_CREDIT_CARD_CAPTURE_REFUSED")
+        self.assertTrue(ok_cc)
+        self.assertFalse(EmailDelivery.objects.filter(email_type="CREDIT_CARD_CAPTURE_REFUSED", related_object_id=str(record.id)).exists())
+
+        # 3. Teste SUBSCRIPTION_INACTIVATED
+        payload_sub = {
+            "event": "SUBSCRIPTION_INACTIVATED",
+            "subscription": {
+                "id": "sub_part_webhook_123"
+            }
+        }
+        ok_sub, msg_sub = handle_subscription_event(payload_sub, "SUBSCRIPTION_INACTIVATED")
+        self.assertTrue(ok_sub)
+        sub.refresh_from_db()
+        # Não deve ser cancelada por webhook de gateway
+        self.assertEqual(sub.status, "ATIVO")
+
+    def test_replace_active_gateway_payment_method_blocks_partnership(self):
+        """Tentativa de registrar cartão para assinatura em condição de parceria lança ValueError."""
+        sub = BandSubscription.objects.create(
+            band=self.band_basic,
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PARTNERSHIP,
+            status="ATIVO"
+        )
+        with self.assertRaises(ValueError) as ctx:
+            replace_active_gateway_payment_method(
+                subscription=sub,
+                credit_card_token="tok_test_part_123"
+            )
+        self.assertIn("partnership_not_billable", str(ctx.exception))

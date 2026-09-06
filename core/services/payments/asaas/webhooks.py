@@ -338,6 +338,21 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
     if payment_data.get('invoiceUrl'):
         record.gateway_invoice_url = payment_data.get('invoiceUrl')
 
+    # PROTEÇÃO CONTRA PARCERIA:
+    # Se o registro pertencer a uma assinatura em condição de Parceria, nenhuma ação financeira,
+    # suspensão, avanço de ciclo ou e-mail de cobrança deve ser disparado.
+    if record.subscription and getattr(record.subscription, 'is_partnership', False):
+        logger.info("Webhook financeiro ignorado para assinatura em condição PARCERIA (sub_id=%s, event=%s)", record.subscription.id, event_type)
+        if event_type in ('PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'):
+            record.status = 'PAGO'
+        elif event_type in ('PAYMENT_REFUNDED',):
+            record.status = 'ESTORNADO' if hasattr(record, 'status') else record.status
+        elif event_type in ('PAYMENT_DELETED', 'PAYMENT_CANCELLED', 'PAYMENT_CANCELED'):
+            if record.status != 'PAGO':
+                record.status = 'CANCELADO'
+        record.save()
+        return True, 'BILLING_CONCILIADO'
+
     if event_type in ('PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'):
         was_already_paid = (record.status == 'PAGO')
         record.status = 'PAGO'
@@ -488,6 +503,9 @@ def handle_subscription_event(payload: Dict[str, Any], event_type: str) -> Tuple
     # 1. Busca direta por gateway_subscription_id
     sub = BandSubscription.objects.filter(gateway_provider='ASAAS', gateway_subscription_id=sub_id).first()
     if sub:
+        if getattr(sub, 'is_partnership', False):
+            logger.info("Webhook SUBSCRIPTION_%s ignorado para assinatura em condição PARCERIA (sub_id=%s)", event_type, sub.id)
+            return True, f'SUBSCRIPTION_{event_type}_IGNORADA_PARCERIA'
         if event_type in ('SUBSCRIPTION_INACTIVATED', 'SUBSCRIPTION_DELETED'):
             sub.status = 'CANCELADO'
             sub.save(update_fields=['status', 'updated_at'])

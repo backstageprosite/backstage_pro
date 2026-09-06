@@ -21,12 +21,13 @@ class Command(BaseCommand):
         updated_vencendo = 0
 
         subscriptions = BandSubscription.objects.filter(
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
             status__in=["ATIVO", "VENCENDO"],
             is_deleted=False
         )
 
         for sub in subscriptions:
-            if not sub.next_due_date:
+            if sub.is_partnership or not sub.next_due_date:
                 continue
 
             # Apenas criar fatura automática se não existe ainda
@@ -59,11 +60,14 @@ class Command(BaseCommand):
         # Verificar assinaturas com suspensão financeira (>= 5 dias de atraso) para enfileirar e-mail transacional
         suspended_count = 0
         all_active_subs = BandSubscription.objects.filter(
+            commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
             status="ATIVO",
             is_deleted=False,
             next_due_date__isnull=False
         )
         for sub in all_active_subs:
+            if sub.is_partnership:
+                continue
             if sub.is_financially_suspended:
                 try:
                     from core.services.email_service import enqueue_email, resolve_subscription_recipient

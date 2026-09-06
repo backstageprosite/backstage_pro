@@ -108,6 +108,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING("MODO DRY-RUN ATIVADO: Nenhum e-mail será enfileirado e nenhum registro será persistido."))
 
             qs = BandSubscription.objects.filter(
+                commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
                 billing_cycle='ANUAL',
                 status='ATIVO',
                 auto_renew=True,
@@ -124,6 +125,10 @@ class Command(BaseCommand):
 
             try:
                 for sub in qs:
+                    if sub.is_partnership:
+                        skipped_count += 1
+                        continue
+
                     if not sub.next_due_date:
                         skipped_count += 1
                         continue
