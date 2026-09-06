@@ -238,3 +238,57 @@ class ScheduledJobsTestCase(TestCase):
             call_command('process_annual_renewal_notices')
             self.assertEqual(ScheduledJobRun.objects.count(), 0)
 
+    def test_core_config_ready_does_not_spawn_billing_threads_or_run_command(self):
+        """
+        BILLING-SCHEDULER-01B: Garante que CoreConfig.ready() não inicia thread daemon
+        de billing check nem executa call_command('check_subscription_due_dates').
+        """
+        import threading
+        from core.apps import CoreConfig
+        from django.apps import apps
+
+        app_config = apps.get_app_config('core')
+
+        with patch('django.core.management.call_command') as mock_call_cmd:
+            with patch('threading.Thread') as mock_thread:
+                # Executa ready() explicitamente
+                app_config.ready()
+
+                # call_command não pode ter sido chamado para check_subscription_due_dates
+                for call in mock_call_cmd.call_args_list:
+                    self.assertNotEqual(call[0][0], 'check_subscription_due_dates')
+
+                # threading.Thread não pode ter sido instanciada para jobs de billing
+                mock_thread.assert_not_called()
+
+    def test_check_subscription_due_dates_is_one_shot_and_idempotent(self):
+        """
+        BILLING-SCHEDULER-01B: Garante que check_subscription_due_dates executa de forma
+        one-shot e idempotente: múltiplas execuções não duplicam BillingRecord nem EmailDelivery.
+        """
+        from core.models import BillingRecord, EmailDelivery
+
+        # Configurar assinatura ativa com vencimento em 3 dias
+        band_due = Band.objects.create(name="Banda Fatura Teste", slug="banda-fat-teste")
+        sub_due = BandSubscription.objects.create(
+            band=band_due,
+            plan_name="Plano Mensal",
+            billing_cycle="MENSAL",
+            contracted_value=Decimal("89.90"),
+            next_due_date=timezone.localdate() + datetime.timedelta(days=3),
+            status="ATIVO",
+            auto_renew=True,
+            billing_email="financeiro@bandafatteste.com"
+        )
+
+        # Execução 1
+        call_command('check_subscription_due_dates')
+        records_1 = BillingRecord.objects.filter(subscription=sub_due).count()
+        self.assertEqual(records_1, 1)
+
+        # Execução 2 no mesmo cenário
+        call_command('check_subscription_due_dates')
+        records_2 = BillingRecord.objects.filter(subscription=sub_due).count()
+        self.assertEqual(records_2, 1)  # Idempotente: não duplicou!
+
+
