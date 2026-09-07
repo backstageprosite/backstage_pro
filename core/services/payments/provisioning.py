@@ -93,9 +93,18 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
         plan_display = 'Avançado' if order.plan_type == 'AVANCADO' else 'Básico'
         is_annual = (order.billing_cycle == 'ANUAL')
 
-        # Para ANUAL (INSTALLMENT): nao ha recorrencia automatica no gateway (auto_renew=False)
-        # Para MENSAL (RECURRENT): ha renovacao automatica (auto_renew=True)
-        auto_renew_val = False if is_annual else True
+        # Detecta forma de pagamento do webhook/cobrança (PIX vs CARTAO)
+        billing_type_raw = (payment_data.get('billingType') or '').upper()
+        is_pix = (billing_type_raw == 'PIX') or (order.external_reference and order.external_reference.endswith('-pix'))
+        pref_method = 'PIX' if is_pix else 'CARTAO'
+
+        # Para ANUAL: rigorosamente auto_renew=False (renovação controlada ou recontratação)
+        # Para MENSAL PIX: auto_renew=False (cobrança avulsa ciclo a ciclo via check_subscription_due_dates)
+        # Para MENSAL CARTÃO: auto_renew=True (recorrência automática com token ou gateway subscription)
+        if is_annual or is_pix:
+            auto_renew_val = False
+        else:
+            auto_renew_val = True
 
         sub = BandSubscription.objects.create(
             band=band,
@@ -106,7 +115,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             next_due_date=next_due,
             auto_renew=auto_renew_val,
             status='ATIVO',
-            payment_method_preference='CARTAO',
+            payment_method_preference=pref_method,
             financial_responsible_name=order.responsible_name,
             billing_phone=order.phone,
             billing_email=order.email,
@@ -228,7 +237,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             due_date=financial_start_date,
             paid_date=financial_start_date,
             status='PAGO',
-            payment_method='CARTAO',
+            payment_method=pref_method,
             notes=record_notes,
             gateway_provider='ASAAS',
             gateway_payment_id=payment_id,

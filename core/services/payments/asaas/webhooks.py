@@ -585,6 +585,15 @@ def handle_checkout_event(payload: Dict[str, Any], event_type: str, event_id: st
     if order:
         if event_type == 'CHECKOUT_CREATED':
             if order.status == 'PENDENTE':
+                # Reconcilia gateway_checkout_id caso o POST tenha sido bem-sucedido no Asaas
+                # mas a resposta tenha se perdido (timeout) — habilita idempotência nível 1.5 no retry.
+                if checkout_id and not order.gateway_checkout_id:
+                    order.gateway_checkout_id = checkout_id
+                    order.save(update_fields=['gateway_checkout_id', 'updated_at'])
+                    logger.info(
+                        "CHECKOUT_CREATED reconciliou gateway_checkout_id=%s para order=%s",
+                        checkout_id, order.id
+                    )
                 return True, 'CHECKOUT_CREATED_PROCESSADO'
             return True, f'CHECKOUT_CREATED_IGNORADO_STATUS_{order.status}'
 
