@@ -190,6 +190,7 @@ def get_or_create_asaas_customer_for_signup_order(
         'name': signup_order.responsible_name,
         'email': signup_order.email,
         'externalReference': customer_ext_ref,
+        'notificationDisabled': True,
     }
     if norm_cpf_cnpj:
         customer_payload['cpfCnpj'] = norm_cpf_cnpj
@@ -211,7 +212,7 @@ def get_or_create_asaas_customer_for_signup_order(
         customer_payload['state'] = signup_order.state.upper()
 
     def _sync_customer_address_if_needed(cust_id: str, existing_cust_data: Optional[Dict[str, Any]] = None) -> bool:
-        """Atualiza o Customer no Asaas se dados essenciais de endereço estiverem faltando."""
+        """Atualiza o Customer no Asaas se dados essenciais de endereço ou notificação estiverem faltando."""
         data = existing_cust_data or client.get_customer(cust_id)
         if not data:
             return True
@@ -231,11 +232,19 @@ def get_or_create_asaas_customer_for_signup_order(
                 needs_update = True
                 break
 
+        # BP-PEND-36: Garantir que as notificações do Asaas estejam desativadas no customer
+        if data.get('notificationDisabled') is not True:
+            needs_update = True
+
         if needs_update:
             logger.info("Atualizando dados cadastrais/endereço do Customer Asaas %s...", cust_id)
-            upd_ok, upd_res = client.update_customer(cust_id, customer_payload)
+            upd_res = client.update_customer(cust_id, customer_payload)
+            if isinstance(upd_res, tuple) and len(upd_res) == 2:
+                upd_ok, upd_data = upd_res
+            else:
+                upd_ok, upd_data = bool(upd_res), upd_res
             if not upd_ok:
-                logger.warning("Falha ao atualizar dados do customer %s: %s", cust_id, upd_res)
+                logger.warning("Falha ao atualizar dados do customer %s: %s", cust_id, upd_data)
                 return False
         return True
 

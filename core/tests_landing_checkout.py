@@ -1340,6 +1340,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertEqual(cust_payload['province'], 'Imbuí')
         self.assertEqual(cust_payload['city'], 'Salvador')
         self.assertEqual(cust_payload['state'], 'BA')
+        self.assertTrue(cust_payload['notificationDisabled'])
 
         # Ordem deve ter salvo o gateway_customer_id
         order.refresh_from_db()
@@ -1738,6 +1739,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertEqual(upd_payload['province'], 'Alphaville')
         self.assertEqual(upd_payload['city'], 'Salvador')
         self.assertEqual(upd_payload['state'], 'BA')
+        self.assertTrue(upd_payload['notificationDisabled'])
 
         # Checkout enviado com "customer": "cus_existing_no_address" e sem customerData
         chk_payload = mock_create_chk.call_args[0][0]
@@ -1753,7 +1755,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
     ):
         """
         44. BP-PEND-32: Se o cliente remoto já possui exatamente o mesmo endereço preenchido,
-        não dispara PUT /v3/customers/{id} desnecessariamente.
+        e notificationDisabled=True, não dispara PUT /v3/customers/{id} desnecessariamente.
         """
         mock_get_cust.return_value = {
             'id': 'cus_already_complete',
@@ -1765,6 +1767,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'province': 'Alphaville',
             'city': 'Salvador',
             'state': 'BA',
+            'notificationDisabled': True,
         }
         mock_create_chk.return_value = (True, {
             'id': 'chk_complete_cust',
@@ -1912,4 +1915,60 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertIn('parcelamento em até 5x no cartão', html)
         self.assertIn('Em até 5x', html)
         self.assertNotIn('até 12x', html)
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'update_customer')
+    @patch.object(AsaasClient, 'get_customer')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_47_customer_sync_updates_if_notification_disabled_is_false_bp_pend_36(
+        self, mock_create_chk, mock_get_cust, mock_update_cust
+    ):
+        """
+        47. BP-PEND-36: Se o cliente remoto já possui endereço mas notificationDisabled não é True,
+        dispara sincronização via PUT /v3/customers/{id} com notificationDisabled=True.
+        """
+        mock_get_cust.return_value = {
+            'id': 'cus_notif_enabled',
+            'name': 'Resp Notif',
+            'email': 'notif@teste.com',
+            'postalCode': '41720000',
+            'address': 'Rua Teste',
+            'addressNumber': '10',
+            'province': 'Centro',
+            'city': 'Salvador',
+            'state': 'BA',
+            'notificationDisabled': False,  # Notificação habilitada no gateway -> deve sincronizar
+        }
+        mock_update_cust.return_value = (True, {'id': 'cus_notif_enabled', 'notificationDisabled': True})
+        mock_create_chk.return_value = (True, {'id': 'chk_notif_sync', 'paymentLink': 'https://sandbox.asaas.com/c/chk'})
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-notif-sync-test',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_notif_enabled',
+            band_name='Banda Notif Sync',
+            responsible_name='Resp Notif',
+            email='notif@teste.com',
+            phone='71988887777',
+            cpf_cnpj='12345678000195',
+            postal_code='41720000',
+            address='Rua Teste',
+            address_number='10',
+            province='Centro',
+            city='Salvador',
+            state='BA',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, _, _ = create_asaas_checkout_for_signup_order(order, payment_method='CREDIT_CARD')
+        self.assertTrue(ok)
+
+        # Deve disparar PUT para desativar as notificações
+        mock_update_cust.assert_called_once()
+        upd_id, upd_payload = mock_update_cust.call_args[0]
+        self.assertEqual(upd_id, 'cus_notif_enabled')
+        self.assertTrue(upd_payload.get('notificationDisabled'))
 
