@@ -33,30 +33,25 @@ class SignupOrderForm(forms.ModelForm):
         widgets = {
             'band_name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
-                'placeholder': 'Ex: Banda Graveto',
                 'required': True,
                 'maxlength': '150',
             }),
             'responsible_name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
-                'placeholder': 'Ex: Carlos Oliveira',
                 'required': True,
                 'maxlength': '200',
             }),
             'cpf_cnpj': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
-                'placeholder': '000.000.000-00 ou 00.000.000/0000-00',
                 'required': True,
                 'maxlength': '30',
             }),
             'email': forms.EmailInput(attrs={
                 'class': 'form-control form-control-lg',
-                'placeholder': 'seuemail@exemplo.com',
                 'required': True,
             }),
             'phone': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
-                'placeholder': '(71) 99999-9999',
                 'required': True,
                 'maxlength': '30',
             }),

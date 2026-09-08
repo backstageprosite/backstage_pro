@@ -896,16 +896,33 @@ class LandingAndCheckoutIntegrationTests(TestCase):
     def test_28_initial_get_has_empty_text_inputs_bp_pend_25(self):
         """
         28. BP-PEND-25: No GET inicial, todos os campos de texto iniciam estritamente vazios.
-        Nenhum valor default ou pré-preenchido para banda, responsável, email, telefone ou cpf/cnpj.
+        Nenhum valor default ou pré-preenchido para banda, responsável, email, telefone ou cpf/cnpj,
+        e nenhum dos 5 inputs de texto possui atributo placeholder de exemplo.
         """
         resp = self.client.get(reverse('checkout') + '?plano=basico&ciclo=mensal')
         self.assertEqual(resp.status_code, 200)
         form = resp.context['form']
+        
+        # 1. Valores iniciais vazios
         self.assertFalse(form.initial.get('band_name'))
         self.assertFalse(form.initial.get('responsible_name'))
         self.assertFalse(form.initial.get('email'))
         self.assertFalse(form.initial.get('phone'))
         self.assertFalse(form.initial.get('cpf_cnpj'))
+
+        # 2. Nenhum dos 5 inputs possui atributo placeholder
+        for field_name in ('band_name', 'responsible_name', 'email', 'phone', 'cpf_cnpj'):
+            field_widget = form.fields[field_name].widget
+            self.assertNotIn('placeholder', field_widget.attrs, f"Campo {field_name} não deve ter placeholder")
+
+        # 3. Confirmar que na resposta HTML renderizada não há placeholders de exemplo nesses campos
+        content = resp.content.decode('utf-8')
+        self.assertNotIn('placeholder="Ex: Banda Graveto"', content)
+        self.assertNotIn('placeholder="Ex: Carlos Oliveira"', content)
+        self.assertNotIn('placeholder="seuemail@exemplo.com"', content)
+        self.assertNotIn('placeholder="(71) 99999-9999"', content)
+        self.assertNotIn('placeholder="000.000.000-00 ou 00.000.000/0000-00"', content)
+        self.assertNotIn('placeholder=', content)
 
     def test_29_phone_validation_rules_bp_pend_23(self):
         """
