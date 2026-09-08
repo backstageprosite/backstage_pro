@@ -257,67 +257,123 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Máscara visual dinâmica para Telefone: (DD) XXXX-XXXX ou (DD) XXXXX-XXXX
+    function formatPhone(val) {
+        if (!val) return '';
+        let v = val.toString().replace(/\D/g, '');
+        if (v.length > 11) v = v.slice(0, 11);
+        if (v.length > 10) {
+            return '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
+        } else if (v.length > 6) {
+            return '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
+        } else if (v.length > 2) {
+            return '(' + v.slice(0, 2) + ') ' + v.slice(2);
+        } else if (v.length > 0) {
+            return '(' + v;
+        }
+        return '';
+    }
+
+    function formatCpfCnpj(val) {
+        if (!val) return '';
+        let v = val.toString().replace(/\D/g, '');
+        if (v.length > 14) v = v.slice(0, 14);
+        if (v.length > 11) {
+            // CNPJ: XX.XXX.XXX/XXXX-XX
+            return v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})$/, '$1.$2.$3/$4-$5')
+                    .replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})$/, '$1.$2.$3/$4')
+                    .replace(/^(\d{2})(\d{3})(\d{1,3})$/, '$1.$2.$3')
+                    .replace(/^(\d{2})(\d{1,3})$/, '$1.$2');
+        } else if (v.length > 9) {
+            // CPF: XXX.XXX.XXX-XX
+            return v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+        } else if (v.length > 6) {
+            return v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
+        } else if (v.length > 3) {
+            return v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
+        }
+        return v;
+    }
+
+    function formatCep(val) {
+        if (!val) return '';
+        let v = val.toString().replace(/\D/g, '');
+        if (v.length > 8) v = v.slice(0, 8);
+        if (v.length > 5) {
+            return v.slice(0, 5) + '-' + v.slice(5);
+        }
+        return v;
+    }
+
+    // Máscara para Telefone / WhatsApp: (DD) XXXXX-XXXX ou (DD) XXXX-XXXX
     const phoneInput = document.getElementById('id_phone');
     if (phoneInput) {
-        phoneInput.addEventListener('input', function(e) {
-            let v = e.target.value.replace(/\D/g, '');
-            if (v.length > 11) v = v.slice(0, 11);
-            if (v.length > 10) {
-                e.target.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
-            } else if (v.length > 6) {
-                e.target.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
-            } else if (v.length > 2) {
-                e.target.value = '(' + v.slice(0, 2) + ') ' + v.slice(2);
-            } else if (v.length > 0) {
-                e.target.value = '(' + v;
-            }
+        const applyPhoneMask = function() {
+            phoneInput.value = formatPhone(phoneInput.value);
+        };
+        ['input', 'change', 'paste', 'keyup', 'blur'].forEach(function(evt) {
+            phoneInput.addEventListener(evt, function() {
+                setTimeout(applyPhoneMask, 0);
+            });
         });
+        if (phoneInput.value) applyPhoneMask();
     }
 
-    // Máscara visual dinâmica para CPF (11 dígitos) ou CNPJ (14 dígitos)
+    // Máscara para CPF ou CNPJ
     const cpfCnpjInput = document.getElementById('id_cpf_cnpj');
     if (cpfCnpjInput) {
-        cpfCnpjInput.addEventListener('input', function(e) {
-            let v = e.target.value.replace(/\D/g, '');
-            if (v.length > 14) v = v.slice(0, 14);
-            if (v.length > 11) {
-                // CNPJ: XX.XXX.XXX/XXXX-XX
-                e.target.value = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
-            } else if (v.length > 9) {
-                // CPF: XXX.XXX.XXX-XX
-                e.target.value = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-            } else if (v.length > 6) {
-                e.target.value = v.replace(/^(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-            } else if (v.length > 3) {
-                e.target.value = v.replace(/^(\d{3})(\d{1,3})/, '$1.$2');
-            } else {
-                e.target.value = v;
-            }
+        const applyCpfCnpjMask = function() {
+            cpfCnpjInput.value = formatCpfCnpj(cpfCnpjInput.value);
+        };
+        ['input', 'change', 'paste', 'keyup', 'blur'].forEach(function(evt) {
+            cpfCnpjInput.addEventListener(evt, function() {
+                setTimeout(applyCpfCnpjMask, 0);
+            });
         });
+        if (cpfCnpjInput.value) applyCpfCnpjMask();
     }
 
-    // Máscara visual para CEP: XXXXX-XXX
+    // Máscara para CEP: XXXXX-XXX
     const cepInput = document.getElementById('id_postal_code');
     if (cepInput) {
-        cepInput.addEventListener('input', function(e) {
-            let v = e.target.value.replace(/\D/g, '');
-            if (v.length > 8) v = v.slice(0, 8);
-            if (v.length > 5) {
-                e.target.value = v.slice(0, 5) + '-' + v.slice(5);
-            } else {
-                e.target.value = v;
-            }
+        const applyCepMask = function() {
+            cepInput.value = formatCep(cepInput.value);
+        };
+        ['input', 'change', 'paste', 'keyup', 'blur'].forEach(function(evt) {
+            cepInput.addEventListener(evt, function() {
+                setTimeout(applyCepMask, 0);
+            });
         });
+        if (cepInput.value) applyCepMask();
     }
 
-    // Estado / UF: sempre em maiúsculas
+    // Estado / UF: sempre maiúsculo, máx 2 caracteres
     const stateInput = document.getElementById('id_state');
     if (stateInput) {
-        stateInput.addEventListener('input', function(e) {
-            e.target.value = e.target.value.toUpperCase().slice(0, 2);
+        const applyStateMask = function() {
+            stateInput.value = (stateInput.value || '').toUpperCase().slice(0, 2);
+        };
+        ['input', 'change', 'paste', 'keyup', 'blur'].forEach(function(evt) {
+            stateInput.addEventListener(evt, function() {
+                setTimeout(applyStateMask, 0);
+            });
         });
+        if (stateInput.value) applyStateMask();
     }
+
+    // Gatilho pós-autofill do navegador (executa verificação após 300ms e 800ms)
+    setTimeout(function() {
+        if (phoneInput && phoneInput.value) phoneInput.value = formatPhone(phoneInput.value);
+        if (cpfCnpjInput && cpfCnpjInput.value) cpfCnpjInput.value = formatCpfCnpj(cpfCnpjInput.value);
+        if (cepInput && cepInput.value) cepInput.value = formatCep(cepInput.value);
+        if (stateInput && stateInput.value) stateInput.value = (stateInput.value || '').toUpperCase().slice(0, 2);
+    }, 300);
+
+    setTimeout(function() {
+        if (phoneInput && phoneInput.value) phoneInput.value = formatPhone(phoneInput.value);
+        if (cpfCnpjInput && cpfCnpjInput.value) cpfCnpjInput.value = formatCpfCnpj(cpfCnpjInput.value);
+        if (cepInput && cepInput.value) cepInput.value = formatCep(cepInput.value);
+        if (stateInput && stateInput.value) stateInput.value = (stateInput.value || '').toUpperCase().slice(0, 2);
+    }, 800);
 });
 </script>
 {% endblock %}
