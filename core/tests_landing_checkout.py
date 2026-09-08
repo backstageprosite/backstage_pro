@@ -1972,3 +1972,163 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertEqual(upd_id, 'cus_notif_enabled')
         self.assertTrue(upd_payload.get('notificationDisabled'))
 
+    def test_48_subscription_created_first_legitimate_association_empty_id_bp_pend_37(self):
+        """
+        48. BP-PEND-37: Quando SUBSCRIPTION_CREATED chega com assinatura local ATIVA mas
+        gateway_subscription_id vazio, a correlação determinística via checkoutSession ->
+        SignupOrder -> BandSubscription deve associar o ID sem erro de segurança e sincronizar
+        o SignupOrder.
+        """
+        from core.services.payments.asaas.webhooks import handle_subscription_event
+
+        band = Band.objects.create(name='Banda Sub Created Teste', slug='banda-sub-created-teste')
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-sub-created-001',
+            gateway_provider='ASAAS',
+            gateway_checkout_id='66a81549-ac35-4845-ae18-1dd453e8c3d2',
+            gateway_subscription_id=None,
+            band_name='Banda Sub Created Teste',
+            responsible_name='Responsavel',
+            email='subcreated@teste.com',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PAGO',
+            band=band,
+        )
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_subscription_id=None,
+            gateway_checkout_id='66a81549-ac35-4845-ae18-1dd453e8c3d2',
+        )
+
+        payload = {
+            'event': 'SUBSCRIPTION_CREATED',
+            'subscription': {
+                'id': 'sub_k1cz0ghh8nu7lurz',
+                'customer': 'cus_sub_created_test',
+                'checkoutSession': '66a81549-ac35-4845-ae18-1dd453e8c3d2',
+            }
+        }
+
+        ok, msg = handle_subscription_event(payload, 'SUBSCRIPTION_CREATED')
+        self.assertTrue(ok)
+        self.assertEqual(msg, 'SUBSCRIPTION_VINCULADA')
+
+        sub.refresh_from_db()
+        self.assertEqual(sub.gateway_subscription_id, 'sub_k1cz0ghh8nu7lurz')
+        self.assertEqual(sub.status, 'ATIVO')
+
+        order.refresh_from_db()
+        self.assertEqual(order.gateway_subscription_id, 'sub_k1cz0ghh8nu7lurz')
+
+    def test_49_subscription_created_idempotent_when_id_already_equals_bp_pend_37(self):
+        """
+        49. BP-PEND-37: Quando SUBSCRIPTION_CREATED chega e gateway_subscription_id local
+        já é igual ao recebido, trata de forma idempotente sem retornar erro.
+        """
+        from core.services.payments.asaas.webhooks import handle_subscription_event
+
+        band = Band.objects.create(name='Banda Sub Idemp Teste', slug='banda-sub-idemp-teste')
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-sub-idemp-001',
+            gateway_provider='ASAAS',
+            gateway_checkout_id='chk_sub_idemp_111',
+            gateway_subscription_id='sub_idemp_111',
+            band_name='Banda Sub Idemp Teste',
+            responsible_name='Responsavel',
+            email='subidemp@teste.com',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PAGO',
+            band=band,
+        )
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_subscription_id='sub_idemp_111',
+            gateway_checkout_id='chk_sub_idemp_111',
+        )
+
+        payload = {
+            'event': 'SUBSCRIPTION_CREATED',
+            'subscription': {
+                'id': 'sub_idemp_111',
+                'customer': 'cus_sub_idemp_test',
+                'checkoutSession': 'chk_sub_idemp_111',
+            }
+        }
+
+        ok, msg = handle_subscription_event(payload, 'SUBSCRIPTION_CREATED')
+        self.assertTrue(ok)
+        self.assertEqual(msg, 'SUBSCRIPTION_SUBSCRIPTION_CREATED_SINCRONIZADA')
+
+        sub.refresh_from_db()
+        self.assertEqual(sub.gateway_subscription_id, 'sub_idemp_111')
+
+    def test_50_subscription_created_blocks_different_id_on_active_subscription_bp_pend_37(self):
+        """
+        50. BP-PEND-37: Quando a assinatura local está ATIVA e já possui outro gateway_subscription_id
+        diferente, mantém o bloqueio de segurança e não substitui.
+        """
+        from core.services.payments.asaas.webhooks import handle_subscription_event
+
+        band = Band.objects.create(name='Banda Sub Sec Block', slug='banda-sub-sec-block')
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-sub-sec-001',
+            gateway_provider='ASAAS',
+            gateway_checkout_id='chk_sec_block_222',
+            gateway_subscription_id='sub_original_active',
+            band_name='Banda Sub Sec Block',
+            responsible_name='Responsavel',
+            email='subsec@teste.com',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PAGO',
+            band=band,
+        )
+        sub = BandSubscription.objects.create(
+            band=band,
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            status='ATIVO',
+            auto_renew=True,
+            cancel_at_period_end=False,
+            gateway_provider='ASAAS',
+            gateway_subscription_id='sub_original_active',
+            gateway_checkout_id='chk_sec_block_222',
+        )
+
+        payload = {
+            'event': 'SUBSCRIPTION_CREATED',
+            'subscription': {
+                'id': 'sub_different_attacker',
+                'customer': 'cus_sec_block_test',
+                'checkoutSession': 'chk_sec_block_222',
+            }
+        }
+
+        ok, msg = handle_subscription_event(payload, 'SUBSCRIPTION_CREATED')
+        self.assertFalse(ok)
+        self.assertIn('SEGURANCA', msg)
+        self.assertIn('nao permite substituicao arbitraria', msg)
+
+        sub.refresh_from_db()
+        self.assertEqual(sub.gateway_subscription_id, 'sub_original_active')
+
+        order.refresh_from_db()
+        self.assertEqual(order.gateway_subscription_id, 'sub_original_active')
+
+

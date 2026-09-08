@@ -34,12 +34,22 @@ def resolve_reactivation_subscription(
         chk = payment_data.get('checkoutSession') or payment_data.get('checkoutId')
     if not chk and isinstance(sub_data, dict):
         chk = sub_data.get('checkoutSession') or sub_data.get('checkoutId')
-    chk = extract_asaas_id(chk)
+        chk = extract_asaas_id(chk)
 
     if chk:
         matching = BandSubscription.objects.filter(gateway_provider='ASAAS', gateway_checkout_id=chk)
         if matching.count() == 1:
             return matching.first()
+
+        # Correlação determinística via SignupOrder: checkoutSession -> SignupOrder.gateway_checkout_id -> BandSubscription
+        matching_order = SignupOrder.objects.filter(
+            gateway_provider='ASAAS',
+            gateway_checkout_id=chk
+        ).select_related('band').first()
+        if matching_order and matching_order.band:
+            matching_subs = BandSubscription.objects.filter(band=matching_order.band, gateway_provider='ASAAS')
+            if matching_subs.count() == 1:
+                return matching_subs.first()
 
     # 2. Busca por gateway_external_reference direto
     ext = external_ref
@@ -497,6 +507,39 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
     return True, 'BILLING_CONCILIADO'
 
 
+def _sync_signup_order_subscription_id(sub: BandSubscription, sub_id: str, checkout_id: Optional[str] = None):
+    """
+    Sincroniza o gateway_subscription_id no SignupOrder correspondente:
+    - Se vazio: preenche com o subscription_id recebido.
+    - Se igual: idempotente, mantém inalterado.
+    - Se preenchido com ID diferente: mantém bloqueio/alerta e não sobrescreve silenciosamente.
+    """
+    order = None
+    if checkout_id:
+        order = SignupOrder.objects.filter(gateway_provider='ASAAS', gateway_checkout_id=checkout_id).first()
+    if not order and sub and sub.band:
+        order = SignupOrder.objects.filter(gateway_provider='ASAAS', band=sub.band).first()
+
+    if order:
+        if not order.gateway_subscription_id:
+            order.gateway_subscription_id = sub_id
+            order.save(update_fields=['gateway_subscription_id', 'updated_at'])
+            logger.info(
+                "SignupOrder %s teve gateway_subscription_id associado com sucesso: %s",
+                order.id, sub_id
+            )
+        elif order.gateway_subscription_id == sub_id:
+            logger.debug(
+                "SignupOrder %s ja possui gateway_subscription_id=%s (idempotente).",
+                order.id, sub_id
+            )
+        else:
+            logger.warning(
+                "SignupOrder %s ja possui gateway_subscription_id diferente (%s != %s). Nao sobrescrito.",
+                order.id, order.gateway_subscription_id, sub_id
+            )
+
+
 def handle_subscription_event(payload: Dict[str, Any], event_type: str) -> Tuple[bool, str]:
     sub_data = payload.get('subscription') if isinstance(payload.get('subscription'), dict) else payload
     sub_id = extract_asaas_id(sub_data.get('id') or payload.get('subscriptionId') or payload.get('subscription'), expected_prefix='sub_')
@@ -516,6 +559,7 @@ def handle_subscription_event(payload: Dict[str, Any], event_type: str) -> Tuple
         if event_type in ('SUBSCRIPTION_INACTIVATED', 'SUBSCRIPTION_DELETED'):
             sub.status = 'CANCELADO'
             sub.save(update_fields=['status', 'updated_at'])
+        _sync_signup_order_subscription_id(sub, sub_id, checkout_id)
         return True, f'SUBSCRIPTION_{event_type}_SINCRONIZADA'
 
     # 2. Resolver central de reativação com correlação forte
@@ -527,14 +571,30 @@ def handle_subscription_event(payload: Dict[str, Any], event_type: str) -> Tuple
         sub_data=sub_data
     )
     if react_sub:
-        # Segurança: apenas assinaturas inativas/em cancelamento permitem substituição de ID
+        # Idempotência: se já possui o mesmo gateway_subscription_id
+        if react_sub.gateway_subscription_id == sub_id:
+            _sync_signup_order_subscription_id(react_sub, sub_id, checkout_id)
+            return True, 'SUBSCRIPTION_JA_VINCULADA'
+
+        # Primeira associação legítima: gateway_subscription_id local vazio
+        if not react_sub.gateway_subscription_id:
+            react_sub.gateway_subscription_id = sub_id
+            if event_type in ('SUBSCRIPTION_INACTIVATED', 'SUBSCRIPTION_DELETED'):
+                react_sub.status = 'CANCELADO'
+            react_sub.save(update_fields=['gateway_subscription_id', 'status', 'updated_at'])
+            _sync_signup_order_subscription_id(react_sub, sub_id, checkout_id)
+            return True, 'SUBSCRIPTION_VINCULADA'
+
+        # Reativação com substituição de ID: apenas assinaturas inativas/em cancelamento
         if react_sub.status in ('DESATIVADO', 'CANCELADO') or react_sub.cancel_at_period_end or not react_sub.auto_renew:
             react_sub.gateway_subscription_id = sub_id
             if event_type in ('SUBSCRIPTION_INACTIVATED', 'SUBSCRIPTION_DELETED'):
                 react_sub.status = 'CANCELADO'
             react_sub.save(update_fields=['gateway_subscription_id', 'status', 'updated_at'])
+            _sync_signup_order_subscription_id(react_sub, sub_id, checkout_id)
             return True, 'SUBSCRIPTION_REATIVACAO_VINCULADA'
         else:
+            # Mantém bloqueio de segurança se já preenchido com ID diferente em assinatura ativa
             return False, f'SEGURANCA: Assinatura {react_sub.id} ativa nao permite substituicao arbitraria de gateway_subscription_id'
 
     # 3. Fallback por external_reference
