@@ -81,8 +81,9 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertEqual(SignupOrder.objects.count(), 0)
 
     @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'create_customer', return_value=(True, {'id': 'cus_live_06'}))
     @patch.object(AsaasClient, 'create_checkout')
-    def test_06_checkout_post_creates_signup_order_and_redirects_to_asaas(self, mock_create_chk):
+    def test_06_checkout_post_creates_signup_order_and_redirects_to_asaas(self, mock_create_chk, mock_create_cust):
         """6. POST /assinar/ válido deve criar SignupOrder PENDENTE e redirecionar para URL Asaas via AsaasClient."""
         mock_create_chk.return_value = (True, {
             'id': 'chk_live_order_123',
@@ -146,6 +147,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         order = SignupOrder.objects.create(
             external_reference='bp-ord-annual-test',
             gateway_provider='ASAAS',
+            gateway_customer_id='cus_annual_test_customer',
             band_name='Banda Anual Teste',
             responsible_name='Roberto',
             email='roberto@teste.com',
@@ -180,6 +182,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         order = SignupOrder.objects.create(
             external_reference='bp-ord-monthly-test',
             gateway_provider='ASAAS',
+            gateway_customer_id='cus_monthly_test_customer',
             band_name='Banda Mensal Teste',
             responsible_name='Lucas',
             email='lucas@teste.com',
@@ -213,6 +216,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         order = SignupOrder.objects.create(
             external_reference='bp-ord-monthly-pix-test',
             gateway_provider='ASAAS',
+            gateway_customer_id='cus_pix_test_customer',
             band_name='Banda Mensal Pix Teste',
             responsible_name='Juliana',
             email='juliana@teste.com',
@@ -376,8 +380,9 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertContains(resp, 'Mensal')
 
     @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'create_customer', return_value=(True, {'id': 'cus_idemp_16'}))
     @patch.object(AsaasClient, 'create_checkout')
-    def test_16_checkout_post_idempotency_prevents_duplicate_orders(self, mock_create_chk):
+    def test_16_checkout_post_idempotency_prevents_duplicate_orders(self, mock_create_chk, mock_create_cust):
         """16. Duplo clique / repost com o mesmo idempotency_token não duplica SignupOrder."""
         mock_create_chk.return_value = (True, {
             'id': 'chk_idemp_token_555',
@@ -429,6 +434,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         order = SignupOrder.objects.create(
             external_reference='bp-ord-timeout-idemp',
             gateway_provider='ASAAS',
+            gateway_customer_id='cus_timeout_test_cust',
             band_name='Banda Timeout Idemp',
             responsible_name='Lucas Timeout',
             email='lucas.timeout@teste.com',
@@ -1089,10 +1095,10 @@ class LandingAndCheckoutIntegrationTests(TestCase):
 
     @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
     @patch.object(AsaasClient, 'create_checkout')
-    def test_32_asaas_payload_contains_customer_data_and_not_customer_bp_pend_26(self, mock_create_chk):
+    def test_32_asaas_payload_contains_customer_and_not_customer_data_bp_pend_26(self, mock_create_chk):
         """
-        32. BP-PEND-26: O payload do Asaas deve conter customerData com os dados do responsável
-        normalizados e NÃO deve conter o campo customer simultaneamente.
+        32. BP-PEND-26 / BP-PEND-27: O payload do Asaas deve conter "customer": "cus_..."
+        e NUNCA deve conter "customerData".
         """
         mock_create_chk.return_value = (True, {
             'id': 'chk_customer_data_123',
@@ -1103,7 +1109,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         order = SignupOrder.objects.create(
             external_reference='bp-ord-custdata-test',
             gateway_provider='ASAAS',
-            gateway_customer_id='cus_old_test',
+            gateway_customer_id='cus_existing_test_32',
             band_name='Banda do Produtor',
             responsible_name='João Produtor',
             email='joao.produtor@teste.com',
@@ -1121,16 +1127,11 @@ class LandingAndCheckoutIntegrationTests(TestCase):
 
         sent_payload = mock_create_chk.call_args[0][0]
 
-        # Validar customerData
-        self.assertIn('customerData', sent_payload)
-        cust_data = sent_payload['customerData']
-        self.assertEqual(cust_data['name'], 'João Produtor')
-        self.assertEqual(cust_data['email'], 'joao.produtor@teste.com')
-        self.assertEqual(cust_data['cpfCnpj'], '12345678000195')
-        self.assertEqual(cust_data['phone'], '71988776655')
+        # Validar ausência de customerData
+        self.assertNotIn('customerData', sent_payload)
 
-        # REGRA CRÍTICA: NÃO enviar customer junto com customerData
-        self.assertNotIn('customer', sent_payload)
+        # REGRA CRÍTICA BP-PEND-26: Enviar customer: "cus_..."
+        self.assertEqual(sent_payload.get('customer'), 'cus_existing_test_32')
 
         # Preservação das demais regras
         self.assertEqual(sent_payload['externalReference'], 'bp-ord-custdata-test')
@@ -1138,10 +1139,10 @@ class LandingAndCheckoutIntegrationTests(TestCase):
 
     @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
     @patch.object(AsaasClient, 'create_checkout')
-    def test_33_all_four_flows_preserve_customer_data_and_canonical_pricing(self, mock_create_chk):
+    def test_33_all_four_flows_preserve_customer_id_and_canonical_pricing(self, mock_create_chk):
         """
         33. Validação explícita dos 4 fluxos combinados (Mensal Cartão, Mensal PIX, Anual Cartão, Anual PIX)
-        garantindo customerData, preço canônico e sem customer no payload.
+        garantindo customer ID, preço canônico e sem customerData no payload.
         """
         mock_create_chk.return_value = (True, {
             'id': 'chk_combo_ok',
@@ -1150,13 +1151,13 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         })
 
         flows = [
-            ('BASICO', 'MENSAL', 'CREDIT_CARD', Decimal('19.90'), ['CREDIT_CARD'], ['RECURRENT']),
-            ('BASICO', 'MENSAL', 'PIX', Decimal('19.90'), ['PIX'], ['DETACHED']),
-            ('AVANCADO', 'ANUAL', 'CREDIT_CARD', Decimal('499.90'), ['CREDIT_CARD'], ['DETACHED', 'INSTALLMENT']),
-            ('AVANCADO', 'ANUAL', 'PIX', Decimal('499.90'), ['PIX'], ['DETACHED', 'INSTALLMENT']),
+            ('BASICO', 'MENSAL', 'CREDIT_CARD', Decimal('19.90'), ['CREDIT_CARD'], ['RECURRENT'], False),
+            ('BASICO', 'MENSAL', 'PIX', Decimal('19.90'), ['PIX'], ['DETACHED'], False),
+            ('AVANCADO', 'ANUAL', 'CREDIT_CARD', Decimal('499.90'), ['CREDIT_CARD'], ['DETACHED', 'INSTALLMENT'], True),
+            ('AVANCADO', 'ANUAL', 'PIX', Decimal('499.90'), ['PIX'], ['DETACHED'], False),
         ]
 
-        for idx, (plan, cycle, method, expected_val, exp_billing_types, exp_charge_types) in enumerate(flows):
+        for idx, (plan, cycle, method, expected_val, exp_billing_types, exp_charge_types, has_installment) in enumerate(flows):
             mock_create_chk.return_value = (True, {
                 'id': f'chk_combo_ok_{idx}',
                 'status': 'ACTIVE',
@@ -1165,6 +1166,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             order = SignupOrder.objects.create(
                 external_reference=f'bp-ord-flow-{plan}-{cycle}-{method}',
                 gateway_provider='ASAAS',
+                gateway_customer_id=f'cus_flow_{idx}',
                 band_name='Banda Flow Test',
                 responsible_name='Nome do Comprador',
                 email='comprador@teste.com',
@@ -1180,11 +1182,273 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             self.assertTrue(ok)
 
             payload = mock_create_chk.call_args[0][0]
-            self.assertIn('customerData', payload)
-            self.assertNotIn('customer', payload)
-            self.assertEqual(payload['customerData']['name'], 'Nome do Comprador')
-            self.assertEqual(payload['customerData']['cpfCnpj'], '52998224725')
-            self.assertEqual(payload['customerData']['phone'], '11987654321')
+            self.assertNotIn('customerData', payload)
+            self.assertEqual(payload.get('customer'), f'cus_flow_{idx}')
             self.assertEqual(payload['items'][0]['value'], float(expected_val))
             self.assertEqual(payload['billingTypes'], exp_billing_types)
             self.assertEqual(payload['chargeTypes'], exp_charge_types)
+            if has_installment:
+                self.assertIn('installment', payload)
+            else:
+                self.assertNotIn('installment', payload)
+                self.assertNotIn('INSTALLMENT', payload['chargeTypes'])
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'create_customer')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_34_new_customer_created_when_signup_order_has_no_customer_id(self, mock_create_chk, mock_create_cust):
+        """
+        34. BP-PEND-27: Cria novo customer no Asaas via POST /v3/customers quando SignupOrder
+        ainda não possui gateway_customer_id. O customer é vinculado à ordem e ao checkout.
+        """
+        mock_create_cust.return_value = (True, {
+            'id': 'cus_new_created_123',
+            'name': 'Responsável Teste',
+            'email': 'resp@teste.com',
+            'cpfCnpj': '12345678000195',
+            'mobilePhone': '71988776655',
+        })
+        mock_create_chk.return_value = (True, {
+            'id': 'chk_created_123',
+            'paymentLink': 'https://sandbox.asaas.com/c/chk123'
+        })
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-new-cust-order',
+            gateway_provider='ASAAS',
+            gateway_customer_id=None,
+            band_name='Banda Sem Customer',
+            responsible_name='Responsável Teste',
+            email='resp@teste.com',
+            phone='(71) 98877-6655',
+            cpf_cnpj='12.345.678/0001-95',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, _, _ = create_asaas_checkout_for_signup_order(order, payment_method='PIX')
+        self.assertTrue(ok)
+
+        # Verificar chamada create_customer
+        mock_create_cust.assert_called_once()
+        cust_payload = mock_create_cust.call_args[0][0]
+        self.assertEqual(cust_payload['name'], 'Responsável Teste')
+        self.assertEqual(cust_payload['email'], 'resp@teste.com')
+        self.assertEqual(cust_payload['cpfCnpj'], '12345678000195')
+        self.assertEqual(cust_payload['mobilePhone'], '71988776655')
+        self.assertEqual(cust_payload['externalReference'], 'bp-cust-bp-ord-new-cust-order')
+        # Verificar que NÃO há dados de endereço no payload do customer
+        self.assertNotIn('address', cust_payload)
+        self.assertNotIn('addressNumber', cust_payload)
+        self.assertNotIn('postalCode', cust_payload)
+        self.assertNotIn('province', cust_payload)
+
+        # Ordem deve ter salvo o gateway_customer_id
+        order.refresh_from_db()
+        self.assertEqual(order.gateway_customer_id, 'cus_new_created_123')
+
+        # Checkout deve ter sido chamado com "customer": "cus_new_created_123" e sem customerData
+        chk_payload = mock_create_chk.call_args[0][0]
+        self.assertEqual(chk_payload.get('customer'), 'cus_new_created_123')
+        self.assertNotIn('customerData', chk_payload)
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'create_customer')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_35_existing_customer_id_on_signup_order_is_reused_without_api_call(self, mock_create_chk, mock_create_cust):
+        """
+        35. Se SignupOrder já possui gateway_customer_id, NÃO chama POST /v3/customers nem GET /v3/customers.
+        Reutiliza diretamente o ID local.
+        """
+        mock_create_chk.return_value = (True, {
+            'id': 'chk_reused_cust',
+            'paymentLink': 'https://sandbox.asaas.com/c/chk_reused'
+        })
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-reused-cust',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_local_already_saved',
+            band_name='Banda Local Cust',
+            responsible_name='Resp Local',
+            email='resplocal@teste.com',
+            phone='11999998888',
+            cpf_cnpj='52998224725',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, _, _ = create_asaas_checkout_for_signup_order(order, payment_method='CREDIT_CARD')
+        self.assertTrue(ok)
+        mock_create_cust.assert_not_called()
+
+        chk_payload = mock_create_chk.call_args[0][0]
+        self.assertEqual(chk_payload['customer'], 'cus_local_already_saved')
+        self.assertNotIn('customerData', chk_payload)
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'get_customers_by_external_reference')
+    @patch.object(AsaasClient, 'create_customer')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_36_existing_remote_customer_found_by_external_reference_is_reused(
+        self, mock_create_chk, mock_create_cust, mock_get_cust_by_ref
+    ):
+        """
+        36. Idempotência: Se o gateway_customer_id local estiver vazio, mas o Asaas já possuir um
+        customer com aquele externalReference determinístico, recupera e reutiliza sem disparar POST.
+        """
+        mock_get_cust_by_ref.return_value = [{'id': 'cus_remote_existing_456'}]
+        mock_create_chk.return_value = (True, {
+            'id': 'chk_found_cust',
+            'paymentLink': 'https://sandbox.asaas.com/c/chk_found'
+        })
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-ref-lookup',
+            gateway_provider='ASAAS',
+            gateway_customer_id=None,
+            band_name='Banda Lookup',
+            responsible_name='Resp Lookup',
+            email='lookup@teste.com',
+            phone='71988887777',
+            cpf_cnpj='12345678000195',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, _, _ = create_asaas_checkout_for_signup_order(order, payment_method='PIX')
+        self.assertTrue(ok)
+
+        # GET foi chamado com o externalReference determinístico
+        mock_get_cust_by_ref.assert_called_once_with('bp-cust-bp-ord-ref-lookup')
+        # POST NÃO foi chamado
+        mock_create_cust.assert_not_called()
+
+        order.refresh_from_db()
+        self.assertEqual(order.gateway_customer_id, 'cus_remote_existing_456')
+
+        chk_payload = mock_create_chk.call_args[0][0]
+        self.assertEqual(chk_payload['customer'], 'cus_remote_existing_456')
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'get_customers_by_external_reference')
+    @patch.object(AsaasClient, 'create_customer')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_37_timeout_on_customer_creation_reconciles_via_external_reference(
+        self, mock_create_chk, mock_create_cust, mock_get_cust_by_ref
+    ):
+        """
+        37. Idempotência e tolerância a falhas: Se POST /v3/customers lança exceção (ex: timeout),
+        o sistema realiza busca por externalReference e recupera o customer criado remotamente.
+        """
+        # Primeira busca (antes do POST): não encontra
+        # Segunda busca (após timeout): encontra o customer criado remotamente
+        mock_get_cust_by_ref.side_effect = [[], [{'id': 'cus_recovered_after_timeout'}]]
+        mock_create_cust.side_effect = Exception("Connection timed out waiting for Asaas")
+        mock_create_chk.return_value = (True, {
+            'id': 'chk_after_timeout',
+            'paymentLink': 'https://sandbox.asaas.com/c/after_timeout'
+        })
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-timeout-recovery',
+            gateway_provider='ASAAS',
+            gateway_customer_id=None,
+            band_name='Banda Timeout Recovery',
+            responsible_name='Resp Timeout',
+            email='timeout@teste.com',
+            phone='71988887777',
+            cpf_cnpj='12345678000195',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, _, _ = create_asaas_checkout_for_signup_order(order, payment_method='PIX')
+        self.assertTrue(ok)
+
+        # Customer recuperado e salvo no banco
+        order.refresh_from_db()
+        self.assertEqual(order.gateway_customer_id, 'cus_recovered_after_timeout')
+
+        # Checkout gerado com o customer recuperado
+        chk_payload = mock_create_chk.call_args[0][0]
+        self.assertEqual(chk_payload['customer'], 'cus_recovered_after_timeout')
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=False, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    def test_38_customer_creation_blocked_by_safety_gate_when_live_disabled(self):
+        """
+        38. Safety Gate: Se PAYMENTS_LIVE_ENABLED=False e a ordem não tem gateway_customer_id,
+        o AsaasClient.create_customer é bloqueado e a operação retorna erro sem afetar o gateway.
+        """
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-safety-gate',
+            gateway_provider='ASAAS',
+            gateway_customer_id=None,
+            band_name='Banda Safety Gate',
+            responsible_name='Resp Safety',
+            email='safety@teste.com',
+            phone='71988887777',
+            cpf_cnpj='12345678000195',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, res_data, err = create_asaas_checkout_for_signup_order(order, payment_method='CREDIT_CARD')
+        self.assertFalse(ok)
+        self.assertIn("PAYMENTS_LIVE_ENABLED=False", str(err))
+        self.assertIsNone(order.gateway_customer_id)
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_39_annual_pix_payload_is_detached_without_installment_bp_pend_28(self, mock_create_chk):
+        """
+        39. BP-PEND-28: Anual + PIX é rigorosamente à vista:
+        - billingTypes=['PIX']
+        - chargeTypes=['DETACHED']
+        - NÃO contém 'INSTALLMENT'
+        - NÃO contém objeto 'installment'
+        - preserva o valor anual canônico correto (ex: R$ 499.90 ou R$ 199.90)
+        """
+        mock_create_chk.return_value = (True, {
+            'id': 'chk_annual_pix_ok',
+            'status': 'ACTIVE',
+            'paymentLink': 'https://sandbox.asaas.com/c/annual_pix_link'
+        })
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-annual-pix-explicit',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_annual_pix_cust',
+            band_name='Banda Anual Pix',
+            responsible_name='Roberto Pix',
+            email='robertopix@teste.com',
+            phone='71988887777',
+            cpf_cnpj='12345678000195',
+            plan_type='AVANCADO',
+            billing_cycle='ANUAL',
+            amount=Decimal('499.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, _, _ = create_asaas_checkout_for_signup_order(order, payment_method='PIX')
+        self.assertTrue(ok)
+        self.assertEqual(link, 'https://sandbox.asaas.com/c/annual_pix_link')
+
+        sent_payload = mock_create_chk.call_args[0][0]
+        self.assertEqual(sent_payload['billingTypes'], ['PIX'])
+        self.assertEqual(sent_payload['chargeTypes'], ['DETACHED'])
+        self.assertNotIn('INSTALLMENT', sent_payload['chargeTypes'])
+        self.assertNotIn('installment', sent_payload)
+        self.assertEqual(sent_payload['items'][0]['value'], 499.90)
+        self.assertEqual(sent_payload['customer'], 'cus_annual_pix_cust')
+        self.assertNotIn('customerData', sent_payload)

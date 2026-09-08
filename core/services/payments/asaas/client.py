@@ -514,7 +514,59 @@ class AsaasClient:
                 err_data = {"error": str(http_err), "status": http_err.code}
             logger.warning("Erro HTTP %s ao criar cobrança no Asaas: %s", http_err.code, raw_err)
             return False, err_data
+    def get_customers_by_external_reference(self, external_reference: str) -> List[Dict[str, Any]]:
+        """
+        Consulta clientes no Asaas filtrando por externalReference via GET /v3/customers?externalReference={external_reference}.
+        Garante idempotência contra timeouts prévios na criação de customer.
+        """
+        if not external_reference or not self.config.api_key:
+            return []
+
+        encoded_ref = urllib.parse.quote(str(external_reference))
+        url = f"{self.base_url}/customers?externalReference={encoded_ref}&limit=10"
+        req = urllib.request.Request(url, headers=self.get_headers())
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                return data.get('data', [])
         except Exception as e:
-            logger.warning("Exceção ao criar cobrança no Asaas: %s", str(e))
+            logger.warning("Falha na consulta de customers por externalReference=%s: %s", external_reference, str(e))
+            return []
+
+    def create_customer(self, data: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+        """
+        Cria um cliente no Asaas via POST /v3/customers.
+        Respeita safety gate, valida api_key e trata erros HTTP.
+        Retorna (sucesso: bool, resposta_ou_erro: dict).
+        """
+        try:
+            self._ensure_writes_enabled("create_customer")
+        except PaymentsLiveDisabledError as e:
+            return False, {"error": "payments_live_disabled", "message": str(e)}
+
+        if not self.config.api_key:
+            return False, {"error": "api_key_ausente"}
+
+        url = f"{self.base_url}/customers"
+        body_bytes = self.encode_payload(data)
+        req = urllib.request.Request(url, data=body_bytes, headers=self.get_headers(), method='POST')
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                status_code = resp.getcode()
+                raw_body = resp.read().decode('utf-8')
+                resp_data = json.loads(raw_body) if raw_body else {}
+                if status_code in (200, 201) or resp_data.get('id'):
+                    return True, resp_data
+                return False, resp_data
+        except urllib.error.HTTPError as http_err:
+            raw_err = http_err.read().decode('utf-8') if hasattr(http_err, 'read') else str(http_err)
+            try:
+                err_data = json.loads(raw_err)
+            except Exception:
+                err_data = {"error": str(http_err), "status": http_err.code}
+            logger.warning("Erro HTTP %s ao criar cliente no Asaas: %s", http_err.code, raw_err)
+            return False, err_data
+        except Exception as e:
+            logger.warning("Exceção ao criar cliente no Asaas: %s", str(e))
             return False, {"error": str(e)}
 
