@@ -113,7 +113,7 @@
                         </div>
                         <div class="text-muted small">
                             {% if is_annual %}
-                                <i class="fa-regular fa-circle-check text-success me-1"></i> Vigência de 12 meses (à vista no PIX ou parcelamento em até 12x no cartão).
+                                <i class="fa-regular fa-circle-check text-success me-1"></i> Vigência de 12 meses (à vista no PIX ou parcelamento em até 5x no cartão).
                             {% else %}
                                 <i class="fa-regular fa-circle-check text-success me-1"></i> Assinatura mensal com opção de Cartão Recorrente ou PIX por ciclo.
                             {% endif %}
@@ -152,7 +152,7 @@
                                     <label class="form-check-label fw-semibold text-dark ms-1 cursor-pointer" for="pay_method_cc">
                                         <i class="fa-regular fa-credit-card me-1 text-primary"></i> Cartão de Crédito
                                         <div class="text-muted fw-normal small">
-                                            {% if is_annual %}Em até 12x{% else %}Renovação mensal automática{% endif %}
+                                            {% if is_annual %}Em até 5x{% else %}Renovação mensal automática{% endif %}
                                         </div>
                                     </label>
                                 </div>

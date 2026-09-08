@@ -34,8 +34,8 @@ def build_checkout_payload(
     - ANUAL COM CARTÃO / PIX (R$ 199,90 / R$ 499,90):
       billingTypes: ['PIX', 'CREDIT_CARD'] (ou filtrado por payment_method)
       chargeTypes: ['DETACHED', 'INSTALLMENT']
-      installment: {'maxInstallmentCount': 12}
-      O cliente pode pagar à vista via PIX ou em 1x até 12x no cartão.
+      installment: {'maxInstallmentCount': 5}
+      O cliente pode pagar à vista via PIX ou em 1x até 5x no cartão sem juros.
     """
     plan_label = 'Avançado' if signup_order.plan_type == 'AVANCADO' else 'Básico'
     is_annual = (signup_order.billing_cycle == 'ANUAL')
@@ -71,7 +71,7 @@ def build_checkout_payload(
                 'callback': callback_urls
             }
         else:
-            # Anual com Cartão (ou ambos quando não especificado): parcelamento em até 12x
+            # Anual com Cartão (ou ambos quando não especificado): parcelamento em até 5x
             billing_types = ['CREDIT_CARD'] if method == 'CREDIT_CARD' else ['PIX', 'CREDIT_CARD']
             payload = {
                 'billingTypes': billing_types,
@@ -87,7 +87,7 @@ def build_checkout_payload(
                     }
                 ],
                 'installment': {
-                    'maxInstallmentCount': 12
+                    'maxInstallmentCount': 5
                 },
                 'callback': callback_urls
             }

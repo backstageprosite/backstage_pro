@@ -169,7 +169,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
     @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
     @patch.object(AsaasClient, 'create_checkout')
     def test_08_annual_checkout_payload_structure_pix_and_card(self, mock_create_chk):
-        """8. Payload anual deve conter PIX + CREDIT_CARD, INSTALLMENT com maxInstallmentCount=12 e valor integral."""
+        """8. Payload anual deve conter PIX + CREDIT_CARD, INSTALLMENT com maxInstallmentCount=5 e valor integral."""
         mock_create_chk.return_value = (True, {
             'id': 'chk_annual_999',
             'status': 'ACTIVE',
@@ -198,7 +198,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertIn('PIX', sent_payload['billingTypes'])
         self.assertIn('CREDIT_CARD', sent_payload['billingTypes'])
         self.assertEqual(sent_payload['chargeTypes'], ['DETACHED', 'INSTALLMENT'])
-        self.assertEqual(sent_payload['installment']['maxInstallmentCount'], 12)
+        self.assertEqual(sent_payload['installment']['maxInstallmentCount'], 5)
         self.assertEqual(sent_payload['items'][0]['value'], 499.90)
 
     @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
@@ -1834,4 +1834,82 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertIn('id_cpf_cnpj', content)
         self.assertIn('id_state', content)
         self.assertIn('toUpperCase()', content)
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_46_annual_card_installments_max_5x_for_basic_and_advanced(self, mock_create_chk):
+        """
+        46. Regra de Parcelamento Anual:
+        - Básico Anual no cartão: installment.maxInstallmentCount == 5
+        - Avançado Anual no cartão: installment.maxInstallmentCount == 5
+        - Textos no HTML do checkout exibem 'até 5x' e não 'até 12x'
+        - Anual + PIX permanece sem installment (à vista)
+        """
+        mock_create_chk.side_effect = [
+            (True, {'id': 'chk_annual_5x_basic', 'paymentLink': 'https://sandbox.asaas.com/c/5x_basic'}),
+            (True, {'id': 'chk_annual_5x_adv', 'paymentLink': 'https://sandbox.asaas.com/c/5x_adv'}),
+        ]
+
+        # Teste 1: Básico Anual no Cartão
+        order_basic = SignupOrder.objects.create(
+            external_reference='bp-ord-annual-basic-5x',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_basic_5x',
+            band_name='Banda Básico 5x',
+            responsible_name='Resp Básico',
+            email='basic5x@teste.com',
+            phone='71988887777',
+            cpf_cnpj='12345678000195',
+            postal_code='41720000',
+            address='Rua Teste',
+            address_number='1',
+            province='Centro',
+            city='Salvador',
+            state='BA',
+            plan_type='BASICO',
+            billing_cycle='ANUAL',
+            amount=Decimal('199.90'),
+            status='PENDENTE',
+        )
+
+        ok_basic, _, _, _ = create_asaas_checkout_for_signup_order(order_basic, payment_method='CREDIT_CARD')
+        self.assertTrue(ok_basic)
+        payload_basic = mock_create_chk.call_args[0][0]
+        self.assertEqual(payload_basic['installment']['maxInstallmentCount'], 5)
+        self.assertNotIn('12', str(payload_basic.get('installment', {})))
+
+        # Teste 2: Avançado Anual no Cartão
+        order_adv = SignupOrder.objects.create(
+            external_reference='bp-ord-annual-adv-5x',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_adv_5x',
+            band_name='Banda Avançado 5x',
+            responsible_name='Resp Avançado',
+            email='adv5x@teste.com',
+            phone='71988887777',
+            cpf_cnpj='12345678000195',
+            postal_code='41720000',
+            address='Rua Teste',
+            address_number='2',
+            province='Centro',
+            city='Salvador',
+            state='BA',
+            plan_type='AVANCADO',
+            billing_cycle='ANUAL',
+            amount=Decimal('499.90'),
+            status='PENDENTE',
+        )
+
+        ok_adv, _, _, _ = create_asaas_checkout_for_signup_order(order_adv, payment_method='CREDIT_CARD')
+        self.assertTrue(ok_adv)
+        payload_adv = mock_create_chk.call_args[0][0]
+        self.assertEqual(payload_adv['installment']['maxInstallmentCount'], 5)
+
+        # Teste 3: Verificação dos textos no HTML do checkout para ciclo anual
+        resp = self.client.get(reverse('checkout') + '?plano=avancado&ciclo=anual')
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode('utf-8')
+        self.assertIn('parcelamento em até 5x no cartão', html)
+        self.assertIn('Em até 5x', html)
+        self.assertNotIn('até 12x', html)
 
