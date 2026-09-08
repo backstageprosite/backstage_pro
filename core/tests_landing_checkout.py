@@ -71,9 +71,13 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'band_name': '',
             'responsible_name': '',
             'email': '',
+            'phone': '',
+            'cpf_cnpj': '',
         })
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'Informe o nome da banda ou artista.')
+        self.assertContains(resp, 'Informe um telefone ou WhatsApp para contato.')
+        self.assertContains(resp, 'Informe um CPF ou CNPJ válido.')
         self.assertEqual(SignupOrder.objects.count(), 0)
 
     @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
@@ -91,7 +95,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'responsible_name': 'Marina Silva',
             'email': 'marina@estrelasolar.com',
             'phone': '71999887766',
-            'cpf_cnpj': '12.345.678/0001-90',
+            'cpf_cnpj': '12.345.678/0001-95',
             'plan_type': 'BASICO',
             'billing_cycle': 'MENSAL',
         })
@@ -117,6 +121,8 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'band_name': 'Banda Prova Seguranca',
             'responsible_name': 'Seguranca Silva',
             'email': 'seg@prova.com',
+            'phone': '71999887766',
+            'cpf_cnpj': '12.345.678/0001-95',
             'plan_type': 'AVANCADO',
             'billing_cycle': 'ANUAL',
         })
@@ -334,6 +340,8 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'band_name': 'Banda Hacker',
             'responsible_name': 'Hacker',
             'email': 'hacker@test.com',
+            'phone': '71999887766',
+            'cpf_cnpj': '12.345.678/0001-95',
             'plan_type': 'AVANCADO',
             'billing_cycle': 'ANUAL',
             'amount': '1.00',
@@ -381,6 +389,8 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'band_name': 'Banda Duplo Clique',
             'responsible_name': 'Carlos Teste',
             'email': 'carlos@duploclique.com',
+            'phone': '71999887766',
+            'cpf_cnpj': '12.345.678/0001-95',
             'plan_type': 'BASICO',
             'billing_cycle': 'MENSAL',
             'idempotency_token': token,
@@ -406,6 +416,8 @@ class LandingAndCheckoutIntegrationTests(TestCase):
                     'band_name': 'Banda Segura Sem Asaas',
                     'responsible_name': 'Seguro',
                     'email': 'seguro@semasaas.com',
+                    'phone': '71999887766',
+                    'cpf_cnpj': '12.345.678/0001-95',
                     'plan_type': 'BASICO',
                     'billing_cycle': 'MENSAL',
                 })
@@ -880,3 +892,282 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         billing_record.refresh_from_db()
         self.assertEqual(billing_record.gateway_payment_id, 'pay_remote_already_created_999')
         self.assertEqual(billing_record.gateway_provider, 'ASAAS')
+
+    def test_28_initial_get_has_empty_text_inputs_bp_pend_25(self):
+        """
+        28. BP-PEND-25: No GET inicial, todos os campos de texto iniciam estritamente vazios.
+        Nenhum valor default ou pré-preenchido para banda, responsável, email, telefone ou cpf/cnpj.
+        """
+        resp = self.client.get(reverse('checkout') + '?plano=basico&ciclo=mensal')
+        self.assertEqual(resp.status_code, 200)
+        form = resp.context['form']
+        self.assertFalse(form.initial.get('band_name'))
+        self.assertFalse(form.initial.get('responsible_name'))
+        self.assertFalse(form.initial.get('email'))
+        self.assertFalse(form.initial.get('phone'))
+        self.assertFalse(form.initial.get('cpf_cnpj'))
+
+    def test_29_phone_validation_rules_bp_pend_23(self):
+        """
+        29. BP-PEND-23: Telefone/WhatsApp obrigatório com validação rigorosa.
+        """
+        from core.forms_checkout import SignupOrderForm
+
+        # Vazio -> Inválido
+        f1 = SignupOrderForm(data={'phone': ''})
+        f1.is_valid()
+        self.assertIn('phone', f1.errors)
+
+        # Inválido (poucos dígitos) -> Rejeitado
+        f2 = SignupOrderForm(data={'phone': '12345'})
+        f2.is_valid()
+        self.assertIn('phone', f2.errors)
+
+        # DDDs inexistentes dentro da faixa 11-99 -> Rejeitados
+        # 4. DDD inexistente 20
+        f_ddd20 = SignupOrderForm(data={'phone': '(20) 99999-9999'})
+        f_ddd20.is_valid()
+        self.assertIn('phone', f_ddd20.errors)
+
+        # 5. DDD inexistente 23
+        f_ddd23 = SignupOrderForm(data={'phone': '(23) 99999-9999'})
+        f_ddd23.is_valid()
+        self.assertIn('phone', f_ddd23.errors)
+
+        # 6. DDD inexistente 90
+        f_ddd90 = SignupOrderForm(data={'phone': '(90) 99999-9999'})
+        f_ddd90.is_valid()
+        self.assertIn('phone', f_ddd90.errors)
+
+        # DDDs válidos testados explicitamente:
+        # 1. DDD válido 71 -> aceito
+        f_ddd71 = SignupOrderForm(data={
+            'band_name': 'Banda Fone 71',
+            'responsible_name': 'Resp 71',
+            'email': 'resp71@teste.com',
+            'phone': '(71) 98877-6655',
+            'cpf_cnpj': '12.345.678/0001-95',
+            'plan_type': 'BASICO',
+            'billing_cycle': 'MENSAL',
+        })
+        self.assertTrue(f_ddd71.is_valid(), f_ddd71.errors)
+        self.assertEqual(f_ddd71.cleaned_data['phone'], '71988776655')
+
+        # 2. DDD válido 11 -> aceito
+        f_ddd11 = SignupOrderForm(data={
+            'band_name': 'Banda Fone 11',
+            'responsible_name': 'Resp 11',
+            'email': 'resp11@teste.com',
+            'phone': '(11) 97766-5544',
+            'cpf_cnpj': '12.345.678/0001-95',
+            'plan_type': 'BASICO',
+            'billing_cycle': 'MENSAL',
+        })
+        self.assertTrue(f_ddd11.is_valid(), f_ddd11.errors)
+        self.assertEqual(f_ddd11.cleaned_data['phone'], '11977665544')
+
+        # 3. DDD válido 99 -> aceito
+        f_ddd99 = SignupOrderForm(data={
+            'band_name': 'Banda Fone 99',
+            'responsible_name': 'Resp 99',
+            'email': 'resp99@teste.com',
+            'phone': '(99) 96655-4433',
+            'cpf_cnpj': '12.345.678/0001-95',
+            'plan_type': 'BASICO',
+            'billing_cycle': 'MENSAL',
+        })
+        self.assertTrue(f_ddd99.is_valid(), f_ddd99.errors)
+        self.assertEqual(f_ddd99.cleaned_data['phone'], '99966554433')
+
+        # 7. +55 (71) ... -> continua aceito e normalizado corretamente
+        f_ddi55_71 = SignupOrderForm(data={
+            'band_name': 'Banda Fone DDI 55 71',
+            'responsible_name': 'Resp DDI',
+            'email': 'respddi@teste.com',
+            'phone': '+55 (71) 98877-6655',
+            'cpf_cnpj': '12.345.678/0001-95',
+            'plan_type': 'BASICO',
+            'billing_cycle': 'MENSAL',
+        })
+        self.assertTrue(f_ddi55_71.is_valid(), f_ddi55_71.errors)
+        self.assertEqual(f_ddi55_71.cleaned_data['phone'], '71988776655')
+
+    def test_30_cpf_cnpj_validation_rules_bp_pend_23(self):
+        """
+        30. BP-PEND-23: CPF/CNPJ obrigatório com validação matemática e normalização para dígitos.
+        """
+        from core.forms_checkout import SignupOrderForm
+
+        base_data = {
+            'band_name': 'Banda Docs',
+            'responsible_name': 'Responsável',
+            'email': 'doc@teste.com',
+            'phone': '71999999999',
+            'plan_type': 'BASICO',
+            'billing_cycle': 'MENSAL',
+        }
+
+        # Vazio -> Inválido
+        f_empty = SignupOrderForm(data={**base_data, 'cpf_cnpj': ''})
+        self.assertFalse(f_empty.is_valid())
+        self.assertIn('cpf_cnpj', f_empty.errors)
+
+        # Quantidade de dígitos inválida (ex: 8 dígitos) -> Rejeitado
+        f_len = SignupOrderForm(data={**base_data, 'cpf_cnpj': '12345678'})
+        self.assertFalse(f_len.is_valid())
+        self.assertIn('cpf_cnpj', f_len.errors)
+
+        # CPF com dígitos repetidos (inválido) -> Rejeitado
+        f_cpf_rep = SignupOrderForm(data={**base_data, 'cpf_cnpj': '111.111.111-11'})
+        self.assertFalse(f_cpf_rep.is_valid())
+        self.assertIn('cpf_cnpj', f_cpf_rep.errors)
+
+        # CPF matematicamente inválido -> Rejeitado
+        f_cpf_inv = SignupOrderForm(data={**base_data, 'cpf_cnpj': '123.456.789-00'})
+        self.assertFalse(f_cpf_inv.is_valid())
+        self.assertIn('cpf_cnpj', f_cpf_inv.errors)
+
+        # CPF matematicamente válido -> Aceito e normalizado
+        # CPF válido conhecido: 52998224725
+        f_cpf_ok = SignupOrderForm(data={**base_data, 'cpf_cnpj': '529.982.247-25'})
+        self.assertTrue(f_cpf_ok.is_valid(), f_cpf_ok.errors)
+        self.assertEqual(f_cpf_ok.cleaned_data['cpf_cnpj'], '52998224725')
+
+        # CNPJ com dígitos repetidos (inválido) -> Rejeitado
+        f_cnpj_rep = SignupOrderForm(data={**base_data, 'cpf_cnpj': '11.111.111/1111-11'})
+        self.assertFalse(f_cnpj_rep.is_valid())
+        self.assertIn('cpf_cnpj', f_cnpj_rep.errors)
+
+        # CNPJ matematicamente inválido -> Rejeitado
+        f_cnpj_inv = SignupOrderForm(data={**base_data, 'cpf_cnpj': '12.345.678/0001-00'})
+        self.assertFalse(f_cnpj_inv.is_valid())
+        self.assertIn('cpf_cnpj', f_cnpj_inv.errors)
+
+        # CNPJ matematicamente válido -> Aceito e normalizado
+        # CNPJ válido conhecido: 12.345.678/0001-95
+        f_cnpj_ok = SignupOrderForm(data={**base_data, 'cpf_cnpj': '12.345.678/0001-95'})
+        self.assertTrue(f_cnpj_ok.is_valid(), f_cnpj_ok.errors)
+        self.assertEqual(f_cnpj_ok.cleaned_data['cpf_cnpj'], '12345678000195')
+
+    def test_31_invalid_post_preserves_submitted_values_bp_pend_25(self):
+        """
+        31. BP-PEND-25: Quando o POST falha na validação, o formulário deve preservar
+        todos os valores submetidos pelo usuário para que não precise digitar novamente.
+        """
+        resp = self.client.post(reverse('checkout'), data={
+            'band_name': 'Banda Preservada',
+            'responsible_name': 'Mariana Duarte',
+            'email': 'mariana@preservada.com',
+            'phone': '12345',               # Telefone inválido proposital
+            'cpf_cnpj': '12.345.678/0001-95',
+            'plan_type': 'BASICO',
+            'billing_cycle': 'MENSAL',
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Banda Preservada')
+        self.assertContains(resp, 'Mariana Duarte')
+        self.assertContains(resp, 'mariana@preservada.com')
+        self.assertContains(resp, '12345')
+        self.assertContains(resp, '12.345.678/0001-95')
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_32_asaas_payload_contains_customer_data_and_not_customer_bp_pend_26(self, mock_create_chk):
+        """
+        32. BP-PEND-26: O payload do Asaas deve conter customerData com os dados do responsável
+        normalizados e NÃO deve conter o campo customer simultaneamente.
+        """
+        mock_create_chk.return_value = (True, {
+            'id': 'chk_customer_data_123',
+            'status': 'ACTIVE',
+            'paymentLink': 'https://sandbox.asaas.com/c/custdata123'
+        })
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-custdata-test',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_old_test',
+            band_name='Banda do Produtor',
+            responsible_name='João Produtor',
+            email='joao.produtor@teste.com',
+            phone='(71) 98877-6655',
+            cpf_cnpj='12.345.678/0001-95',
+            plan_type='AVANCADO',
+            billing_cycle='MENSAL',
+            amount=Decimal('49.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, data, err = create_asaas_checkout_for_signup_order(order, payment_method='CREDIT_CARD')
+        self.assertTrue(ok)
+        self.assertEqual(link, 'https://sandbox.asaas.com/c/custdata123')
+
+        sent_payload = mock_create_chk.call_args[0][0]
+
+        # Validar customerData
+        self.assertIn('customerData', sent_payload)
+        cust_data = sent_payload['customerData']
+        self.assertEqual(cust_data['name'], 'João Produtor')
+        self.assertEqual(cust_data['email'], 'joao.produtor@teste.com')
+        self.assertEqual(cust_data['cpfCnpj'], '12345678000195')
+        self.assertEqual(cust_data['phone'], '71988776655')
+
+        # REGRA CRÍTICA: NÃO enviar customer junto com customerData
+        self.assertNotIn('customer', sent_payload)
+
+        # Preservação das demais regras
+        self.assertEqual(sent_payload['externalReference'], 'bp-ord-custdata-test')
+        self.assertEqual(sent_payload['items'][0]['value'], 49.90)
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_33_all_four_flows_preserve_customer_data_and_canonical_pricing(self, mock_create_chk):
+        """
+        33. Validação explícita dos 4 fluxos combinados (Mensal Cartão, Mensal PIX, Anual Cartão, Anual PIX)
+        garantindo customerData, preço canônico e sem customer no payload.
+        """
+        mock_create_chk.return_value = (True, {
+            'id': 'chk_combo_ok',
+            'status': 'ACTIVE',
+            'paymentLink': 'https://sandbox.asaas.com/c/combo'
+        })
+
+        flows = [
+            ('BASICO', 'MENSAL', 'CREDIT_CARD', Decimal('19.90'), ['CREDIT_CARD'], ['RECURRENT']),
+            ('BASICO', 'MENSAL', 'PIX', Decimal('19.90'), ['PIX'], ['DETACHED']),
+            ('AVANCADO', 'ANUAL', 'CREDIT_CARD', Decimal('499.90'), ['CREDIT_CARD'], ['DETACHED', 'INSTALLMENT']),
+            ('AVANCADO', 'ANUAL', 'PIX', Decimal('499.90'), ['PIX'], ['DETACHED', 'INSTALLMENT']),
+        ]
+
+        for idx, (plan, cycle, method, expected_val, exp_billing_types, exp_charge_types) in enumerate(flows):
+            mock_create_chk.return_value = (True, {
+                'id': f'chk_combo_ok_{idx}',
+                'status': 'ACTIVE',
+                'paymentLink': f'https://sandbox.asaas.com/c/combo_{idx}'
+            })
+            order = SignupOrder.objects.create(
+                external_reference=f'bp-ord-flow-{plan}-{cycle}-{method}',
+                gateway_provider='ASAAS',
+                band_name='Banda Flow Test',
+                responsible_name='Nome do Comprador',
+                email='comprador@teste.com',
+                phone='(11) 98765-4321',
+                cpf_cnpj='529.982.247-25',
+                plan_type=plan,
+                billing_cycle=cycle,
+                amount=expected_val,
+                status='PENDENTE',
+            )
+
+            ok, link, _, _ = create_asaas_checkout_for_signup_order(order, payment_method=method)
+            self.assertTrue(ok)
+
+            payload = mock_create_chk.call_args[0][0]
+            self.assertIn('customerData', payload)
+            self.assertNotIn('customer', payload)
+            self.assertEqual(payload['customerData']['name'], 'Nome do Comprador')
+            self.assertEqual(payload['customerData']['cpfCnpj'], '52998224725')
+            self.assertEqual(payload['customerData']['phone'], '11987654321')
+            self.assertEqual(payload['items'][0]['value'], float(expected_val))
+            self.assertEqual(payload['billingTypes'], exp_billing_types)
+            self.assertEqual(payload['chargeTypes'], exp_charge_types)

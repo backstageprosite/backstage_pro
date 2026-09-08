@@ -115,7 +115,30 @@ def build_checkout_payload(
                 'callback': callback_urls
             }
 
-    if signup_order.gateway_customer_id:
+    # BP-PEND-26: Pré-preencher identificação no checkout hospedado do Asaas via customerData
+    # Não enviar customer e customerData simultaneamente.
+    # O cliente/comprador é o responsável/produtor (não o nome da banda).
+    import re
+    norm_cpf_cnpj = re.sub(r'\D', '', signup_order.cpf_cnpj or '')
+    norm_phone = re.sub(r'\D', '', signup_order.phone or '')
+    if len(norm_phone) in (12, 13) and norm_phone.startswith('55'):
+        norm_phone = norm_phone[2:]
+
+    customer_data = {
+        'name': signup_order.responsible_name,
+        'email': signup_order.email,
+    }
+    if norm_cpf_cnpj:
+        customer_data['cpfCnpj'] = norm_cpf_cnpj
+    if norm_phone:
+        customer_data['phone'] = norm_phone
+
+    payload['customerData'] = customer_data
+
+    # Se já existir customer cadastrado e não houver customerData (ou conforme regra estrita:
+    # "NÃO enviar customer junto com customerData"):
+    # payload['customer'] NÃO é enviado quando customerData é fornecido.
+    if signup_order.gateway_customer_id and 'customerData' not in payload:
         payload['customer'] = signup_order.gateway_customer_id
 
     return payload
