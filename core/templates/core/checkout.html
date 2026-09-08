@@ -197,6 +197,47 @@
                             <div class="form-text small">Utilizado para emissão da nota e identificação no Asaas.</div>
                         </div>
 
+                        <hr class="my-4 text-muted">
+                        <h6 class="fw-bold text-dark mb-1">Endereço de Faturamento</h6>
+                        <p class="text-muted small mb-3">Necessário para geração da cobrança segura no gateway Asaas.</p>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-5">
+                                <label for="id_postal_code" class="form-label fw-semibold small text-dark">CEP <span class="text-danger">*</span></label>
+                                {{ form.postal_code }}
+                            </div>
+                            <div class="col-12 col-md-7">
+                                <label for="id_address" class="form-label fw-semibold small text-dark">Endereço / Logradouro <span class="text-danger">*</span></label>
+                                {{ form.address }}
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-4">
+                                <label for="id_address_number" class="form-label fw-semibold small text-dark">Número <span class="text-danger">*</span></label>
+                                {{ form.address_number }}
+                            </div>
+                            <div class="col-12 col-md-8">
+                                <label for="id_complement" class="form-label fw-semibold small text-dark">Complemento</label>
+                                {{ form.complement }}
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-5">
+                                <label for="id_province" class="form-label fw-semibold small text-dark">Bairro <span class="text-danger">*</span></label>
+                                {{ form.province }}
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <label for="id_city" class="form-label fw-semibold small text-dark">Cidade <span class="text-danger">*</span></label>
+                                {{ form.city }}
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <label for="id_state" class="form-label fw-semibold small text-dark">UF <span class="text-danger">*</span></label>
+                                {{ form.state }}
+                            </div>
+                        </div>
+
                         <div class="d-grid gap-2 pt-2">
                             <button type="submit" class="btn btn-checkout-submit w-100 shadow-sm">
                                 <i class="fa-solid fa-lock me-2"></i> Ir para o Pagamento Seguro
@@ -213,4 +254,71 @@
 
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Máscara visual dinâmica para Telefone: (DD) XXXX-XXXX ou (DD) XXXXX-XXXX
+    const phoneInput = document.getElementById('id_phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 11) v = v.slice(0, 11);
+            if (v.length > 10) {
+                e.target.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
+            } else if (v.length > 6) {
+                e.target.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 6) + '-' + v.slice(6);
+            } else if (v.length > 2) {
+                e.target.value = '(' + v.slice(0, 2) + ') ' + v.slice(2);
+            } else if (v.length > 0) {
+                e.target.value = '(' + v;
+            }
+        });
+    }
+
+    // Máscara visual dinâmica para CPF (11 dígitos) ou CNPJ (14 dígitos)
+    const cpfCnpjInput = document.getElementById('id_cpf_cnpj');
+    if (cpfCnpjInput) {
+        cpfCnpjInput.addEventListener('input', function(e) {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 14) v = v.slice(0, 14);
+            if (v.length > 11) {
+                // CNPJ: XX.XXX.XXX/XXXX-XX
+                e.target.value = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
+            } else if (v.length > 9) {
+                // CPF: XXX.XXX.XXX-XX
+                e.target.value = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+            } else if (v.length > 6) {
+                e.target.value = v.replace(/^(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+            } else if (v.length > 3) {
+                e.target.value = v.replace(/^(\d{3})(\d{1,3})/, '$1.$2');
+            } else {
+                e.target.value = v;
+            }
+        });
+    }
+
+    // Máscara visual para CEP: XXXXX-XXX
+    const cepInput = document.getElementById('id_postal_code');
+    if (cepInput) {
+        cepInput.addEventListener('input', function(e) {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 8) v = v.slice(0, 8);
+            if (v.length > 5) {
+                e.target.value = v.slice(0, 5) + '-' + v.slice(5);
+            } else {
+                e.target.value = v;
+            }
+        });
+    }
+
+    // Estado / UF: sempre em maiúsculas
+    const stateInput = document.getElementById('id_state');
+    if (stateInput) {
+        stateInput.addEventListener('input', function(e) {
+            e.target.value = e.target.value.toUpperCase().slice(0, 2);
+        });
+    }
+});
+</script>
 {% endblock %}
+

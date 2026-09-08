@@ -147,30 +147,28 @@ def get_or_create_asaas_customer_for_signup_order(
     client: AsaasClient
 ) -> Tuple[bool, Optional[str], Optional[str]]:
     """
-    Garante a existência de um Customer no Asaas antes da criação do Checkout.
+    Garante a existência de um Customer completo (identificação + endereço) no Asaas
+    antes da criação do Checkout hospedado.
     
     Estratégia de Idempotência e Reconciliação:
-    1. Se signup_order.gateway_customer_id já estiver preenchido, reutiliza diretamente.
-    2. Gera um externalReference determinístico para o customer baseado na ordem.
-    3. Consulta GET /v3/customers?externalReference={ref} para verificar se já existe remotamente.
-    4. Se não existir, executa POST /v3/customers com:
-       - name: nome do responsável
-       - cpfCnpj: CPF ou CNPJ normalizado (somente números)
-       - email: e-mail de ativação
-       - mobilePhone: telefone normalizado (somente números)
-       - externalReference: referência determinística
-       NÃO envia campos de endereço.
-    5. Em caso de timeout/erro de rede durante o POST, faz nova consulta por externalReference
-       para recuperar o ID se a criação tiver sido concluída no gateway.
+    1. Se PAYMENTS_LIVE_ENABLED=False (modo mock/desabilitado), bloqueia requisições externas.
+    2. Constrói o payload com dados cadastrais e endereço completo:
+       - name, cpfCnpj, email, mobilePhone
+       - postalCode, address, addressNumber, complement, province, city, state
+       - externalReference determinístico
+    3. Se signup_order.gateway_customer_id já estiver preenchido localmente:
+       - Consulta o customer no Asaas via GET /v3/customers/{id}
+       - Se os dados de endereço estiverem ausentes ou divergentes, atualiza via PUT /v3/customers/{id}
+       - Reutiliza o mesmo Customer, evitando duplicidades.
+    4. Se gateway_customer_id não estiver preenchido:
+       - Consulta GET /v3/customers?externalReference={ref} para verificar se já existe remotamente.
+       - Se existir, atualiza via PUT /v3/customers/{id} se necessário e salva o ID na ordem.
+       - Se não existir, executa POST /v3/customers com os dados completos.
+    5. Em caso de timeout/erro de rede durante o POST, faz reconciliação por externalReference.
     
     Retorna (sucesso: bool, customer_id: Optional[str], erro: Optional[str]).
     """
-    if signup_order.gateway_customer_id:
-        return True, signup_order.gateway_customer_id, None
-
     import re
-    # externalReference determinístico para correlação segura
-    customer_ext_ref = f"bp-cust-{signup_order.external_reference}"[:64]
 
     # Se PAYMENTS_LIVE_ENABLED=False (modo mock/desabilitado), não fazer chamadas de rede externas
     if not client.config.live_payments_enabled:
@@ -179,24 +177,14 @@ def get_or_create_asaas_customer_for_signup_order(
         )
         return False, None, "Operação financeira externa 'create_customer' está desabilitada (PAYMENTS_LIVE_ENABLED=False)."
 
-    # Passo 1: Verificar se já existe remotamente via externalReference
-    try:
-        existing_customers = client.get_customers_by_external_reference(customer_ext_ref)
-        if existing_customers and isinstance(existing_customers, list) and len(existing_customers) > 0:
-            cus_id = existing_customers[0].get('id')
-            if cus_id:
-                signup_order.gateway_customer_id = cus_id
-                signup_order.save(update_fields=['gateway_customer_id', 'updated_at'])
-                logger.info("Customer Asaas existente %s reutilizado via externalReference %s", cus_id, customer_ext_ref)
-                return True, cus_id, None
-    except Exception as e:
-        logger.warning("Falha ao consultar customer por externalReference %s no Asaas: %s", customer_ext_ref, str(e))
-
     # Normalizações
     norm_cpf_cnpj = re.sub(r'\D', '', signup_order.cpf_cnpj or '')
     norm_phone = re.sub(r'\D', '', signup_order.phone or '')
     if len(norm_phone) in (12, 13) and norm_phone.startswith('55'):
         norm_phone = norm_phone[2:]
+    norm_cep = re.sub(r'\D', '', signup_order.postal_code or '')
+
+    customer_ext_ref = f"bp-cust-{signup_order.external_reference}"[:64]
 
     customer_payload: Dict[str, Any] = {
         'name': signup_order.responsible_name,
@@ -207,8 +195,71 @@ def get_or_create_asaas_customer_for_signup_order(
         customer_payload['cpfCnpj'] = norm_cpf_cnpj
     if norm_phone:
         customer_payload['mobilePhone'] = norm_phone
+    if norm_cep:
+        customer_payload['postalCode'] = norm_cep
+    if signup_order.address:
+        customer_payload['address'] = signup_order.address
+    if signup_order.address_number:
+        customer_payload['addressNumber'] = signup_order.address_number
+    if signup_order.complement:
+        customer_payload['complement'] = signup_order.complement
+    if signup_order.province:
+        customer_payload['province'] = signup_order.province
+    if signup_order.city:
+        customer_payload['city'] = signup_order.city
+    if signup_order.state:
+        customer_payload['state'] = signup_order.state.upper()
 
-    # Passo 2: Criar customer via POST /v3/customers
+    def _sync_customer_address_if_needed(cust_id: str, existing_cust_data: Optional[Dict[str, Any]] = None) -> bool:
+        """Atualiza o Customer no Asaas se dados essenciais de endereço estiverem faltando."""
+        data = existing_cust_data or client.get_customer(cust_id)
+        if not data:
+            return True
+
+        # Checa se os campos de endereço já estão preenchidos de forma compatível
+        needs_update = False
+        check_fields = [
+            ('postalCode', norm_cep),
+            ('address', signup_order.address),
+            ('addressNumber', signup_order.address_number),
+            ('province', signup_order.province),
+            ('city', signup_order.city),
+            ('state', (signup_order.state or '').upper()),
+        ]
+        for field_name, local_val in check_fields:
+            if local_val and str(data.get(field_name) or '').strip() != str(local_val).strip():
+                needs_update = True
+                break
+
+        if needs_update:
+            logger.info("Atualizando dados cadastrais/endereço do Customer Asaas %s...", cust_id)
+            upd_ok, upd_res = client.update_customer(cust_id, customer_payload)
+            if not upd_ok:
+                logger.warning("Falha ao atualizar dados do customer %s: %s", cust_id, upd_res)
+                return False
+        return True
+
+    # Caso A: Customer já persistido localmente no SignupOrder
+    if signup_order.gateway_customer_id:
+        cus_id = signup_order.gateway_customer_id
+        _sync_customer_address_if_needed(cus_id)
+        return True, cus_id, None
+
+    # Caso B: Verificar se já existe remotamente via externalReference
+    try:
+        existing_customers = client.get_customers_by_external_reference(customer_ext_ref)
+        if existing_customers and isinstance(existing_customers, list) and len(existing_customers) > 0:
+            cus_id = existing_customers[0].get('id')
+            if cus_id:
+                signup_order.gateway_customer_id = cus_id
+                signup_order.save(update_fields=['gateway_customer_id', 'updated_at'])
+                logger.info("Customer Asaas existente %s reutilizado via externalReference %s", cus_id, customer_ext_ref)
+                _sync_customer_address_if_needed(cus_id, existing_customers[0])
+                return True, cus_id, None
+    except Exception as e:
+        logger.warning("Falha ao consultar customer por externalReference %s no Asaas: %s", customer_ext_ref, str(e))
+
+    # Caso C: Criar customer via POST /v3/customers
     try:
         success, res_data = client.create_customer(customer_payload)
     except Exception as exc:
@@ -225,6 +276,7 @@ def get_or_create_asaas_customer_for_signup_order(
                     signup_order.gateway_customer_id = cus_id
                     signup_order.save(update_fields=['gateway_customer_id', 'updated_at'])
                     logger.info("Customer Asaas %s recuperado após timeout via externalReference %s", cus_id, customer_ext_ref)
+                    _sync_customer_address_if_needed(cus_id, recon_customers[0])
                     return True, cus_id, None
         except Exception as recon_exc:
             logger.warning("Falha na reconciliação pós-timeout do customer %s: %s", customer_ext_ref, str(recon_exc))

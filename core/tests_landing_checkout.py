@@ -73,11 +73,23 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'email': '',
             'phone': '',
             'cpf_cnpj': '',
+            'postal_code': '',
+            'address': '',
+            'address_number': '',
+            'province': '',
+            'city': '',
+            'state': '',
         })
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'Informe o nome da banda ou artista.')
         self.assertContains(resp, 'Informe um telefone ou WhatsApp para contato.')
         self.assertContains(resp, 'Informe um CPF ou CNPJ válido.')
+        self.assertContains(resp, 'Informe o CEP.')
+        self.assertContains(resp, 'Informe o endereço.')
+        self.assertContains(resp, 'Informe o número.')
+        self.assertContains(resp, 'Informe o bairro.')
+        self.assertContains(resp, 'Informe a cidade.')
+        self.assertContains(resp, 'Informe o Estado / UF.')
         self.assertEqual(SignupOrder.objects.count(), 0)
 
     @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
@@ -97,6 +109,13 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'email': 'marina@estrelasolar.com',
             'phone': '71999887766',
             'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Avenida Jorge Amado',
+            'address_number': '100',
+            'complement': 'Sala 204',
+            'province': 'Imbuí',
+            'city': 'Salvador',
+            'state': 'BA',
             'plan_type': 'BASICO',
             'billing_cycle': 'MENSAL',
         })
@@ -105,10 +124,17 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertEqual(resp['Location'], 'https://sandbox.asaas.com/c/live_order_123')
         self.assertEqual(mock_create_chk.call_count, 1)
 
-        # Validar persistência do SignupOrder
+        # Validar persistência do SignupOrder com endereço
         order = SignupOrder.objects.filter(email='marina@estrelasolar.com').first()
         self.assertIsNotNone(order)
         self.assertEqual(order.band_name, 'Banda Estrela Solar')
+        self.assertEqual(order.postal_code, '41720000')
+        self.assertEqual(order.address, 'Avenida Jorge Amado')
+        self.assertEqual(order.address_number, '100')
+        self.assertEqual(order.complement, 'Sala 204')
+        self.assertEqual(order.province, 'Imbuí')
+        self.assertEqual(order.city, 'Salvador')
+        self.assertEqual(order.state, 'BA')
         self.assertEqual(order.amount, Decimal('19.90'))
         self.assertEqual(order.status, 'PENDENTE')
         self.assertEqual(order.gateway_checkout_id, 'chk_live_order_123')
@@ -124,6 +150,12 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'email': 'seg@prova.com',
             'phone': '71999887766',
             'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Rua da Segurança',
+            'address_number': '1',
+            'province': 'Centro',
+            'city': 'Salvador',
+            'state': 'BA',
             'plan_type': 'AVANCADO',
             'billing_cycle': 'ANUAL',
         })
@@ -346,6 +378,12 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'email': 'hacker@test.com',
             'phone': '71999887766',
             'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Rua do Teste',
+            'address_number': '123',
+            'province': 'Centro',
+            'city': 'Salvador',
+            'state': 'BA',
             'plan_type': 'AVANCADO',
             'billing_cycle': 'ANUAL',
             'amount': '1.00',
@@ -380,9 +418,10 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertContains(resp, 'Mensal')
 
     @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'get_customer', return_value={'postalCode': '41720000', 'address': 'Rua Teste', 'addressNumber': '10', 'province': 'Bairro', 'city': 'Salvador', 'state': 'BA'})
     @patch.object(AsaasClient, 'create_customer', return_value=(True, {'id': 'cus_idemp_16'}))
     @patch.object(AsaasClient, 'create_checkout')
-    def test_16_checkout_post_idempotency_prevents_duplicate_orders(self, mock_create_chk, mock_create_cust):
+    def test_16_checkout_post_idempotency_prevents_duplicate_orders(self, mock_create_chk, mock_create_cust, mock_get_cust):
         """16. Duplo clique / repost com o mesmo idempotency_token não duplica SignupOrder."""
         mock_create_chk.return_value = (True, {
             'id': 'chk_idemp_token_555',
@@ -396,6 +435,12 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'email': 'carlos@duploclique.com',
             'phone': '71999887766',
             'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Rua Teste',
+            'address_number': '10',
+            'province': 'Bairro',
+            'city': 'Salvador',
+            'state': 'BA',
             'plan_type': 'BASICO',
             'billing_cycle': 'MENSAL',
             'idempotency_token': token,
@@ -902,32 +947,30 @@ class LandingAndCheckoutIntegrationTests(TestCase):
     def test_28_initial_get_has_empty_text_inputs_bp_pend_25(self):
         """
         28. BP-PEND-25: No GET inicial, todos os campos de texto iniciam estritamente vazios.
-        Nenhum valor default ou pré-preenchido para banda, responsável, email, telefone ou cpf/cnpj,
-        e nenhum dos 5 inputs de texto possui atributo placeholder de exemplo.
+        Nenhum valor default ou pré-preenchido para banda, responsável, email, telefone, cpf/cnpj ou endereço,
+        e nenhum dos inputs de texto possui atributo placeholder de exemplo.
         """
         resp = self.client.get(reverse('checkout') + '?plano=basico&ciclo=mensal')
         self.assertEqual(resp.status_code, 200)
         form = resp.context['form']
         
         # 1. Valores iniciais vazios
-        self.assertFalse(form.initial.get('band_name'))
-        self.assertFalse(form.initial.get('responsible_name'))
-        self.assertFalse(form.initial.get('email'))
-        self.assertFalse(form.initial.get('phone'))
-        self.assertFalse(form.initial.get('cpf_cnpj'))
+        for field_name in (
+            'band_name', 'responsible_name', 'email', 'phone', 'cpf_cnpj',
+            'postal_code', 'address', 'address_number', 'complement', 'province', 'city', 'state'
+        ):
+            self.assertFalse(form.initial.get(field_name), f"Campo {field_name} não deve ter valor inicial")
 
-        # 2. Nenhum dos 5 inputs possui atributo placeholder
-        for field_name in ('band_name', 'responsible_name', 'email', 'phone', 'cpf_cnpj'):
+        # 2. Nenhum dos inputs possui atributo placeholder
+        for field_name in (
+            'band_name', 'responsible_name', 'email', 'phone', 'cpf_cnpj',
+            'postal_code', 'address', 'address_number', 'complement', 'province', 'city', 'state'
+        ):
             field_widget = form.fields[field_name].widget
             self.assertNotIn('placeholder', field_widget.attrs, f"Campo {field_name} não deve ter placeholder")
 
         # 3. Confirmar que na resposta HTML renderizada não há placeholders de exemplo nesses campos
         content = resp.content.decode('utf-8')
-        self.assertNotIn('placeholder="Ex: Banda Graveto"', content)
-        self.assertNotIn('placeholder="Ex: Carlos Oliveira"', content)
-        self.assertNotIn('placeholder="seuemail@exemplo.com"', content)
-        self.assertNotIn('placeholder="(71) 99999-9999"', content)
-        self.assertNotIn('placeholder="000.000.000-00 ou 00.000.000/0000-00"', content)
         self.assertNotIn('placeholder=', content)
 
     def test_29_phone_validation_rules_bp_pend_23(self):
@@ -970,6 +1013,12 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'email': 'resp71@teste.com',
             'phone': '(71) 98877-6655',
             'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Rua Teste',
+            'address_number': '10',
+            'province': 'Centro',
+            'city': 'Salvador',
+            'state': 'BA',
             'plan_type': 'BASICO',
             'billing_cycle': 'MENSAL',
         })
@@ -983,6 +1032,12 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'email': 'resp11@teste.com',
             'phone': '(11) 97766-5544',
             'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Rua Teste',
+            'address_number': '10',
+            'province': 'Centro',
+            'city': 'Salvador',
+            'state': 'BA',
             'plan_type': 'BASICO',
             'billing_cycle': 'MENSAL',
         })
@@ -996,6 +1051,12 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'email': 'resp99@teste.com',
             'phone': '(99) 96655-4433',
             'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Rua Teste',
+            'address_number': '10',
+            'province': 'Centro',
+            'city': 'Salvador',
+            'state': 'BA',
             'plan_type': 'BASICO',
             'billing_cycle': 'MENSAL',
         })
@@ -1009,6 +1070,12 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'email': 'respddi@teste.com',
             'phone': '+55 (71) 98877-6655',
             'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Rua Teste',
+            'address_number': '10',
+            'province': 'Centro',
+            'city': 'Salvador',
+            'state': 'BA',
             'plan_type': 'BASICO',
             'billing_cycle': 'MENSAL',
         })
@@ -1026,6 +1093,12 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'responsible_name': 'Responsável',
             'email': 'doc@teste.com',
             'phone': '71999999999',
+            'postal_code': '41720-000',
+            'address': 'Rua Teste',
+            'address_number': '10',
+            'province': 'Centro',
+            'city': 'Salvador',
+            'state': 'BA',
             'plan_type': 'BASICO',
             'billing_cycle': 'MENSAL',
         }
@@ -1083,6 +1156,13 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             'email': 'mariana@preservada.com',
             'phone': '12345',               # Telefone inválido proposital
             'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Rua das Flores',
+            'address_number': '42B',
+            'complement': 'Apto 101',
+            'province': 'Pituba',
+            'city': 'Salvador',
+            'state': 'BA',
             'plan_type': 'BASICO',
             'billing_cycle': 'MENSAL',
         })
@@ -1092,6 +1172,13 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertContains(resp, 'mariana@preservada.com')
         self.assertContains(resp, '12345')
         self.assertContains(resp, '12.345.678/0001-95')
+        self.assertContains(resp, '41720-000')
+        self.assertContains(resp, 'Rua das Flores')
+        self.assertContains(resp, '42B')
+        self.assertContains(resp, 'Apto 101')
+        self.assertContains(resp, 'Pituba')
+        self.assertContains(resp, 'Salvador')
+        self.assertContains(resp, 'BA')
 
     @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
     @patch.object(AsaasClient, 'create_checkout')
@@ -1222,6 +1309,13 @@ class LandingAndCheckoutIntegrationTests(TestCase):
             email='resp@teste.com',
             phone='(71) 98877-6655',
             cpf_cnpj='12.345.678/0001-95',
+            postal_code='41720-000',
+            address='Avenida Jorge Amado',
+            address_number='100',
+            complement='Sala 204',
+            province='Imbuí',
+            city='Salvador',
+            state='BA',
             plan_type='BASICO',
             billing_cycle='MENSAL',
             amount=Decimal('19.90'),
@@ -1231,7 +1325,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         ok, link, _, _ = create_asaas_checkout_for_signup_order(order, payment_method='PIX')
         self.assertTrue(ok)
 
-        # Verificar chamada create_customer
+        # Verificar chamada create_customer com identificação e endereço completos
         mock_create_cust.assert_called_once()
         cust_payload = mock_create_cust.call_args[0][0]
         self.assertEqual(cust_payload['name'], 'Responsável Teste')
@@ -1239,11 +1333,13 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertEqual(cust_payload['cpfCnpj'], '12345678000195')
         self.assertEqual(cust_payload['mobilePhone'], '71988776655')
         self.assertEqual(cust_payload['externalReference'], 'bp-cust-bp-ord-new-cust-order')
-        # Verificar que NÃO há dados de endereço no payload do customer
-        self.assertNotIn('address', cust_payload)
-        self.assertNotIn('addressNumber', cust_payload)
-        self.assertNotIn('postalCode', cust_payload)
-        self.assertNotIn('province', cust_payload)
+        self.assertEqual(cust_payload['postalCode'], '41720000')
+        self.assertEqual(cust_payload['address'], 'Avenida Jorge Amado')
+        self.assertEqual(cust_payload['addressNumber'], '100')
+        self.assertEqual(cust_payload['complement'], 'Sala 204')
+        self.assertEqual(cust_payload['province'], 'Imbuí')
+        self.assertEqual(cust_payload['city'], 'Salvador')
+        self.assertEqual(cust_payload['state'], 'BA')
 
         # Ordem deve ter salvo o gateway_customer_id
         order.refresh_from_db()
@@ -1452,3 +1548,290 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertEqual(sent_payload['items'][0]['value'], 499.90)
         self.assertEqual(sent_payload['customer'], 'cus_annual_pix_cust')
         self.assertNotIn('customerData', sent_payload)
+
+    def test_40_address_required_fields_validation_bp_pend_32(self):
+        """
+        40. BP-PEND-32 Regra B: CEP, Endereço, Número, Bairro, Cidade e UF são obrigatórios.
+        Complemento é opcional.
+        """
+        from core.forms_checkout import SignupOrderForm
+
+        base_valid_data = {
+            'band_name': 'Banda Teste Endereço',
+            'responsible_name': 'Produtor Teste',
+            'email': 'produtor@teste.com',
+            'phone': '(71) 98877-6655',
+            'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Avenida Jorge Amado',
+            'address_number': '100',
+            'complement': '',  # Opcional!
+            'province': 'Imbuí',
+            'city': 'Salvador',
+            'state': 'BA',
+            'plan_type': 'BASICO',
+            'billing_cycle': 'MENSAL',
+        }
+
+        # Com todos obrigatórios preenchidos e complemento vazio -> Válido!
+        f_ok = SignupOrderForm(data=base_valid_data)
+        self.assertTrue(f_ok.is_valid(), f_ok.errors)
+        self.assertEqual(f_ok.cleaned_data['complement'], '')
+
+        # Testa cada campo obrigatório de endereço individualmente ausente
+        for field in ('postal_code', 'address', 'address_number', 'province', 'city', 'state'):
+            tampered = dict(base_valid_data)
+            tampered[field] = ''
+            f_err = SignupOrderForm(data=tampered)
+            self.assertFalse(f_err.is_valid(), f"Campo {field} deveria ser obrigatório")
+            self.assertIn(field, f_err.errors)
+
+    def test_41_cep_validation_and_normalization_bp_pend_32(self):
+        """
+        41. BP-PEND-32 Regra C: CEP aceita formatado ou somente dígitos,
+        valida tamanho exato de 8 dígitos e rejeita inválidos.
+        """
+        from core.forms_checkout import SignupOrderForm
+
+        base_data = {
+            'band_name': 'Banda CEP Test',
+            'responsible_name': 'Produtor CEP',
+            'email': 'cep@teste.com',
+            'phone': '(71) 98877-6655',
+            'cpf_cnpj': '12.345.678/0001-95',
+            'address': 'Rua Teste',
+            'address_number': '10',
+            'province': 'Centro',
+            'city': 'Salvador',
+            'state': 'BA',
+            'plan_type': 'BASICO',
+            'billing_cycle': 'MENSAL',
+        }
+
+        # Formatado 41720-000 -> normaliza para 41720000
+        f1 = SignupOrderForm(data={**base_data, 'postal_code': '41720-000'})
+        self.assertTrue(f1.is_valid(), f1.errors)
+        self.assertEqual(f1.cleaned_data['postal_code'], '41720000')
+
+        # Somente números 41720000 -> normaliza para 41720000
+        f2 = SignupOrderForm(data={**base_data, 'postal_code': '41720000'})
+        self.assertTrue(f2.is_valid(), f2.errors)
+        self.assertEqual(f2.cleaned_data['postal_code'], '41720000')
+
+        # CEP menor que 8 dígitos -> Rejeitado
+        f3 = SignupOrderForm(data={**base_data, 'postal_code': '41720-00'})
+        self.assertFalse(f3.is_valid())
+        self.assertIn('postal_code', f3.errors)
+
+        # CEP maior que 8 dígitos -> Rejeitado
+        f4 = SignupOrderForm(data={**base_data, 'postal_code': '417200001'})
+        self.assertFalse(f4.is_valid())
+        self.assertIn('postal_code', f4.errors)
+
+    def test_42_state_uf_validation_and_normalization_bp_pend_32(self):
+        """
+        42. BP-PEND-32 Regra D: Estado / UF valida contra as 27 UFs brasileiras,
+        normaliza para maiúsculas e rejeita siglas inexistentes.
+        """
+        from core.forms_checkout import SignupOrderForm
+
+        base_data = {
+            'band_name': 'Banda UF Test',
+            'responsible_name': 'Produtor UF',
+            'email': 'uf@teste.com',
+            'phone': '(71) 98877-6655',
+            'cpf_cnpj': '12.345.678/0001-95',
+            'postal_code': '41720-000',
+            'address': 'Rua Teste',
+            'address_number': '10',
+            'province': 'Centro',
+            'city': 'Salvador',
+            'plan_type': 'BASICO',
+            'billing_cycle': 'MENSAL',
+        }
+
+        # UF em minúsculas 'sp' -> normaliza para 'SP'
+        f_min = SignupOrderForm(data={**base_data, 'state': 'sp'})
+        self.assertTrue(f_min.is_valid(), f_min.errors)
+        self.assertEqual(f_min.cleaned_data['state'], 'SP')
+
+        # UF válida 'BA' -> aceita
+        f_ba = SignupOrderForm(data={**base_data, 'state': 'BA'})
+        self.assertTrue(f_ba.is_valid(), f_ba.errors)
+        self.assertEqual(f_ba.cleaned_data['state'], 'BA')
+
+        # UF inexistente 'XX' -> rejeitada
+        f_inv = SignupOrderForm(data={**base_data, 'state': 'XX'})
+        self.assertFalse(f_inv.is_valid())
+        self.assertIn('state', f_inv.errors)
+
+        # UF com tamanho inválido 'SPO' -> rejeitada
+        f_len = SignupOrderForm(data={**base_data, 'state': 'SPO'})
+        self.assertFalse(f_len.is_valid())
+        self.assertIn('state', f_len.errors)
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'update_customer')
+    @patch.object(AsaasClient, 'get_customer')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_43_existing_customer_with_missing_address_is_updated_via_put_bp_pend_32(
+        self, mock_create_chk, mock_get_cust, mock_update_cust
+    ):
+        """
+        43. BP-PEND-32 Regra G: Se SignupOrder já possui gateway_customer_id mas o cliente no Asaas
+        não possui endereço preenchido, dispara PUT /v3/customers/{id} com o endereço completo
+        sem criar customer duplicado e usa o customer ID no checkout.
+        """
+        mock_get_cust.return_value = {
+            'id': 'cus_existing_no_address',
+            'name': 'Responsável Antigo',
+            'email': 'antigo@teste.com',
+            'postalCode': None,
+            'address': None,
+            'addressNumber': None,
+            'province': None,
+            'city': None,
+            'state': None,
+        }
+        mock_update_cust.return_value = (True, {'id': 'cus_existing_no_address'})
+        mock_create_chk.return_value = (True, {
+            'id': 'chk_updated_cust',
+            'paymentLink': 'https://sandbox.asaas.com/c/updated'
+        })
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-update-address-test',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_existing_no_address',
+            band_name='Banda Atualiza Endereço',
+            responsible_name='Responsável Atualizado',
+            email='atualizado@teste.com',
+            phone='71988887777',
+            cpf_cnpj='12345678000195',
+            postal_code='41720-000',
+            address='Avenida Paralela',
+            address_number='500',
+            complement='Bloco B',
+            province='Alphaville',
+            city='Salvador',
+            state='BA',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, _, _ = create_asaas_checkout_for_signup_order(order, payment_method='CREDIT_CARD')
+        self.assertTrue(ok)
+
+        # GET foi chamado para consultar os dados atuais do customer
+        mock_get_cust.assert_called_once_with('cus_existing_no_address')
+
+        # PUT foi chamado com os dados completos de endereço para sincronizar
+        mock_update_cust.assert_called_once()
+        upd_id, upd_payload = mock_update_cust.call_args[0]
+        self.assertEqual(upd_id, 'cus_existing_no_address')
+        self.assertEqual(upd_payload['postalCode'], '41720000')
+        self.assertEqual(upd_payload['address'], 'Avenida Paralela')
+        self.assertEqual(upd_payload['addressNumber'], '500')
+        self.assertEqual(upd_payload['complement'], 'Bloco B')
+        self.assertEqual(upd_payload['province'], 'Alphaville')
+        self.assertEqual(upd_payload['city'], 'Salvador')
+        self.assertEqual(upd_payload['state'], 'BA')
+
+        # Checkout enviado com "customer": "cus_existing_no_address" e sem customerData
+        chk_payload = mock_create_chk.call_args[0][0]
+        self.assertEqual(chk_payload.get('customer'), 'cus_existing_no_address')
+        self.assertNotIn('customerData', chk_payload)
+
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'update_customer')
+    @patch.object(AsaasClient, 'get_customer')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_44_existing_customer_with_complete_matching_address_does_not_call_put_bp_pend_32(
+        self, mock_create_chk, mock_get_cust, mock_update_cust
+    ):
+        """
+        44. BP-PEND-32: Se o cliente remoto já possui exatamente o mesmo endereço preenchido,
+        não dispara PUT /v3/customers/{id} desnecessariamente.
+        """
+        mock_get_cust.return_value = {
+            'id': 'cus_already_complete',
+            'name': 'Responsável Completo',
+            'email': 'completo@teste.com',
+            'postalCode': '41720000',
+            'address': 'Avenida Paralela',
+            'addressNumber': '500',
+            'province': 'Alphaville',
+            'city': 'Salvador',
+            'state': 'BA',
+        }
+        mock_create_chk.return_value = (True, {
+            'id': 'chk_complete_cust',
+            'paymentLink': 'https://sandbox.asaas.com/c/complete'
+        })
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-already-synced-test',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_already_complete',
+            band_name='Banda Já Sincronizada',
+            responsible_name='Responsável Completo',
+            email='completo@teste.com',
+            phone='71988887777',
+            cpf_cnpj='12345678000195',
+            postal_code='41720000',
+            address='Avenida Paralela',
+            address_number='500',
+            province='Alphaville',
+            city='Salvador',
+            state='BA',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, _, _ = create_asaas_checkout_for_signup_order(order, payment_method='CREDIT_CARD')
+        self.assertTrue(ok)
+
+        # GET foi chamado
+        mock_get_cust.assert_called_once_with('cus_already_complete')
+        # PUT NÃO foi chamado porque os dados são compatíveis
+        mock_update_cust.assert_not_called()
+        mock_create_chk.assert_called_once()
+
+    def test_45_html_renders_address_fields_and_dynamic_masks_bp_pend_32(self):
+        """
+        45. BP-PEND-32: Verifica renderização dos campos de endereço no HTML e script de máscaras dinâmicas.
+        """
+        resp = self.client.get(reverse('checkout') + '?plano=basico&ciclo=mensal')
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+
+        # Inputs de endereço presentes no formulário
+        self.assertIn('id_postal_code', content)
+        self.assertIn('id_address', content)
+        self.assertIn('id_address_number', content)
+        self.assertIn('id_complement', content)
+        self.assertIn('id_province', content)
+        self.assertIn('id_city', content)
+        self.assertIn('id_state', content)
+
+        # Labels e seções
+        self.assertIn('Endereço de Faturamento', content)
+        self.assertIn('CEP', content)
+        self.assertIn('Endereço / Logradouro', content)
+        self.assertIn('Número', content)
+        self.assertIn('Complemento', content)
+        self.assertIn('Bairro', content)
+        self.assertIn('Cidade', content)
+        self.assertIn('UF', content)
+
+        # Scripts de máscara dinâmica presentes
+        self.assertIn('id_postal_code', content)
+        self.assertIn('id_phone', content)
+        self.assertIn('id_cpf_cnpj', content)
+        self.assertIn('id_state', content)
+        self.assertIn('toUpperCase()', content)
+

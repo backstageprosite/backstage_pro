@@ -2069,6 +2069,13 @@ class SignupOrder(models.Model):
     cpf_cnpj = models.CharField(max_length=30, blank=True, null=True, verbose_name='CPF ou CNPJ')
     email = models.EmailField(verbose_name='E-mail do Responsável')
     phone = models.CharField(max_length=30, blank=True, null=True, verbose_name='Telefone / WhatsApp')
+    postal_code = models.CharField(max_length=15, blank=True, null=True, verbose_name='CEP')
+    address = models.CharField(max_length=255, blank=True, null=True, verbose_name='Endereço / Logradouro')
+    address_number = models.CharField(max_length=30, blank=True, null=True, verbose_name='Número')
+    complement = models.CharField(max_length=100, blank=True, null=True, verbose_name='Complemento')
+    province = models.CharField(max_length=100, blank=True, null=True, verbose_name='Bairro')
+    city = models.CharField(max_length=100, blank=True, null=True, verbose_name='Cidade')
+    state = models.CharField(max_length=2, blank=True, null=True, verbose_name='Estado / UF')
 
     plan_type = models.CharField(max_length=20, choices=PLAN_CHOICES, default='AVANCADO', verbose_name='Plano Escolhido')
     billing_cycle = models.CharField(max_length=20, choices=CYCLE_CHOICES, default='MENSAL', verbose_name='Ciclo de Cobrança')

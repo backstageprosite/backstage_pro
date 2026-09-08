@@ -27,6 +27,13 @@ class SignupOrderForm(forms.ModelForm):
             'cpf_cnpj',
             'email',
             'phone',
+            'postal_code',
+            'address',
+            'address_number',
+            'complement',
+            'province',
+            'city',
+            'state',
             'plan_type',
             'billing_cycle',
         ]
@@ -55,6 +62,41 @@ class SignupOrderForm(forms.ModelForm):
                 'required': True,
                 'maxlength': '30',
             }),
+            'postal_code': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'required': True,
+                'maxlength': '10',
+            }),
+            'address': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'required': True,
+                'maxlength': '255',
+            }),
+            'address_number': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'required': True,
+                'maxlength': '30',
+            }),
+            'complement': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'required': False,
+                'maxlength': '100',
+            }),
+            'province': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'required': True,
+                'maxlength': '100',
+            }),
+            'city': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'required': True,
+                'maxlength': '100',
+            }),
+            'state': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'required': True,
+                'maxlength': '2',
+            }),
             'plan_type': forms.HiddenInput(),
             'billing_cycle': forms.HiddenInput(),
         }
@@ -73,6 +115,24 @@ class SignupOrderForm(forms.ModelForm):
             },
             'cpf_cnpj': {
                 'required': 'Informe um CPF ou CNPJ válido.',
+            },
+            'postal_code': {
+                'required': 'Informe o CEP.',
+            },
+            'address': {
+                'required': 'Informe o endereço.',
+            },
+            'address_number': {
+                'required': 'Informe o número.',
+            },
+            'province': {
+                'required': 'Informe o bairro.',
+            },
+            'city': {
+                'required': 'Informe a cidade.',
+            },
+            'state': {
+                'required': 'Informe o Estado / UF.',
             },
         }
 
@@ -157,27 +217,74 @@ class SignupOrderForm(forms.ModelForm):
         '91', '92', '93', '94', '95', '96', '97', '98', '99',
     }
 
+    VALID_BRAZILIAN_UFS = {
+        'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO',
+        'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI',
+        'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+    }
+
     def clean_phone(self):
         val = (self.cleaned_data.get('phone') or '').strip()
         if not val:
             raise forms.ValidationError("Informe um telefone ou WhatsApp para contato.")
         
         digits = re.sub(r'\D', '', val)
-        # Aceita telefones brasileiros:
-        # com DDD: 10 dígitos (fixo) ou 11 dígitos (celular)
-        # com DDI 55 + DDD: 12 dígitos (fixo) ou 13 dígitos (celular)
         if len(digits) in (12, 13) and digits.startswith('55'):
             digits = digits[2:]
 
         if len(digits) not in (10, 11):
             raise forms.ValidationError("Informe um telefone ou WhatsApp válido com DDD (Ex: 71 99999-9999).")
 
-        # Verifica se o DDD é um Código Nacional brasileiro real
         ddd = digits[:2]
         if ddd not in self.VALID_BRAZILIAN_DDDS:
             raise forms.ValidationError("DDD inválido informado no telefone.")
 
         return digits
+
+    def clean_postal_code(self):
+        val = (self.cleaned_data.get('postal_code') or '').strip()
+        if not val:
+            raise forms.ValidationError("Informe o CEP.")
+        digits = re.sub(r'\D', '', val)
+        if len(digits) != 8:
+            raise forms.ValidationError("Informe um CEP válido com 8 dígitos.")
+        return digits
+
+    def clean_address(self):
+        val = (self.cleaned_data.get('address') or '').strip()
+        if not val:
+            raise forms.ValidationError("Informe o endereço.")
+        return val
+
+    def clean_address_number(self):
+        val = (self.cleaned_data.get('address_number') or '').strip()
+        if not val:
+            raise forms.ValidationError("Informe o número.")
+        return val
+
+    def clean_complement(self):
+        val = (self.cleaned_data.get('complement') or '').strip()
+        return val
+
+    def clean_province(self):
+        val = (self.cleaned_data.get('province') or '').strip()
+        if not val:
+            raise forms.ValidationError("Informe o bairro.")
+        return val
+
+    def clean_city(self):
+        val = (self.cleaned_data.get('city') or '').strip()
+        if not val:
+            raise forms.ValidationError("Informe a cidade.")
+        return val
+
+    def clean_state(self):
+        val = (self.cleaned_data.get('state') or '').strip().upper()
+        if not val:
+            raise forms.ValidationError("Informe o Estado / UF.")
+        if val not in self.VALID_BRAZILIAN_UFS:
+            raise forms.ValidationError("Informe uma UF brasileira válida (ex: SP, RJ, BA).")
+        return val
 
     def clean_plan_type(self):
         val = (self.cleaned_data.get('plan_type') or '').strip().upper()

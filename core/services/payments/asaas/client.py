@@ -570,3 +570,61 @@ class AsaasClient:
             logger.warning("Exceção ao criar cliente no Asaas: %s", str(e))
             return False, {"error": str(e)}
 
+    def get_customer(self, customer_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Consulta dados cadastrais de um cliente no Asaas via GET /v3/customers/{id}.
+        """
+        if not customer_id or not self.config.api_key:
+            return None
+
+        encoded_id = urllib.parse.quote(str(customer_id).strip())
+        url = f"{self.base_url}/customers/{encoded_id}"
+        req = urllib.request.Request(url, headers=self.get_headers())
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return json.loads(resp.read().decode('utf-8'))
+        except Exception as e:
+            logger.warning("Falha na consulta de cliente %s no Asaas: %s", customer_id, str(e))
+            return None
+
+    def update_customer(self, customer_id: str, data: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+        """
+        Atualiza os dados cadastrais de um cliente no Asaas via PUT /v3/customers/{id}.
+        Respeita safety gate, valida api_key e trata erros HTTP.
+        Retorna (sucesso: bool, resposta_ou_erro: dict).
+        """
+        try:
+            self._ensure_writes_enabled("update_customer")
+        except PaymentsLiveDisabledError as e:
+            return False, {"error": "payments_live_disabled", "message": str(e)}
+
+        if not customer_id or not str(customer_id).strip():
+            return False, {"error": "customer_id_invalido"}
+
+        if not self.config.api_key:
+            return False, {"error": "api_key_ausente"}
+
+        encoded_id = urllib.parse.quote(str(customer_id).strip())
+        url = f"{self.base_url}/customers/{encoded_id}"
+        body_bytes = self.encode_payload(data)
+        req = urllib.request.Request(url, data=body_bytes, headers=self.get_headers(), method='PUT')
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                status_code = resp.getcode()
+                raw_body = resp.read().decode('utf-8')
+                resp_data = json.loads(raw_body) if raw_body else {}
+                if status_code in (200, 201) or resp_data.get('id'):
+                    return True, resp_data
+                return False, resp_data
+        except urllib.error.HTTPError as http_err:
+            raw_err = http_err.read().decode('utf-8') if hasattr(http_err, 'read') else str(http_err)
+            try:
+                err_data = json.loads(raw_err)
+            except Exception:
+                err_data = {"error": str(http_err), "status": http_err.code}
+            logger.warning("Erro HTTP %s ao atualizar cliente %s no Asaas: %s", http_err.code, customer_id, raw_err)
+            return False, err_data
+        except Exception as e:
+            logger.warning("Exceção ao atualizar cliente %s no Asaas: %s", customer_id, str(e))
+            return False, {"error": str(e)}
+

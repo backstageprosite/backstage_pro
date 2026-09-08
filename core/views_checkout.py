@@ -93,6 +93,13 @@ class CheckoutView(View):
         email = cd['email']
         phone = cd.get('phone') or ''
         cpf_cnpj = cd.get('cpf_cnpj') or ''
+        postal_code = cd.get('postal_code') or ''
+        address = cd.get('address') or ''
+        address_number = cd.get('address_number') or ''
+        complement = cd.get('complement') or ''
+        province = cd.get('province') or ''
+        city = cd.get('city') or ''
+        state = cd.get('state') or ''
         idempotency_token = (cd.get('idempotency_token') or '').strip()
 
         # Se o formulário possuir token de idempotência válido, reaproveita-o; senão gera novo determinístico
@@ -112,6 +119,13 @@ class CheckoutView(View):
                     'email': email,
                     'phone': phone,
                     'cpf_cnpj': cpf_cnpj,
+                    'postal_code': postal_code,
+                    'address': address,
+                    'address_number': address_number,
+                    'complement': complement,
+                    'province': province,
+                    'city': city,
+                    'state': state,
                     'plan_type': plan_type,
                     'billing_cycle': billing_cycle,
                     'amount': canonical_price,
