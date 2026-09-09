@@ -2131,4 +2131,193 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         order.refresh_from_db()
         self.assertEqual(order.gateway_subscription_id, 'sub_original_active')
 
+    def test_51_annual_card_5x_installments_billing_records_bp_pend_39(self):
+        """
+        51. BP-PEND-39: Plano Básico Anual parcelado em 5x no cartão gera 5 BillingRecords de R$ 39,98.
+        Nenhum registro com o valor agregado de R$ 199,90 pode coexistir.
+        Soma total deve ser exatamente R$ 199,90.
+        """
+        from core.services.payments.provisioning import process_checkout_paid_event
+        from core.services.payments.asaas.webhooks import reconcile_and_update_billing_record
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-annual-5x-test',
+            gateway_provider='ASAAS',
+            gateway_checkout_id='chk_annual_5x_999',
+            band_name='Banda Anual 5x Teste',
+            responsible_name='Vitor',
+            email='vitor5x@teste.com',
+            plan_type='BASICO',
+            billing_cycle='ANUAL',
+            amount=Decimal('199.90'),
+            status='PENDENTE',
+        )
+
+        # 1. Evento CHECKOUT_PAID para provisionamento com a 1ª parcela
+        payload_checkout_paid = {
+            'event': 'CHECKOUT_PAID',
+            'checkout': {
+                'id': 'chk_annual_5x_999',
+                'externalReference': 'bp-ord-annual-5x-test',
+                'customer': 'cus_annual_5x_cust',
+            },
+            'payment': {
+                'id': 'pay_inst_1',
+                'value': '39.98',
+                'billingType': 'CREDIT_CARD',
+                'installment': 'inst_group_777',
+                'installmentNumber': 1,
+            }
+        }
+
+        success, msg, band = process_checkout_paid_event(payload_checkout_paid)
+        self.assertTrue(success)
+        self.assertIsNotNone(band)
+
+        sub = BandSubscription.objects.get(band=band)
+        self.assertEqual(sub.billing_cycle, 'ANUAL')
+        self.assertFalse(sub.auto_renew)
+
+        # 2. Webhooks subsequentes / conciliação de cada parcela (1 a 5)
+        # Parcela 1: reconciliação via webhook
+        reconcile_and_update_billing_record(
+            {
+                'event': 'PAYMENT_CONFIRMED',
+                'payment': {
+                    'id': 'pay_inst_1',
+                    'value': '39.98',
+                    'installment': 'inst_group_777',
+                    'installmentNumber': 1,
+                    'dueDate': '2026-09-08',
+                    'externalReference': 'bp-ord-annual-5x-test',
+                    'checkoutSession': 'chk_annual_5x_999',
+                }
+            },
+            'PAYMENT_CONFIRMED'
+        )
+
+        # Parcelas 2 a 5
+        due_dates = ['2026-10-08', '2026-11-08', '2026-12-08', '2027-01-08']
+        for idx, due_d in enumerate(due_dates, start=2):
+            p_id = f'pay_inst_{idx}'
+            reconcile_and_update_billing_record(
+                {
+                    'event': 'PAYMENT_CONFIRMED',
+                    'payment': {
+                        'id': p_id,
+                        'value': '39.98',
+                        'installment': 'inst_group_777',
+                        'installmentNumber': idx,
+                        'dueDate': due_d,
+                        'externalReference': 'bp-ord-annual-5x-test',
+                        'checkoutSession': 'chk_annual_5x_999',
+                    }
+                },
+                'PAYMENT_CONFIRMED'
+            )
+
+        records = BillingRecord.objects.filter(subscription=sub).order_by('installment_number')
+        self.assertEqual(records.count(), 5)
+
+        total_local = sum(r.amount for r in records)
+        self.assertEqual(total_local, Decimal('199.90'))
+
+        for idx, r in enumerate(records, start=1):
+            self.assertEqual(r.amount, Decimal('39.98'))
+            self.assertEqual(r.installment_number, idx)
+            self.assertEqual(r.gateway_payment_id, f'pay_inst_{idx}')
+
+        # Garantir que NÃO existe nenhum registro com valor total de 199.90
+        self.assertFalse(BillingRecord.objects.filter(subscription=sub, amount=Decimal('199.90')).exists())
+
+    def test_52_annual_card_1x_billing_records_bp_pend_39(self):
+        """
+        52. BP-PEND-39: Plano Básico Anual no cartão à vista (1x) gera exatamente 1 BillingRecord de R$ 199,90.
+        """
+        from core.services.payments.provisioning import process_checkout_paid_event
+        from core.services.payments.asaas.webhooks import reconcile_and_update_billing_record
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-annual-1x-test',
+            gateway_provider='ASAAS',
+            gateway_checkout_id='chk_annual_1x_888',
+            band_name='Banda Anual 1x Teste',
+            responsible_name='Lucas',
+            email='lucas1x@teste.com',
+            plan_type='BASICO',
+            billing_cycle='ANUAL',
+            amount=Decimal('199.90'),
+            status='PENDENTE',
+        )
+
+        payload_checkout_paid = {
+            'event': 'CHECKOUT_PAID',
+            'checkout': {
+                'id': 'chk_annual_1x_888',
+                'externalReference': 'bp-ord-annual-1x-test',
+                'customer': 'cus_annual_1x_cust',
+            },
+            'payment': {
+                'id': 'pay_single_1',
+                'value': '199.90',
+                'billingType': 'CREDIT_CARD',
+            }
+        }
+
+        success, msg, band = process_checkout_paid_event(payload_checkout_paid)
+        self.assertTrue(success)
+
+        sub = BandSubscription.objects.get(band=band)
+        records = BillingRecord.objects.filter(subscription=sub)
+        self.assertEqual(records.count(), 1)
+        record = records.first()
+        self.assertEqual(record.amount, Decimal('199.90'))
+        self.assertIsNone(record.installment_number)
+        self.assertEqual(record.gateway_payment_id, 'pay_single_1')
+
+    def test_53_annual_pix_billing_records_bp_pend_39(self):
+        """
+        53. BP-PEND-39: Plano Básico Anual no PIX à vista gera exatamente 1 BillingRecord de R$ 199,90.
+        """
+        from core.services.payments.provisioning import process_checkout_paid_event
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-annual-pix-39',
+            gateway_provider='ASAAS',
+            gateway_checkout_id='chk_annual_pix_777',
+            band_name='Banda Anual Pix 39',
+            responsible_name='Rodrigo',
+            email='rodrigo39@teste.com',
+            plan_type='BASICO',
+            billing_cycle='ANUAL',
+            amount=Decimal('199.90'),
+            status='PENDENTE',
+        )
+
+        payload_checkout_paid = {
+            'event': 'CHECKOUT_PAID',
+            'checkout': {
+                'id': 'chk_annual_pix_777',
+                'externalReference': 'bp-ord-annual-pix-39',
+                'customer': 'cus_annual_pix_39',
+            },
+            'payment': {
+                'id': 'pay_pix_annual_39',
+                'value': '199.90',
+                'billingType': 'PIX',
+            }
+        }
+
+        success, msg, band = process_checkout_paid_event(payload_checkout_paid)
+        self.assertTrue(success)
+
+        sub = BandSubscription.objects.get(band=band)
+        records = BillingRecord.objects.filter(subscription=sub)
+        self.assertEqual(records.count(), 1)
+        record = records.first()
+        self.assertEqual(record.amount, Decimal('199.90'))
+        self.assertIsNone(record.installment_number)
+        self.assertEqual(record.payment_method, 'PIX')
+        self.assertEqual(record.gateway_payment_id, 'pay_pix_annual_39')
+
 

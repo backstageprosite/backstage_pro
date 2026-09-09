@@ -245,6 +245,21 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
         if record:
             record.gateway_payment_id = payment_id
 
+    # Se record já existe (por payment_id ou external_ref), garantir que seu amount e installment_number estejam alinhados
+    if record:
+        inst_num_chk = payment_data.get('installmentNumber')
+        inst_id_chk = extract_asaas_id(payment_data.get('installment'))
+        raw_val_chk = payment_data.get('value') or payment_data.get('netValue')
+        if (inst_num_chk or inst_id_chk or record.billing_cycle == 'ANUAL') and raw_val_chk is not None:
+            try:
+                amt_chk = Decimal(str(raw_val_chk))
+                if record.amount != amt_chk:
+                    record.amount = amt_chk
+            except Exception:
+                pass
+        if inst_num_chk and record.installment_number != inst_num_chk:
+            record.installment_number = inst_num_chk
+
     sub = None
     if not record:
         if subscription_id:
@@ -287,27 +302,37 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
             raw_value = payment_data.get('value') or payment_data.get('netValue') or sub.contracted_value
             amount_val = Decimal(str(raw_value))
 
-            record = BillingRecord.objects.filter(
-                subscription=sub,
-                due_date=due_date_val
-            ).first()
+            inst_id_ref = extract_asaas_id(payment_data.get('installment'))
+            inst_num_ref = payment_data.get('installmentNumber')
+
+            # Localizar vinculo com AnnualPlanPurchase se for plano anual
+            annual_purchase_ref = None
+            if sub.billing_cycle == 'ANUAL':
+                if inst_id_ref:
+                    annual_purchase_ref = AnnualPlanPurchase.objects.filter(
+                        band_subscription=sub,
+                        gateway_installment_id=inst_id_ref
+                    ).first()
+                if not annual_purchase_ref:
+                    annual_purchase_ref = AnnualPlanPurchase.objects.filter(
+                        band_subscription=sub
+                    ).order_by('-coverage_start').first()
+
+            # Para planos com parcelamento, tenta localizar por parcela especifica caso já exista
+            record = None
+            if inst_num_ref:
+                record = BillingRecord.objects.filter(
+                    subscription=sub,
+                    installment_number=inst_num_ref
+                ).first()
 
             if not record:
-                # Localizar vinculo com AnnualPlanPurchase se for plano anual
-                inst_id_ref = extract_asaas_id(payment_data.get('installment'))
-                inst_num_ref = payment_data.get('installmentNumber')
-                annual_purchase_ref = None
-                if sub.billing_cycle == 'ANUAL':
-                    if inst_id_ref:
-                        annual_purchase_ref = AnnualPlanPurchase.objects.filter(
-                            band_subscription=sub,
-                            gateway_installment_id=inst_id_ref
-                        ).first()
-                    if not annual_purchase_ref:
-                        annual_purchase_ref = AnnualPlanPurchase.objects.filter(
-                            band_subscription=sub
-                        ).order_by('-coverage_start').first()
+                record = BillingRecord.objects.filter(
+                    subscription=sub,
+                    due_date=due_date_val
+                ).first()
 
+            if not record:
                 record = BillingRecord.objects.create(
                     subscription=sub,
                     band=sub.band,
@@ -331,20 +356,13 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                 record.gateway_invoice_url = payment_data.get('invoiceUrl') or record.gateway_invoice_url
                 record.gateway_external_reference = external_ref or record.gateway_external_reference
                 record.gateway_event_status = event_type
-                if sub.billing_cycle == 'ANUAL':
-                    if payment_data.get('installmentNumber') and not record.installment_number:
-                        record.installment_number = payment_data.get('installmentNumber')
-                    if not record.annual_purchase:
-                        inst_id_ref = extract_asaas_id(payment_data.get('installment'))
-                        if inst_id_ref:
-                            record.annual_purchase = AnnualPlanPurchase.objects.filter(
-                                band_subscription=sub,
-                                gateway_installment_id=inst_id_ref
-                            ).first()
-                        if not record.annual_purchase:
-                            record.annual_purchase = AnnualPlanPurchase.objects.filter(
-                                band_subscription=sub
-                            ).order_by('-coverage_start').first()
+                if inst_num_ref or inst_id_ref or sub.billing_cycle == 'ANUAL':
+                    if record.amount != amount_val:
+                        record.amount = amount_val
+                    if inst_num_ref:
+                        record.installment_number = inst_num_ref
+                    if not record.annual_purchase and annual_purchase_ref:
+                        record.annual_purchase = annual_purchase_ref
         else:
             return False, f'AGUARDANDO_PROVISIONAMENTO_CHECKOUT_PAID: payment_id={payment_id}, ref={external_ref}, sub={subscription_id}'
 
