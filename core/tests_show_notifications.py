@@ -225,3 +225,164 @@ class ShowNotificationsTests(TestCase):
         show.refresh_from_db()
         self.assertEqual(show.notification_revision, 0)
         self.assertEqual(Notification.objects.filter(related_show_id=show.id).count(), 0)
+
+    def test_bp_pend_46_scenario_1_time_change_in_reservation_does_not_notify(self):
+        """1. show em RESERVA com alteração de horário -> 0 notificações geradas."""
+        show = Show.objects.create(
+            band=self.band, title='Show Reserva', status='PRE_RESERVADO',
+            date=date(2026, 10, 1), show_time=time(20, 0)
+        )
+        url = reverse('shows_edit', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        data = {
+            'title': 'Show Reserva', 'status': 'PRE_RESERVADO', 'payment_status': 'PENDENTE',
+            'date': '2026-10-01', 'show_time': '22:00',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+
+        show.refresh_from_db()
+        self.assertEqual(show.notification_revision, 0)
+        self.assertEqual(Notification.objects.filter(related_show_id=show.id).count(), 0)
+
+    def test_bp_pend_46_scenario_2_time_change_in_confirmed_show_notifies(self):
+        """2. show FECHADO/CONFIRMADO com alteração de horário -> 1 notificação de alteração de horário."""
+        show = Show.objects.create(
+            band=self.band, title='Show Confirmado', status='CONFIRMADO',
+            date=date(2026, 10, 1), show_time=time(20, 0)
+        )
+        url = reverse('shows_edit', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        data = {
+            'title': 'Show Confirmado', 'status': 'CONFIRMADO', 'payment_status': 'PENDENTE',
+            'date': '2026-10-01', 'show_time': '22:00',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+
+        show.refresh_from_db()
+        self.assertEqual(show.notification_revision, 1)
+        notifs = Notification.objects.filter(related_show_id=show.id)
+        # 1 tipo de evento (SHOW_START_TIME_CHANGED) para 2 membros ativos da banda
+        self.assertEqual(set(notifs.values_list('event_type', flat=True)), {'SHOW_START_TIME_CHANGED'})
+        self.assertEqual(notifs.count(), 2)
+
+    def test_bp_pend_46_scenario_3_reservation_to_confirmed_without_time_change_notifies_confirmation_only(self):
+        """3. transição RESERVA -> FECHADO sem alteração de horário -> 1 notificação de confirmação."""
+        show = Show.objects.create(
+            band=self.band, title='Show Reserva', status='PRE_RESERVADO',
+            date=date(2026, 10, 1), show_time=time(20, 0)
+        )
+        url = reverse('shows_edit', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        data = {
+            'title': 'Show Reserva', 'status': 'CONFIRMADO', 'payment_status': 'PENDENTE',
+            'date': '2026-10-01', 'show_time': '20:00',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+
+        show.refresh_from_db()
+        self.assertEqual(show.notification_revision, 1)
+        notifs = Notification.objects.filter(related_show_id=show.id)
+        self.assertEqual(set(notifs.values_list('event_type', flat=True)), {'SHOW_CONFIRMED'})
+        self.assertEqual(notifs.count(), 2)
+
+    def test_bp_pend_46_scenario_4_reservation_to_confirmed_with_time_change_notifies_confirmation_only(self):
+        """4. transição RESERVA -> FECHADO com alteração simultânea de horário -> apenas 1 notificação (confirmação)."""
+        show = Show.objects.create(
+            band=self.band, title='Show Reserva', status='PRE_RESERVADO',
+            date=date(2026, 10, 1), show_time=time(20, 0)
+        )
+        url = reverse('shows_edit', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        data = {
+            'title': 'Show Reserva', 'status': 'CONFIRMADO', 'payment_status': 'PENDENTE',
+            'date': '2026-10-01', 'show_time': '23:00',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+
+        show.refresh_from_db()
+        self.assertEqual(show.notification_revision, 1)
+        notifs = Notification.objects.filter(related_show_id=show.id)
+        # Prevalece apenas SHOW_CONFIRMED (não duplica com SHOW_START_TIME_CHANGED)
+        self.assertEqual(set(notifs.values_list('event_type', flat=True)), {'SHOW_CONFIRMED'})
+        self.assertEqual(notifs.count(), 2)
+
+    def test_bp_pend_46_scenario_5_subsequent_time_change_after_confirmed_generates_time_notification(self):
+        """5. show já FECHADO sofrendo nova alteração de horário no futuro -> notificação de alteração de horário."""
+        show = Show.objects.create(
+            band=self.band, title='Show Reserva', status='PRE_RESERVADO',
+            date=date(2026, 10, 1), show_time=time(20, 0)
+        )
+        url = reverse('shows_edit', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        
+        # Passo A: transição para CONFIRMADO com mudança de horário
+        data1 = {
+            'title': 'Show Reserva', 'status': 'CONFIRMADO', 'payment_status': 'PENDENTE',
+            'date': '2026-10-01', 'show_time': '21:00',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(url, data1)
+            
+        show.refresh_from_db()
+        self.assertEqual(show.notification_revision, 1)
+        self.assertEqual(Notification.objects.filter(related_show_id=show.id).count(), 2)
+
+        # Passo B: alteração posterior de horário com o show já CONFIRMADO
+        data2 = {
+            'title': 'Show Reserva', 'status': 'CONFIRMADO', 'payment_status': 'PENDENTE',
+            'date': '2026-10-01', 'show_time': '23:30',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp2 = self.client.post(url, data2)
+        self.assertEqual(resp2.status_code, 302)
+
+        show.refresh_from_db()
+        self.assertEqual(show.notification_revision, 2)
+        latest_notifs = Notification.objects.filter(related_show_id=show.id, event_type='SHOW_START_TIME_CHANGED')
+        self.assertEqual(latest_notifs.count(), 2)
+
+    def test_bp_pend_46_scenario_6_other_notifications_unaffected(self):
+        """6. não regressão: criação, alteração de data e cancelamento continuam funcionando normalmente."""
+        # Criação de show confirmado via endpoint
+        url_add = reverse('shows_add', kwargs={'band_slug': self.band.slug})
+        data_add = {
+            'title': 'Novo Show', 'status': 'CONFIRMADO', 'payment_status': 'PENDENTE',
+            'date': '2026-10-01', 'show_time': '20:00'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp_add = self.client.post(url_add, data_add)
+        self.assertEqual(resp_add.status_code, 302)
+        show = Show.objects.get(title='Novo Show')
+        self.assertEqual(Notification.objects.filter(related_show_id=show.id, event_type='NEW_SHOW').count(), 2)
+
+        # Alteração de data continua gerando SHOW_DATE_CHANGED
+        url_edit = reverse('shows_edit', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        data_edit = {
+            'title': 'Novo Show', 'status': 'CONFIRMADO', 'payment_status': 'PENDENTE',
+            'date': '2026-10-05', 'show_time': '20:00',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp_edit = self.client.post(url_edit, data_edit)
+        self.assertEqual(resp_edit.status_code, 302)
+        self.assertEqual(Notification.objects.filter(related_show_id=show.id, event_type='SHOW_DATE_CHANGED').count(), 2)
+
+        # Cancelamento continua gerando SHOW_CANCELLED
+        data_cancel = {
+            'title': 'Novo Show', 'status': 'CANCELADO', 'payment_status': 'PENDENTE',
+            'date': '2026-10-05', 'show_time': '20:00',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp_cancel = self.client.post(url_edit, data_cancel)
+        self.assertEqual(resp_cancel.status_code, 302)
+        self.assertEqual(Notification.objects.filter(related_show_id=show.id, event_type='SHOW_CANCELLED').count(), 2)

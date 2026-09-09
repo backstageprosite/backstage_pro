@@ -1774,75 +1774,26 @@ def commercial_save_view(request, band_slug, pk=None):
             proposal.created_by = request.user
         proposal.save()
 
-        # Sincronização atômica com o model Show vinculado
-        old_show = None
-        new_show = None
-        is_show_creation = False
-
-        if proposal.phase in [CommercialProposal.Phase.RESERVA, CommercialProposal.Phase.FECHADO]:
-            target_status = 'CONFIRMADO' if proposal.phase == CommercialProposal.Phase.FECHADO else 'PRE_RESERVADO'
-            if proposal.show:
-                old_show = Show.objects.select_for_update().get(pk=proposal.show.id)
-                old_show_snapshot = Show(
-                    id=old_show.id,
-                    band=old_show.band,
-                    title=old_show.title,
-                    date=old_show.date,
-                    show_time=old_show.show_time,
-                    status=old_show.status,
-                    fee=old_show.fee,
-                    venue=old_show.venue,
-                    notification_revision=old_show.notification_revision
-                )
-                new_show = old_show
-                new_show.title = proposal.name
-                new_show.date = proposal.date
-                new_show.show_time = proposal.time
-                new_show.status = target_status
-                new_show.fee = proposal.fee
-                new_show.contractor_phone = proposal.contact
-                if proposal.phase == CommercialProposal.Phase.FECHADO and proposal.location:
-                    new_show.venue = proposal.location
-                new_show.save()
-                schedule_show_notifications(old_show=old_show_snapshot, new_show=new_show, actor=request.user, is_creation=False)
-            else:
-                is_show_creation = True
-                new_show = Show.objects.create(
-                    band=band,
-                    title=proposal.name,
-                    date=proposal.date,
-                    show_time=proposal.time,
-                    status=target_status,
-                    fee=proposal.fee,
-                    venue=proposal.location if (proposal.phase == CommercialProposal.Phase.FECHADO and proposal.location) else None,
-                    contractor_phone=proposal.contact
-                )
-                proposal.show = new_show
-                proposal.save(update_fields=['show'])
-                schedule_show_notifications(old_show=None, new_show=new_show, actor=request.user, is_creation=True)
-
-        elif proposal.phase == CommercialProposal.Phase.DESISTENCIA:
-            if proposal.show:
-                old_show = Show.objects.select_for_update().get(pk=proposal.show.id)
-                if old_show.status != 'CANCELADO':
-                    old_show_snapshot = Show(
-                        id=old_show.id,
-                        band=old_show.band,
-                        title=old_show.title,
-                        date=old_show.date,
-                        show_time=old_show.show_time,
-                        status=old_show.status,
-                        fee=old_show.fee,
-                        venue=old_show.venue,
-                        notification_revision=old_show.notification_revision
-                    )
-                    old_show.status = 'CANCELADO'
-                    old_show.title = proposal.name
-                    old_show.date = proposal.date
-                    old_show.show_time = proposal.time
-                    old_show.fee = proposal.fee
-                    old_show.save()
-                    schedule_show_notifications(old_show=old_show_snapshot, new_show=old_show, actor=request.user, is_creation=False)
+        from core.services.commercial_sync import sync_proposal_to_show, map_phase_to_show_status
+        if proposal.show:
+            sync_proposal_to_show(proposal, actor=request.user)
+        else:
+            # Caso raro de criação sem show vinculado via commercial_save_view
+            target_status = map_phase_to_show_status(proposal.phase)
+            new_show = Show.objects.create(
+                band=band,
+                title=proposal.name,
+                date=proposal.date,
+                show_time=proposal.time,
+                status=target_status,
+                fee=proposal.fee,
+                venue=proposal.location,
+                contractor_phone=proposal.contact,
+                contractor_name=proposal.contact_name
+            )
+            proposal.show = new_show
+            proposal.save(update_fields=['show'])
+            schedule_show_notifications(old_show=None, new_show=new_show, actor=request.user, is_creation=True)
 
         # Salva os arquivos anexados
         for f in uploaded_files:
@@ -2482,18 +2433,11 @@ def show_edit_view(request, band_slug, pk):
 
 
                 has_relevant_event = (
-
                     (old_date != new_date) or
-
-                    (old_show_time != new_show_time) or
-
+                    (old_show_time != new_show_time and old_status == 'CONFIRMADO' and new_status != 'PRE_RESERVADO') or
                     (old_status == 'CONFIRMADO' and new_status == 'CANCELADO') or
-
                     (old_status != 'CONFIRMADO' and new_status == 'CONFIRMADO')
-
                 )
-
-
 
                 if has_relevant_event:
 
@@ -2511,44 +2455,23 @@ def show_edit_view(request, band_slug, pk):
 
 
                 if has_relevant_event:
-
                     from core.services.show_notifications import schedule_show_notifications
-
-
-
-                    # Precisamos montar um mock do old_show contendo apenas o que importa,
-
-                    # ou podemos passar um dict, mas a assinatura aceita "old_show" que pode
-
-                    # ser um objeto temporário simulado ou usamos uma dataclass mock.
-
-                    # Como Python é flexível, criamos um dummy object para o old_show:
-
                     class OldShowMock:
-
                         def __init__(self):
-
                             self.date = old_date
-
                             self.show_time = old_show_time
-
                             self.status = old_status
 
-
-
                     schedule_show_notifications(
-
                         old_show=OldShowMock(),
-
                         new_show=show_to_edit,
-
                         actor=request.user,
-
                         is_creation=False
-
                     )
 
-
+                if band.is_advanced:
+                    from core.services.commercial_sync import sync_show_to_proposal
+                    sync_show_to_proposal(show_to_edit, actor=request.user)
 
                 messages.success(request, "Show atualizado com sucesso!")
 
@@ -2575,22 +2498,18 @@ def show_edit_view(request, band_slug, pk):
     from core.file_policy import get_show_files_info
     files_count, files_size = get_show_files_info(show_to_edit)
 
+    from core.models import CommercialProposal
+    is_linked_commercial = CommercialProposal.objects.filter(show=show_to_edit).exists()
+
     context = {
-
         'band': band,
-
         'form': form,
-
         'is_edit': True,
-
         'show_to_edit': show_to_edit,
-
         'doc_formset': doc_formset,
-
         'files_count': files_count,
-
-        'files_size_mb': round(files_size / 1024 / 1024, 2) if files_size else 0
-
+        'files_size_mb': round(files_size / 1024 / 1024, 2) if files_size else 0,
+        'is_linked_commercial': is_linked_commercial,
     }
 
     return render(request, 'core/show_form.html', context)
@@ -2624,6 +2543,42 @@ def show_delete_view(request, band_slug, pk):
 
 
     return redirect('calendario', band_slug=band.slug)
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def show_link_commercial_view(request, band_slug, pk):
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem vincular shows ao comercial.")
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    band = request.band
+    show = get_object_or_404(Show, pk=pk, band=band)
+
+    from core.services.commercial_sync import link_show_to_commercial
+    proposal, created = link_show_to_commercial(show, user=request.user)
+
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+        request.content_type == 'application/json' or
+        'application/json' in request.headers.get('accept', '')
+    )
+
+    if is_ajax:
+        from django.http import JsonResponse
+        return JsonResponse({
+            'ok': True,
+            'linked': True,
+            'proposal_id': proposal.id,
+            'created': created,
+            'message': 'Show vinculado ao Comercial com sucesso!'
+        })
+
+    messages.success(request, "Show vinculado ao Comercial com sucesso!")
+    return redirect('shows_edit', band_slug=band.slug, pk=show.id)
 
 
 

@@ -123,17 +123,21 @@ def schedule_show_notifications(old_show, new_show, actor, is_creation=False):
             ))
             
         # 3. Mudança de Horário
+        # Só deve gerar notificação quando o evento estiver FECHADO / CONFIRMADO.
+        # Em RESERVA / PRÉ-RESERVADO, não deve gerar notificação de horário.
+        # Na transição RESERVA -> FECHADO, prevalece apenas a notificação de confirmação (SHOW_CONFIRMED).
         if old_show and old_show.show_time != new_show.show_time:
-            old_t = old_show.show_time.strftime('%H:%M') if old_show.show_time else "horário não informado"
-            new_t = new_show.show_time.strftime('%H:%M') if new_show.show_time else "horário não informado"
-            msg = f'O horário inicial do show "{show_name}" foi alterado de {old_t} para {new_t}.'
-            events.append(EventPayload(
-                event_type='SHOW_START_TIME_CHANGED',
-                title='Horário do show alterado',
-                message=msg,
-                target_url=target_url,
-                event_key=f"show:{new_show.id}:rev:{rev}:SHOW_START_TIME_CHANGED"
-            ))
+            if old_show.status == 'CONFIRMADO' and new_show.status != 'PRE_RESERVADO':
+                old_t = old_show.show_time.strftime('%H:%M') if old_show.show_time else "horário não informado"
+                new_t = new_show.show_time.strftime('%H:%M') if new_show.show_time else "horário não informado"
+                msg = f'O horário inicial do show "{show_name}" foi alterado de {old_t} para {new_t}.'
+                events.append(EventPayload(
+                    event_type='SHOW_START_TIME_CHANGED',
+                    title='Horário do show alterado',
+                    message=msg,
+                    target_url=target_url,
+                    event_key=f"show:{new_show.id}:rev:{rev}:SHOW_START_TIME_CHANGED"
+                ))
 
     if not events:
         return

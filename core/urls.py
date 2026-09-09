@@ -21,6 +21,7 @@ urlpatterns = [
     path('shows/', views.shows_list_view, name='shows_list'),
     path('shows/add/', views.show_create_view, name='shows_add'),
     path('shows/<int:pk>/change/', views.show_edit_view, name='shows_edit'),
+    path('shows/<int:pk>/vincular-comercial/', views.show_link_commercial_view, name='show_link_commercial'),
     path('shows/<int:pk>/delete/', views.show_delete_view, name='shows_delete'),
     path('usuarios/', views.usuarios_list_view, name='usuarios_list'),
     path('usuarios/add/', views.usuario_create_view, name='usuarios_add'),
