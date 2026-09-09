@@ -819,6 +819,129 @@ class FinancialReportsParceriaAndShowsFilterTests(TestCase):
         self.assertIn(show, list(response_after.context["shows"]))
         self.assertEqual(response_after.context["total_receita"], Decimal("8000.00"))
 
+    def test_bp_pend_45_orcamento_with_fee_does_not_affect_financial_reports(self):
+        """BP-PEND-45: 1. Show ORÇAMENTO com valor preenchido NÃO altera recebimento futuro/receita prevista/totais."""
+        from django.test import Client
+        from django.urls import reverse
+        from core.models import Show, CommercialProposal
+
+        client = Client()
+        client.force_login(self.user)
+
+        # Show orçado com valor preenchido
+        proposal = CommercialProposal.objects.create(
+            band=self.band,
+            name="Show Orçamento Grande",
+            date=timezone.localdate() + datetime.timedelta(days=30),
+            contact_name="Contratante Orçamento",
+            contact="11988887777",
+            fee=Decimal("15000.00"),
+            phase=CommercialProposal.Phase.RESERVA,
+            created_by=self.user
+        )
+        show_orcamento = Show.objects.create(
+            band=self.band,
+            title=proposal.name,
+            date=proposal.date,
+            status=Show.STATUS_PRE_RESERVADO,
+            fee=proposal.fee
+        )
+        proposal.show = show_orcamento
+        proposal.save()
+
+        response = client.get(reverse("relatorio_financeiro", kwargs={"band_slug": self.band.slug}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["qtd_shows"], 0)
+        self.assertEqual(response.context["total_receita"], Decimal("0.00"))
+        self.assertEqual(response.context["total_recebido_geral"], Decimal("0.00"))
+        self.assertEqual(response.context["total_pendente_geral"], Decimal("0.00"))
+        self.assertEqual(response.context["resultado_previsto_total"], Decimal("0.00"))
+        self.assertNotIn(show_orcamento, list(response.context["shows"]))
+
+    def test_bp_pend_45_fechado_show_enters_financial_reports_normally(self):
+        """BP-PEND-45: 2. Show FECHADO continua entrando normalmente no financeiro (totais, lista, resultado previsto)."""
+        from django.test import Client
+        from django.urls import reverse
+        from core.models import Show, CommercialProposal
+
+        client = Client()
+        client.force_login(self.user)
+
+        proposal = CommercialProposal.objects.create(
+            band=self.band,
+            name="Show Fechado Oficial",
+            date=timezone.localdate() + datetime.timedelta(days=5),
+            contact_name="Contratante Fechado",
+            contact="11977776666",
+            fee=Decimal("12000.00"),
+            phase=CommercialProposal.Phase.FECHADO,
+            created_by=self.user
+        )
+        show_fechado = Show.objects.create(
+            band=self.band,
+            title=proposal.name,
+            date=proposal.date,
+            status=Show.STATUS_CONFIRMADO,
+            fee=proposal.fee
+        )
+        proposal.show = show_fechado
+        proposal.save()
+
+        response = client.get(reverse("relatorio_financeiro", kwargs={"band_slug": self.band.slug}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["qtd_shows"], 1)
+        self.assertIn(show_fechado, list(response.context["shows"]))
+        self.assertEqual(response.context["total_receita"], Decimal("12000.00"))
+        self.assertEqual(response.context["total_pendente_geral"], Decimal("12000.00"))
+        self.assertEqual(response.context["resultado_previsto_total"], Decimal("12000.00"))
+
+    def test_bp_pend_45_transition_from_orcamento_to_fechado_considers_revenue(self):
+        """BP-PEND-45: 3. Alteração de ORÇAMENTO para um status financeiro válido faz o valor passar a ser considerado."""
+        from django.test import Client
+        from django.urls import reverse
+        from core.models import Show, CommercialProposal
+
+        client = Client()
+        client.force_login(self.user)
+
+        proposal = CommercialProposal.objects.create(
+            band=self.band,
+            name="Show Transição",
+            date=timezone.localdate() + datetime.timedelta(days=12),
+            contact_name="Cliente Transição",
+            contact="11955554444",
+            fee=Decimal("9500.00"),
+            phase=CommercialProposal.Phase.RESERVA,
+            created_by=self.user
+        )
+        show = Show.objects.create(
+            band=self.band,
+            title=proposal.name,
+            date=proposal.date,
+            status=Show.STATUS_PRE_RESERVADO,
+            fee=proposal.fee
+        )
+        proposal.show = show
+        proposal.save()
+
+        # Antes da transição: fora do relatório
+        resp_before = client.get(reverse("relatorio_financeiro", kwargs={"band_slug": self.band.slug}))
+        self.assertEqual(resp_before.context["qtd_shows"], 0)
+        self.assertEqual(resp_before.context["total_receita"], Decimal("0.00"))
+
+        # Transição: fechamento comercial -> status financeiramente elegível (CONFIRMADO)
+        proposal.phase = CommercialProposal.Phase.FECHADO
+        proposal.save()
+        show.status = Show.STATUS_CONFIRMADO
+        show.save()
+
+        # Depois da transição: considerado integralmente
+        resp_after = client.get(reverse("relatorio_financeiro", kwargs={"band_slug": self.band.slug}))
+        self.assertEqual(resp_after.context["qtd_shows"], 1)
+        self.assertIn(show, list(resp_after.context["shows"]))
+        self.assertEqual(resp_after.context["total_receita"], Decimal("9500.00"))
+        self.assertEqual(resp_after.context["resultado_previsto_total"], Decimal("9500.00"))
+
     def test_admin_financial_report_excludes_partnerships_from_cycle_revenue(self):
         """Relatório financeiro admin não inclui assinaturas PARCERIA no faturamento por ciclo."""
         from django.contrib.auth import get_user_model

@@ -116,6 +116,17 @@
             <button type="button" class="btn btn-outline-danger btn-header-action fw-bold shadow-sm d-none d-sm-inline-flex" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'shows_delete' band.slug form.instance.id %}" data-item-type="o show" data-item-name="{{ form.instance.title|default:'Sem Título' }}">
                 Excluir
             </button>
+            {% if is_edit and band.is_advanced %}
+                {% if is_linked_commercial %}
+                <button type="button" class="btn btn-primary btn-header-action fw-bold shadow-sm" id="btnComercialLink" disabled style="cursor: default;">
+                    <i class="fa-solid fa-check me-1"></i> Comercial
+                </button>
+                {% else %}
+                <button type="button" class="btn btn-outline-primary btn-header-action fw-bold shadow-sm" id="btnComercialLink" data-link-url="{% url 'show_link_commercial' band.slug form.instance.id %}">
+                    Comercial
+                </button>
+                {% endif %}
+            {% endif %}
             {% endif %}
             <a href="{% url 'calendario' band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
@@ -865,6 +876,54 @@
                 }
             });
         });
+
+        // Handler do botão Vincular Comercial (BP-PEND-47)
+        const btnComercialLink = document.getElementById('btnComercialLink');
+        if (btnComercialLink && !btnComercialLink.disabled) {
+            btnComercialLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                const linkUrl = btnComercialLink.getAttribute('data-link-url');
+                if (!linkUrl) return;
+
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+                btnComercialLink.disabled = true;
+                const originalHtml = btnComercialLink.innerHTML;
+                btnComercialLink.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Comercial';
+
+                fetch(linkUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error('Erro na requisição');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.ok) {
+                        btnComercialLink.className = 'btn btn-primary btn-header-action fw-bold shadow-sm';
+                        btnComercialLink.innerHTML = '<i class="fa-solid fa-check me-1"></i> Comercial';
+                        btnComercialLink.disabled = true;
+                        btnComercialLink.style.cursor = 'default';
+                        btnComercialLink.removeAttribute('data-link-url');
+                    } else {
+                        btnComercialLink.disabled = false;
+                        btnComercialLink.innerHTML = originalHtml;
+                        alert(data.message || 'Erro ao vincular ao comercial.');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    btnComercialLink.disabled = false;
+                    btnComercialLink.innerHTML = originalHtml;
+                    alert('Erro ao conectar com o servidor para vincular ao comercial.');
+                });
+            });
+        }
 
     });
 </script>
