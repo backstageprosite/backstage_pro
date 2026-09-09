@@ -762,7 +762,7 @@
                             </div>
                             <p class="text-success small fw-bold mb-4" id="savings-basic">Equivale a R$ 16,66/mês</p>
 
-                            <a href="https://wa.me/5571983474004?text=Ol%C3%A1%21%20Tenho%20interesse%20no%20Plano%20B%C3%A1sico%20do%20Backstage%20Pro." target="_blank" class="btn btn-outline-dark rounded-pill fw-bold w-100 py-3 mb-4">Assinar Básico</a>
+                            <a href="{% url 'checkout' %}?plano=basico&ciclo=mensal" id="btn-cta-basic" class="btn btn-outline-dark rounded-pill fw-bold w-100 py-3 mb-4">Assinar Básico</a>
 
                             <ul class="list-unstyled text-start flex-grow-1">
                                 <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i> Dashboard, agenda e calendário</li>
@@ -789,7 +789,7 @@
                             </div>
                             <p class="text-success small fw-bold mb-4" id="savings-advanced">Equivale a R$ 41,66/mês</p>
 
-                            <a href="https://wa.me/5571983474004?text=Ol%C3%A1%21%20Tenho%20interesse%20no%20Plano%20Avan%C3%A7ado%20do%20Backstage%20Pro." target="_blank" class="btn rounded-pill fw-bold text-dark w-100 py-3 mb-4" style="background-color: #6BD443; border: none;">Assinar Avançado</a>
+                            <a href="{% url 'checkout' %}?plano=avancado&ciclo=mensal" id="btn-cta-advanced" class="btn rounded-pill fw-bold text-dark w-100 py-3 mb-4" style="background-color: #6BD443; border: none;">Assinar Avançado</a>
 
                             <ul class="list-unstyled text-start flex-grow-1">
                                 <li class="mb-3"><i class="fa-solid fa-check text-success me-2"></i> <strong>Todos os recursos do Plano Básico</strong></li>
@@ -836,6 +836,8 @@
                     var priceAdv = document.getElementById('price-advanced');
                     var periodAdv = document.getElementById('period-advanced');
                     var savingsAdv = document.getElementById('savings-advanced');
+                    var ctaBasic = document.getElementById('btn-cta-basic');
+                    var ctaAdv = document.getElementById('btn-cta-advanced');
 
                     if (annual) {
                         btnMensal.style.backgroundColor = 'transparent';
@@ -860,6 +862,9 @@
                             textSavAdv += ' (economia de ' + formatMoeda(_plansData.advancedSavings) + ')';
                         }
                         savingsAdv.textContent = textSavAdv;
+
+                        if (ctaBasic) ctaBasic.href = "{% url 'checkout' %}?plano=basico&ciclo=anual";
+                        if (ctaAdv) ctaAdv.href = "{% url 'checkout' %}?plano=avancado&ciclo=anual";
                     } else {
                         btnMensal.style.backgroundColor = '#fff';
                         btnMensal.style.boxShadow = '0 1px 4px rgba(0,0,0,0.12)';
@@ -875,6 +880,9 @@
                         priceAdv.textContent = formatMoeda(_plansData.advancedMonthly);
                         periodAdv.textContent = '/mês';
                         savingsAdv.textContent = '\u00a0';
+
+                        if (ctaBasic) ctaBasic.href = "{% url 'checkout' %}?plano=basico&ciclo=mensal";
+                        if (ctaAdv) ctaAdv.href = "{% url 'checkout' %}?plano=avancado&ciclo=mensal";
                     }
                 }
                 // Inicia no modo mensal

@@ -791,6 +791,186 @@ class ResendTransportTestCase(TestCase):
         self.assertNotIn("R$ R$", rendered_txt)
         self.assertNotIn("R$ 49.90", rendered_txt)
 
+    def test_account_activation_payment_info_all_five_situations_bp_pend_40(self):
+        """
+        BP-PEND-40: Valida a informação de 'Pagamento' no e-mail de ativação nas 5 situações:
+        1. Anual + Cartão 1x: 'Cartão de crédito — 1x de R$ 499,90'
+        2. Anual + Cartão 5x: 'Cartão de crédito — 5x de R$ 99,98'
+        3. Anual + PIX: 'PIX — à vista'
+        4. Mensal + PIX: 'PIX — à vista'
+        5. Mensal + Cartão: 'Cartão de crédito — cobrança mensal'
+        """
+        from core.models import SignupOrder
+        from core.services.payments.provisioning import process_checkout_paid_event
+        from django.template.loader import render_to_string
+
+        # 1. ANUAL + CARTÃO 1x
+        order1 = SignupOrder.objects.create(
+            external_reference="ord-email-annual-1x",
+            gateway_checkout_id="chk-email-annual-1x",
+            band_name="Banda Anual 1x",
+            responsible_name="Ana Paula",
+            email="anapaula@teste.com",
+            plan_type="AVANCADO",
+            billing_cycle="ANUAL",
+            amount=Decimal("499.90"),
+            status="PENDENTE"
+        )
+        p1 = {
+            "checkout": {"id": "chk-email-annual-1x", "externalReference": "ord-email-annual-1x"},
+            "payment": {"id": "pay_a1", "value": "499.90", "billingType": "CREDIT_CARD"}
+        }
+        ok1, _, _ = process_checkout_paid_event(p1)
+        self.assertTrue(ok1)
+        d1 = EmailDelivery.objects.filter(recipient_email="anapaula@teste.com").first()
+        self.assertEqual(d1.context_data.get("payment_info"), "Cartão de crédito — 1x de R$ 499,90")
+        h1 = render_to_string("emails/account_activation.html", d1.context_data)
+        t1 = render_to_string("emails/account_activation.txt", d1.context_data)
+        self.assertIn("Pagamento:</strong> Cartão de crédito — 1x de R$ 499,90", h1)
+        self.assertIn("Pagamento: Cartão de crédito — 1x de R$ 499,90", t1)
+        self.assertIn("Valor:</strong> R$ 499,90", h1)
+
+        # 2. ANUAL + CARTÃO 5x
+        order2 = SignupOrder.objects.create(
+            external_reference="ord-email-annual-5x",
+            gateway_checkout_id="chk-email-annual-5x",
+            band_name="Banda Anual 5x",
+            responsible_name="Vitor",
+            email="vitor@teste.com",
+            plan_type="AVANCADO",
+            billing_cycle="ANUAL",
+            amount=Decimal("499.90"),
+            status="PENDENTE"
+        )
+        p2 = {
+            "checkout": {"id": "chk-email-annual-5x", "externalReference": "ord-email-annual-5x"},
+            "payment": {
+                "id": "pay_a5_1",
+                "value": "99.98",
+                "billingType": "CREDIT_CARD",
+                "installment": "inst_789",
+                "installmentNumber": 1
+            }
+        }
+        ok2, _, _ = process_checkout_paid_event(p2)
+        self.assertTrue(ok2)
+        d2 = EmailDelivery.objects.filter(recipient_email="vitor@teste.com").first()
+        # Nota: sem mock do AsaasClient.get_installment, installment_count_val fallback pode ser 1 caso não venha contagem na API;
+        # aqui passamos com mock de AsaasClient ou testamos com dados reais enriquecidos
+        # Se inst_info.installmentCount vier do Asaas, fica 5x
+        self.assertIn("Cartão de crédito — ", d2.context_data.get("payment_info"))
+
+        # Teste estrito com Mock do get_installment retornando 5 parcelas
+        with patch('core.services.payments.asaas.client.AsaasClient.get_installment', return_value={'installmentCount': 5, 'netValue': 475.00}):
+            order2b = SignupOrder.objects.create(
+                external_reference="ord-email-annual-5x-mock",
+                gateway_checkout_id="chk-email-annual-5x-mock",
+                band_name="Banda Anual 5x Mock",
+                responsible_name="Vitor Mock",
+                email="vitormock@teste.com",
+                plan_type="AVANCADO",
+                billing_cycle="ANUAL",
+                amount=Decimal("499.90"),
+                status="PENDENTE"
+            )
+            p2b = {
+                "checkout": {"id": "chk-email-annual-5x-mock", "externalReference": "ord-email-annual-5x-mock"},
+                "payment": {
+                    "id": "pay_a5_mock_1",
+                    "value": "99.98",
+                    "billingType": "CREDIT_CARD",
+                    "installment": "inst_789_mock",
+                    "installmentNumber": 1
+                }
+            }
+            ok2b, _, _ = process_checkout_paid_event(p2b)
+            self.assertTrue(ok2b)
+            d2b = EmailDelivery.objects.filter(recipient_email="vitormock@teste.com").first()
+            self.assertEqual(d2b.context_data.get("payment_info"), "Cartão de crédito — 5x de R$ 99,98")
+            h2b = render_to_string("emails/account_activation.html", d2b.context_data)
+            t2b = render_to_string("emails/account_activation.txt", d2b.context_data)
+            self.assertIn("Pagamento:</strong> Cartão de crédito — 5x de R$ 99,98", h2b)
+            self.assertIn("Pagamento: Cartão de crédito — 5x de R$ 99,98", t2b)
+            self.assertIn("Valor:</strong> R$ 499,90", h2b)
+
+        # 3. ANUAL + PIX
+        order3 = SignupOrder.objects.create(
+            external_reference="ord-email-annual-pix",
+            gateway_checkout_id="chk-email-annual-pix",
+            band_name="Banda Anual PIX",
+            responsible_name="Rodrigo",
+            email="rodrigo@teste.com",
+            plan_type="AVANCADO",
+            billing_cycle="ANUAL",
+            amount=Decimal("499.90"),
+            status="PENDENTE"
+        )
+        p3 = {
+            "checkout": {"id": "chk-email-annual-pix", "externalReference": "ord-email-annual-pix"},
+            "payment": {"id": "pay_apix", "value": "499.90", "billingType": "PIX"}
+        }
+        ok3, _, _ = process_checkout_paid_event(p3)
+        self.assertTrue(ok3)
+        d3 = EmailDelivery.objects.filter(recipient_email="rodrigo@teste.com").first()
+        self.assertEqual(d3.context_data.get("payment_info"), "PIX — à vista")
+        h3 = render_to_string("emails/account_activation.html", d3.context_data)
+        t3 = render_to_string("emails/account_activation.txt", d3.context_data)
+        self.assertIn("Pagamento:</strong> PIX — à vista", h3)
+        self.assertIn("Pagamento: PIX — à vista", t3)
+        self.assertIn("Valor:</strong> R$ 499,90", h3)
+
+        # 4. MENSAL + PIX
+        order4 = SignupOrder.objects.create(
+            external_reference="ord-email-monthly-pix",
+            gateway_checkout_id="chk-email-monthly-pix",
+            band_name="Banda Mensal PIX",
+            responsible_name="Marcos",
+            email="marcos@teste.com",
+            plan_type="BASICO",
+            billing_cycle="MENSAL",
+            amount=Decimal("19.90"),
+            status="PENDENTE"
+        )
+        p4 = {
+            "checkout": {"id": "chk-email-monthly-pix", "externalReference": "ord-email-monthly-pix"},
+            "payment": {"id": "pay_mpix", "value": "19.90", "billingType": "PIX"}
+        }
+        ok4, _, _ = process_checkout_paid_event(p4)
+        self.assertTrue(ok4)
+        d4 = EmailDelivery.objects.filter(recipient_email="marcos@teste.com").first()
+        self.assertEqual(d4.context_data.get("payment_info"), "PIX — à vista")
+        h4 = render_to_string("emails/account_activation.html", d4.context_data)
+        t4 = render_to_string("emails/account_activation.txt", d4.context_data)
+        self.assertIn("Pagamento:</strong> PIX — à vista", h4)
+        self.assertIn("Pagamento: PIX — à vista", t4)
+        self.assertIn("Valor:</strong> R$ 19,90", h4)
+
+        # 5. MENSAL + CARTÃO RECORRENTE
+        order5 = SignupOrder.objects.create(
+            external_reference="ord-email-monthly-card",
+            gateway_checkout_id="chk-email-monthly-card",
+            band_name="Banda Mensal Cartão",
+            responsible_name="Lucas",
+            email="lucascard@teste.com",
+            plan_type="BASICO",
+            billing_cycle="MENSAL",
+            amount=Decimal("19.90"),
+            status="PENDENTE"
+        )
+        p5 = {
+            "checkout": {"id": "chk-email-monthly-card", "externalReference": "ord-email-monthly-card"},
+            "payment": {"id": "pay_mcard", "value": "19.90", "billingType": "CREDIT_CARD"}
+        }
+        ok5, _, _ = process_checkout_paid_event(p5)
+        self.assertTrue(ok5)
+        d5 = EmailDelivery.objects.filter(recipient_email="lucascard@teste.com").first()
+        self.assertEqual(d5.context_data.get("payment_info"), "Cartão de crédito — cobrança mensal")
+        h5 = render_to_string("emails/account_activation.html", d5.context_data)
+        t5 = render_to_string("emails/account_activation.txt", d5.context_data)
+        self.assertIn("Pagamento:</strong> Cartão de crédito — cobrança mensal", h5)
+        self.assertIn("Pagamento: Cartão de crédito — cobrança mensal", t5)
+        self.assertIn("Valor:</strong> R$ 19,90", h5)
+
     def test_payment_overdue_greeting_fallback_and_context_contract(self):
         """
         Valida que o template payment_overdue possui fallback seguro para a saudação

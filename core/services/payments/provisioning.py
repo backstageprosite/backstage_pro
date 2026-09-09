@@ -37,19 +37,29 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
     payment_id = extract_asaas_id(payment_data.get('id') or payload.get('paymentId'), expected_prefix='pay_')
 
     # Consulta de seguranca via API Asaas para obter payment.id e subscription.id exatos
-    if (not payment_id or not subscription_id) and effective_checkout_id:
+    # e enriquecer payment_data (inclusive em caso de parcelamento em que o webhook nao traz 'value' ou 'installment')
+    if effective_checkout_id:
         try:
             from core.services.payments.asaas.client import AsaasClient
             client = AsaasClient()
-            payments_found = client.get_payments_by_checkout(effective_checkout_id)
-            if len(payments_found) == 1:
-                p_item = payments_found[0]
-                payment_id = payment_id or extract_asaas_id(p_item.get('id'), expected_prefix='pay_')
-                subscription_id = subscription_id or extract_asaas_id(p_item.get('subscription'), expected_prefix='sub_')
-                if not payment_data:
-                    payment_data = p_item
-            elif len(payments_found) > 1:
-                logger.warning("Multiplas cobrancas encontradas para checkout=%s", effective_checkout_id)
+            need_payments_lookup = (not payment_id or not subscription_id) or (
+                isinstance(payment_data, dict) and not payment_data.get('installment') and not payment_data.get('installmentNumber')
+            )
+            if need_payments_lookup:
+                payments_found = client.get_payments_by_checkout(effective_checkout_id)
+                if len(payments_found) >= 1:
+                    # Ordenar por installmentNumber ou data de criacao para pegar a primeira parcela
+                    p_item = payments_found[0]
+                    for p in payments_found:
+                        if p.get('installmentNumber') == 1:
+                            p_item = p
+                            break
+                    payment_id = payment_id or extract_asaas_id(p_item.get('id'), expected_prefix='pay_')
+                    subscription_id = subscription_id or extract_asaas_id(p_item.get('subscription'), expected_prefix='sub_')
+                    if not payment_data or payment_data.get('value') is None or not payment_data.get('installment'):
+                        payment_data = {**p_item, **payment_data}
+                elif len(payments_found) > 1:
+                    logger.warning("Multiplas cobrancas encontradas para checkout=%s", effective_checkout_id)
         except Exception as e:
             logger.warning("Erro ao consultar pagamentos da sessao %s no Asaas: %s", effective_checkout_id, str(e))
 
@@ -93,9 +103,18 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
         plan_display = 'Avançado' if order.plan_type == 'AVANCADO' else 'Básico'
         is_annual = (order.billing_cycle == 'ANUAL')
 
-        # Para ANUAL (INSTALLMENT): nao ha recorrencia automatica no gateway (auto_renew=False)
-        # Para MENSAL (RECURRENT): ha renovacao automatica (auto_renew=True)
-        auto_renew_val = False if is_annual else True
+        # Detecta forma de pagamento do webhook/cobrança (PIX vs CARTAO)
+        billing_type_raw = (payment_data.get('billingType') or '').upper()
+        is_pix = (billing_type_raw == 'PIX') or (order.external_reference and order.external_reference.endswith('-pix'))
+        pref_method = 'PIX' if is_pix else 'CARTAO'
+
+        # Para ANUAL: rigorosamente auto_renew=False (renovação controlada ou recontratação)
+        # Para MENSAL PIX: auto_renew=False (cobrança avulsa ciclo a ciclo via check_subscription_due_dates)
+        # Para MENSAL CARTÃO: auto_renew=True (recorrência automática com token ou gateway subscription)
+        if is_annual or is_pix:
+            auto_renew_val = False
+        else:
+            auto_renew_val = True
 
         sub = BandSubscription.objects.create(
             band=band,
@@ -106,7 +125,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             next_due_date=next_due,
             auto_renew=auto_renew_val,
             status='ATIVO',
-            payment_method_preference='CARTAO',
+            payment_method_preference=pref_method,
             financial_responsible_name=order.responsible_name,
             billing_phone=order.phone,
             billing_email=order.email,
@@ -131,19 +150,11 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             ref_period = f"{month_names[financial_start_date.month]}/{financial_start_date.year}"
             record_notes = "Primeiro pagamento aprovado via Checkout Asaas"
 
-        # Valor da cobranca inicial: se houver parcelamento (ex: anual em ate 5x),
-        # a cobranca do primeiro pagamento (payment_data['value']) contem o valor da 1a parcela.
-        # Caso nao haja 'value' em payment_data, utiliza order.amount (valor integral).
-        # Isso impede duplicacao de valor contabil/financeiro quando as parcelas subsequentes chegarem.
-        initial_record_amount = order.amount
-        if payment_data and payment_data.get('value') is not None:
-            try:
-                initial_record_amount = Decimal(str(payment_data.get('value')))
-            except Exception:
-                initial_record_amount = order.amount
-
         # 4.1. Criar/Vincular AnnualPlanPurchase para contratos anuais (Modelagem ASAAS-11)
         annual_purchase = None
+        is_installment_plan = False
+        initial_installment_number = None
+
         if is_annual:
             # Obter detalhes do installment via API se disponivel
             installment_id = None
@@ -159,6 +170,8 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
                     p_info = client.get_payment(payment_id)
                     if p_info:
                         installment_id = extract_asaas_id(p_info.get('installment'))
+                        if p_info.get('installmentNumber'):
+                            initial_installment_number = p_info.get('installmentNumber')
 
                 if installment_id:
                     inst_info = client.get_installment(installment_id)
@@ -168,6 +181,13 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
                             net_amount_val = Decimal(str(inst_info.get('netValue')))
             except Exception as e:
                 logger.warning("Falha ao enriquecer dados do parcelamento %s no Asaas: %s", installment_id, str(e))
+
+            if payment_data.get('installmentNumber'):
+                initial_installment_number = payment_data.get('installmentNumber')
+
+            if installment_id or installment_count_val > 1 or (initial_installment_number is not None and initial_installment_number >= 1):
+                is_installment_plan = True
+                initial_installment_number = initial_installment_number or 1
 
             annual_purchase, _ = AnnualPlanPurchase.objects.get_or_create(
                 gateway_provider='ASAAS',
@@ -218,6 +238,26 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
                 except Exception as e:
                     logger.warning("Falha ao capturar e criptografar token para subscription %s: %s", sub.id, str(e))
 
+        # Valor da cobranca inicial: se houver parcelamento (ex: anual em ate 5x),
+        # a cobranca do primeiro pagamento (payment_data['value']) contem o valor da 1a parcela.
+        # Se for parcelamento mas nao houver value em payment_data, calcula order.amount / installment_count.
+        # Caso nao seja parcelado (ex: anual a vista ou PIX), utiliza order.amount (valor integral).
+        # Isso impede duplicacao de valor contabil/financeiro quando as parcelas subsequentes chegarem.
+        initial_record_amount = order.amount
+        if is_installment_plan:
+            if payment_data and payment_data.get('value') is not None:
+                try:
+                    initial_record_amount = Decimal(str(payment_data.get('value')))
+                except Exception:
+                    initial_record_amount = (order.amount / Decimal(str(installment_count_val))).quantize(Decimal('0.01'))
+            elif installment_count_val > 1:
+                initial_record_amount = (order.amount / Decimal(str(installment_count_val))).quantize(Decimal('0.01'))
+        elif payment_data and payment_data.get('value') is not None:
+            try:
+                initial_record_amount = Decimal(str(payment_data.get('value')))
+            except Exception:
+                initial_record_amount = order.amount
+
         BillingRecord.objects.create(
             subscription=sub,
             band=band,
@@ -228,14 +268,14 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             due_date=financial_start_date,
             paid_date=financial_start_date,
             status='PAGO',
-            payment_method='CARTAO',
+            payment_method=pref_method,
             notes=record_notes,
             gateway_provider='ASAAS',
             gateway_payment_id=payment_id,
             gateway_external_reference=order.external_reference,
             gateway_event_status='CHECKOUT_PAID',
             annual_purchase=annual_purchase,
-            installment_number=1 if is_annual else None
+            installment_number=initial_installment_number if is_installment_plan else None
         )
 
         # 5. Criar BandActivationToken seguro (48 horas)
@@ -248,6 +288,21 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
         )
 
         # 5.1 Enfileirar EmailDelivery ACCOUNT_ACTIVATION (desacoplado de SMTP)
+        # Formatação detalhada da forma de pagamento e parcelamento (BP-PEND-40)
+        payment_info = None
+        if pref_method == 'PIX':
+            payment_info = 'PIX — à vista'
+        elif not is_annual:
+            payment_info = 'Cartão de crédito — cobrança mensal'
+        else:
+            # Plano Anual no Cartão: 1x ou parcelado em até 5x
+            if is_installment_plan and installment_count_val > 1:
+                inst_amount_str = f"{initial_record_amount:.2f}".replace('.', ',')
+                payment_info = f"Cartão de crédito — {installment_count_val}x de R$ {inst_amount_str}"
+            else:
+                full_amount_str = f"{order.amount:.2f}".replace('.', ',')
+                payment_info = f"Cartão de crédito — 1x de R$ {full_amount_str}"
+
         try:
             from core.services.email_service import enqueue_email
             enqueue_email(
@@ -262,6 +317,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
                     'plan_name': plan_display,
                     'billing_cycle': 'Anual' if is_annual else 'Mensal',
                     'amount': f"{order.amount:.2f}".replace('.', ','),
+                    'payment_info': payment_info,
                 },
                 related_object_type='BandActivationToken',
                 related_object_id=str(activation.pk)
