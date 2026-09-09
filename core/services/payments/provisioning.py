@@ -288,6 +288,21 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
         )
 
         # 5.1 Enfileirar EmailDelivery ACCOUNT_ACTIVATION (desacoplado de SMTP)
+        # Formatação detalhada da forma de pagamento e parcelamento (BP-PEND-40)
+        payment_info = None
+        if pref_method == 'PIX':
+            payment_info = 'PIX — à vista'
+        elif not is_annual:
+            payment_info = 'Cartão de crédito — cobrança mensal'
+        else:
+            # Plano Anual no Cartão: 1x ou parcelado em até 5x
+            if is_installment_plan and installment_count_val > 1:
+                inst_amount_str = f"{initial_record_amount:.2f}".replace('.', ',')
+                payment_info = f"Cartão de crédito — {installment_count_val}x de R$ {inst_amount_str}"
+            else:
+                full_amount_str = f"{order.amount:.2f}".replace('.', ',')
+                payment_info = f"Cartão de crédito — 1x de R$ {full_amount_str}"
+
         try:
             from core.services.email_service import enqueue_email
             enqueue_email(
@@ -302,6 +317,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
                     'plan_name': plan_display,
                     'billing_cycle': 'Anual' if is_annual else 'Mensal',
                     'amount': f"{order.amount:.2f}".replace('.', ','),
+                    'payment_info': payment_info,
                 },
                 related_object_type='BandActivationToken',
                 related_object_id=str(activation.pk)
