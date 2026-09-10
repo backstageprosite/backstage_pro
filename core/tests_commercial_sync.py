@@ -430,3 +430,110 @@ class CommercialSyncBidirectionalTests(TestCase):
         self.assertEqual(show.show_time, datetime.time(23, 15))
         new_notifs = Notification.objects.filter(related_show_id=show.id, event_type='SHOW_START_TIME_CHANGED')
         self.assertEqual(new_notifs.count(), 2)
+
+    def test_18_adicionar_show_avancado_exibe_botao_comercial(self):
+        """1. Adicionar Show em banda Avançado -> botão Comercial aparece."""
+        resp = self.client.get(reverse('shows_add', kwargs={'band_slug': self.band.slug}))
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode('utf-8')
+        self.assertIn('id="btnComercialToggle"', html)
+        self.assertIn('name="link_commercial"', html)
+        self.assertIn('btn-outline-primary', html)
+
+    def test_19_adicionar_show_basico_nao_exibe_botao_comercial(self):
+        """2. Adicionar Show em banda Básico -> botão Comercial NÃO aparece."""
+        band_bas = Band.objects.create(
+            name="Banda Básica",
+            slug="banda-basica-add-show",
+            plan_type=Band.PlanType.BASICO,
+            is_active=True
+        )
+        produtor_bas = User.objects.create_user(
+            username="produtor_bas_add",
+            email="prod_bas_add@teste.com",
+            password="senha",
+            role="PRODUTOR",
+            band=band_bas
+        )
+        self.client.login(username="produtor_bas_add", password="senha")
+        resp = self.client.get(reverse('shows_add', kwargs={'band_slug': band_bas.slug}))
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode('utf-8')
+        self.assertNotIn('btnComercialToggle', html)
+        self.assertNotIn('name="link_commercial"', html)
+
+    def test_20_adicionar_show_com_comercial_selecionado_cria_vinculo(self):
+        """3 e 6. Selecionar Comercial e salvar -> Show + CommercialProposal vinculados sem duplicações."""
+        url = reverse('shows_add', kwargs={'band_slug': self.band.slug})
+        payload = {
+            'title': 'Show Novo Vinculado',
+            'date': '2026-12-05',
+            'show_time': '21:00',
+            'status': 'CONFIRMADO',
+            'payment_status': 'PENDENTE',
+            'fee': '12000.00',
+            'venue': 'Arena Show',
+            'contractor_name': 'Carlos Contratante',
+            'contractor_phone': '11988887777',
+            'link_commercial': '1'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp = self.client.post(url, payload)
+        self.assertEqual(resp.status_code, 302)
+
+        show = Show.objects.get(title='Show Novo Vinculado')
+        proposal = CommercialProposal.objects.filter(show=show).first()
+        self.assertIsNotNone(proposal)
+        self.assertEqual(CommercialProposal.objects.filter(show=show).count(), 1)
+        self.assertEqual(proposal.name, 'Show Novo Vinculado')
+        self.assertEqual(proposal.date, datetime.date(2026, 12, 5))
+        self.assertEqual(proposal.time, datetime.time(21, 0))
+        self.assertEqual(proposal.location, 'Arena Show')
+        self.assertEqual(proposal.fee, Decimal('12000.00'))
+        self.assertEqual(proposal.contact_name, 'Carlos Contratante')
+        self.assertEqual(proposal.contact, '11988887777')
+        self.assertEqual(proposal.phase, CommercialProposal.Phase.FECHADO)
+
+    def test_21_adicionar_show_sem_comercial_cria_somente_show(self):
+        """4. Não selecionar Comercial e salvar -> somente Show criado."""
+        initial_proposals = CommercialProposal.objects.count()
+        url = reverse('shows_add', kwargs={'band_slug': self.band.slug})
+        payload = {
+            'title': 'Show Novo Sem Comercial',
+            'date': '2026-12-08',
+            'show_time': '20:00',
+            'status': 'CONFIRMADO',
+            'payment_status': 'PENDENTE',
+            'link_commercial': '0'
+        }
+        resp = self.client.post(url, payload)
+        self.assertEqual(resp.status_code, 302)
+
+        show = Show.objects.get(title='Show Novo Sem Comercial')
+        self.assertFalse(CommercialProposal.objects.filter(show=show).exists())
+        self.assertEqual(CommercialProposal.objects.count(), initial_proposals)
+
+    def test_22_erro_validacao_preserva_estado_e_nao_cria_registros(self):
+        """5. Erro de validação -> nenhum registro criado e estado do botão preservado."""
+        initial_shows = Show.objects.count()
+        initial_proposals = CommercialProposal.objects.count()
+        url = reverse('shows_add', kwargs={'band_slug': self.band.slug})
+        # Payload com erro de validação (valor numérico de cachê inválido)
+        payload = {
+            'title': 'Show Invalido',
+            'date': '2026-12-10',
+            'status': 'CONFIRMADO',
+            'payment_status': 'PENDENTE',
+            'fee': 'invalid_fee',
+            'link_commercial': '1'
+        }
+        resp = self.client.post(url, payload)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.context.get('link_commercial'))
+        self.assertEqual(Show.objects.count(), initial_shows)
+        self.assertEqual(CommercialProposal.objects.count(), initial_proposals)
+
+        html = resp.content.decode('utf-8')
+        # Botão Comercial continua com visual selecionado (btn-primary com check)
+        self.assertIn('btn-primary', html)
+        self.assertIn('value="1"', html)

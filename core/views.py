@@ -2291,6 +2291,8 @@ def show_create_view(request, band_slug):
             for f in ['contractor_name', 'contractor_phone', 'contract_type', 'fee', 'payment_status']:
                 form.fields.pop(f, None)
 
+        link_commercial = request.POST.get('link_commercial') == '1'
+
         if form.is_valid():
 
             with transaction.atomic():
@@ -2303,7 +2305,9 @@ def show_create_view(request, band_slug):
 
                 show.save()
 
-
+                if band.is_advanced and link_commercial:
+                    from core.services.commercial_sync import link_show_to_commercial
+                    link_show_to_commercial(show, user=request.user)
 
                 # Agenda notificação de NEW_SHOW
 
@@ -2322,6 +2326,7 @@ def show_create_view(request, band_slug):
             return redirect('calendario', band_slug=band.slug)
 
     else:
+        link_commercial = False
         initial_data = {}
         date_param = request.GET.get('date')
         if date_param:
@@ -2343,7 +2348,9 @@ def show_create_view(request, band_slug):
 
         'form': form,
 
-        'is_edit': False
+        'is_edit': False,
+
+        'link_commercial': link_commercial,
 
     }
 

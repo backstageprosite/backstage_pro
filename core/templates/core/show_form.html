@@ -116,17 +116,31 @@
             <button type="button" class="btn btn-outline-danger btn-header-action fw-bold shadow-sm d-none d-sm-inline-flex" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'shows_delete' band.slug form.instance.id %}" data-item-type="o show" data-item-name="{{ form.instance.title|default:'Sem Título' }}">
                 Excluir
             </button>
-            {% if is_edit and band.is_advanced %}
-                {% if is_linked_commercial %}
-                <button type="button" class="btn btn-primary btn-header-action fw-bold shadow-sm" id="btnComercialLink" disabled style="cursor: default;">
-                    <i class="fa-solid fa-check me-1"></i> Comercial
-                </button>
-                {% else %}
-                <button type="button" class="btn btn-outline-primary btn-header-action fw-bold shadow-sm" id="btnComercialLink" data-link-url="{% url 'show_link_commercial' band.slug form.instance.id %}">
-                    Comercial
-                </button>
-                {% endif %}
             {% endif %}
+            {% if is_edit %}
+                {% if band.is_advanced %}
+                    {% if is_linked_commercial %}
+                    <button type="button" class="btn btn-primary btn-header-action fw-bold shadow-sm" id="btnComercialLink" disabled style="cursor: default;">
+                        <i class="fa-solid fa-check me-1"></i> Comercial
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-outline-primary btn-header-action fw-bold shadow-sm" id="btnComercialLink" data-link-url="{% url 'show_link_commercial' band.slug form.instance.id %}">
+                        Comercial
+                    </button>
+                    {% endif %}
+                {% endif %}
+            {% else %}
+                {% if band.is_advanced %}
+                    {% if link_commercial %}
+                    <button type="button" class="btn btn-primary btn-header-action fw-bold shadow-sm" id="btnComercialToggle">
+                        <i class="fa-solid fa-check me-1"></i> Comercial
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-outline-primary btn-header-action fw-bold shadow-sm" id="btnComercialToggle">
+                        Comercial
+                    </button>
+                    {% endif %}
+                {% endif %}
             {% endif %}
             <a href="{% url 'calendario' band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
@@ -167,7 +181,10 @@
     </div>
     <div class="card-body main-card-body border-top">
         <form method="post" enctype="multipart/form-data">
-                        <input type="hidden" name="active_tab" id="active_tab" value="#geral">
+            <input type="hidden" name="active_tab" id="active_tab" value="#geral">
+            {% if not is_edit and band.is_advanced %}
+            <input type="hidden" name="link_commercial" id="id_link_commercial" value="{% if link_commercial %}1{% else %}0{% endif %}">
+            {% endif %}
             {% csrf_token %}
             
             {% if form.errors %}
@@ -924,6 +941,27 @@
                 });
             });
         }
+
+        {% if not is_edit and band.is_advanced %}
+        // Handler do botão Vincular Comercial na tela Adicionar Show (BP-PEND-47)
+        const btnComercialToggle = document.getElementById('btnComercialToggle');
+        const inputLinkCommercial = document.getElementById('id_link_commercial');
+        if (btnComercialToggle && inputLinkCommercial) {
+            btnComercialToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                const isSelected = inputLinkCommercial.value === '1';
+                if (isSelected) {
+                    inputLinkCommercial.value = '0';
+                    btnComercialToggle.className = 'btn btn-outline-primary btn-header-action fw-bold shadow-sm';
+                    btnComercialToggle.innerHTML = 'Comercial';
+                } else {
+                    inputLinkCommercial.value = '1';
+                    btnComercialToggle.className = 'btn btn-primary btn-header-action fw-bold shadow-sm';
+                    btnComercialToggle.innerHTML = '<i class="fa-solid fa-check me-1"></i> Comercial';
+                }
+            });
+        }
+        {% endif %}
 
     });
 </script>
