@@ -112,6 +112,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=False, blank=True, null=True, verbose_name='E-mail')
     phone = models.CharField(max_length=30, blank=True, null=True, verbose_name='Telefone')
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True, verbose_name='Foto de Perfil')
+    must_change_password = models.BooleanField(default=False, verbose_name='Exige troca de senha no próximo acesso')
 
     @property
     def profile_picture_url(self):

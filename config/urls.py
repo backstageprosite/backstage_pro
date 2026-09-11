@@ -26,6 +26,7 @@ urlpatterns = [
 
     path('bancodedados/', views.banco_de_dados_view, name='banco_de_dados_global'),
     path('perfil/', views.profile_view, name='perfil'),
+    path('troca-senha-obrigatoria/', views.first_access_password_change, name='troca_senha_obrigatoria'),
 
     # Rota Pública de Ativação de Conta do Cliente
     path('ativar-conta/<str:token>/', views_activation.ActivateAccountView.as_view(), name='activate_account'),

@@ -47,7 +47,7 @@ from django.contrib.auth import update_session_auth_hash
 
 from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem, AdministrativeBandNotice, RiderDocument
 
-from .forms import FinancialReceiptForm, UserForm, UserEditForm, ContactForm, ShowForm, ContractDocumentFormSet, FinancialReceiptFormSet, ShowPaymentForm, ShowTeamCostForm, ContractDocumentForm, RiderDocumentForm, ProfileForm, ProfilePasswordChangeForm
+from .forms import FinancialReceiptForm, UserForm, UserEditForm, ContactForm, ShowForm, ContractDocumentFormSet, FinancialReceiptFormSet, ShowPaymentForm, ShowTeamCostForm, ContractDocumentForm, RiderDocumentForm, ProfileForm, ProfilePasswordChangeForm, MandatoryPasswordChangeForm
 
 from decimal import Decimal
 
@@ -218,6 +218,45 @@ def profile_view(request):
 
 
 
+@login_required
+def first_access_password_change(request):
+    """
+    BP-PEND-51: Troca obrigatória de senha no primeiro acesso para usuários
+    com senha provisória (must_change_password=True).
+    """
+    user = request.user
+    if not user.must_change_password:
+        if user.band:
+            return redirect('dashboard', band_slug=user.band.slug)
+        elif user.is_superuser:
+            return redirect('admin_painel:dashboard')
+        return redirect('perfil')
+
+    if request.method == 'POST':
+        form = MandatoryPasswordChangeForm(user=user, data=request.POST)
+        if form.is_valid():
+            form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, "Sua senha pessoal foi cadastrada com sucesso! Bem-vindo(a).")
+            if user.band:
+                return redirect('dashboard', band_slug=user.band.slug)
+            elif user.is_superuser:
+                return redirect('admin_painel:dashboard')
+            return redirect('perfil')
+    else:
+        form = MandatoryPasswordChangeForm(user=user)
+
+    band = getattr(request, 'band', None) or getattr(user, 'band', None)
+
+    context = {
+        'user': user,
+        'band': band,
+        'form': form,
+    }
+    return render(request, 'core/troca_senha_obrigatoria.html', context)
+
+
+
 def band_required(view_func):
 
     @wraps(view_func)
@@ -229,6 +268,10 @@ def band_required(view_func):
         if not request.user.is_authenticated:
 
             return redirect('login', band_slug=band_slug)
+
+        # BP-PEND-51: Obriga troca de senha provisória antes de acessar qualquer rota da banda (exceto logout)
+        if request.user.must_change_password and view_func.__name__ != 'band_logout':
+            return redirect('troca_senha_obrigatoria')
 
         if request.user.band != band and not request.user.is_superuser:
 
@@ -260,6 +303,9 @@ def band_root_redirect_view(request, band_slug):
 
     if request.user.is_authenticated:
 
+        if request.user.must_change_password:
+            return redirect('troca_senha_obrigatoria')
+
         if request.user.is_superuser:
 
             return redirect('admin_painel:dashboard')
@@ -286,6 +332,9 @@ class BandLoginView(LoginView):
     def dispatch(self, request, *args, **kwargs):
 
         if request.user.is_authenticated:
+
+            if request.user.must_change_password:
+                return redirect('troca_senha_obrigatoria')
 
             band_slug = self.kwargs.get('band_slug')
 
@@ -338,6 +387,9 @@ class BandLoginView(LoginView):
 
         user = self.request.user
 
+        if user.must_change_password:
+            return reverse('troca_senha_obrigatoria')
+
         if user.is_superuser:
 
             return reverse('admin_painel:dashboard')
@@ -352,6 +404,7 @@ class BandLoginView(LoginView):
         if not band.has_active_subscription:
             return reverse('minha_assinatura', kwargs={'band_slug': band_slug})
         return reverse('dashboard', kwargs={'band_slug': band_slug})
+
 
 
 
@@ -2842,6 +2895,8 @@ def usuario_reset_password_view(request, band_slug, pk):
         else:
 
             user_to_edit.set_password(new_password)
+            if user_to_edit.role == 'INTEGRANTE':
+                user_to_edit.must_change_password = True
 
             user_to_edit.save()
 

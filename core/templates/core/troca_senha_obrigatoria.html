@@ -1,0 +1,67 @@
+﻿{% extends 'core/base_public.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center mt-4 mt-md-5">
+    <div class="col-md-5 col-lg-4">
+        <div class="text-center mb-4">
+            {% if band and band.logo %}
+                <img src="{% url 'public_band_logo' band.slug %}" alt="{{ band.name }}" class="img-fluid mb-2 mx-auto d-block" style="max-height: 140px; max-width: 280px; width: 100%; height: auto; object-fit: contain;" onerror="this.onerror=null; this.src='{% static 'images/backstage-pro-logo.png' %}';">
+            {% else %}
+                <img src="{% static 'images/backstage-pro-logo.png' %}" alt="Backstage Pro" class="img-fluid mb-2 mx-auto d-block" style="max-height: 60px; max-width: 240px; width: 100%; height: auto; object-fit: contain;">
+            {% endif %}
+            <h5 class="fw-bold mt-3 mb-1 text-primary">Primeiro Acesso</h5>
+            <p class="text-muted small mb-0">Olá, <strong>{{ user.first_name|default:user.username }}</strong>! Por segurança, crie sua nova senha pessoal antes de prosseguir.</p>
+        </div>
+        
+        <div class="card p-4 shadow-sm border-0 card-hover-premium" style="border-radius: 12px;">
+            <div class="card-body p-sm-2">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger p-2 small mb-3" style="border-radius: 8px;">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Verifique os erros no preenchimento abaixo.
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.new_password.id_for_label }}" class="form-label fw-medium text-muted small text-uppercase">
+                            {{ form.new_password.label }}
+                        </label>
+                        {{ form.new_password }}
+                        {% if form.new_password.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.new_password.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.confirm_password.id_for_label }}" class="form-label fw-medium text-muted small text-uppercase">
+                            {{ form.confirm_password.label }}
+                        </label>
+                        {{ form.confirm_password }}
+                        {% if form.confirm_password.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.confirm_password.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-loading w-100 fw-bold py-3 text-uppercase shadow-sm" style="letter-spacing: 1px;">
+                        Salvar Nova Senha <i class="fa-solid fa-check ms-2"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if band %}
+        <div class="text-center mt-3">
+            <form method="post" action="{% url 'logout' band.slug %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link text-muted small text-decoration-none p-0">
+                    <i class="fa-solid fa-right-from-bracket me-1"></i> Sair da conta
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

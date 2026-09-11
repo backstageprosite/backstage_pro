@@ -98,6 +98,8 @@ class UserForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data["password"])
+        if user.role == 'INTEGRANTE':
+            user.must_change_password = True
         if commit:
             user.save()
         return user
@@ -192,6 +194,39 @@ class ProfilePasswordChangeForm(forms.Form):
     def save(self):
         new_password = self.cleaned_data.get('new_password')
         self.user.set_password(new_password)
+        self.user.save()
+        return self.user
+
+class MandatoryPasswordChangeForm(forms.Form):
+    new_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Digite sua nova senha pessoal'}),
+        label='Nova senha',
+        required=True
+    )
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirme sua nova senha'}),
+        label='Confirmar nova senha',
+        required=True
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get('new_password')
+        confirm_password = cleaned_data.get('confirm_password')
+
+        if new_password and confirm_password and new_password != confirm_password:
+            self.add_error('confirm_password', 'As senhas não coincidem.')
+
+        return cleaned_data
+
+    def save(self):
+        new_password = self.cleaned_data.get('new_password')
+        self.user.set_password(new_password)
+        self.user.must_change_password = False
         self.user.save()
         return self.user
 
