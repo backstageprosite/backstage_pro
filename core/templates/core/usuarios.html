@@ -79,6 +79,7 @@
         min-height: 34px;
         padding: 5px 10px;
         border-radius: 6px;
+        background-color: #ffffff !important;
     }
 
     @media (max-width: 767.98px) {
@@ -94,6 +95,7 @@
         .bp-users-page .form-select {
             font-size: 16px !important; /* Evita zoom no Safari/iOS */
             min-height: 40px;
+            background-color: #ffffff !important;
         }
         /* Compactação avançada dos cards mobile de Usuários */
         .bp-users-page .mobile-cards-table.table-responsive {
@@ -220,9 +222,13 @@
                             <td class="ps-4 full-row">
                                 <div class="d-flex align-items-center w-100 justify-content-between">
                                     <div class="d-flex align-items-center">
-                                        <div class="bg-light text-primary rounded-circle d-flex justify-content-center align-items-center me-2 fw-bold user-avatar flex-shrink-0">
-                                            {{ usuario.first_name|default:usuario.username|make_list|first|upper }}
-                                        </div>
+                                        {% if usuario.profile_picture %}
+                                            <img src="{{ usuario.profile_picture.url }}" alt="{{ usuario.first_name|default:usuario.username }}" class="rounded-circle me-2 user-avatar flex-shrink-0" style="object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-light text-primary rounded-circle d-flex justify-content-center align-items-center me-2 fw-bold user-avatar flex-shrink-0">
+                                                {{ usuario.first_name|default:usuario.username|make_list|first|upper }}
+                                            </div>
+                                        {% endif %}
                                         <div>
                                             <h6 class="mb-0 fw-bold text-dark lh-sm" style="font-size: 12.5px;">{{ usuario.first_name }} {{ usuario.last_name }}</h6>
                                             <small class="text-muted lh-1" style="font-size: 10.5px;">@{{ usuario.username }}</small>
@@ -242,9 +248,13 @@
                             </td>
                             <td data-label="Status">
                                 {% if usuario.is_active %}
-                                    <span class="badge bg-success bg-opacity-25 text-success status-pill border border-success">Ativo</span>
+                                    <span class="badge bg-success bg-opacity-10 text-dark border border-success border-opacity-25 status-pill">
+                                        <i class="fa-solid fa-check text-success me-1"></i> Ativo
+                                    </span>
                                 {% else %}
-                                    <span class="badge bg-danger bg-opacity-25 text-danger status-pill border border-danger">Bloqueado</span>
+                                    <span class="badge bg-danger bg-opacity-10 text-dark border border-danger border-opacity-25 status-pill">
+                                        <i class="fa-solid fa-ban text-danger me-1"></i> Bloqueado
+                                    </span>
                                 {% endif %}
                             </td>
                             <td class="pe-4 text-end text-nowrap actions-td">
@@ -400,7 +410,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label">Login</label>
-                            <input type="text" name="username" class="form-control bg-light" value="{{ usuario.username }}" readonly>
+                            <input type="text" name="username" class="form-control" value="{{ usuario.username }}" readonly>
                         </div>
                         <div class="col-12">
                             <label class="form-label">E-mail</label>

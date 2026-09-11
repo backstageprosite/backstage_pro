@@ -1,4 +1,4 @@
-﻿{% extends 'core/base.html' %}
+{% extends 'core/base.html' %}
 {% load static %}
 
 {% block extra_head %}
@@ -84,23 +84,25 @@
 
 {% block content %}
 <div class="bp-profile-page">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
-        <h2 class="page-title text-center text-md-start text-primary">
+    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-nowrap">
+        <h2 class="page-title text-start text-primary mb-0 text-nowrap">
             <i class="fa-regular fa-id-badge me-2"></i> Meu Perfil
         </h2>
-        {% if band %}
-            <a href="{% url 'calendario' band.slug %}" class="btn btn-outline-secondary btn-header-action fw-bold shadow-sm w-100 w-md-auto">
-                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-            </a>
-        {% elif user.is_superuser %}
-            <a href="{% url 'admin_painel:dashboard' %}" class="btn btn-outline-secondary btn-header-action fw-bold shadow-sm w-100 w-md-auto">
-                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-            </a>
-        {% else %}
-            <a href="/" class="btn btn-outline-secondary btn-header-action fw-bold shadow-sm w-100 w-md-auto">
-                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-            </a>
-        {% endif %}
+        <div>
+            {% if band %}
+                <a href="{% url 'calendario' band.slug %}" class="btn btn-outline-secondary btn-header-action fw-bold shadow-sm text-nowrap">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+                </a>
+            {% elif user.is_superuser %}
+                <a href="{% url 'admin_painel:dashboard' %}" class="btn btn-outline-secondary btn-header-action fw-bold shadow-sm text-nowrap">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+                </a>
+            {% else %}
+                <a href="/" class="btn btn-outline-secondary btn-header-action fw-bold shadow-sm text-nowrap">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+                </a>
+            {% endif %}
+        </div>
     </div>
 
     <div class="row g-3 justify-content-center">

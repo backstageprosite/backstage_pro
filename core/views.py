@@ -2726,7 +2726,7 @@ def build_whatsapp_access_data(band, user, raw_password):
         f"🔗 *Acesso:*\n"
         f"{login_url}\n\n"
         f"👤 *Login:* {user.username}\n\n"
-        f"🔐 *Senha provisória:* {raw_password}\n\n"
+        f"🔑 *Senha provisória:* {raw_password}\n\n"
         f"No primeiro acesso, o sistema solicitará que você crie uma nova senha pessoal.\n\n"
         f"Backstage Pro\n"
         f"Gestão profissional para bandas e artistas."
@@ -2734,7 +2734,7 @@ def build_whatsapp_access_data(band, user, raw_password):
 
     whatsapp_url = ""
     if phone_normalized:
-        whatsapp_url = f"https://wa.me/{phone_normalized}?text={quote(message_text)}"
+        whatsapp_url = f"https://wa.me/{phone_normalized}?text={quote(message_text.encode('utf-8'))}"
 
     return {
         'has_phone': bool(phone_normalized),

@@ -1,4 +1,4 @@
-﻿from django.test import TestCase, Client
+from django.test import TestCase, Client
 from django.urls import reverse
 from urllib.parse import unquote
 from core.models import Band, User
@@ -110,7 +110,7 @@ class WhatsAppAccessCredentialsTests(TestCase):
             "🔗 *Acesso:*\n"
             "https://backstagepro.site/banda-axe-bahia/login/\n\n"
             "👤 *Login:* danniel_v\n\n"
-            "🔐 *Senha provisória:* MinhaSenhaTemp999!\n\n"
+            "🔑 *Senha provisória:* MinhaSenhaTemp999!\n\n"
             "No primeiro acesso, o sistema solicitará que você crie uma nova senha pessoal.\n\n"
             "Backstage Pro\n"
             "Gestão profissional para bandas e artistas."
@@ -171,3 +171,53 @@ class WhatsAppAccessCredentialsTests(TestCase):
 
         self.assertContains(resp, 'data-bs-dismiss="modal"')
         self.assertNotIn('whatsapp_access_data', self.client_prod.session)
+
+    def test_08_status_pill_e_foto_de_perfil_na_listagem(self):
+        """8. status pill com texto preto e check, e foto de perfil / fallback com inicial."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        # Cria usuario com foto
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        foto = SimpleUploadedFile('avatar_teste.gif', small_gif, content_type='image/gif')
+        u_com_foto = User.objects.create_user(
+            username="com_foto",
+            email="foto@axe.com",
+            password="Pass123!456",
+            first_name="Carla",
+            role="INTEGRANTE",
+            band=self.band,
+            profile_picture=foto,
+            is_active=True
+        )
+
+        # Cria usuario sem foto e inativo
+        u_sem_foto = User.objects.create_user(
+            username="sem_foto",
+            email="semfoto@axe.com",
+            password="Pass123!456",
+            first_name="Zeca",
+            role="INTEGRANTE",
+            band=self.band,
+            is_active=False
+        )
+
+        url_list = reverse('usuarios_list', kwargs={'band_slug': self.band.slug})
+        resp = self.client_prod.get(url_list)
+        self.assertEqual(resp.status_code, 200)
+
+        # Status ativo com check e text-dark
+        self.assertContains(resp, 'fa-check text-success')
+        self.assertContains(resp, 'text-dark border border-success')
+
+        # Status bloqueado com ban e text-dark
+        self.assertContains(resp, 'fa-ban text-danger')
+        self.assertContains(resp, 'text-dark border border-danger')
+
+        # Foto de perfil exibida para u_com_foto
+        self.assertContains(resp, u_com_foto.profile_picture.url)
+
+        # Fallback de inicial exibido para u_sem_foto
+        self.assertContains(resp, 'Z')
