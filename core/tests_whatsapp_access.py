@@ -69,29 +69,35 @@ class WhatsAppAccessCredentialsTests(TestCase):
         self.assertContains(resp, '>OK</button>')
 
     def test_03_normalizacao_telefone_com_e_sem_55(self):
-        """3. normalizacao do telefone: numero com e sem DDD/codigo do pais."""
+        """3. normalizacao do telefone: numero com e sem DDD/codigo do pais (mobile e desktop)."""
         user1 = User(first_name="Joao", username="joao", phone="(11) 98765-4321")
         res1 = build_whatsapp_access_data(self.band, user1, "Pass123")
         self.assertTrue(res1['has_phone'])
-        self.assertTrue(res1['whatsapp_url'].startswith("https://wa.me/5511987654321?text="))
+        self.assertTrue(res1['whatsapp_mobile_url'].startswith("https://wa.me/5511987654321?text="))
+        self.assertTrue(res1['whatsapp_web_url'].startswith("https://web.whatsapp.com/send?phone=5511987654321&text="))
+        self.assertEqual(res1['whatsapp_url'], res1['whatsapp_mobile_url'])
 
         # Telefone que ja comeca com 55 e tem 13 digitos
         user2 = User(first_name="Maria", username="maria", phone="+55 (11) 98765-4321")
         res2 = build_whatsapp_access_data(self.band, user2, "Pass123")
         self.assertTrue(res2['has_phone'])
-        self.assertTrue(res2['whatsapp_url'].startswith("https://wa.me/5511987654321?text="))
+        self.assertTrue(res2['whatsapp_mobile_url'].startswith("https://wa.me/5511987654321?text="))
+        self.assertTrue(res2['whatsapp_web_url'].startswith("https://web.whatsapp.com/send?phone=5511987654321&text="))
 
         # Telefone fixo com DDD (10 digitos)
         user3 = User(first_name="Carlos", username="carlos", phone="(71) 3322-1100")
         res3 = build_whatsapp_access_data(self.band, user3, "Pass123")
         self.assertTrue(res3['has_phone'])
-        self.assertTrue(res3['whatsapp_url'].startswith("https://wa.me/557133221100?text="))
+        self.assertTrue(res3['whatsapp_mobile_url'].startswith("https://wa.me/557133221100?text="))
+        self.assertTrue(res3['whatsapp_web_url'].startswith("https://web.whatsapp.com/send?phone=557133221100&text="))
 
         # Vazio
         user4 = User(first_name="Sem", username="sem", phone="")
         res4 = build_whatsapp_access_data(self.band, user4, "Pass123")
         self.assertFalse(res4['has_phone'])
         self.assertEqual(res4['whatsapp_url'], "")
+        self.assertEqual(res4['whatsapp_mobile_url'], "")
+        self.assertEqual(res4['whatsapp_web_url'], "")
 
     def test_04_mensagem_contem_todos_dados_corretos(self):
         """4. mensagem gerada contem nome, banda, link de login, login e senha provisoria."""
@@ -309,40 +315,52 @@ class WhatsAppAccessCredentialsTests(TestCase):
         self.assertIn('modalWhatsappSuccess', html)
         self.assertIn('Enviar no WhatsApp', html)
 
-        # Extrai o href do botao WhatsApp diretamente do HTML renderizado
-        match = re.search(r'href="([^"]*wa\.me[^"]*)"', html)
-        self.assertIsNotNone(match, "Botao com link wa.me nao encontrado no HTML renderizado.")
-        raw_href = match.group(1)
+        # Extrai os atributos data-mobile-url e data-desktop-url
+        match_mobile = re.search(r'data-mobile-url="([^"]*)"', html)
+        match_desktop = re.search(r'data-desktop-url="([^"]*)"', html)
+        self.assertIsNotNone(match_mobile, "Atributo data-mobile-url nao encontrado no HTML.")
+        self.assertIsNotNone(match_desktop, "Atributo data-desktop-url nao encontrado no HTML.")
 
-        # Valida que o numero normalizado esta presente
-        self.assertIn('5571987654321', raw_href)
+        mobile_url = match_mobile.group(1)
+        desktop_url = match_desktop.group(1)
 
-        # Valida que o percent-encoding de cada emoji UTF-8 de 4 bytes esta intacto no href
-        # 👋 U+1F44B -> %F0%9F%91%8B
-        # 🔗 U+1F517 -> %F0%9F%94%97
-        # 👤 U+1F464 -> %F0%9F%91%A4
-        # 🔑 U+1F511 -> %F0%9F%94%91
-        self.assertIn('%F0%9F%91%8B', raw_href)
-        self.assertIn('%F0%9F%94%97', raw_href)
-        self.assertIn('%F0%9F%91%A4', raw_href)
-        self.assertIn('%F0%9F%94%91', raw_href)
+        # 1. URL mobile continua usando https://wa.me/
+        self.assertTrue(mobile_url.startswith("https://wa.me/5571987654321?text="))
 
-        # Decodifica a URL e extrai o parametro text
-        self.assertIn('?text=', raw_href)
-        query_text = raw_href.split('?text=')[1]
-        decoded_text = unquote(query_text)
+        # 2. URL desktop usa https://web.whatsapp.com/send
+        self.assertTrue(desktop_url.startswith("https://web.whatsapp.com/send?phone=5571987654321&text="))
 
-        # Valida que os emojis reais estao perfeitamente decodificados
+        # 3. Ambas possuem exatamente o mesmo parametro text
+        mobile_query_text = mobile_url.split("?text=")[1]
+        desktop_query_text = desktop_url.split("&text=")[1]
+        self.assertEqual(mobile_query_text, desktop_query_text)
+
+        # 4. Ambas possuem corretamente os percent-encodings UTF-8
+        for target_url in (mobile_url, desktop_url):
+            self.assertIn('%F0%9F%91%8B', target_url)
+            self.assertIn('%F0%9F%94%97', target_url)
+            self.assertIn('%F0%9F%91%A4', target_url)
+            self.assertIn('%F0%9F%94%91', target_url)
+
+        # 5. Apos decodificar os emojis reais estao presentes
+        decoded_text = unquote(mobile_query_text)
         self.assertIn('👋', decoded_text)
         self.assertIn('🔗', decoded_text)
         self.assertIn('👤', decoded_text)
         self.assertIn('🔑', decoded_text)
 
-        # Valida que nao ha '?' no lugar de emoji nem caractere de substituicao unicode
+        # 6. Nao existe caractere quebrado nem dupla codificacao %25F0...
         self.assertNotIn('\ufffd', decoded_text)
+        self.assertNotIn('%25F0', mobile_url)
+        self.assertNotIn('%25F0', desktop_url)
         self.assertNotIn('? *Acesso:*', decoded_text)
         self.assertNotIn('? *Login:*', decoded_text)
         self.assertNotIn('? *Senha provisória:*', decoded_text)
+
+        # 7. Verifica presenca do script de deteccao de userAgent no HTML
+        self.assertIn('Android|iPhone|iPad|iPod', html)
+        self.assertIn('btnSendWhatsappUser', html)
+
 
     def test_12_status_pill_css_enforces_dark_text(self):
         """12. Garante que usuarios.html define color: #212529 !important em .status-pill para nao ficar com texto branco."""

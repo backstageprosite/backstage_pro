@@ -2739,12 +2739,19 @@ def build_whatsapp_access_data(band, user, raw_password):
     )
 
     whatsapp_url = ""
+    whatsapp_mobile_url = ""
+    whatsapp_web_url = ""
     if phone_normalized:
-        whatsapp_url = f"https://wa.me/{phone_normalized}?text={quote(message_text, safe='')}"
+        encoded_text = quote(message_text, safe='')
+        whatsapp_mobile_url = f"https://wa.me/{phone_normalized}?text={encoded_text}"
+        whatsapp_web_url = f"https://web.whatsapp.com/send?phone={phone_normalized}&text={encoded_text}"
+        whatsapp_url = whatsapp_mobile_url
 
     return {
         'has_phone': bool(phone_normalized),
         'whatsapp_url': whatsapp_url,
+        'whatsapp_mobile_url': whatsapp_mobile_url,
+        'whatsapp_web_url': whatsapp_web_url,
     }
 
 

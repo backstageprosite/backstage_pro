@@ -478,7 +478,11 @@
             </div>
             <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                 {% if whatsapp_access_data.has_phone and whatsapp_access_data.whatsapp_url %}
-                    <a href="{{ whatsapp_access_data.whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="btn fw-bold rounded-pill px-3 text-white shadow-sm d-inline-flex align-items-center" style="background-color: #25D366; border-color: #25D366; height: 34px; font-size: 13px;">
+                    <a href="{{ whatsapp_access_data.whatsapp_mobile_url|default:whatsapp_access_data.whatsapp_url|safe }}"
+                       id="btnSendWhatsappUser"
+                       data-mobile-url="{{ whatsapp_access_data.whatsapp_mobile_url|default:whatsapp_access_data.whatsapp_url|safe }}"
+                       data-desktop-url="{{ whatsapp_access_data.whatsapp_web_url|default:whatsapp_access_data.whatsapp_url|safe }}"
+                       target="_blank" rel="noopener noreferrer" class="btn fw-bold rounded-pill px-3 text-white shadow-sm d-inline-flex align-items-center" style="background-color: #25D366; border-color: #25D366; height: 34px; font-size: 13px;">
                         <i class="fa-brands fa-whatsapp me-1" style="font-size: 15px;"></i> Enviar no WhatsApp
                     </a>
                 {% endif %}
@@ -508,6 +512,22 @@
         if (whatsappModalEl) {
             const whatsappModal = new bootstrap.Modal(whatsappModalEl);
             whatsappModal.show();
+        }
+
+        const btnWhatsapp = document.getElementById('btnSendWhatsappUser');
+        if (btnWhatsapp) {
+            const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+            const mobileUrl = btnWhatsapp.getAttribute('data-mobile-url');
+            const desktopUrl = btnWhatsapp.getAttribute('data-desktop-url');
+
+            // Ajusta o href inicial
+            btnWhatsapp.href = isMobileDevice ? (mobileUrl || btnWhatsapp.href) : (desktopUrl || btnWhatsapp.href);
+
+            // Garante que no momento do clique o destino esteja atualizado
+            btnWhatsapp.addEventListener('click', function() {
+                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+                this.href = isMobile ? (this.getAttribute('data-mobile-url') || this.href) : (this.getAttribute('data-desktop-url') || this.href);
+            });
         }
         {% endif %}
 
