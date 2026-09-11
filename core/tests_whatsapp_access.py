@@ -208,8 +208,8 @@ class WhatsAppAccessCredentialsTests(TestCase):
         resp = self.client_prod.get(url_list)
         self.assertEqual(resp.status_code, 200)
 
-        # Status ativo com check e text-dark
-        self.assertContains(resp, 'fa-check text-success')
+        # Status ativo com circle-check e text-dark
+        self.assertContains(resp, 'fa-circle-check text-success')
         self.assertContains(resp, 'text-dark border border-success')
 
         # Status bloqueado com ban e text-dark
@@ -221,3 +221,65 @@ class WhatsAppAccessCredentialsTests(TestCase):
 
         # Fallback de inicial exibido para u_sem_foto
         self.assertContains(resp, 'Z')
+
+    def test_09_erro_validacao_no_modal_permanece_na_pagina_usuarios(self):
+        """9. submissao com erro vinda do modal nao redireciona para usuario_form.html e reabre modal com dados preenchidos."""
+        url_add = reverse('usuarios_add', kwargs={'band_slug': self.band.slug})
+        resp = self.client_prod.post(url_add, {
+            'from_modal': '1',
+            'first_name': 'Carlos',
+            'last_name': 'Guitarra',
+            'username': 'produtor_axe',  # Username ja existente -> erro de validacao
+            'email': 'carlos@axe.com',
+            'phone': '(71) 98888-1111',
+            'password': 'Senha123!',
+            'confirm_password': 'SenhaDiferente!',  # Senhas nao coincidem
+            'role': 'INTEGRANTE',
+            'is_active': 'on'
+        })
+
+        # Nao deve redirecionar nem dar erro 500, deve responder 200
+        self.assertEqual(resp.status_code, 200)
+        # Deve usar o template da listagem usuarios.html
+        self.assertTemplateUsed(resp, 'core/usuarios.html')
+        self.assertTemplateNotUsed(resp, 'core/usuario_form.html')
+        # Deve conter a flag open_add_modal para reabrir o modal via JS
+        self.assertTrue(resp.context.get('open_add_modal'))
+        # Deve preservar os campos digitados
+        self.assertContains(resp, 'value="Carlos"')
+        self.assertContains(resp, 'value="Guitarra"')
+        self.assertContains(resp, 'value="produtor_axe"')
+        self.assertContains(resp, 'value="carlos@axe.com"')
+        self.assertContains(resp, 'value="(71) 98888-1111"')
+        # Deve exibir os erros no modal
+        self.assertContains(resp, 'Por favor, corrija os erros abaixo')
+        self.assertContains(resp, 'As senhas não coincidem.')
+
+    def test_10_placeholders_removidos_e_emojis_unicode_sem_caracteres_quebrados(self):
+        """10. verifica que nao ha placeholders de exemplo no modal e que os emojis estao perfeitos."""
+        url_list = reverse('usuarios_list', kwargs={'band_slug': self.band.slug})
+        resp = self.client_prod.get(url_list)
+        self.assertEqual(resp.status_code, 200)
+
+        # Nao deve haver os placeholders de exemplo no html
+        self.assertNotContains(resp, 'placeholder="Ex: Danniel"')
+        self.assertNotContains(resp, 'placeholder="Ex: Vieira"')
+        self.assertNotContains(resp, 'placeholder="Ex: danniel_v"')
+        self.assertNotContains(resp, 'placeholder="email@exemplo.com"')
+        self.assertNotContains(resp, 'placeholder="(00) 00000-0000"')
+
+        # Testa mensagem do WhatsApp com emojis Unicode
+        user = User(first_name="Ricardo", username="ricardo_v", phone="(71) 99111-2222")
+        data = build_whatsapp_access_data(self.band, user, "TempPass123!")
+        url = data['whatsapp_url']
+        # Decodifica URL
+        query_text = url.split("?text=")[1]
+        decoded_text = unquote(query_text)
+
+        # Nao pode conter caractere de substituicao unicode (U+FFFD ) nem caracteres quebrados
+        self.assertNotIn("\ufffd", decoded_text)
+        self.assertNotIn("?", decoded_text.replace("?", ""))  # so checa se nao virou ??? no lugar de emoji
+        self.assertIn("👋", decoded_text)
+        self.assertIn("🔗", decoded_text)
+        self.assertIn("👤", decoded_text)
+        self.assertIn("🔑", decoded_text)

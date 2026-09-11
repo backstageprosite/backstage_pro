@@ -42,7 +42,7 @@
         align-items: center;
     }
     .bp-users-page .status-pill {
-        width: 80px;
+        width: 88px;
         font-size: 11px;
         font-weight: 600;
         padding: 3px 8px;
@@ -249,7 +249,7 @@
                             <td data-label="Status">
                                 {% if usuario.is_active %}
                                     <span class="badge bg-success bg-opacity-10 text-dark border border-success border-opacity-25 status-pill">
-                                        <i class="fa-solid fa-check text-success me-1"></i> Ativo
+                                        <i class="fa-solid fa-circle-check text-success me-1"></i> Ativo
                                     </span>
                                 {% else %}
                                     <span class="badge bg-danger bg-opacity-10 text-dark border border-danger border-opacity-25 status-pill">
@@ -297,52 +297,65 @@
         <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <form action="{% url 'usuarios_add' band.slug %}" method="POST">
                 {% csrf_token %}
+                <input type="hidden" name="from_modal" value="1">
                 <div class="modal-header border-bottom-0 pb-0">
                     <h5 class="modal-title fw-bold" style="font-size: 16px; color: #198754;"><i class="fa-solid fa-plus me-2" style="color: #198754;"></i><span class="d-none d-sm-inline">Novo </span>Usuário</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-3 p-md-4 text-wrap" style="white-space: normal;">
+                    {% if add_user_form and add_user_form.errors %}
+                        <div class="alert alert-danger p-2 small mb-3" style="border-radius: 8px;">
+                            <div class="fw-bold mb-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Por favor, corrija os erros abaixo:</div>
+                            <ul class="mb-0 ps-3">
+                                {% for field, errors in add_user_form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="form-label">Nome</label>
-                            <input type="text" name="first_name" class="form-control" placeholder="Ex: Danniel" required>
+                            <input type="text" name="first_name" class="form-control" value="{{ add_user_form.first_name.value|default:'' }}" required>
                         </div>
                         <div class="col-6">
                             <label class="form-label">Sobrenome</label>
-                            <input type="text" name="last_name" class="form-control" placeholder="Ex: Vieira" required>
+                            <input type="text" name="last_name" class="form-control" value="{{ add_user_form.last_name.value|default:'' }}" required>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Login</label>
-                            <input type="text" name="username" class="form-control" placeholder="Ex: danniel_v" required>
+                            <input type="text" name="username" class="form-control" value="{{ add_user_form.username.value|default:'' }}" required>
                         </div>
                         <div class="col-12">
                             <label class="form-label">E-mail</label>
-                            <input type="email" name="email" class="form-control" placeholder="email@exemplo.com">
+                            <input type="email" name="email" class="form-control" value="{{ add_user_form.email.value|default:'' }}">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Telefone</label>
-                            <input type="text" name="phone" class="form-control phone-mask" placeholder="(00) 00000-0000" maxlength="20">
+                            <input type="text" name="phone" class="form-control phone-mask" value="{{ add_user_form.phone.value|default:'' }}" maxlength="20">
                             <div class="form-text text-muted" style="font-size: 11.5px;">Se informado, você poderá enviar os dados de acesso pelo WhatsApp após o cadastro.</div>
                         </div>
                         <div class="col-6">
                             <label class="form-label">Senha</label>
-                            <input type="password" name="password" class="form-control" placeholder="Senha" required>
+                            <input type="password" name="password" class="form-control" required>
                         </div>
                         <div class="col-6">
                             <label class="form-label">Confirmar Senha</label>
-                            <input type="password" name="confirm_password" class="form-control" placeholder="Confirmar Senha" required>
+                            <input type="password" name="confirm_password" class="form-control" required>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Perfil de Acesso</label>
                             <select name="role" class="form-select">
-                                <option value="INTEGRANTE">Integrante</option>
-                                <option value="PRODUTOR">Produtor</option>
-                                <option value="EMPRESARIO">Empresário</option>
+                                <option value="INTEGRANTE" {% if add_user_form.role.value == 'INTEGRANTE' or not add_user_form.role.value %}selected{% endif %}>Integrante</option>
+                                <option value="PRODUTOR" {% if add_user_form.role.value == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
+                                <option value="EMPRESARIO" {% if add_user_form.role.value == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
                             </select>
                         </div>
                         <div class="col-12 mt-2">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserCreate" checked>
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserCreate" {% if add_user_form %}{% if add_user_form.is_active.value %}checked{% endif %}{% else %}checked{% endif %}>
                                 <label class="form-check-label fw-bold small ms-2" for="isActiveUserCreate" style="font-size: 13px;">Usuário Ativo</label>
                             </div>
                         </div>
@@ -494,6 +507,14 @@
         if (whatsappModalEl) {
             const whatsappModal = new bootstrap.Modal(whatsappModalEl);
             whatsappModal.show();
+        }
+        {% endif %}
+
+        {% if open_add_modal %}
+        const addModalEl = document.getElementById('addUserModal');
+        if (addModalEl) {
+            const addModal = new bootstrap.Modal(addModalEl);
+            addModal.show();
         }
         {% endif %}
     });

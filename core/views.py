@@ -2719,14 +2719,20 @@ def build_whatsapp_access_data(band, user, raw_password):
     login_url = f"https://backstagepro.site/{band.slug}/login/"
     user_name = user.first_name or user.username
 
+    # Usando escapes Unicode para garantir consistencia independente de encoding do arquivo/SO
+    w_hand = "\U0001F44B"
+    w_link = "\U0001F517"
+    w_user = "\U0001F464"
+    w_key = "\U0001F511"
+
     message_text = (
-        f"Olá, {user_name}! 👋\n\n"
+        f"Olá, {user_name}! {w_hand}\n\n"
         f"Você foi cadastrado no painel da banda *{band.name}* no Backstage Pro.\n\n"
         f"Segue abaixo seus dados para acesso:\n\n"
-        f"🔗 *Acesso:*\n"
+        f"{w_link} *Acesso:*\n"
         f"{login_url}\n\n"
-        f"👤 *Login:* {user.username}\n\n"
-        f"🔑 *Senha provisória:* {raw_password}\n\n"
+        f"{w_user} *Login:* {user.username}\n\n"
+        f"{w_key} *Senha provisória:* {raw_password}\n\n"
         f"No primeiro acesso, o sistema solicitará que você crie uma nova senha pessoal.\n\n"
         f"Backstage Pro\n"
         f"Gestão profissional para bandas e artistas."
@@ -2734,7 +2740,7 @@ def build_whatsapp_access_data(band, user, raw_password):
 
     whatsapp_url = ""
     if phone_normalized:
-        whatsapp_url = f"https://wa.me/{phone_normalized}?text={quote(message_text.encode('utf-8'))}"
+        whatsapp_url = f"https://wa.me/{phone_normalized}?text={quote(message_text, safe='')}"
 
     return {
         'has_phone': bool(phone_normalized),
@@ -2785,6 +2791,17 @@ def usuario_create_view(request, band_slug):
 
             messages.success(request, "Usuário criado com sucesso!")
             return redirect('usuarios_list', band_slug=band.slug)
+        else:
+            if request.POST.get('from_modal'):
+                usuarios = User.objects.filter(band=band).order_by('first_name', 'username')
+                context = {
+                    'band': band,
+                    'usuarios': usuarios,
+                    'add_user_form': form,
+                    'open_add_modal': True,
+                    'whatsapp_access_data': None,
+                }
+                return render(request, 'core/usuarios.html', context)
 
     else:
 
