@@ -56,6 +56,10 @@ class AdminUserCreateForm(forms.ModelForm):
             self.fields['email'].required = False
         if 'phone' in self.fields:
             self.fields['phone'].required = False
+        if 'is_active' in self.fields:
+            self.fields['is_active'].required = False
+            if not self.is_bound:
+                self.fields['is_active'].initial = True
 
     def clean(self):
         cleaned_data = super().clean()
@@ -70,6 +74,8 @@ class AdminUserCreateForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
+        if user.role == 'INTEGRANTE':
+            user.must_change_password = True
         if commit:
             user.save()
         return user

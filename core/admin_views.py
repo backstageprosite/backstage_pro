@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView, View
-from django.db.models import Count
+from django.db.models import Count, F, Q
 from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket, SystemSettings
 from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm, AdminPartnerForm
 from core.views import build_whatsapp_access_data
@@ -715,10 +715,21 @@ def admin_user_create(request):
                 is_admin_created=True
             )
             messages.success(request, "Usuário cadastrado com sucesso!")
+            return redirect('admin_painel:usuarios')
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"Erro ({field}): {error}")
+            bandas_qs = Band.objects.all().order_by('name')
+            usuarios_qs = User.objects.all().order_by(F('band__name').asc(nulls_last=True), 'first_name', 'username')
+            context = {
+                'usuarios': usuarios_qs,
+                'bandas': bandas_qs,
+                'bandas_list': bandas_qs,
+                'form_create': form,
+                'open_create_modal': True,
+                'whatsapp_access_data': None,
+                'q': '',
+                'selected_band': '',
+            }
+            return render(request, 'core/admin/usuarios.html', context)
     return redirect('admin_painel:usuarios')
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')

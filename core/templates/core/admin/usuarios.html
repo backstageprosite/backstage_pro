@@ -223,52 +223,72 @@
             <form method="POST" action="{% url 'admin_painel:usuarios_novo' %}">
                 {% csrf_token %}
                 <div class="modal-body p-3 p-md-4">
+                    {% if form_create and form_create.errors %}
+                    <div class="alert alert-danger p-2 small mb-3" style="border-radius: 8px;">
+                        <div class="fw-bold mb-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Por favor, corrija os erros abaixo:</div>
+                        <ul class="mb-0 ps-3">
+                            {% for field, errors in form_create.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome</label>
-                            <input type="text" name="first_name" class="form-control" placeholder="Nome" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="text" name="first_name" class="form-control" placeholder="Nome" value="{{ form_create.first_name.value|default:'' }}" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Sobrenome</label>
-                            <input type="text" name="last_name" class="form-control" placeholder="Sobrenome" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="text" name="last_name" class="form-control" placeholder="Sobrenome" value="{{ form_create.last_name.value|default:'' }}" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome de Usuário (Login)</label>
-                            <input type="text" name="username" class="form-control" placeholder="username" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="text" name="username" class="form-control" placeholder="username" value="{{ form_create.username.value|default:'' }}" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">E-mail</label>
-                            <input type="email" name="email" class="form-control" placeholder="email@exemplo.com" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="email" name="email" class="form-control" placeholder="email@exemplo.com" value="{{ form_create.email.value|default:'' }}" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Telefone</label>
-                            <input type="text" name="phone" class="form-control phone-mask" placeholder="(00) 00000-0000" maxlength="20" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="text" name="phone" class="form-control phone-mask" placeholder="(00) 00000-0000" maxlength="20" value="{{ form_create.phone.value|default:'' }}" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                             <div class="form-text text-muted" style="font-size: 11.5px; line-height: 1.2; margin-top: 2px;">Se informado, você poderá enviar os dados de acesso pelo WhatsApp após o cadastro.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Senha Inicial</label>
-                            <input type="password" name="password" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="password" name="password" class="form-control" placeholder="Senha" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Confirmar Senha</label>
+                            <input type="password" name="confirm_password" class="form-control" placeholder="Confirmar Senha" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Tipo de Perfil</label>
                             <select name="role" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
-                                <option value="INTEGRANTE">Integrante</option>
-                                <option value="PRODUTOR">Produtor</option>
-                                <option value="EMPRESARIO">Empresário</option>
+                                <option value="INTEGRANTE" {% if form_create.role.value == 'INTEGRANTE' %}selected{% endif %}>Integrante</option>
+                                <option value="PRODUTOR" {% if form_create.role.value == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
+                                <option value="EMPRESARIO" {% if form_create.role.value == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
                             </select>
                         </div>
-                        <div class="col-12">
+                        <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Vincular à Banda</label>
                             <select name="band" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                                 <option value="">Nenhuma / Sem Vínculo</option>
                                 {% for b in bandas_list %}
-                                    <option value="{{ b.id }}">{{ b.name }}</option>
+                                    <option value="{{ b.id }}" {% if form_create.band.value|stringformat:"s" == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-12 mt-3">
+                        <div class="col-12 mt-3 d-flex flex-column flex-sm-row gap-4">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="is_staff" id="isStaffCreate">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="isActiveCreate" {% if not form_create.is_bound or form_create.is_active.value %}checked{% endif %}>
+                                <label class="form-check-label fw-bold small ms-2" for="isActiveCreate" style="font-size: 13px;">Usuário Ativo</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_staff" id="isStaffCreate" {% if form_create.is_staff.value %}checked{% endif %}>
                                 <label class="form-check-label fw-bold small ms-2" for="isStaffCreate" style="font-size: 13px;">Acesso ao Painel Admin Geral (Staff)</label>
                             </div>
                         </div>
@@ -521,6 +541,14 @@
                     }
                 }
             });
+        }
+        {% endif %}
+
+        {% if open_create_modal %}
+        const createModalEl = document.getElementById('modalCreateUser');
+        if (createModalEl) {
+            const createModal = new bootstrap.Modal(createModalEl);
+            createModal.show();
         }
         {% endif %}
     });

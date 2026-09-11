@@ -222,3 +222,75 @@ class AdminWhatsAppAccessTests(TestCase):
         # Session does not receive whatsapp_access_data on edit
         self.assertIsNone(resp.context['whatsapp_access_data'])
         self.assertNotContains(resp, 'id="modalWhatsappSuccess"')
+
+    def test_09_post_admin_user_create_full_fields_and_must_change_password(self):
+        url_create = reverse('admin_painel:usuarios_novo')
+        resp = self.client.post(url_create, {
+            'first_name': 'Tiago',
+            'last_name': 'Maracajá',
+            'username': 'tiago',
+            'email': 'tiago@maracaja.com',
+            'phone': '(71) 99888-7766',
+            'password': 'SenhaProvisoria123!',
+            'confirm_password': 'SenhaProvisoria123!',
+            'band': self.band.id,
+            'role': 'INTEGRANTE',
+            'is_staff': '',
+            'is_active': 'on'
+        }, follow=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(User.objects.filter(username='tiago').exists())
+        user = User.objects.get(username='tiago')
+        self.assertEqual(user.first_name, 'Tiago')
+        self.assertEqual(user.last_name, 'Maracajá')
+        self.assertEqual(user.phone, '(71) 99888-7766')
+        self.assertEqual(user.band, self.band)
+        self.assertEqual(user.role, 'INTEGRANTE')
+        self.assertTrue(user.is_active)
+        self.assertFalse(user.is_staff)
+        self.assertTrue(user.must_change_password)
+        self.assertTrue(user.check_password('SenhaProvisoria123!'))
+
+        # Check whatsapp success modal displayed
+        self.assertContains(resp, 'id="modalWhatsappSuccess"')
+        self.assertContains(resp, 'id="btnSendWhatsappUser"')
+
+    def test_10_post_admin_user_create_validation_error_displays_in_modal(self):
+        # Create an existing user to provoke duplicate username
+        User.objects.create_user(username='existente', password='Password123!')
+
+        url_create = reverse('admin_painel:usuarios_novo')
+        resp = self.client.post(url_create, {
+            'first_name': 'Novo',
+            'last_name': 'Teste',
+            'username': 'existente',
+            'email': 'novo@teste.com',
+            'phone': '(71) 98888-0000',
+            'password': 'Senha123!',
+            'confirm_password': 'SenhaDiferente999!',
+            'band': self.band.id,
+            'role': 'PRODUTOR',
+            'is_active': 'on'
+        }, follow=False)
+
+        # Must not redirect silently, must return 200 rendering the template with errors
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.context['open_create_modal'])
+        form_create = resp.context['form_create']
+        self.assertTrue(form_create.errors)
+        self.assertIn('username', form_create.errors)
+        self.assertIn('confirm_password', form_create.errors)
+
+        # HTML must contain error message and preserved safe fields
+        self.assertContains(resp, 'Por favor, corrija os erros abaixo:')
+        self.assertContains(resp, 'As senhas não coincidem.')
+        self.assertContains(resp, 'value="Novo"')
+        self.assertContains(resp, 'value="Teste"')
+        self.assertContains(resp, 'value="existente"')
+        self.assertContains(resp, 'value="novo@teste.com"')
+        self.assertContains(resp, 'value="(71) 98888-0000"')
+
+        # WhatsApp modal must NOT be rendered
+        self.assertIsNone(resp.context.get('whatsapp_access_data'))
+        self.assertNotContains(resp, 'id="modalWhatsappSuccess"')
