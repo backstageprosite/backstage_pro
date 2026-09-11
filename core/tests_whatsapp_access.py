@@ -396,3 +396,46 @@ class WhatsAppAccessCredentialsTests(TestCase):
         self.assertIn('.bp-users-page .status-pill', html)
         self.assertIn('color: #212529 !important', html)
 
+    def test_13_coluna_ultimo_acesso_exibe_data_hora_e_nunca(self):
+        """13. Coluna 'Últ. Acesso' exibe data/hora formatada se last_login existir e 'Nunca' se last_login for None."""
+        from django.utils import timezone
+        import datetime
+
+        # Cria usuario com last_login definido
+        dt_login = timezone.make_aware(datetime.datetime(2026, 9, 11, 13, 32))
+        u_com_login = User.objects.create_user(
+            username="user_com_login",
+            email="login@axe.com",
+            password="Password123!",
+            first_name="Carlos",
+            role="INTEGRANTE",
+            band=self.band,
+            last_login=dt_login
+        )
+
+        # Cria usuario sem last_login (Nunca)
+        u_sem_login = User.objects.create_user(
+            username="user_sem_login",
+            email="semlogin@axe.com",
+            password="Password123!",
+            first_name="Beto",
+            role="INTEGRANTE",
+            band=self.band,
+            last_login=None
+        )
+
+        url_list = reverse('usuarios_list', kwargs={'band_slug': self.band.slug})
+        resp = self.client_prod.get(url_list)
+        self.assertEqual(resp.status_code, 200)
+
+        html = resp.content.decode('utf-8')
+
+        # Cabecalho da coluna
+        self.assertIn('<th>Últ. Acesso</th>', html)
+
+        # Usuario com login: data e hora no formato DD/MM/AAAA HH:mm
+        self.assertIn('11/09/2026 13:32', html)
+
+        # Usuario sem login: Nunca
+        self.assertIn('Nunca', html)
+
