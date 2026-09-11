@@ -257,6 +257,28 @@ class Show(models.Model):
             return self.date < date.today()
         return False
 
+    def save(self, *args, **kwargs):
+        # BP-PEND-57: Garantir que updated_at reflita alterações reais.
+        # Se update_fields for especificado explicitamente pelo chamador, respeitar kwargs.
+        if self.pk and 'update_fields' not in kwargs:
+            orig = Show.objects.filter(pk=self.pk).values().first()
+            if orig:
+                fields_to_check = [f.attname for f in self._meta.concrete_fields if f.name not in ('updated_at', 'created_at')]
+                
+                def _normalize(val):
+                    if val is None or val == '':
+                        return ''
+                    return val
+
+                has_change = any(_normalize(getattr(self, f)) != _normalize(orig.get(f)) for f in fields_to_check)
+                if not has_change:
+                    # Nenhuma alteração de dados no Show: salvar preservando o updated_at atual
+                    kwargs['update_fields'] = [
+                        f.name for f in self._meta.concrete_fields
+                        if f.name != 'updated_at' and not f.primary_key
+                    ]
+        super().save(*args, **kwargs)
+
 def contract_upload_path(instance, filename):
     return f'shows/{instance.id}/documentos/{filename}'
 
