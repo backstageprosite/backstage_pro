@@ -242,7 +242,9 @@
                             <td data-label="Perfil">
                                 {% if usuario.is_superuser %}
                                     <span class="badge bg-dark role-pill"><i class="fa-solid fa-shield me-1"></i> Admin Geral</span>
-                                {% elif usuario.is_produtor %}
+                                {% elif usuario.role == 'EMPRESARIO' %}
+                                    <span class="badge bg-primary role-pill"><i class="fa-solid fa-crown me-1"></i> Empresário</span>
+                                {% elif usuario.is_produtor or usuario.role == 'PRODUTOR' %}
                                     <span class="badge bg-primary role-pill"><i class="fa-solid fa-crown me-1"></i> Produtor</span>
                                 {% else %}
                                     <span class="badge bg-secondary role-pill"><i class="fa-solid fa-guitar me-1"></i> Integrante</span>

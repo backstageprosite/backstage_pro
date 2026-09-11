@@ -172,7 +172,11 @@
                                     <span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 role-pill">
                                         <i class="fa-solid fa-shield text-dark me-1"></i> Admin Geral
                                     </span>
-                                {% elif u.is_produtor %}
+                                {% elif u.role == 'EMPRESARIO' %}
+                                    <span class="badge bg-primary bg-opacity-10 text-dark border border-primary border-opacity-25 role-pill">
+                                        <i class="fa-solid fa-crown text-primary me-1"></i> Empresário
+                                    </span>
+                                {% elif u.is_produtor or u.role == 'PRODUTOR' %}
                                     <span class="badge bg-primary bg-opacity-10 text-dark border border-primary border-opacity-25 role-pill">
                                         <i class="fa-solid fa-crown text-primary me-1"></i> Produtor
                                     </span>
@@ -238,32 +242,32 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome</label>
-                            <input type="text" name="first_name" class="form-control" placeholder="Nome" value="{{ form_create.first_name.value|default:'' }}" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="text" name="first_name" class="form-control" value="{{ form_create.first_name.value|default:'' }}" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Sobrenome</label>
-                            <input type="text" name="last_name" class="form-control" placeholder="Sobrenome" value="{{ form_create.last_name.value|default:'' }}" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="text" name="last_name" class="form-control" value="{{ form_create.last_name.value|default:'' }}" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome de Usuário (Login)</label>
-                            <input type="text" name="username" class="form-control" placeholder="username" value="{{ form_create.username.value|default:'' }}" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="text" name="username" class="form-control" value="{{ form_create.username.value|default:'' }}" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">E-mail</label>
-                            <input type="email" name="email" class="form-control" placeholder="email@exemplo.com" value="{{ form_create.email.value|default:'' }}" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="email" name="email" class="form-control" value="{{ form_create.email.value|default:'' }}" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-12">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Telefone</label>
-                            <input type="text" name="phone" class="form-control phone-mask" placeholder="(00) 00000-0000" maxlength="20" value="{{ form_create.phone.value|default:'' }}" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="text" name="phone" class="form-control phone-mask" maxlength="20" value="{{ form_create.phone.value|default:'' }}" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                             <div class="form-text text-muted" style="font-size: 11.5px; line-height: 1.2; margin-top: 2px;">Se informado, você poderá enviar os dados de acesso pelo WhatsApp após o cadastro.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Senha Inicial</label>
-                            <input type="password" name="password" class="form-control" placeholder="Senha" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="password" name="password" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Confirmar Senha</label>
-                            <input type="password" name="confirm_password" class="form-control" placeholder="Confirmar Senha" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <input type="password" name="confirm_password" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Tipo de Perfil</label>

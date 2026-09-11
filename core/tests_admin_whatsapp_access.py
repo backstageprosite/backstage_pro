@@ -294,3 +294,49 @@ class AdminWhatsAppAccessTests(TestCase):
         # WhatsApp modal must NOT be rendered
         self.assertIsNone(resp.context.get('whatsapp_access_data'))
         self.assertNotContains(resp, 'id="modalWhatsappSuccess"')
+
+    def test_11_role_pills_in_admin_users_page(self):
+        # Create users with different roles
+        user_emp = User.objects.create_user(username='user_emp', password='Pass123!', role='EMPRESARIO', first_name='Empresario')
+        user_prod = User.objects.create_user(username='user_prod', password='Pass123!', role='PRODUTOR', first_name='Produtor')
+        user_integ = User.objects.create_user(username='user_integ', password='Pass123!', role='INTEGRANTE', first_name='Integrante')
+
+        resp = self.client.get(reverse('admin_painel:usuarios'))
+        self.assertEqual(resp.status_code, 200)
+
+        # Check that each role pill is rendered
+        self.assertContains(resp, 'Admin Geral')
+        self.assertContains(resp, 'Empresário')
+        self.assertContains(resp, 'Produtor')
+        self.assertContains(resp, 'Integrante')
+
+    def test_12_no_example_placeholders_in_admin_user_forms_and_template(self):
+        create_form = AdminUserCreateForm()
+        edit_form = AdminUserEditForm()
+
+        for field_name, field in create_form.fields.items():
+            placeholder = field.widget.attrs.get('placeholder', '')
+            self.assertFalse(
+                placeholder.startswith('Ex:') or 'exemplo.com' in placeholder or '00000-0000' in placeholder,
+                f"Field {field_name} in AdminUserCreateForm still has example placeholder: '{placeholder}'"
+            )
+
+        for field_name, field in edit_form.fields.items():
+            placeholder = field.widget.attrs.get('placeholder', '')
+            self.assertFalse(
+                placeholder.startswith('Ex:') or 'exemplo.com' in placeholder or '00000-0000' in placeholder,
+                f"Field {field_name} in AdminUserEditForm still has example placeholder: '{placeholder}'"
+            )
+
+        resp = self.client.get(reverse('admin_painel:usuarios'))
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+
+        # Modal create inputs must not contain sample data placeholders
+        self.assertNotIn('placeholder="Ex:', content)
+        self.assertNotIn('placeholder="email@exemplo.com"', content)
+        self.assertNotIn('placeholder="(00) 00000-0000"', content)
+        self.assertNotIn('placeholder="Nome"', content)
+        self.assertNotIn('placeholder="Sobrenome"', content)
+        self.assertNotIn('placeholder="username"', content)
+        self.assertNotIn('placeholder="Senha"', content)
