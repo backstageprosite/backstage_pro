@@ -103,6 +103,18 @@
                             <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.email.errors }}</div>
                         {% endif %}
                     </div>
+                    {% if form.phone %}
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.phone.label }}</label>
+                        {{ form.phone }}
+                        {% if form.phone.help_text %}
+                            <div class="form-text text-muted" style="font-size: 11.5px;">{{ form.phone.help_text }}</div>
+                        {% endif %}
+                        {% if form.phone.errors %}
+                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ form.phone.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
 
                 <h6 class="section-title mb-3 text-primary border-bottom pb-2">Acesso ao Sistema</h6>
@@ -162,4 +174,20 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const phoneInputs = document.querySelectorAll(".phone-mask");
+        phoneInputs.forEach(input => {
+            input.addEventListener("input", function(e) {
+                let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+                if (!x[1]) {
+                    e.target.value = '';
+                    return;
+                }
+                e.target.value = !x[2] ? '(' + x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+            });
+        });
+    });
+</script>
 {% endblock %}

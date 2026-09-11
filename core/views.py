@@ -2700,60 +2700,90 @@ def show_link_commercial_view(request, band_slug, pk):
 
 
 
+def build_whatsapp_access_data(band, user, raw_password):
+    import re
+    from urllib.parse import quote
+
+    phone_raw = (user.phone or '').strip()
+    digits = re.sub(r'\D', '', phone_raw)
+    phone_normalized = ''
+
+    if digits:
+        if len(digits) in (10, 11):
+            phone_normalized = '55' + digits
+        elif len(digits) in (12, 13) and digits.startswith('55'):
+            phone_normalized = digits
+        else:
+            phone_normalized = digits
+
+    login_url = f"https://backstagepro.site/{band.slug}/login/"
+    user_name = user.first_name or user.username
+
+    message_text = (
+        f"Olá, {user_name}! 👋\n\n"
+        f"Você foi cadastrado no painel da banda *{band.name}* no Backstage Pro.\n\n"
+        f"Segue abaixo seus dados para acesso:\n\n"
+        f"🔗 *Acesso:*\n"
+        f"{login_url}\n\n"
+        f"👤 *Login:* {user.username}\n\n"
+        f"🔐 *Senha provisória:* {raw_password}\n\n"
+        f"No primeiro acesso, o sistema solicitará que você crie uma nova senha pessoal.\n\n"
+        f"Backstage Pro\n"
+        f"Gestão profissional para bandas e artistas."
+    )
+
+    whatsapp_url = ""
+    if phone_normalized:
+        whatsapp_url = f"https://wa.me/{phone_normalized}?text={quote(message_text)}"
+
+    return {
+        'has_phone': bool(phone_normalized),
+        'whatsapp_url': whatsapp_url,
+    }
+
+
 @login_required
-
 @band_required
-
 def usuarios_list_view(request, band_slug):
-
     if not request.user.is_produtor():
-
         return HttpResponseForbidden("Apenas produtores.")
 
     band = get_object_or_404(Band, slug=band_slug)
-
     usuarios = User.objects.filter(band=band).order_by('first_name', 'username')
+    whatsapp_access_data = request.session.pop('whatsapp_access_data', None)
 
-
-
-    context = {'band': band, 'usuarios': usuarios}
-
+    context = {
+        'band': band,
+        'usuarios': usuarios,
+        'whatsapp_access_data': whatsapp_access_data,
+    }
     return render(request, 'core/usuarios.html', context)
 
 
-
 @login_required
-
 @band_required
-
 def usuario_create_view(request, band_slug):
-
     if not request.user.is_produtor() and not request.user.is_superuser:
-
         return HttpResponseForbidden("Apenas produtores podem adicionar usuários.")
-
-
 
     band = get_object_or_404(Band, slug=band_slug)
 
-
-
     if request.method == 'POST':
-
         form = UserForm(request.POST)
-
         if form.is_valid():
-
+            raw_password = form.cleaned_data.get('password')
             user = form.save(commit=False)
-
             user.band = band
-
-            # A senha é hasheada no método save do form
-
             user.save()
 
-            messages.success(request, "Usuário criado com sucesso!")
+            if user.role == 'INTEGRANTE':
+                request.session['whatsapp_access_data'] = build_whatsapp_access_data(
+                    band=band,
+                    user=user,
+                    raw_password=raw_password
+                )
 
+            messages.success(request, "Usuário criado com sucesso!")
             return redirect('usuarios_list', band_slug=band.slug)
 
     else:
