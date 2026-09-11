@@ -163,12 +163,26 @@ class CommercialModuleTests(TestCase):
         show = Show.objects.create(band=self.band_adv, title="A Cancelar", date=date(2026, 11, 5), status='CONFIRMADO')
         prop = CommercialProposal.objects.create(band=self.band_adv, show=show, name="A Cancelar", date=date(2026, 11, 5), phase=CommercialProposal.Phase.FECHADO, created_by=self.produtor_adv)
 
+        # Antes da desistência, o show aparece na agenda
+        res_agenda = self.client.get(reverse('calendario', args=[self.band_adv.slug]))
+        self.assertContains(res_agenda, 'A Cancelar')
+
         edit_url = reverse('commercial_edit', args=[self.band_adv.slug, prop.id])
         self.client.post(edit_url, {'name': 'Cancelado', 'date': '2026-11-05', 'phase': 'DESISTENCIA'}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
         prop.refresh_from_db()
         self.assertEqual(prop.phase, CommercialProposal.Phase.DESISTENCIA)
         self.assertEqual(prop.show.status, 'CANCELADO')
+
+        # BP-PEND-56: Após mudar para desistência, não aparece mais no calendário da agenda
+        res_agenda_pos = self.client.get(reverse('calendario', args=[self.band_adv.slug]))
+        self.assertNotContains(res_agenda_pos, 'show_' + str(show.id))
+        self.assertNotContains(res_agenda_pos, 'A Cancelar')
+
+        # E se for reativado para FECHADO/RESERVA, volta a aparecer na agenda
+        self.client.post(edit_url, {'name': 'Reativado', 'date': '2026-11-05', 'phase': 'FECHADO'}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        res_agenda_reativado = self.client.get(reverse('calendario', args=[self.band_adv.slug]))
+        self.assertContains(res_agenda_reativado, 'show_' + str(show.id))
 
     def test_8_reativacao_de_desistencia_sem_duplicar(self):
         self.client.login(username="produtor_adv", password="senha")

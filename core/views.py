@@ -656,16 +656,14 @@ def pending_list_view(request, band_slug):
 
 
 @band_required
-
 def calendario(request, band_slug):
-
     """
-
     Tela principal que exibirá o calendário e a lista de shows da banda.
-
+    BP-PEND-56: Shows com proposta comercial em 'DESISTENCIA' não aparecem na Agenda.
     """
-
-    shows = Show.objects.filter(band=request.band).order_by('date')
+    shows = Show.objects.filter(band=request.band).exclude(
+        commercial_proposal__phase='DESISTENCIA'
+    ).order_by('date')
 
     context = {
 
@@ -1061,7 +1059,9 @@ def agenda_pdf_view(request, band_slug):
 
 
 
-    shows = Show.objects.filter(band=request.band).order_by('date')
+    shows = Show.objects.filter(band=request.band).exclude(
+        commercial_proposal__phase='DESISTENCIA'
+    ).order_by('date')
 
 
 
@@ -4072,12 +4072,24 @@ from .models import Partner
 
 
 @band_required
-
 def partners_list_view(request, band_slug):
-
+    q = request.GET.get('q', '').strip()
     partners = Partner.objects.filter(is_active=True)
 
-    return render(request, 'core/partners.html', {'partners': partners, 'band': request.band})
+    if q:
+        from django.db.models import Q
+        partners = partners.filter(
+            Q(name__icontains=q) |
+            Q(segment__icontains=q) |
+            Q(phone__icontains=q) |
+            Q(instagram__icontains=q)
+        )
+
+    return render(request, 'core/partners.html', {
+        'partners': partners,
+        'band': request.band,
+        'search_query': q,
+    })
 
 
 

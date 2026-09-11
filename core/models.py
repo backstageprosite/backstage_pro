@@ -231,6 +231,10 @@ class Show(models.Model):
     # Revisão de Notificações
     notification_revision = models.PositiveBigIntegerField(default=0, editable=False)
 
+    # Auditoria de Datas (BP-PEND-57)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True, verbose_name="Data de Criação")
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True, verbose_name="Última Atualização")
+
     class Meta:
         verbose_name = 'Show'
         verbose_name_plural = 'Shows'

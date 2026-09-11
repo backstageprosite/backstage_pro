@@ -702,14 +702,24 @@
 
             <hr class="my-3">
             
-            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                <a href="{% url 'calendario' band.slug %}" class="btn btn-light border btn-footer-action fw-bold">Cancelar</a>
-                <button type="submit" name="save_and_continue" class="btn btn-outline-success btn-loading btn-footer-action fw-bold shadow-sm">
-                    <i class="fa-solid fa-floppy-disk me-1"></i> Salvar e Continuar
-                </button>
-                <button type="submit" class="btn btn-success btn-loading btn-footer-action fw-bold shadow-sm">
-                    <i class="fa-solid fa-check me-1"></i> Salvar Show
-                </button>
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
+                {% if is_edit and show_to_edit %}
+                <div class="text-muted small text-start order-2 order-md-1" style="font-size: 11.5px; line-height: 1.35;">
+                    <div>Data de criação: <span class="fw-medium text-dark">{{ show_to_edit.created_at|date:"d/m/Y H:i"|default:"--" }}</span></div>
+                    <div>Última atualização: <span class="fw-medium text-dark">{{ show_to_edit.updated_at|date:"d/m/Y H:i"|default:"--" }}</span></div>
+                </div>
+                {% else %}
+                <div class="order-2 order-md-1"></div>
+                {% endif %}
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end order-1 order-md-2">
+                    <a href="{% url 'calendario' band.slug %}" class="btn btn-light border btn-footer-action fw-bold">Cancelar</a>
+                    <button type="submit" name="save_and_continue" class="btn btn-outline-success btn-loading btn-footer-action fw-bold shadow-sm">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Salvar e Continuar
+                    </button>
+                    <button type="submit" class="btn btn-success btn-loading btn-footer-action fw-bold shadow-sm">
+                        <i class="fa-solid fa-check me-1"></i> Salvar Show
+                    </button>
+                </div>
             </div>
         </form>
     </div>

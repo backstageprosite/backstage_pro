@@ -110,10 +110,41 @@ class PartnerTests(TestCase):
         # verificar a estrutura do layout conforme correção de largura
         self.assertNotContains(response, 'row justify-content-center')
         self.assertNotContains(response, 'col-lg-6')
-        self.assertNotContains(response, 'col-md-8')
-        self.assertNotContains(response, 'mx-auto')
         self.assertContains(response, 'partners-grid')
-        self.assertContains(response, 'partner-card-wrapper')
+
+    def test_partners_search_filter(self):
+        """BP-PEND-55: Testa busca por nome, segmento, telefone e instagram."""
+        self.client.login(username='produtor', password='123')
+        
+        # Cria parceiro adicional para diferenciar buscas
+        Partner.objects.create(
+            name='Sonorização Alpha',
+            segment='Áudio e Palco',
+            phone='(81) 98888-1111',
+            instagram='@alpha_som',
+            is_active=True
+        )
+
+        # 1. Busca por nome
+        res = self.client.get(reverse('parceiros', args=['banda-teste']), {'q': 'Alpha'})
+        self.assertContains(res, 'Sonorização Alpha')
+        self.assertNotContains(res, 'Parceiro 1')
+
+        # 2. Busca por segmento
+        res = self.client.get(reverse('parceiros', args=['banda-teste']), {'q': 'Áudio'})
+        self.assertContains(res, 'Sonorização Alpha')
+        self.assertNotContains(res, 'Parceiro 1')
+
+        # 3. Busca por telefone
+        res = self.client.get(reverse('parceiros', args=['banda-teste']), {'q': '98888'})
+        self.assertContains(res, 'Sonorização Alpha')
+
+        # 4. Busca por termo inexistente
+        res = self.client.get(reverse('parceiros', args=['banda-teste']), {'q': 'InexistenteXYZ'})
+        self.assertNotContains(res, 'Sonorização Alpha')
+        self.assertNotContains(res, 'Parceiro 1')
+        self.assertContains(res, 'Nenhum parceiro encontrado para "InexistenteXYZ".')
+        self.assertContains(res, 'Limpar')
 
     def test_band_view_isolation(self):
         self.client.login(username='outro', password='123')

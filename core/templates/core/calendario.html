@@ -326,6 +326,11 @@
             <small id="modalShowNotes" class="text-muted"></small>
         </div>
 
+        <div id="modalShowAuditWrapper" class="mt-3 pt-2 border-top text-muted" style="font-size: 11px; line-height: 1.4;">
+            <div>Data de criação: <span id="modalShowCreatedAt" class="fw-medium text-dark">--</span></div>
+            <div>Última atualização: <span id="modalShowUpdatedAt" class="fw-medium text-dark">--</span></div>
+        </div>
+
       </div>
       <div class="modal-footer border-top-0 pt-0 w-100" style="display: grid; grid-template-columns: {% if request.user.is_produtor or request.user.is_superuser %}1fr 1fr{% else %}1fr{% endif %}; gap: 0.5rem;">
         <a href="#" id="modalBtnDetails" class="btn btn-outline-success rounded-pill btn-sm w-100 fw-bold">Ver Detalhes</a>
@@ -571,6 +576,15 @@
             } else {
                 document.getElementById('modalShowNotesWrapper').classList.add('d-none');
             }
+
+            var createdAtEl = document.getElementById('modalShowCreatedAt');
+            if (createdAtEl) {
+                createdAtEl.textContent = eventObj.extendedProps.createdAt || '--';
+            }
+            var updatedAtEl = document.getElementById('modalShowUpdatedAt');
+            if (updatedAtEl) {
+                updatedAtEl.textContent = eventObj.extendedProps.updatedAt || '--';
+            }
             
             document.getElementById('modalBtnDetails').href = eventObj.url;
             
@@ -733,7 +747,9 @@
                         dateDisplay: '{{ show.date|date:"d/m/Y" }}',
                         editUrl: '{% url "shows_edit" band.slug show.id %}',
                         pdfUrl: '{% url "show_pdf" band.slug show.id %}',
-                        deleteUrl: '{% url "shows_delete" band.slug show.id %}'
+                        deleteUrl: '{% url "shows_delete" band.slug show.id %}',
+                        createdAt: '{{ show.created_at|date:"d/m/Y H:i"|default:"--" }}',
+                        updatedAt: '{{ show.updated_at|date:"d/m/Y H:i"|default:"--" }}'
                     }
                 },
                 {% endfor %} 
