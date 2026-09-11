@@ -10,6 +10,7 @@ from django.views.generic import TemplateView, ListView, View
 from django.db.models import Count
 from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket, SystemSettings
 from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm, AdminPartnerForm
+from core.views import build_whatsapp_access_data
 import datetime
 
 def is_admin_geral(user):
@@ -299,6 +300,7 @@ class AdminUserListView(AdminRequiredMixin, ListView):
         context['bandas_list'] = bandas_qs
         context['q'] = self.request.GET.get('q', '')
         context['selected_band'] = self.request.GET.get('band', '')
+        context['whatsapp_access_data'] = self.request.session.pop('whatsapp_access_data', None)
         return context
 
 class AdminShowListView(AdminRequiredMixin, ListView):
@@ -704,7 +706,14 @@ def admin_user_create(request):
     if request.method == 'POST':
         form = AdminUserCreateForm(request.POST)
         if form.is_valid():
-            form.save()
+            raw_password = form.cleaned_data.get('password')
+            user = form.save()
+            request.session['whatsapp_access_data'] = build_whatsapp_access_data(
+                band=user.band,
+                user=user,
+                raw_password=raw_password,
+                is_admin_created=True
+            )
             messages.success(request, "Usuário cadastrado com sucesso!")
         else:
             for field, errors in form.errors.items():

@@ -241,6 +241,11 @@
                             <input type="email" name="email" class="form-control" placeholder="email@exemplo.com" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Telefone</label>
+                            <input type="text" name="phone" class="form-control phone-mask" placeholder="(00) 00000-0000" maxlength="20" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <div class="form-text text-muted" style="font-size: 11.5px; line-height: 1.2; margin-top: 2px;">Se informado, você poderá enviar os dados de acesso pelo WhatsApp após o cadastro.</div>
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Senha Inicial</label>
                             <input type="password" name="password" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
@@ -306,7 +311,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">E-mail</label>
-                        <input type="email" name="email" class="form-control" value="{{ u.email }}">
+                        <input type="email" name="email" class="form-control" value="{{ u.email|default:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Telefone</label>
+                        <input type="text" name="phone" class="form-control phone-mask" value="{{ u.phone|default:'' }}" maxlength="20">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Banda Vinculada</label>
@@ -403,5 +412,118 @@
 </div>
 {% endfor %}
 
+{% if whatsapp_access_data %}
+<!-- Modal Sucesso Cadastro Usuário / Enviar WhatsApp -->
+<div class="modal fade text-start" id="modalWhatsappSuccess" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-success" style="font-size: 16px;">
+                    <i class="fa-solid fa-circle-check me-2"></i>Cadastro Realizado
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 p-md-4 text-center">
+                <div class="mb-3">
+                    <span class="rounded-circle d-inline-flex justify-content-center align-items-center bg-success bg-opacity-10 text-success" style="width: 56px; height: 56px; font-size: 24px;">
+                        <i class="fa-solid fa-user-check"></i>
+                    </span>
+                </div>
+                <h6 class="fw-bold text-dark mb-1" style="font-size: 15px;">Usuário cadastrado com sucesso!</h6>
+                <p class="text-muted small mb-0" style="font-size: 13px;">Os dados de acesso foram criados.</p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                {% if whatsapp_access_data.has_phone and whatsapp_access_data.whatsapp_url %}
+                    <a href="{{ whatsapp_access_data.whatsapp_mobile_url|default:whatsapp_access_data.whatsapp_url|safe }}"
+                       id="btnSendWhatsappUser"
+                       data-mobile-url="{{ whatsapp_access_data.whatsapp_mobile_url|default:whatsapp_access_data.whatsapp_url|safe }}"
+                       target="_blank" rel="noopener noreferrer" class="btn fw-bold rounded-pill px-3 text-white shadow-sm d-inline-flex align-items-center" style="background-color: #25D366; border-color: #25D366; height: 34px; font-size: 13px;">
+                        <i class="fa-brands fa-whatsapp me-1" style="font-size: 15px;"></i> Enviar no WhatsApp
+                    </a>
+                {% endif %}
+                <button type="button" class="btn btn-secondary fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if whatsapp_access_data.has_phone %}
+<!-- Modal Escolha WhatsApp Desktop -->
+<div class="modal fade text-start" id="modalWhatsappDesktopChoice" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;">
+                    <i class="fa-brands fa-whatsapp text-success me-2"></i>Abrir WhatsApp
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 p-md-4 text-center">
+                <p class="text-muted mb-3" style="font-size: 14px;">Como deseja abrir o WhatsApp?</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ whatsapp_access_data.whatsapp_app_url|safe }}"
+                       id="btnWhatsappChoiceApp"
+                       class="btn fw-bold rounded-pill py-2 text-white shadow-sm d-inline-flex align-items-center justify-content-center"
+                       style="background-color: #25D366; border-color: #25D366; font-size: 14px;">
+                        <i class="fa-brands fa-whatsapp me-2" style="font-size: 18px;"></i> WhatsApp Aplicativo
+                    </a>
+                    <a href="{{ whatsapp_access_data.whatsapp_web_url|safe }}"
+                       id="btnWhatsappChoiceWeb"
+                       target="_blank" rel="noopener noreferrer"
+                       class="btn btn-outline-success fw-bold rounded-pill py-2 shadow-sm d-inline-flex align-items-center justify-content-center"
+                       style="font-size: 14px;">
+                        <i class="fa-brands fa-whatsapp me-2" style="font-size: 18px;"></i> WhatsApp Web
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0 justify-content-center">
+                <button type="button" class="btn btn-light border fw-bold rounded-pill px-4" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const phoneInputs = document.querySelectorAll(".phone-mask");
+        phoneInputs.forEach(input => {
+            input.addEventListener("input", function(e) {
+                let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+                if (!x[1]) {
+                    e.target.value = '';
+                    return;
+                }
+                e.target.value = !x[2] ? '(' + x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+            });
+        });
+
+        {% if whatsapp_access_data %}
+        const whatsappModalEl = document.getElementById('modalWhatsappSuccess');
+        if (whatsappModalEl) {
+            const whatsappModal = new bootstrap.Modal(whatsappModalEl);
+            whatsappModal.show();
+        }
+
+        const btnWhatsapp = document.getElementById('btnSendWhatsappUser');
+        if (btnWhatsapp) {
+            btnWhatsapp.addEventListener('click', function(e) {
+                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+                if (isMobile) {
+                    this.href = this.getAttribute('data-mobile-url') || this.href;
+                } else {
+                    e.preventDefault();
+                    const choiceModalEl = document.getElementById('modalWhatsappDesktopChoice');
+                    if (choiceModalEl) {
+                        const choiceModal = new bootstrap.Modal(choiceModalEl);
+                        choiceModal.show();
+                    }
+                }
+            });
+        }
+        {% endif %}
+    });
+</script>
 {% endblock %}
 

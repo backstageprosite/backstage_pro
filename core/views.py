@@ -2700,11 +2700,11 @@ def show_link_commercial_view(request, band_slug, pk):
 
 
 
-def build_whatsapp_access_data(band, user, raw_password):
+def build_whatsapp_access_data(band=None, user=None, raw_password="", is_admin_created=False):
     import re
     from urllib.parse import quote
 
-    phone_raw = (user.phone or '').strip()
+    phone_raw = (user.phone or '').strip() if user else ''
     digits = re.sub(r'\D', '', phone_raw)
     phone_normalized = ''
 
@@ -2716,8 +2716,9 @@ def build_whatsapp_access_data(band, user, raw_password):
         else:
             phone_normalized = digits
 
-    login_url = f"https://backstagepro.site/{band.slug}/login/"
-    user_name = user.first_name or user.username
+    user_name = (user.first_name if user else '') or (user.username if user else '')
+    username = user.username if user else ''
+    band_obj = band or (user.band if user else None)
 
     # Usando escapes Unicode para garantir consistencia independente de encoding do arquivo/SO
     w_hand = "\U0001F44B"
@@ -2725,18 +2726,47 @@ def build_whatsapp_access_data(band, user, raw_password):
     w_user = "\U0001F464"
     w_key = "\U0001F511"
 
-    message_text = (
-        f"Olá, {user_name}! {w_hand}\n\n"
-        f"Você foi cadastrado no painel da banda *{band.name}* no Backstage Pro.\n\n"
-        f"Segue abaixo seus dados para acesso:\n\n"
-        f"{w_link} *Acesso:*\n"
-        f"{login_url}\n\n"
-        f"{w_user} *Login:* {user.username}\n\n"
-        f"{w_key} *Senha provisória:* {raw_password}\n\n"
-        f"No primeiro acesso, o sistema solicitará que você crie uma nova senha pessoal.\n\n"
-        f"Backstage Pro\n"
-        f"Gestão profissional para bandas e artistas."
-    )
+    if is_admin_created:
+        # Prioridade de link no Painel Admin Geral:
+        # 1. Se possuir banda vinculada: https://backstagepro.site/[band.slug]/login/
+        # 2. Se is_staff ou sem banda: https://backstagepro.site/painel/login/
+        if band_obj:
+            login_url = f"https://backstagepro.site/{band_obj.slug}/login/"
+            intro_text = f"Sua conta foi criada e você já pode acessar o painel da banda *{band_obj.name}*."
+        else:
+            login_url = "https://backstagepro.site/painel/login/"
+            intro_text = "Sua conta de acesso ao Painel Administrativo Geral foi criada."
+
+        message_text = (
+            f"Olá, {user_name}! {w_hand}\n\n"
+            f"Seja bem-vindo ao Backstage Pro!\n\n"
+            f"{intro_text}\n\n"
+            f"{w_link} *Acesso:*\n"
+            f"{login_url}\n\n"
+            f"{w_user} *Login:* {username}\n\n"
+            f"{w_key} *Senha provisória:* {raw_password}\n\n"
+            f"No primeiro acesso, o sistema solicitará que você crie uma nova senha pessoal.\n\n"
+            f"Backstage Pro\n"
+            f"Gestão profissional para bandas e artistas."
+        )
+    else:
+        # Mensagem padrão do cadastro de integrantes no painel da banda
+        band_slug = band_obj.slug if band_obj else ''
+        band_name = band_obj.name if band_obj else ''
+        login_url = f"https://backstagepro.site/{band_slug}/login/"
+
+        message_text = (
+            f"Olá, {user_name}! {w_hand}\n\n"
+            f"Você foi cadastrado no painel da banda *{band_name}* no Backstage Pro.\n\n"
+            f"Segue abaixo seus dados para acesso:\n\n"
+            f"{w_link} *Acesso:*\n"
+            f"{login_url}\n\n"
+            f"{w_user} *Login:* {username}\n\n"
+            f"{w_key} *Senha provisória:* {raw_password}\n\n"
+            f"No primeiro acesso, o sistema solicitará que você crie uma nova senha pessoal.\n\n"
+            f"Backstage Pro\n"
+            f"Gestão profissional para bandas e artistas."
+        )
 
     whatsapp_url = ""
     whatsapp_mobile_url = ""

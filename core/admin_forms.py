@@ -23,12 +23,13 @@ class AdminUserCreateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'band', 'role', 'is_active', 'is_staff']
+        fields = ['first_name', 'last_name', 'username', 'email', 'phone', 'band', 'role', 'is_active', 'is_staff']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Danniel'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Vieira'}),
             'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: danniel_v'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@exemplo.com'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control phone-mask', 'placeholder': '(00) 00000-0000'}),
             'band': forms.Select(attrs={'class': 'form-select'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
@@ -39,16 +40,22 @@ class AdminUserCreateForm(forms.ModelForm):
             'last_name': 'Sobrenome',
             'username': 'Login',
             'email': 'E-mail',
+            'phone': 'Telefone',
             'band': 'Banda Vinculada',
             'role': 'Perfil de Acesso',
             'is_active': 'Usuário Ativo?',
             'is_staff': 'Acesso ao Painel Admin Geral (Staff)',
+        }
+        help_texts = {
+            'phone': 'Se informado, você poderá enviar os dados de acesso pelo WhatsApp após o cadastro.',
         }
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'email' in self.fields:
             self.fields['email'].required = False
+        if 'phone' in self.fields:
+            self.fields['phone'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
@@ -70,12 +77,20 @@ class AdminUserCreateForm(forms.ModelForm):
 class AdminUserEditForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'band', 'role', 'is_active', 'is_staff']
+        fields = ['first_name', 'last_name', 'username', 'email', 'phone', 'band', 'role', 'is_active', 'is_staff']
+        widgets = {
+            'phone': forms.TextInput(attrs={'class': 'form-control phone-mask', 'placeholder': '(00) 00000-0000'}),
+        }
+        labels = {
+            'phone': 'Telefone',
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'email' in self.fields:
             self.fields['email'].required = False
+        if 'phone' in self.fields:
+            self.fields['phone'].required = False
 
 class AdminSubscriptionForm(forms.ModelForm):
     class Meta:
