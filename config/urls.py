@@ -25,6 +25,7 @@ urlpatterns = [
     path('redefinir-senha/concluido/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
     path('bancodedados/', views.banco_de_dados_view, name='banco_de_dados_global'),
+    path('perfil/', views.profile_view, name='perfil'),
 
     # Rota Pública de Ativação de Conta do Cliente
     path('ativar-conta/<str:token>/', views_activation.ActivateAccountView.as_view(), name='activate_account'),
@@ -41,6 +42,7 @@ from django.views.static import serve
 import os
 
 urlpatterns += [
+    re_path(r'^media/profiles/(?P<path>.*)$', serve, {'document_root': os.path.join(settings.MEDIA_ROOT, 'profiles')}),
     re_path(r'^media/partners/logos/(?P<path>.*)$', serve, {'document_root': os.path.join(settings.MEDIA_ROOT, 'partners', 'logos')}),
     re_path(r'^media/system_logos/(?P<path>.*)$', serve, {'document_root': os.path.join(settings.MEDIA_ROOT, 'system_logos')}),
     re_path(r'^media/app_install_guides/(?P<path>.*)$', serve, {'document_root': os.path.join(settings.MEDIA_ROOT, 'app_install_guides')}),

@@ -358,6 +358,9 @@
                             <i class="fa-regular fa-circle-user text-primary me-1"></i> <span class="d-none d-md-inline">Olá, </span>{{ user.first_name|default:user.username|title }}
                             <span class="badge bg-dark ms-1" style="font-size: 11px; padding: 3px 6px;"><i class="fa-solid fa-shield me-1"></i><span class="d-none d-md-inline">Admin Geral</span></span>
                         </span>
+                        <a href="{% url 'perfil' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold me-2" style="height: 30px; font-size: 13px; display: inline-flex; align-items: center;">
+                            <i class="fa-regular fa-id-badge me-1"></i><span>Perfil</span>
+                        </a>
                         <!-- Logout do admin direciona para o login do admin-master -->
                         <a href="{% url 'admin_painel:logout' %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" style="height: 30px; font-size: 13px; display: inline-flex; align-items: center;">
                             <i class="fa-solid fa-right-from-bracket me-1"></i><span>Sair</span>

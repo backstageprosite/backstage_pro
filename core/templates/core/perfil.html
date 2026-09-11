@@ -1,0 +1,365 @@
+﻿{% extends 'core/base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+    .bp-profile-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-profile-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-profile-page .section-title {
+        font-size: 16px;
+        font-weight: 700;
+    }
+    .bp-profile-page .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    .bp-profile-page .form-control,
+    .bp-profile-page .form-select {
+        font-size: 14px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-profile-page .btn-action-submit {
+        height: 35px;
+        font-size: 14px;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    .bp-profile-avatar-container {
+        position: relative;
+        width: 110px;
+        height: 110px;
+        margin: 0 auto;
+    }
+    .bp-profile-avatar-img {
+        width: 110px;
+        height: 110px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid #0d6efd;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .bp-profile-avatar-placeholder {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 48px;
+        border: 3px solid #dee2e6;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-profile-page .btn-header-action {
+            height: 40px;
+            padding: 8px 16px;
+        }
+        .bp-profile-page .form-control,
+        .bp-profile-page .form-select {
+            font-size: 16px !important;
+            min-height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bp-profile-page">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+        <h2 class="page-title text-center text-md-start text-primary">
+            <i class="fa-regular fa-id-badge me-2"></i> Meu Perfil
+        </h2>
+        {% if band %}
+            <a href="{% url 'calendario' band.slug %}" class="btn btn-outline-secondary btn-header-action fw-bold shadow-sm w-100 w-md-auto">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+        {% elif user.is_superuser %}
+            <a href="{% url 'admin_painel:dashboard' %}" class="btn btn-outline-secondary btn-header-action fw-bold shadow-sm w-100 w-md-auto">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+        {% else %}
+            <a href="/" class="btn btn-outline-secondary btn-header-action fw-bold shadow-sm w-100 w-md-auto">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="row g-3 justify-content-center">
+        <!-- Coluna Foto e Resumo -->
+        <div class="col-lg-4 col-md-5">
+            <div class="card shadow-sm border-0 mb-3" style="border-radius: 12px;">
+                <div class="card-body p-4 text-center">
+                    <div class="bp-profile-avatar-container mb-3">
+                        {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture.url }}" alt="{{ user.first_name|default:user.username }}" class="bp-profile-avatar-img" id="avatarPreview">
+                        {% else %}
+                            <div class="bp-profile-avatar-placeholder" id="avatarPlaceholder">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <img src="" alt="Preview" class="bp-profile-avatar-img d-none" id="avatarPreview">
+                        {% endif %}
+                    </div>
+
+                    <h5 class="fw-bold mb-1">{{ user.first_name|default:user.username }}</h5>
+                    <p class="text-muted small mb-2">@{{ user.username }}</p>
+
+                    <div>
+                        {% if user.is_superuser %}
+                            <span class="badge bg-dark px-2 py-1"><i class="fa-solid fa-shield me-1"></i> Administrador Geral</span>
+                        {% elif user.is_produtor %}
+                            <span class="badge bg-primary px-2 py-1"><i class="fa-solid fa-crown me-1"></i> Produtor</span>
+                        {% else %}
+                            <span class="badge bg-secondary px-2 py-1"><i class="fa-solid fa-guitar me-1"></i> Integrante</span>
+                        {% endif %}
+
+                        {% if band %}
+                            <span class="badge bg-light text-dark border ms-1 px-2 py-1"><i class="fa-solid fa-music me-1"></i> {{ band.name }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navegação rápida de abas -->
+            <div class="list-group shadow-sm border-0" id="profileTab" role="tablist" style="border-radius: 12px; overflow: hidden;">
+                <button class="list-group-item list-group-item-action fw-bold py-3 {% if active_tab != '#senha' %}active{% endif %}" id="tab-dados-btn" data-bs-toggle="tab" data-bs-target="#tab-dados" type="button" role="tab">
+                    <i class="fa-solid fa-user-pen me-2"></i> Dados do Perfil
+                </button>
+                <button class="list-group-item list-group-item-action fw-bold py-3 {% if active_tab == '#senha' %}active{% endif %}" id="tab-senha-btn" data-bs-toggle="tab" data-bs-target="#tab-senha" type="button" role="tab">
+                    <i class="fa-solid fa-key me-2"></i> Alterar Senha
+                </button>
+            </div>
+        </div>
+
+        <!-- Coluna Formulários -->
+        <div class="col-lg-8 col-md-7">
+            <div class="tab-content">
+                <!-- Aba 1: Dados do Perfil -->
+                <div class="tab-pane fade {% if active_tab != '#senha' %}show active{% endif %}" id="tab-dados" role="tabpanel">
+                    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                        <div class="card-body p-3 p-md-4">
+                            <h6 class="section-title mb-3 text-primary border-bottom pb-2">
+                                <i class="fa-solid fa-id-card me-2"></i> Informações do Perfil
+                            </h6>
+
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <input type="hidden" name="update_profile" value="1">
+                                <input type="hidden" name="active_tab" value="#dados">
+                                <input type="hidden" name="remove_picture" id="remove_picture" value="0">
+
+                                {% if profile_form.errors %}
+                                    <div class="alert alert-danger p-2 small mb-3" style="border-radius: 8px;">
+                                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Corrija os erros destacados abaixo.
+                                    </div>
+                                {% endif %}
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Login</label>
+                                        <input type="text" class="form-control bg-light" value="{{ user.username }}" readonly disabled>
+                                        <small class="text-muted" style="font-size: 11px;">O nome de login é somente leitura.</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="{{ profile_form.first_name.id_for_label }}">{{ profile_form.first_name.label }}</label>
+                                        {{ profile_form.first_name }}
+                                        {% if profile_form.first_name.errors %}
+                                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ profile_form.first_name.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="{{ profile_form.email.id_for_label }}">{{ profile_form.email.label }}</label>
+                                        {{ profile_form.email }}
+                                        {% if profile_form.email.errors %}
+                                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ profile_form.email.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="{{ profile_form.phone.id_for_label }}">{{ profile_form.phone.label }}</label>
+                                        {{ profile_form.phone }}
+                                        {% if profile_form.phone.errors %}
+                                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ profile_form.phone.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="{{ profile_form.profile_picture.id_for_label }}">{{ profile_form.profile_picture.label }}</label>
+                                        {{ profile_form.profile_picture }}
+                                        <div class="d-flex align-items-center justify-content-between mt-1">
+                                            <small class="text-muted" style="font-size: 11px;">Formatos aceitos: JPG, PNG, WEBP. A imagem será redimensionada e otimizada automaticamente para perfil (até 400x400).</small>
+                                            {% if user.profile_picture %}
+                                                <button type="button" class="btn btn-link text-danger p-0 ms-2 text-decoration-none" style="font-size: 12px;" id="btnRemovePhoto">
+                                                    <i class="fa-solid fa-trash-can me-1"></i> Remover foto atual
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                        {% if profile_form.profile_picture.errors %}
+                                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ profile_form.profile_picture.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <hr class="my-3">
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="submit" class="btn btn-primary btn-loading px-4 btn-action-submit fw-bold shadow-sm">
+                                        <i class="fa-solid fa-check me-1"></i> Salvar Alterações
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aba 2: Alterar Senha -->
+                <div class="tab-pane fade {% if active_tab == '#senha' %}show active{% endif %}" id="tab-senha" role="tabpanel">
+                    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                        <div class="card-body p-3 p-md-4">
+                            <h6 class="section-title mb-3 text-primary border-bottom pb-2">
+                                <i class="fa-solid fa-lock me-2"></i> Alterar Senha de Acesso
+                            </h6>
+
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="change_password" value="1">
+                                <input type="hidden" name="active_tab" value="#senha">
+
+                                {% if password_form.errors %}
+                                    <div class="alert alert-danger p-2 small mb-3" style="border-radius: 8px;">
+                                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Corrija os erros na alteração de senha.
+                                    </div>
+                                {% endif %}
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12">
+                                        <label class="form-label" for="{{ password_form.old_password.id_for_label }}">{{ password_form.old_password.label }}</label>
+                                        {{ password_form.old_password }}
+                                        {% if password_form.old_password.errors %}
+                                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ password_form.old_password.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="{{ password_form.new_password.id_for_label }}">{{ password_form.new_password.label }}</label>
+                                        {{ password_form.new_password }}
+                                        {% if password_form.new_password.errors %}
+                                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ password_form.new_password.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="{{ password_form.confirm_password.id_for_label }}">{{ password_form.confirm_password.label }}</label>
+                                        {{ password_form.confirm_password }}
+                                        {% if password_form.confirm_password.errors %}
+                                            <div class="text-danger small mt-1" style="font-size: 12px;">{{ password_form.confirm_password.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <hr class="my-3">
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="submit" class="btn btn-primary btn-loading px-4 btn-action-submit fw-bold shadow-sm">
+                                        <i class="fa-solid fa-key me-1"></i> Atualizar Senha
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Preview de foto ao selecionar arquivo
+        const inputPicture = document.getElementById('{{ profile_form.profile_picture.id_for_label }}');
+        const avatarPreview = document.getElementById('avatarPreview');
+        const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+        const btnRemovePhoto = document.getElementById('btnRemovePhoto');
+        const inputRemovePicture = document.getElementById('remove_picture');
+
+        if (inputPicture) {
+            inputPicture.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        if (avatarPreview) {
+                            avatarPreview.src = ev.target.result;
+                            avatarPreview.classList.remove('d-none');
+                        }
+                        if (avatarPlaceholder) {
+                            avatarPlaceholder.classList.add('d-none');
+                        }
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                    if (inputRemovePicture) {
+                        inputRemovePicture.value = '0';
+                    }
+                }
+            });
+        }
+
+        if (btnRemovePhoto) {
+            btnRemovePhoto.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('Deseja realmente remover sua foto de perfil?')) {
+                    if (inputRemovePicture) {
+                        inputRemovePicture.value = '1';
+                    }
+                    if (inputPicture) {
+                        inputPicture.value = '';
+                    }
+                    if (avatarPreview) {
+                        avatarPreview.classList.add('d-none');
+                    }
+                    if (avatarPlaceholder) {
+                        avatarPlaceholder.classList.remove('d-none');
+                    }
+                    this.classList.add('d-none');
+                }
+            });
+        }
+
+        // Máscara de telefone
+        const phoneInput = document.querySelector('.phone-mask');
+        if (phoneInput) {
+            const formatPhone = function(v) {
+                v = v.replace(/\D/g, "");
+                if (v.length > 11) v = v.substring(0, 11);
+                if (v.length > 10) {
+                    return v.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+                } else if (v.length > 5) {
+                    return v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, "($1) $2-$3");
+                } else if (v.length > 2) {
+                    return v.replace(/^(\d{2})(\d{0,5})$/, "($1) $2");
+                } else if (v.length > 0) {
+                    return v.replace(/^(\d{0,2})$/, "($1");
+                }
+                return v;
+            };
+
+            phoneInput.addEventListener('input', function(e) {
+                this.value = formatPhone(this.value);
+            });
+        }
+    });
+</script>
+{% endblock %}

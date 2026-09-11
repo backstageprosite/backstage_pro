@@ -123,6 +123,78 @@ class UserEditForm(forms.ModelForm):
             'is_active': 'Usuário Ativo',
         }
 
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'email', 'phone', 'profile_picture']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Seu nome completo'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'seuemail@exemplo.com'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control phone-mask', 'placeholder': '(00) 00000-0000', 'maxlength': '20'}),
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        }
+        labels = {
+            'first_name': 'Nome',
+            'email': 'E-mail',
+            'phone': 'Telefone',
+            'profile_picture': 'Foto de Perfil',
+        }
+
+    def clean_profile_picture(self):
+        picture = self.cleaned_data.get('profile_picture')
+        if picture and hasattr(picture, 'file'):
+            from core.profile_utils import process_profile_picture
+            try:
+                picture = process_profile_picture(picture, max_size=(400, 400), quality=85)
+            except forms.ValidationError:
+                raise
+            except Exception as e:
+                raise forms.ValidationError("Não foi possível processar a imagem. Certifique-se de que é um formato válido.")
+        return picture
+
+class ProfilePasswordChangeForm(forms.Form):
+    old_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Digite sua senha atual'}),
+        label='Senha atual',
+        required=True
+    )
+    new_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Digite a nova senha'}),
+        label='Nova senha',
+        required=True
+    )
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirme a nova senha'}),
+        label='Confirmar nova senha',
+        required=True
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_old_password(self):
+        old_password = self.cleaned_data.get('old_password')
+        if not self.user.check_password(old_password):
+            raise forms.ValidationError("Senha atual incorreta.")
+        return old_password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get('new_password')
+        confirm_password = cleaned_data.get('confirm_password')
+
+        if new_password and confirm_password and new_password != confirm_password:
+            self.add_error('confirm_password', 'As senhas não coincidem.')
+
+        return cleaned_data
+
+    def save(self):
+        new_password = self.cleaned_data.get('new_password')
+        self.user.set_password(new_password)
+        self.user.save()
+        return self.user
+
 class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact

@@ -110,6 +110,14 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='INTEGRANTE', verbose_name='Perfil')
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='users', null=True, blank=True, verbose_name="Banda")
     email = models.EmailField(unique=False, blank=True, null=True, verbose_name='E-mail')
+    phone = models.CharField(max_length=30, blank=True, null=True, verbose_name='Telefone')
+    profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True, verbose_name='Foto de Perfil')
+
+    @property
+    def profile_picture_url(self):
+        if self.profile_picture and hasattr(self.profile_picture, 'url'):
+            return self.profile_picture.url
+        return None
 
     def is_produtor(self):
         return self.role in ['PRODUTOR', 'EMPRESARIO'] or self.is_superuser

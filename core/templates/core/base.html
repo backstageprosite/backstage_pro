@@ -371,10 +371,13 @@
                                 <span class="badge bg-secondary ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-guitar"></i><span class="d-none d-md-inline ms-1">Integrante</span></span>
                             {% endif %}
                         </span>
+                        <a href="{% url 'perfil' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold me-2" style="height: 31px; display: inline-flex; align-items: center;">
+                            <i class="fa-regular fa-id-badge me-1"></i><span class="d-none d-md-inline">Perfil</span>
+                        </a>
                         {% if band %}
                             <form method="post" action="{% url 'logout' band.slug %}" class="d-inline">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold">
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold" style="height: 31px; display: inline-flex; align-items: center;">
                                     <i class="fa-solid fa-right-from-bracket"></i><span class="d-none d-md-inline ms-1">Sair</span>
                                 </button>
                             </form>

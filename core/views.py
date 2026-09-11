@@ -43,9 +43,11 @@ from django.urls import reverse
 from functools import wraps
 from django.http import HttpResponseForbidden, HttpResponseNotAllowed, JsonResponse
 
+from django.contrib.auth import update_session_auth_hash
+
 from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem, AdministrativeBandNotice, RiderDocument
 
-from .forms import FinancialReceiptForm, UserForm, UserEditForm, ContactForm, ShowForm, ContractDocumentFormSet, FinancialReceiptFormSet, ShowPaymentForm, ShowTeamCostForm, ContractDocumentForm, RiderDocumentForm
+from .forms import FinancialReceiptForm, UserForm, UserEditForm, ContactForm, ShowForm, ContractDocumentFormSet, FinancialReceiptFormSet, ShowPaymentForm, ShowTeamCostForm, ContractDocumentForm, RiderDocumentForm, ProfileForm, ProfilePasswordChangeForm
 
 from decimal import Decimal
 
@@ -157,6 +159,62 @@ def politica_de_privacidade_view(request):
     """
 
     return render(request, 'core/politica_de_privacidade.html')
+
+
+
+@login_required
+def profile_view(request):
+    """
+    BP-PEND-50: Área de Perfil para todas as contas autenticadas.
+    Permite visualizar/editar foto de perfil, nome, e-mail, telefone,
+    ver login (somente leitura) e alterar senha mantendo a sessão.
+    """
+    user = request.user
+    active_tab = request.POST.get('active_tab', '#dados')
+
+    # Foto/dados do perfil
+    if request.method == 'POST' and 'update_profile' in request.POST:
+        profile_form = ProfileForm(request.POST, request.FILES, instance=user)
+        password_form = ProfilePasswordChangeForm(user=user)
+        active_tab = '#dados'
+
+        # Se houver pedido de remover foto de perfil
+        if request.POST.get('remove_picture') == '1':
+            if user.profile_picture:
+                user.profile_picture.delete(save=False)
+                user.profile_picture = None
+
+        if profile_form.is_valid():
+            profile_form.save()
+            messages.success(request, "Perfil atualizado com sucesso!")
+            return redirect('perfil')
+        else:
+            messages.error(request, "Por favor, corrija os erros no perfil.")
+    elif request.method == 'POST' and 'change_password' in request.POST:
+        profile_form = ProfileForm(instance=user)
+        password_form = ProfilePasswordChangeForm(user=user, data=request.POST)
+        active_tab = '#senha'
+        if password_form.is_valid():
+            password_form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, "Senha alterada com sucesso!")
+            return redirect('perfil')
+        else:
+            messages.error(request, "Por favor, corrija os erros ao alterar a senha.")
+    else:
+        profile_form = ProfileForm(instance=user)
+        password_form = ProfilePasswordChangeForm(user=user)
+
+    band = getattr(request, 'band', None) or getattr(user, 'band', None)
+
+    context = {
+        'user': user,
+        'band': band,
+        'profile_form': profile_form,
+        'password_form': password_form,
+        'active_tab': active_tab,
+    }
+    return render(request, 'core/perfil.html', context)
 
 
 
