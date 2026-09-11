@@ -23,7 +23,7 @@ class AdminUserCreateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'band', 'role', 'is_active']
+        fields = ['first_name', 'last_name', 'username', 'email', 'band', 'role', 'is_active', 'is_staff']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Danniel'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Vieira'}),
@@ -32,6 +32,7 @@ class AdminUserCreateForm(forms.ModelForm):
             'band': forms.Select(attrs={'class': 'form-select'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
+            'is_staff': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
         }
         labels = {
             'first_name': 'Nome',
@@ -41,6 +42,7 @@ class AdminUserCreateForm(forms.ModelForm):
             'band': 'Banda Vinculada',
             'role': 'Perfil de Acesso',
             'is_active': 'Usuário Ativo?',
+            'is_staff': 'Acesso ao Painel Admin Geral (Staff)',
         }
         
     def __init__(self, *args, **kwargs):
@@ -68,7 +70,7 @@ class AdminUserCreateForm(forms.ModelForm):
 class AdminUserEditForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'band', 'role', 'is_active']
+        fields = ['first_name', 'last_name', 'username', 'email', 'band', 'role', 'is_active', 'is_staff']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

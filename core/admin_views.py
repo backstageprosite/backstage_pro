@@ -293,8 +293,10 @@ class AdminUserListView(AdminRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        bandas_qs = Band.objects.all().order_by('name')
         context['form_create'] = AdminUserCreateForm()
-        context['bandas_list'] = Band.objects.all().order_by('name')
+        context['bandas'] = bandas_qs
+        context['bandas_list'] = bandas_qs
         context['q'] = self.request.GET.get('q', '')
         context['selected_band'] = self.request.GET.get('band', '')
         return context

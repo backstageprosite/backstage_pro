@@ -254,9 +254,9 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Vincular à Banda</label>
-                            <select name="band_id" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <select name="band" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                                 <option value="">Nenhuma / Sem Vínculo</option>
-                                {% for b in bandas %}
+                                {% for b in bandas_list %}
                                     <option value="{{ b.id }}">{{ b.name }}</option>
                                 {% endfor %}
                             </select>
@@ -312,7 +312,7 @@
                         <label class="form-label">Banda Vinculada</label>
                         <select name="band" class="form-select">
                             <option value="">-- Nenhuma Banda --</option>
-                            {% for band in form_create.fields.band.queryset %}
+                            {% for band in bandas_list %}
                                 <option value="{{ band.id }}" {% if u.band and u.band.id == band.id %}selected{% endif %}>{{ band.name }}</option>
                             {% endfor %}
                         </select>
