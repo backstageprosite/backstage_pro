@@ -392,34 +392,6 @@
     </div>
 </div>
 
-<!-- Modal Universal de Confirmação de Exclusão -->
-<div class="modal fade" id="modalConfirmDeleteUniversal" tabindex="-1" aria-labelledby="modalConfirmDeleteUniversalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-danger" id="modalConfirmDeleteUniversalLabel">
-                    <i class="fa-solid fa-triangle-exclamation me-2"></i>Confirmar Exclusão
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body py-3">
-                <p class="mb-0 text-dark">
-                    Tem certeza de que deseja excluir <span id="modalDeleteItemType" class="fw-bold">este registro</span>:
-                    <strong id="modalDeleteItemName" class="text-danger"></strong>?
-                </p>
-                <small class="text-muted d-block mt-2">Esta ação é irreversível e removerá também o show vinculado no calendário (caso exista).</small>
-            </div>
-            <div class="modal-footer border-top-0 pt-0 flex-column flex-md-row w-100">
-                <button type="button" class="btn btn-light rounded-pill px-4 w-100 mb-2 mb-md-0" data-bs-dismiss="modal">Cancelar</button>
-                <form id="formDeleteUniversal" method="post" action="" class="w-100 m-0 p-0">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold w-100">Confirmar Exclusão</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -451,10 +423,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const existingDocsContainer = document.getElementById('existingDocsContainer');
     const existingDocsList = document.getElementById('existingDocsList');
     const modalDeleteDocEl = document.getElementById('modalDeleteDocConfirm');
-    const modalConfirmDeleteUniversalEl = document.getElementById('modalConfirmDeleteUniversal');
-    const formDeleteUniversal = document.getElementById('formDeleteUniversal');
-    const modalDeleteItemType = document.getElementById('modalDeleteItemType');
-    const modalDeleteItemName = document.getElementById('modalDeleteItemName');
 
     const formPdfComercial = document.getElementById('formPdfComercial');
     const pdfValidationAlert = document.getElementById('pdfValidationAlert');
@@ -493,22 +461,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let pendingDocDeleteUrl = null;
     let pendingDocId = null;
-
-    // Configuração do Modal Universal de Exclusão
-    if (modalConfirmDeleteUniversalEl) {
-        modalConfirmDeleteUniversalEl.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            if (!button) return;
-
-            const deleteUrl = button.getAttribute('data-delete-url');
-            const itemType = button.getAttribute('data-item-type') || 'este registro';
-            const itemName = button.getAttribute('data-item-name') || '';
-
-            if (formDeleteUniversal) formDeleteUniversal.action = deleteUrl;
-            if (modalDeleteItemType) modalDeleteItemType.textContent = itemType;
-            if (modalDeleteItemName) modalDeleteItemName.textContent = itemName ? `"${itemName}"` : '';
-        });
-    }
 
     // Reset do modal ao abrir para criação
     modalProposalEl.addEventListener('show.bs.modal', function(event) {

@@ -254,3 +254,32 @@ class CommercialModuleTests(TestCase):
         # 4. Isolamento multi-banda no PDF
         self.client.login(username="produtor_bas", password="senha")
         self.assertEqual(self.client.get(f"{pdf_url}?phase=ORCAMENTO").status_code, 403)
+
+    def test_12_padronizacao_modal_exclusao_comercial(self):
+        """Valida que a pagina Comercial utiliza o modal padrao de exclusao igual a Contatos."""
+        self.client.login(username="produtor_adv", password="senha")
+        res = self.client.get(reverse('commercial_index', args=[self.band_adv.slug]))
+        self.assertEqual(res.status_code, 200)
+
+        html = res.content.decode('utf-8')
+
+        # Modal universal esta presente (herdado de base.html)
+        self.assertIn('id="modalConfirmDeleteUniversal"', html)
+        self.assertIn('Confirmar Exclusão', html)
+
+        # Apenas 1 ocorrencia do modalConfirmDeleteUniversal na pagina comercial
+        self.assertEqual(html.count('id="modalConfirmDeleteUniversal"'), 1)
+
+        # Extrai o trecho do modalConfirmDeleteUniversal para validar sua estrutura isoladamente
+        modal_start = html.find('id="modalConfirmDeleteUniversal"')
+        modal_snippet = html[modal_start:modal_start + 2500]
+
+        # Botoes lado a lado alinhados a direita no modal-footer padrao
+        self.assertIn('modal-footer border-top-0 pt-0 d-flex justify-content-end gap-2', modal_snippet)
+        self.assertNotIn('flex-column', modal_snippet)
+        self.assertNotIn('w-100', modal_snippet)
+
+        # Botao Cancelar claro/outline rounded-pill
+        self.assertIn('btn btn-light border fw-bold rounded-pill px-3', modal_snippet)
+        # Botao Excluir vermelho rounded-pill
+        self.assertIn('btn btn-danger fw-bold rounded-pill px-3 shadow-sm', modal_snippet)

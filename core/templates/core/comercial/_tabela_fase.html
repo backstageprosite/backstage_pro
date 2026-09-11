@@ -70,7 +70,8 @@
                                     data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal"
                                     data-delete-url="{% url 'commercial_delete' band.slug prop.id %}"
                                     data-item-type="a solicitação"
-                                    data-item-name="{{ prop.name }}">
+                                    data-item-name="{{ prop.name }}"
+                                    data-custom-warning="Esta ação é irreversível e removerá também o show vinculado no calendário (caso exista).">
                                     <i class="fa-solid fa-trash me-2"></i> Excluir
                                 </button>
                             </li>
