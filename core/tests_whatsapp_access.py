@@ -283,3 +283,75 @@ class WhatsAppAccessCredentialsTests(TestCase):
         self.assertIn("🔗", decoded_text)
         self.assertIn("👤", decoded_text)
         self.assertIn("🔑", decoded_text)
+
+    def test_11_whatsapp_e2e_modal_href_encoding_and_emojis(self):
+        """11. E2E: cadastro via modal renderiza botao WhatsApp com href contendo percent-encoding exato e emojis sem '?'."""
+        import re
+
+        url_add = reverse('usuarios_add', kwargs={'band_slug': self.band.slug})
+        resp = self.client_prod.post(url_add, {
+            'from_modal': '1',
+            'first_name': 'Marcos',
+            'last_name': 'Teclado',
+            'username': 'marcos_teclado',
+            'email': 'marcos@axe.com',
+            'phone': '(71) 98765-4321',
+            'password': 'SenhaProvisoria123!',
+            'confirm_password': 'SenhaProvisoria123!',
+            'role': 'INTEGRANTE',
+            'is_active': 'on'
+        }, follow=True)
+
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode('utf-8')
+
+        # Modal de sucesso deve estar presente
+        self.assertIn('modalWhatsappSuccess', html)
+        self.assertIn('Enviar no WhatsApp', html)
+
+        # Extrai o href do botao WhatsApp diretamente do HTML renderizado
+        match = re.search(r'href="([^"]*wa\.me[^"]*)"', html)
+        self.assertIsNotNone(match, "Botao com link wa.me nao encontrado no HTML renderizado.")
+        raw_href = match.group(1)
+
+        # Valida que o numero normalizado esta presente
+        self.assertIn('5571987654321', raw_href)
+
+        # Valida que o percent-encoding de cada emoji UTF-8 de 4 bytes esta intacto no href
+        # 👋 U+1F44B -> %F0%9F%91%8B
+        # 🔗 U+1F517 -> %F0%9F%94%97
+        # 👤 U+1F464 -> %F0%9F%91%A4
+        # 🔑 U+1F511 -> %F0%9F%94%91
+        self.assertIn('%F0%9F%91%8B', raw_href)
+        self.assertIn('%F0%9F%94%97', raw_href)
+        self.assertIn('%F0%9F%91%A4', raw_href)
+        self.assertIn('%F0%9F%94%91', raw_href)
+
+        # Decodifica a URL e extrai o parametro text
+        self.assertIn('?text=', raw_href)
+        query_text = raw_href.split('?text=')[1]
+        decoded_text = unquote(query_text)
+
+        # Valida que os emojis reais estao perfeitamente decodificados
+        self.assertIn('👋', decoded_text)
+        self.assertIn('🔗', decoded_text)
+        self.assertIn('👤', decoded_text)
+        self.assertIn('🔑', decoded_text)
+
+        # Valida que nao ha '?' no lugar de emoji nem caractere de substituicao unicode
+        self.assertNotIn('\ufffd', decoded_text)
+        self.assertNotIn('? *Acesso:*', decoded_text)
+        self.assertNotIn('? *Login:*', decoded_text)
+        self.assertNotIn('? *Senha provisória:*', decoded_text)
+
+    def test_12_status_pill_css_enforces_dark_text(self):
+        """12. Garante que usuarios.html define color: #212529 !important em .status-pill para nao ficar com texto branco."""
+        url_list = reverse('usuarios_list', kwargs={'band_slug': self.band.slug})
+        resp = self.client_prod.get(url_list)
+        self.assertEqual(resp.status_code, 200)
+
+        html = resp.content.decode('utf-8')
+        # Verifica regra CSS no template
+        self.assertIn('.bp-users-page .status-pill', html)
+        self.assertIn('color: #212529 !important', html)
+

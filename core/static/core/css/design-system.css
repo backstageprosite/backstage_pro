@@ -341,3 +341,10 @@
 .badge.bg-warning {
     color: #212529 !important;
 }
+
+.status-pill.text-dark,
+.badge.text-dark,
+.status-pill.bg-opacity-10,
+.badge.bg-opacity-10 {
+    color: #212529 !important;
+}
