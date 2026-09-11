@@ -481,7 +481,6 @@
                     <a href="{{ whatsapp_access_data.whatsapp_mobile_url|default:whatsapp_access_data.whatsapp_url|safe }}"
                        id="btnSendWhatsappUser"
                        data-mobile-url="{{ whatsapp_access_data.whatsapp_mobile_url|default:whatsapp_access_data.whatsapp_url|safe }}"
-                       data-desktop-url="{{ whatsapp_access_data.whatsapp_web_url|default:whatsapp_access_data.whatsapp_url|safe }}"
                        target="_blank" rel="noopener noreferrer" class="btn fw-bold rounded-pill px-3 text-white shadow-sm d-inline-flex align-items-center" style="background-color: #25D366; border-color: #25D366; height: 34px; font-size: 13px;">
                         <i class="fa-brands fa-whatsapp me-1" style="font-size: 15px;"></i> Enviar no WhatsApp
                     </a>
@@ -491,6 +490,43 @@
         </div>
     </div>
 </div>
+
+{% if whatsapp_access_data.has_phone %}
+<!-- Modal Escolha WhatsApp Desktop -->
+<div class="modal fade text-start" id="modalWhatsappDesktopChoice" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;">
+                    <i class="fa-brands fa-whatsapp text-success me-2"></i>Abrir WhatsApp
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 p-md-4 text-center">
+                <p class="text-muted mb-3" style="font-size: 14px;">Como deseja abrir o WhatsApp?</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ whatsapp_access_data.whatsapp_app_url|safe }}"
+                       id="btnWhatsappChoiceApp"
+                       class="btn fw-bold rounded-pill py-2 text-white shadow-sm d-inline-flex align-items-center justify-content-center"
+                       style="background-color: #25D366; border-color: #25D366; font-size: 14px;">
+                        <i class="fa-brands fa-whatsapp me-2" style="font-size: 18px;"></i> WhatsApp Aplicativo
+                    </a>
+                    <a href="{{ whatsapp_access_data.whatsapp_web_url|safe }}"
+                       id="btnWhatsappChoiceWeb"
+                       target="_blank" rel="noopener noreferrer"
+                       class="btn btn-outline-success fw-bold rounded-pill py-2 shadow-sm d-inline-flex align-items-center justify-content-center"
+                       style="font-size: 14px;">
+                        <i class="fa-brands fa-whatsapp me-2" style="font-size: 18px;"></i> WhatsApp Web
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0 justify-content-center">
+                <button type="button" class="btn btn-light border fw-bold rounded-pill px-4" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endif %}
 
 <script>
@@ -516,17 +552,20 @@
 
         const btnWhatsapp = document.getElementById('btnSendWhatsappUser');
         if (btnWhatsapp) {
-            const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-            const mobileUrl = btnWhatsapp.getAttribute('data-mobile-url');
-            const desktopUrl = btnWhatsapp.getAttribute('data-desktop-url');
-
-            // Ajusta o href inicial
-            btnWhatsapp.href = isMobileDevice ? (mobileUrl || btnWhatsapp.href) : (desktopUrl || btnWhatsapp.href);
-
-            // Garante que no momento do clique o destino esteja atualizado
-            btnWhatsapp.addEventListener('click', function() {
+            btnWhatsapp.addEventListener('click', function(e) {
                 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-                this.href = isMobile ? (this.getAttribute('data-mobile-url') || this.href) : (this.getAttribute('data-desktop-url') || this.href);
+                if (isMobile) {
+                    // No mobile, navega direto para o link wa.me
+                    this.href = this.getAttribute('data-mobile-url') || this.href;
+                } else {
+                    // No desktop, intercepta o clique e abre o modal de escolha
+                    e.preventDefault();
+                    const choiceModalEl = document.getElementById('modalWhatsappDesktopChoice');
+                    if (choiceModalEl) {
+                        const choiceModal = new bootstrap.Modal(choiceModalEl);
+                        choiceModal.show();
+                    }
+                }
             });
         }
         {% endif %}

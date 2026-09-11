@@ -69,11 +69,12 @@ class WhatsAppAccessCredentialsTests(TestCase):
         self.assertContains(resp, '>OK</button>')
 
     def test_03_normalizacao_telefone_com_e_sem_55(self):
-        """3. normalizacao do telefone: numero com e sem DDD/codigo do pais (mobile e desktop)."""
+        """3. normalizacao do telefone: numero com e sem DDD/codigo do pais (mobile, app e web)."""
         user1 = User(first_name="Joao", username="joao", phone="(11) 98765-4321")
         res1 = build_whatsapp_access_data(self.band, user1, "Pass123")
         self.assertTrue(res1['has_phone'])
         self.assertTrue(res1['whatsapp_mobile_url'].startswith("https://wa.me/5511987654321?text="))
+        self.assertTrue(res1['whatsapp_app_url'].startswith("whatsapp://send?phone=5511987654321&text="))
         self.assertTrue(res1['whatsapp_web_url'].startswith("https://web.whatsapp.com/send?phone=5511987654321&text="))
         self.assertEqual(res1['whatsapp_url'], res1['whatsapp_mobile_url'])
 
@@ -82,6 +83,7 @@ class WhatsAppAccessCredentialsTests(TestCase):
         res2 = build_whatsapp_access_data(self.band, user2, "Pass123")
         self.assertTrue(res2['has_phone'])
         self.assertTrue(res2['whatsapp_mobile_url'].startswith("https://wa.me/5511987654321?text="))
+        self.assertTrue(res2['whatsapp_app_url'].startswith("whatsapp://send?phone=5511987654321&text="))
         self.assertTrue(res2['whatsapp_web_url'].startswith("https://web.whatsapp.com/send?phone=5511987654321&text="))
 
         # Telefone fixo com DDD (10 digitos)
@@ -89,6 +91,7 @@ class WhatsAppAccessCredentialsTests(TestCase):
         res3 = build_whatsapp_access_data(self.band, user3, "Pass123")
         self.assertTrue(res3['has_phone'])
         self.assertTrue(res3['whatsapp_mobile_url'].startswith("https://wa.me/557133221100?text="))
+        self.assertTrue(res3['whatsapp_app_url'].startswith("whatsapp://send?phone=557133221100&text="))
         self.assertTrue(res3['whatsapp_web_url'].startswith("https://web.whatsapp.com/send?phone=557133221100&text="))
 
         # Vazio
@@ -97,6 +100,7 @@ class WhatsAppAccessCredentialsTests(TestCase):
         self.assertFalse(res4['has_phone'])
         self.assertEqual(res4['whatsapp_url'], "")
         self.assertEqual(res4['whatsapp_mobile_url'], "")
+        self.assertEqual(res4['whatsapp_app_url'], "")
         self.assertEqual(res4['whatsapp_web_url'], "")
 
     def test_04_mensagem_contem_todos_dados_corretos(self):
@@ -315,50 +319,69 @@ class WhatsAppAccessCredentialsTests(TestCase):
         self.assertIn('modalWhatsappSuccess', html)
         self.assertIn('Enviar no WhatsApp', html)
 
-        # Extrai os atributos data-mobile-url e data-desktop-url
+        # Modal de escolha desktop deve estar presente no HTML
+        self.assertIn('modalWhatsappDesktopChoice', html)
+        self.assertIn('Abrir WhatsApp', html)
+        self.assertIn('Como deseja abrir o WhatsApp?', html)
+        self.assertIn('WhatsApp Aplicativo', html)
+        self.assertIn('WhatsApp Web', html)
+        self.assertIn('Cancelar', html)
+
+        # Extrai os links do HTML
         match_mobile = re.search(r'data-mobile-url="([^"]*)"', html)
-        match_desktop = re.search(r'data-desktop-url="([^"]*)"', html)
-        self.assertIsNotNone(match_mobile, "Atributo data-mobile-url nao encontrado no HTML.")
-        self.assertIsNotNone(match_desktop, "Atributo data-desktop-url nao encontrado no HTML.")
+        match_app = re.search(r'href="(whatsapp://[^"]*)"', html)
+        match_web = re.search(r'href="(https://web\.whatsapp\.com[^"]*)"', html)
+
+        self.assertIsNotNone(match_mobile, "Link mobile (data-mobile-url) nao encontrado no HTML.")
+        self.assertIsNotNone(match_app, "Link do aplicativo (whatsapp://) nao encontrado no HTML.")
+        self.assertIsNotNone(match_web, "Link do WhatsApp Web nao encontrado no HTML.")
 
         mobile_url = match_mobile.group(1)
-        desktop_url = match_desktop.group(1)
+        app_url = match_app.group(1)
+        web_url = match_web.group(1)
 
         # 1. URL mobile continua usando https://wa.me/
         self.assertTrue(mobile_url.startswith("https://wa.me/5571987654321?text="))
 
-        # 2. URL desktop usa https://web.whatsapp.com/send
-        self.assertTrue(desktop_url.startswith("https://web.whatsapp.com/send?phone=5571987654321&text="))
+        # 2. URL app usa whatsapp://send
+        self.assertTrue(app_url.startswith("whatsapp://send?phone=5571987654321&text="))
 
-        # 3. Ambas possuem exatamente o mesmo parametro text
+        # 3. URL web usa https://web.whatsapp.com/send
+        self.assertTrue(web_url.startswith("https://web.whatsapp.com/send?phone=5571987654321&text="))
+
+        # 4. As tres possuem exatamente o mesmo parametro text
         mobile_query_text = mobile_url.split("?text=")[1]
-        desktop_query_text = desktop_url.split("&text=")[1]
-        self.assertEqual(mobile_query_text, desktop_query_text)
+        app_query_text = app_url.split("&text=")[1]
+        web_query_text = web_url.split("&text=")[1]
+        self.assertEqual(mobile_query_text, app_query_text)
+        self.assertEqual(mobile_query_text, web_query_text)
 
-        # 4. Ambas possuem corretamente os percent-encodings UTF-8
-        for target_url in (mobile_url, desktop_url):
+        # 5. As tres possuem corretamente os percent-encodings UTF-8
+        for target_url in (mobile_url, app_url, web_url):
             self.assertIn('%F0%9F%91%8B', target_url)
             self.assertIn('%F0%9F%94%97', target_url)
             self.assertIn('%F0%9F%91%A4', target_url)
             self.assertIn('%F0%9F%94%91', target_url)
 
-        # 5. Apos decodificar os emojis reais estao presentes
+        # 6. Apos decodificar os emojis reais estao presentes
         decoded_text = unquote(mobile_query_text)
         self.assertIn('👋', decoded_text)
         self.assertIn('🔗', decoded_text)
         self.assertIn('👤', decoded_text)
         self.assertIn('🔑', decoded_text)
 
-        # 6. Nao existe caractere quebrado nem dupla codificacao %25F0...
+        # 7. Nao existe caractere quebrado nem dupla codificacao %25F0...
         self.assertNotIn('\ufffd', decoded_text)
         self.assertNotIn('%25F0', mobile_url)
-        self.assertNotIn('%25F0', desktop_url)
+        self.assertNotIn('%25F0', app_url)
+        self.assertNotIn('%25F0', web_url)
         self.assertNotIn('? *Acesso:*', decoded_text)
         self.assertNotIn('? *Login:*', decoded_text)
         self.assertNotIn('? *Senha provisória:*', decoded_text)
 
-        # 7. Verifica presenca do script de deteccao de userAgent no HTML
+        # 8. Script no HTML: no mobile vai direto para wa.me, no desktop abre modal
         self.assertIn('Android|iPhone|iPad|iPod', html)
+        self.assertIn('modalWhatsappDesktopChoice', html)
         self.assertIn('btnSendWhatsappUser', html)
 
 
