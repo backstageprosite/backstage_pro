@@ -146,6 +146,12 @@ class PartnerTests(TestCase):
         self.assertContains(res, 'Nenhum parceiro encontrado para "InexistenteXYZ".')
         self.assertContains(res, 'Limpar')
 
+        # 5. Botão Limpar sempre visível mesmo sem termo pesquisado
+        res_initial = self.client.get(reverse('parceiros', args=['banda-teste']))
+        self.assertContains(res_initial, 'Limpar')
+        self.assertContains(res_initial, 'Filtrar')
+        self.assertContains(res_initial, reverse('parceiros', args=['banda-teste']))
+
     def test_band_view_isolation(self):
         self.client.login(username='outro', password='123')
         # Tenta acessar parceiros da 'banda-teste'
