@@ -62,7 +62,38 @@
         justify-content: center;
         text-align: center;
         white-space: nowrap;
+    }
+    .bp-admin-users-page .role-pill-admin {
+        background-color: rgba(33, 37, 41, 0.1) !important;
+        border: 1px solid rgba(33, 37, 41, 0.25) !important;
         color: #212529 !important;
+    }
+    .bp-admin-users-page .role-pill-admin i {
+        color: #212529 !important;
+    }
+    .bp-admin-users-page .role-pill-produtor {
+        background-color: rgba(13, 110, 253, 0.1) !important;
+        border: 1px solid rgba(13, 110, 253, 0.25) !important;
+        color: #0d6efd !important;
+    }
+    .bp-admin-users-page .role-pill-produtor i {
+        color: #0d6efd !important;
+    }
+    .bp-admin-users-page .role-pill-empresario {
+        background-color: rgba(111, 66, 193, 0.12) !important;
+        border: 1px solid rgba(111, 66, 193, 0.35) !important;
+        color: #6f42c1 !important;
+    }
+    .bp-admin-users-page .role-pill-empresario i {
+        color: #6f42c1 !important;
+    }
+    .bp-admin-users-page .role-pill-integrante {
+        background-color: rgba(253, 126, 20, 0.12) !important;
+        border: 1px solid rgba(253, 126, 20, 0.35) !important;
+        color: #d65b00 !important;
+    }
+    .bp-admin-users-page .role-pill-integrante i {
+        color: #d65b00 !important;
     }
 
     @media (max-width: 767.98px) {
@@ -169,20 +200,20 @@
                             </td>
                             <td class="text-center">
                                 {% if u.is_superuser %}
-                                    <span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25 role-pill">
-                                        <i class="fa-solid fa-shield text-dark me-1"></i> Admin Geral
+                                    <span class="badge role-pill role-pill-admin">
+                                        <i class="fa-solid fa-shield me-1"></i> Admin Geral
                                     </span>
                                 {% elif u.role == 'EMPRESARIO' %}
-                                    <span class="badge bg-primary bg-opacity-10 text-dark border border-primary border-opacity-25 role-pill">
-                                        <i class="fa-solid fa-crown text-primary me-1"></i> Empresário
+                                    <span class="badge role-pill role-pill-empresario">
+                                        <i class="fa-solid fa-crown me-1"></i> Empresário
                                     </span>
                                 {% elif u.is_produtor or u.role == 'PRODUTOR' %}
-                                    <span class="badge bg-primary bg-opacity-10 text-dark border border-primary border-opacity-25 role-pill">
-                                        <i class="fa-solid fa-crown text-primary me-1"></i> Produtor
+                                    <span class="badge role-pill role-pill-produtor">
+                                        <i class="fa-solid fa-crown me-1"></i> Produtor
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-secondary bg-opacity-10 text-dark border border-secondary border-opacity-25 role-pill">
-                                        <i class="fa-solid fa-guitar text-secondary me-1"></i> Integrante
+                                    <span class="badge role-pill role-pill-integrante">
+                                        <i class="fa-solid fa-guitar me-1"></i> Integrante
                                     </span>
                                 {% endif %}
                             </td>

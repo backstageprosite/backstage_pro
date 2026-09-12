@@ -304,11 +304,17 @@ class AdminWhatsAppAccessTests(TestCase):
         resp = self.client.get(reverse('admin_painel:usuarios'))
         self.assertEqual(resp.status_code, 200)
 
-        # Check that each role pill is rendered
+        # Check that each role pill text is rendered
         self.assertContains(resp, 'Admin Geral')
         self.assertContains(resp, 'Empresário')
         self.assertContains(resp, 'Produtor')
         self.assertContains(resp, 'Integrante')
+
+        # Check that each role pill has its designated visual class
+        self.assertContains(resp, 'role-pill-admin')
+        self.assertContains(resp, 'role-pill-produtor')
+        self.assertContains(resp, 'role-pill-empresario')
+        self.assertContains(resp, 'role-pill-integrante')
 
     def test_12_no_example_placeholders_in_admin_user_forms_and_template(self):
         create_form = AdminUserCreateForm()
