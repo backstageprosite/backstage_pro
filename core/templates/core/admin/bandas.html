@@ -297,7 +297,7 @@
             <form method="POST" action="{% url 'admin_painel:bandas_criar_cobranca' b.id %}" class="form-charge-band" data-band-id="{{ b.id }}">
                 {% csrf_token %}
                 <div class="modal-body p-3 p-md-4">
-                    {% if b.has_active_subscription %}
+                    {% if b.has_contracted_active_subscription %}
                     <div class="alert alert-warning d-flex align-items-center mb-3 py-2 px-3" style="border-radius: 8px; font-size: 12px;">
                         <i class="fa-solid fa-triangle-exclamation me-2 fs-6"></i>
                         <div>

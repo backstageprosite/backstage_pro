@@ -70,6 +70,23 @@ class Band(models.Model):
         return True
 
     @property
+    def has_contracted_active_subscription(self):
+        """
+        Retorna True somente se a banda possuir de fato um contrato/registro de BandSubscription
+        ativo e adimplente. Não usa fallback de is_active, sendo apropriado para fluxos
+        de criação de nova cobrança/checkout.
+        """
+        sub = self.subscriptions.filter(is_deleted=False).order_by('-created_at').first()
+        if not sub:
+            return False
+        sub.check_and_sync_auto_expiration()
+        if sub.status != 'ATIVO':
+            return False
+        if sub.is_financially_suspended:
+            return False
+        return True
+
+    @property
     def dynamic_status(self):
         if self.status == 'PAGO':
             return 'PAGO'

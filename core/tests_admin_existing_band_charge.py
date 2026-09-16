@@ -29,12 +29,12 @@ class AdminExistingBandChargeTests(TestCase):
             password='admin_password_123'
         )
 
-        # Banda existente
+        # Banda existente cadastrada (is_active=True por padrão, mas sem BandSubscription)
         self.band = Band.objects.create(
             name='Banda Rock Star',
             slug='banda-rock-star',
             plan_type='BASICO',
-            is_active=False
+            is_active=True
         )
         self.produtor = User.objects.create_user(
             username='produtor_rock',

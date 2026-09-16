@@ -786,7 +786,7 @@ def admin_band_create_charge(request, pk):
         return redirect('admin_painel:bandas')
 
     # Validação de assinatura ativa existente (aviso/bloqueio suave se não houver confirmação)
-    has_active = band.has_active_subscription
+    has_active = band.has_contracted_active_subscription
     confirm_override = request.POST.get('confirm_override') in ('true', '1', 'on')
     if has_active and not confirm_override:
         err = f"A banda '{band.name}' já possui uma assinatura ativa. Marque a confirmação para gerar nova cobrança."
