@@ -95,6 +95,11 @@ class Band(models.Model):
         if st == 'CANCELADO': return 'Cancelado'
         return st
 
+    @property
+    def signup_order(self):
+        """Retorna o pedido de contratação mais recente associado à banda."""
+        return self.signup_orders.order_by('-created_at').first()
+
     def __str__(self):
         return self.name
 
@@ -2117,7 +2122,7 @@ class SignupOrder(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor da Contratação')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDENTE', db_index=True, verbose_name='Status do Pedido')
 
-    band = models.OneToOneField(Band, on_delete=models.SET_NULL, null=True, blank=True, related_name='signup_order', verbose_name='Banda Provisionada')
+    band = models.ForeignKey(Band, on_delete=models.SET_NULL, null=True, blank=True, related_name='signup_orders', verbose_name='Banda Provisionada')
     provisioned_at = models.DateTimeField(null=True, blank=True, verbose_name='Data do Provisionamento')
 
     activated_user = models.OneToOneField(

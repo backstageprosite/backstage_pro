@@ -14,6 +14,7 @@ urlpatterns = [
     path('bandas/nova/', admin_views.admin_band_create, name='bandas_nova'),
     path('bandas/<int:pk>/editar/', admin_views.admin_band_edit, name='bandas_editar'),
     path('bandas/<int:pk>/desativar/', admin_views.admin_band_toggle_active, name='bandas_desativar'),
+    path('bandas/<int:pk>/criar-cobranca/', admin_views.admin_band_create_charge, name='bandas_criar_cobranca'),
     
     path('usuarios/', admin_views.AdminUserListView.as_view(), name='usuarios'),
     path('usuarios/novo/', admin_views.admin_user_create, name='usuarios_novo'),

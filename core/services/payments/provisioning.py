@@ -67,12 +67,11 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
         # Lock da ordem de contratação
         order = SignupOrder.objects.select_for_update().get(pk=order.pk)
 
-        # Idempotência Nível 2: Se a ordem já foi provisionada com Band, não recria
+        # Idempotência Nível 2: Se a ordem já foi provisionada/paga com Band, não recria nem duplica faturamento
         if order.status == 'PAGO' and order.band is not None:
             logger.info("SignupOrder %s ja foi provisionada anteriormente. Ignorando reprovisionamento.", order.external_reference)
             return True, "JA_PROVISIONADO", order.band
 
-        # 2. Criar a Band
         # Extrair data de efetivação financeira (paymentDate / clientPaymentDate / confirmedDate) com fallback para hoje
         raw_paid = (
             payment_data.get('paymentDate')
@@ -87,19 +86,33 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
         financial_start_date = raw_paid
         next_due = calculate_next_billing_date(financial_start_date, order.billing_cycle, 1)
 
-        band_slug = generate_unique_band_slug(order.band_name)
-        band = Band.objects.create(
-            name=order.band_name,
-            slug=band_slug,
-            plan_type=order.plan_type,
-            is_active=True,
-            subscription_plan=order.billing_cycle,
-            subscription_status='CONFIRMADO',
-            subscription_due_date=next_due
-        )
+        is_existing_band = (order.band is not None)
 
-        # 3. Criar BandSubscription oficial
-        # O nome do plano deve ser estritamente 'Básico' ou 'Avançado' (o ciclo e exibido separadamente)
+        if is_existing_band:
+            # 2a. Banda Já Cadastrada (BP-PEND-60)
+            # Reutiliza a banda existente, garantindo ativação e sincronização do plano
+            band = order.band
+            band.plan_type = order.plan_type
+            band.is_active = True
+            band.subscription_plan = order.billing_cycle
+            band.subscription_status = 'CONFIRMADO'
+            band.subscription_due_date = next_due
+            band.save(update_fields=['plan_type', 'is_active', 'subscription_plan', 'subscription_status', 'subscription_due_date'])
+            logger.info("Cobrança aprovada para banda existente '%s' (id=%s). Atualizando assinatura.", band.name, band.id)
+        else:
+            # 2b. Nova Banda (Provisionamento inicial público)
+            band_slug = generate_unique_band_slug(order.band_name)
+            band = Band.objects.create(
+                name=order.band_name,
+                slug=band_slug,
+                plan_type=order.plan_type,
+                is_active=True,
+                subscription_plan=order.billing_cycle,
+                subscription_status='CONFIRMADO',
+                subscription_due_date=next_due
+            )
+
+        # 3. Criar ou Atualizar BandSubscription oficial
         plan_display = 'Avançado' if order.plan_type == 'AVANCADO' else 'Básico'
         is_annual = (order.billing_cycle == 'ANUAL')
 
@@ -108,7 +121,7 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
         is_pix = (billing_type_raw == 'PIX') or (order.external_reference and order.external_reference.endswith('-pix'))
         pref_method = 'PIX' if is_pix else 'CARTAO'
 
-        # Para ANUAL: rigorosamente auto_renew=False (renovação controlada ou recontratação)
+        # Para ANUAL: auto_renew=False (renovação controlada ou recontratação)
         # Para MENSAL PIX: auto_renew=False (cobrança avulsa ciclo a ciclo via check_subscription_due_dates)
         # Para MENSAL CARTÃO: auto_renew=True (recorrência automática com token ou gateway subscription)
         if is_annual or is_pix:
@@ -116,25 +129,55 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
         else:
             auto_renew_val = True
 
-        sub = BandSubscription.objects.create(
-            band=band,
-            plan_name=plan_display,
-            billing_cycle=order.billing_cycle,
-            contracted_value=order.amount,
-            start_date=financial_start_date,
-            next_due_date=next_due,
-            auto_renew=auto_renew_val,
-            status='ATIVO',
-            payment_method_preference=pref_method,
-            financial_responsible_name=order.responsible_name,
-            billing_phone=order.phone,
-            billing_email=order.email,
-            gateway_provider='ASAAS',
-            gateway_customer_id=customer_id or order.gateway_customer_id,
-            gateway_subscription_id=subscription_id or order.gateway_subscription_id,
-            gateway_checkout_id=effective_checkout_id,
-            gateway_external_reference=order.external_reference
-        )
+        sub = None
+        if is_existing_band:
+            sub = BandSubscription.objects.filter(band=band, is_deleted=False).order_by('-created_at').first()
+
+        if sub:
+            sub.plan_name = plan_display
+            sub.billing_cycle = order.billing_cycle
+            sub.contracted_value = order.amount
+            sub.start_date = financial_start_date
+            sub.next_due_date = next_due
+            sub.auto_renew = auto_renew_val
+            sub.status = 'ATIVO'
+            sub.payment_method_preference = pref_method
+            if order.responsible_name:
+                sub.financial_responsible_name = order.responsible_name
+            if order.phone:
+                sub.billing_phone = order.phone
+            if order.email:
+                sub.billing_email = order.email
+            sub.gateway_provider = 'ASAAS'
+            if customer_id or order.gateway_customer_id:
+                sub.gateway_customer_id = customer_id or order.gateway_customer_id
+            if subscription_id or order.gateway_subscription_id:
+                sub.gateway_subscription_id = subscription_id or order.gateway_subscription_id
+            if effective_checkout_id:
+                sub.gateway_checkout_id = effective_checkout_id
+            sub.gateway_external_reference = order.external_reference
+            sub.is_financially_suspended = False
+            sub.save()
+        else:
+            sub = BandSubscription.objects.create(
+                band=band,
+                plan_name=plan_display,
+                billing_cycle=order.billing_cycle,
+                contracted_value=order.amount,
+                start_date=financial_start_date,
+                next_due_date=next_due,
+                auto_renew=auto_renew_val,
+                status='ATIVO',
+                payment_method_preference=pref_method,
+                financial_responsible_name=order.responsible_name,
+                billing_phone=order.phone,
+                billing_email=order.email,
+                gateway_provider='ASAAS',
+                gateway_customer_id=customer_id or order.gateway_customer_id,
+                gateway_subscription_id=subscription_id or order.gateway_subscription_id,
+                gateway_checkout_id=effective_checkout_id,
+                gateway_external_reference=order.external_reference
+            )
 
         # 4. Criar BillingRecord inicial liquidado (PAGO)
         today = timezone.localdate()
@@ -278,53 +321,55 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
             installment_number=initial_installment_number if is_installment_plan else None
         )
 
-        # 5. Criar BandActivationToken seguro (48 horas)
-        activation, raw_token = create_band_activation_token(
-            band=band,
-            email=order.email,
-            responsible_name=order.responsible_name,
-            signup_order=order,
-            valid_hours=48
-        )
-
-        # 5.1 Enfileirar EmailDelivery ACCOUNT_ACTIVATION (desacoplado de SMTP)
-        # Formatação detalhada da forma de pagamento e parcelamento (BP-PEND-40)
-        payment_info = None
-        if pref_method == 'PIX':
-            payment_info = 'PIX — à vista'
-        elif not is_annual:
-            payment_info = 'Cartão de crédito — cobrança mensal'
-        else:
-            # Plano Anual no Cartão: 1x ou parcelado em até 5x
-            if is_installment_plan and installment_count_val > 1:
-                inst_amount_str = f"{initial_record_amount:.2f}".replace('.', ',')
-                payment_info = f"Cartão de crédito — {installment_count_val}x de R$ {inst_amount_str}"
-            else:
-                full_amount_str = f"{order.amount:.2f}".replace('.', ',')
-                payment_info = f"Cartão de crédito — 1x de R$ {full_amount_str}"
-
-        try:
-            from core.services.email_service import enqueue_email
-            enqueue_email(
-                email_type='ACCOUNT_ACTIVATION',
-                recipient_email=order.email,
-                subject='Sua conta no Backstage Pro está pronta!',
-                idempotency_key=f"activation-signup-{order.id}",
-                template_name='emails/account_activation',
-                context_data={
-                    'responsible_name': order.responsible_name or band.name,
-                    'band_name': band.name,
-                    'plan_name': plan_display,
-                    'billing_cycle': 'Anual' if is_annual else 'Mensal',
-                    'amount': f"{order.amount:.2f}".replace('.', ','),
-                    'payment_info': payment_info,
-                },
-                related_object_type='BandActivationToken',
-                related_object_id=str(activation.pk)
+        # 5. Criar BandActivationToken e notificação (Apenas para novas bandas)
+        # Para bandas já existentes (BP-PEND-60), os usuários já possuem acesso e senha configurada.
+        if not is_existing_band:
+            activation, raw_token = create_band_activation_token(
+                band=band,
+                email=order.email,
+                responsible_name=order.responsible_name,
+                signup_order=order,
+                valid_hours=48
             )
-            del raw_token  # Limpa token em texto plano da memória
-        except Exception as e:
-            logger.warning("Falha ao enfileirar e-mail de ativação para pedido %s: %s", order.external_reference, str(e))
+
+            # 5.1 Enfileirar EmailDelivery ACCOUNT_ACTIVATION (desacoplado de SMTP)
+            # Formatação detalhada da forma de pagamento e parcelamento (BP-PEND-40)
+            payment_info = None
+            if pref_method == 'PIX':
+                payment_info = 'PIX — à vista'
+            elif not is_annual:
+                payment_info = 'Cartão de crédito — cobrança mensal'
+            else:
+                # Plano Anual no Cartão: 1x ou parcelado em até 5x
+                if is_installment_plan and installment_count_val > 1:
+                    inst_amount_str = f"{initial_record_amount:.2f}".replace('.', ',')
+                    payment_info = f"Cartão de crédito — {installment_count_val}x de R$ {inst_amount_str}"
+                else:
+                    full_amount_str = f"{order.amount:.2f}".replace('.', ',')
+                    payment_info = f"Cartão de crédito — 1x de R$ {full_amount_str}"
+
+            try:
+                from core.services.email_service import enqueue_email
+                enqueue_email(
+                    email_type='ACCOUNT_ACTIVATION',
+                    recipient_email=order.email,
+                    subject='Sua conta no Backstage Pro está pronta!',
+                    idempotency_key=f"activation-signup-{order.id}",
+                    template_name='emails/account_activation',
+                    context_data={
+                        'responsible_name': order.responsible_name or band.name,
+                        'band_name': band.name,
+                        'plan_name': plan_display,
+                        'billing_cycle': 'Anual' if is_annual else 'Mensal',
+                        'amount': f"{order.amount:.2f}".replace('.', ','),
+                        'payment_info': payment_info,
+                    },
+                    related_object_type='BandActivationToken',
+                    related_object_id=str(activation.pk)
+                )
+                del raw_token  # Limpa token em texto plano da memória
+            except Exception as e:
+                logger.warning("Falha ao enfileirar e-mail de ativação para pedido %s: %s", order.external_reference, str(e))
 
         # 6. Atualizar SignupOrder
         order.band = band
