@@ -164,11 +164,16 @@
 
 {% block content %}
 <div class="bp-admin-subs-page">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h4 class="page-title"><i class="fa-solid fa-file-contract me-2 text-primary"></i>Assinaturas</h4>
-        <button class="btn btn-header-action fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalCreateSubscription" style="background-color: #6BD443; border-color: #6BD443;">
-            <i class="fa-solid fa-plus me-1"></i> Nova Assinatura
-        </button>
+        <div class="d-flex gap-2">
+            <button class="btn btn-header-action fw-bold shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modalCreateSubscription" style="background-color: #6BD443; border-color: #6BD443;">
+                <i class="fa-solid fa-plus me-1"></i> Nova Assinatura
+            </button>
+            <button class="btn btn-header-action fw-bold shadow-sm text-white" data-bs-toggle="modal" data-bs-target="#modalChargeBand" style="background-color: #198754; border-color: #198754;">
+                <i class="fa-solid fa-file-invoice-dollar me-1"></i> Gerar Cobrança
+            </button>
+        </div>
     </div>
 
     <!-- Filtros e Busca -->
@@ -632,6 +637,165 @@
     </div>
 </div>
 
+<!-- Modal Gerar Cobrança (BP-PEND-60 + BP-PEND-61) -->
+<div class="modal fade text-start" id="modalChargeBand" tabindex="-1" aria-labelledby="modalChargeBandLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="modalChargeBandLabel" style="font-size: 16px;">
+                    <i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i>Gerar Cobrança
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'admin_painel:assinaturas_gerar_cobranca' %}" id="formChargeBand">
+                {% csrf_token %}
+                <div class="modal-body p-3 p-md-4">
+                    <!-- Alerta Dinâmico de Assinatura Ativa -->
+                    <div id="chargeActiveSubAlert" class="alert alert-warning d-none align-items-center mb-3 py-2 px-3" style="border-radius: 8px; font-size: 12px;">
+                        <i class="fa-solid fa-triangle-exclamation me-2 fs-6"></i>
+                        <div>
+                            <strong>Atenção:</strong> Esta banda já possui assinatura ativa no sistema.
+                            <div class="form-check mt-1">
+                                <input class="form-check-input" type="checkbox" name="confirm_override" value="1" id="chargeConfirmOverride">
+                                <label class="form-check-label fw-bold text-dark" for="chargeConfirmOverride" style="font-size: 12px;">
+                                    Confirmar geração de nova cobrança avulsa / substituição
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seleção de Banda -->
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Banda</label>
+                        <select name="band_id" id="chargeSelectBand" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <option value="" disabled selected>Selecione uma banda...</option>
+                            {% for b in all_bands_for_charge %}
+                                <option value="{{ b.id }}">{{ b.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Plano</label>
+                            <select name="plan_type" id="chargeSelectPlan" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                                <option value="AVANCADO" selected>Avançado</option>
+                                <option value="BASICO">Básico</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Ciclo</label>
+                            <select name="billing_cycle" id="chargeSelectCycle" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                                <option value="MENSAL" selected>Mensal</option>
+                                <option value="ANUAL">Anual</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Forma de Pagamento (Asaas)</label>
+                        <select name="payment_method" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                            <option value="">Todas (Cartão e PIX)</option>
+                            <option value="CREDIT_CARD">Cartão de Crédito</option>
+                            <option value="PIX">PIX</option>
+                        </select>
+                    </div>
+
+                    <!-- Valor Canônico -->
+                    <div class="p-2 mb-3 bg-light rounded text-center border">
+                        <span class="text-muted small">Valor Canônico a Cobrar:</span>
+                        <div class="fw-bold text-success fs-5" id="chargePriceDisplay">
+                            R$ {{ canonical_prices.AVANCADO_MENSAL|floatformat:2 }}
+                        </div>
+                    </div>
+
+                    <!-- Dados do Responsável / Pagador -->
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome do Responsável / Pagador</label>
+                        <input type="text" name="responsible_name" id="chargeInputResponsible" class="form-control" placeholder="Nome completo" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-7">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">E-mail do Responsável</label>
+                            <input type="email" name="email" id="chargeInputEmail" class="form-control" placeholder="email@exemplo.com" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Telefone / WhatsApp</label>
+                            <input type="text" name="phone" id="chargeInputPhone" class="form-control whatsapp-mask" placeholder="(00) 00000-0000" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">CPF ou CNPJ (Opcional)</label>
+                        <input type="text" name="cpf_cnpj" id="chargeInputCpfCnpj" class="form-control" placeholder="Apenas números" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                    </div>
+
+                    <!-- Área de Sucesso / Checkout Link e WhatsApp (oculta por padrão) -->
+                    <div id="chargeResultBox" class="d-none mt-3 p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded text-start">
+                        <h6 class="fw-bold text-success mb-1"><i class="fa-solid fa-circle-check me-1"></i> Cobrança Criada com Sucesso!</h6>
+                        <p class="small text-muted mb-2">Envie o link de pagamento ou abra diretamente para pagar:</p>
+                        <div class="input-group mb-2">
+                            <input type="text" id="chargeGeneratedLink" class="form-control form-control-sm" readonly style="font-size: 12px;">
+                            <button class="btn btn-sm btn-outline-success fw-medium" id="chargeBtnCopyLink" type="button"><i class="fa-solid fa-copy me-1"></i> Copiar Link</button>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-end gap-2 mt-2">
+                            <a href="#" target="_blank" id="chargeBtnOpenLink" class="btn btn-sm btn-success fw-bold"><i class="fa-solid fa-external-link-alt me-1"></i> Abrir Pagamento</a>
+                            <button type="button" id="chargeBtnSendWhatsapp" class="btn btn-sm text-white fw-bold d-none" style="background-color: #25D366; border-color: #25D366;">
+                                <i class="fa-brands fa-whatsapp me-1" style="font-size: 14px;"></i> Enviar no WhatsApp
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mensagem de Erro AJAX -->
+                    <div id="chargeErrorBox" class="d-none mt-3 alert alert-danger py-2 px-3 small"></div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Fechar</button>
+                    <button type="submit" id="chargeBtnSubmit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">
+                        <i class="fa-solid fa-file-invoice-dollar me-1"></i> Gerar Cobrança
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Escolha WhatsApp Desktop para Cobrança (BP-PEND-61) -->
+<div class="modal fade text-start" id="modalWhatsappDesktopChoiceCharge" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;">
+                    <i class="fa-brands fa-whatsapp text-success me-2"></i>Abrir WhatsApp
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 p-md-4 text-center">
+                <p class="text-muted mb-3" style="font-size: 14px;">Como deseja abrir o WhatsApp?</p>
+                <div class="d-grid gap-2">
+                    <a href="#"
+                       id="chargeWhatsappChoiceApp"
+                       class="btn fw-bold rounded-pill py-2 text-white shadow-sm d-inline-flex align-items-center justify-content-center"
+                       style="background-color: #25D366; border-color: #25D366; font-size: 14px;">
+                        <i class="fa-brands fa-whatsapp me-2" style="font-size: 18px;"></i> WhatsApp Aplicativo
+                    </a>
+                    <a href="#"
+                       id="chargeWhatsappChoiceWeb"
+                       target="_blank" rel="noopener noreferrer"
+                       class="btn btn-outline-success fw-bold rounded-pill py-2 shadow-sm d-inline-flex align-items-center justify-content-center"
+                       style="font-size: 14px;">
+                        <i class="fa-brands fa-whatsapp me-2" style="font-size: 18px;"></i> WhatsApp Web
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0 justify-content-center">
+                <button type="button" class="btn btn-light border fw-bold rounded-pill px-4" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     // Dynamic Partnership / Paid toggle in Create Modal
@@ -734,6 +898,221 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             });
         });
+    });
+
+    // BP-PEND-60 + BP-PEND-61: Lógica do Modal "Gerar Cobrança" e WhatsApp
+    document.addEventListener("DOMContentLoaded", function() {
+        function showToast(message) {
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3 mt-5 mt-lg-0';
+                toastContainer.style.zIndex = '1100';
+                document.body.appendChild(toastContainer);
+            }
+
+            const toastEl = document.createElement('div');
+            toastEl.className = 'toast align-items-center text-bg-success border-0 shadow-lg';
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+            toastEl.setAttribute('aria-atomic', 'true');
+            toastEl.setAttribute('data-bs-delay', '3000');
+
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body fw-medium fs-6">
+                        <i class="fa-solid fa-circle-check me-2"></i> ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+
+            toastContainer.appendChild(toastEl);
+            const bsToast = new bootstrap.Toast(toastEl);
+            bsToast.show();
+
+            toastEl.addEventListener('hidden.bs.toast', function() {
+                toastEl.remove();
+            });
+        }
+
+        function fallbackCopy(text) {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast('Link copiado!');
+            } catch (err) {
+                alert('Não foi possível copiar automaticamente: ' + text);
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        const canonicalPrices = {
+            'BASICO_MENSAL': '{{ canonical_prices.BASICO_MENSAL|floatformat:2 }}',
+            'BASICO_ANUAL': '{{ canonical_prices.BASICO_ANUAL|floatformat:2 }}',
+            'AVANCADO_MENSAL': '{{ canonical_prices.AVANCADO_MENSAL|floatformat:2 }}',
+            'AVANCADO_ANUAL': '{{ canonical_prices.AVANCADO_ANUAL|floatformat:2 }}'
+        };
+
+        const bandsData = {{ bands_charge_data_json|safe|default:'{}' }};
+
+        const formCharge = document.getElementById('formChargeBand');
+        if (!formCharge) return;
+
+        const selectBand = document.getElementById('chargeSelectBand');
+        const selectPlan = document.getElementById('chargeSelectPlan');
+        const selectCycle = document.getElementById('chargeSelectCycle');
+        const displayPrice = document.getElementById('chargePriceDisplay');
+        const inputResp = document.getElementById('chargeInputResponsible');
+        const inputEmail = document.getElementById('chargeInputEmail');
+        const inputPhone = document.getElementById('chargeInputPhone');
+        const alertActive = document.getElementById('chargeActiveSubAlert');
+        const checkOverride = document.getElementById('chargeConfirmOverride');
+        const resultBox = document.getElementById('chargeResultBox');
+        const errorBox = document.getElementById('chargeErrorBox');
+        const generatedLinkInput = document.getElementById('chargeGeneratedLink');
+        const btnCopyLink = document.getElementById('chargeBtnCopyLink');
+        const btnOpenLink = document.getElementById('chargeBtnOpenLink');
+        const btnSendWhatsapp = document.getElementById('chargeBtnSendWhatsapp');
+        const btnSubmit = document.getElementById('chargeBtnSubmit');
+
+        let currentWhatsappData = null;
+
+        function updatePrice() {
+            const plan = selectPlan.value;
+            const cycle = selectCycle.value;
+            const key = `${plan}_${cycle}`;
+            const val = canonicalPrices[key] || '0,00';
+            displayPrice.textContent = `R$ ${val}`;
+        }
+
+        if (selectPlan) selectPlan.addEventListener('change', updatePrice);
+        if (selectCycle) selectCycle.addEventListener('change', updatePrice);
+
+        if (selectBand) {
+            selectBand.addEventListener('change', function() {
+                const bandId = this.value;
+                const info = bandsData[bandId];
+                if (!info) return;
+
+                if (info.plan_type && (info.plan_type === 'BASICO' || info.plan_type === 'AVANCADO')) {
+                    selectPlan.value = info.plan_type;
+                }
+                updatePrice();
+
+                if (inputResp) inputResp.value = info.responsible_name || '';
+                if (inputEmail) inputEmail.value = info.email || '';
+                if (inputPhone) {
+                    inputPhone.value = info.phone || '';
+                    if (window.jQuery && $(inputPhone).data('mask')) {
+                        $(inputPhone).trigger('input');
+                    }
+                }
+
+                if (info.has_active) {
+                    alertActive.classList.remove('d-none');
+                    alertActive.classList.add('d-flex');
+                    if (checkOverride) checkOverride.checked = false;
+                } else {
+                    alertActive.classList.add('d-none');
+                    alertActive.classList.remove('d-flex');
+                    if (checkOverride) checkOverride.checked = false;
+                }
+            });
+        }
+
+        formCharge.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            errorBox.classList.add('d-none');
+            errorBox.textContent = '';
+            resultBox.classList.add('d-none');
+            btnSendWhatsapp.classList.add('d-none');
+
+            const origHtml = btnSubmit.innerHTML;
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Gerando...';
+
+            const formData = new FormData(formCharge);
+            formData.append('format', 'json');
+
+            fetch(formCharge.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(async response => {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.ok) {
+                    throw new Error(data.error || 'Erro ao comunicar com o servidor.');
+                }
+                return data;
+            })
+            .then(data => {
+                generatedLinkInput.value = data.checkout_url;
+                btnOpenLink.href = data.checkout_url;
+                resultBox.classList.remove('d-none');
+
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="fa-solid fa-rotate me-1"></i> Gerar Outro Link';
+                showToast(data.message || 'Cobrança gerada com sucesso!');
+
+                // Configurar WhatsApp se houver dados
+                if (data.whatsapp && data.whatsapp.has_phone) {
+                    currentWhatsappData = data.whatsapp;
+                    btnSendWhatsapp.classList.remove('d-none');
+                } else {
+                    currentWhatsappData = null;
+                    btnSendWhatsapp.classList.add('d-none');
+                }
+
+                if (btnCopyLink) {
+                    btnCopyLink.onclick = function() {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(data.checkout_url).then(() => {
+                                showToast('Link de checkout copiado!');
+                            }).catch(() => fallbackCopy(data.checkout_url));
+                        } else {
+                            fallbackCopy(data.checkout_url);
+                        }
+                    };
+                }
+            })
+            .catch(err => {
+                errorBox.textContent = err.message;
+                errorBox.classList.remove('d-none');
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = origHtml;
+            });
+        });
+
+        if (btnSendWhatsapp) {
+            btnSendWhatsapp.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!currentWhatsappData) return;
+
+                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+                if (isMobile) {
+                    window.location.href = currentWhatsappData.whatsapp_mobile_url || currentWhatsappData.whatsapp_url;
+                } else {
+                    const appBtn = document.getElementById('chargeWhatsappChoiceApp');
+                    const webBtn = document.getElementById('chargeWhatsappChoiceWeb');
+                    if (appBtn) appBtn.href = currentWhatsappData.whatsapp_app_url;
+                    if (webBtn) webBtn.href = currentWhatsappData.whatsapp_web_url;
+
+                    const choiceModalEl = document.getElementById('modalWhatsappDesktopChoiceCharge');
+                    if (choiceModalEl) {
+                        const choiceModal = new bootstrap.Modal(choiceModalEl);
+                        choiceModal.show();
+                    }
+                }
+            });
+        }
     });
     </script>
 

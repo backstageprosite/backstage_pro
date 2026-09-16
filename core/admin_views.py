@@ -361,6 +361,60 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
         context['status'] = self.request.GET.get('status', '')
         context['q'] = self.request.GET.get('q', '')
         context['auto_renew'] = self.request.GET.get('auto_renew', '')
+
+        # BP-PEND-60 + BP-PEND-61: Dados de bandas e preços canônicos para o modal 'Gerar Cobrança'
+        settings_obj = SystemSettings.get_settings()
+        canonical_prices = {
+            'BASICO_MENSAL': float(settings_obj.plan_basic_monthly or 19.90),
+            'BASICO_ANUAL': float(settings_obj.plan_basic_annual or 199.90),
+            'AVANCADO_MENSAL': float(settings_obj.plan_advanced_monthly or 49.90),
+            'AVANCADO_ANUAL': float(settings_obj.plan_advanced_annual or 499.90),
+        }
+        context['canonical_prices'] = canonical_prices
+
+        all_bands = Band.objects.all().prefetch_related('subscriptions', 'users').order_by('name')
+        context['all_bands_for_charge'] = all_bands
+
+        bands_charge_dict = {}
+        for b in all_bands:
+            prod_user = b.users.filter(role__in=['PRODUTOR', 'EMPRESARIO']).order_by('-id').first() or b.users.order_by('-id').first()
+            last_sub = b.subscriptions.filter(is_deleted=False).order_by('-created_at').first()
+
+            resp_name = ''
+            if prod_user and prod_user.get_full_name():
+                resp_name = prod_user.get_full_name()
+            elif last_sub and last_sub.financial_responsible_name:
+                resp_name = last_sub.financial_responsible_name
+            elif prod_user:
+                resp_name = prod_user.username
+            else:
+                resp_name = b.name
+
+            email = ''
+            if prod_user and prod_user.email:
+                email = prod_user.email
+            elif last_sub and last_sub.billing_email:
+                email = last_sub.billing_email
+
+            phone = ''
+            if prod_user and prod_user.phone:
+                phone = prod_user.phone
+            elif last_sub and last_sub.billing_phone:
+                phone = last_sub.billing_phone
+
+            has_active = b.has_contracted_active_subscription
+
+            bands_charge_dict[str(b.id)] = {
+                'id': b.id,
+                'name': b.name,
+                'plan_type': b.plan_type or 'AVANCADO',
+                'responsible_name': resp_name,
+                'email': email,
+                'phone': phone,
+                'has_active': has_active
+            }
+
+        context['bands_charge_data_json'] = json.dumps(bands_charge_dict)
         return context
 
 class AdminCobrancasView(AdminRequiredMixin, ListView):
@@ -715,19 +769,20 @@ def admin_band_toggle_active(request, pk):
 
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
-def admin_band_create_charge(request, pk):
+def admin_band_create_charge(request, pk=None):
     """
-    BP-PEND-60: Gera uma cobrança/checkout Asaas para uma banda já existente no Backstage Pro.
+    BP-PEND-60 + BP-PEND-61: Gera uma cobrança/checkout Asaas para uma banda já existente no Backstage Pro.
     Respeita preços canônicos e vincula a ordem diretamente à Band.
-    Retorna JSON (para AJAX) ou redireciona com flash messages.
+    Retorna JSON (para AJAX) com links de pagamento e payload para compartilhamento WhatsApp.
     """
-    band = get_object_or_404(Band, pk=pk)
+    band_id = pk or request.POST.get('band_id') or request.POST.get('band')
+    band = get_object_or_404(Band, pk=band_id)
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.POST.get('format') == 'json'
 
     if request.method != 'POST':
         if is_ajax:
             return JsonResponse({'ok': False, 'error': 'Método não permitido.'}, status=405)
-        return redirect('admin_painel:bandas')
+        return redirect('admin_painel:assinaturas')
 
     plan_type = request.POST.get('plan_type', 'AVANCADO').strip().upper()
     if plan_type not in ('BASICO', 'AVANCADO'):
@@ -783,7 +838,7 @@ def admin_band_create_charge(request, pk):
         if is_ajax:
             return JsonResponse({'ok': False, 'error': err}, status=400)
         messages.error(request, err)
-        return redirect('admin_painel:bandas')
+        return redirect('admin_painel:assinaturas')
 
     # Validação de assinatura ativa existente (aviso/bloqueio suave se não houver confirmação)
     has_active = band.has_contracted_active_subscription
@@ -793,7 +848,7 @@ def admin_band_create_charge(request, pk):
         if is_ajax:
             return JsonResponse({'ok': False, 'warning_active': True, 'error': err}, status=400)
         messages.warning(request, err)
-        return redirect('admin_painel:bandas')
+        return redirect('admin_painel:assinaturas')
 
     # Preço canônico centralizado
     canonical_price = SystemSettings.get_canonical_plan_price(plan_type, billing_cycle)
@@ -801,6 +856,7 @@ def admin_band_create_charge(request, pk):
     # Criação do SignupOrder vinculado à Band existente
     from core.models import SignupOrder
     from core.services.payments.checkout import create_asaas_checkout_for_signup_order
+    from core.views import build_whatsapp_charge_data
 
     ext_ref = f"bp-adm-{band.id}-{uuid.uuid4().hex[:8]}"
 
@@ -831,21 +887,34 @@ def admin_band_create_charge(request, pk):
         if is_ajax:
             return JsonResponse({'ok': False, 'error': err}, status=500)
         messages.error(request, f"Erro ao gerar cobrança: {err}")
-        return redirect('admin_painel:bandas')
+        return redirect('admin_painel:assinaturas')
+
+    amount_formatted = f"{canonical_price:.2f}".replace('.', ',')
+
+    whatsapp_data = build_whatsapp_charge_data(
+        responsible_name=responsible_name,
+        band_name=band.name,
+        plan_type=plan_type,
+        billing_cycle=billing_cycle,
+        amount_str=amount_formatted,
+        checkout_url=checkout_url,
+        phone=phone
+    )
 
     if is_ajax:
         return JsonResponse({
             'ok': True,
             'checkout_url': checkout_url,
             'external_reference': signup_order.external_reference,
-            'amount': f"{canonical_price:.2f}".replace('.', ','),
+            'amount': amount_formatted,
             'plan_display': 'Avançado' if plan_type == 'AVANCADO' else 'Básico',
             'cycle_display': 'Anual' if billing_cycle == 'ANUAL' else 'Mensal',
-            'message': f"Cobrança gerada com sucesso para a banda {band.name}!"
+            'message': f"Cobrança gerada com sucesso para a banda {band.name}!",
+            'whatsapp': whatsapp_data
         })
 
     messages.success(request, f"Cobrança criada com sucesso para a banda '{band.name}'! Link: {checkout_url}")
-    return redirect('admin_painel:bandas')
+    return redirect('admin_painel:assinaturas')
 
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')

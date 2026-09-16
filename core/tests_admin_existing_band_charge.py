@@ -294,3 +294,109 @@ class AdminExistingBandChargeTests(TestCase):
 
         # Para nova banda, o token de ativação é gerado
         self.assertEqual(BandActivationToken.objects.count(), tokens_before + 1)
+
+    @patch('core.services.payments.checkout.create_asaas_checkout_for_signup_order')
+    def test_07_assinaturas_gerar_cobranca_with_band_id_and_whatsapp_payload(self, mock_checkout):
+        """
+        Gera cobrança via endpoint 'assinaturas_gerar_cobranca' passando band_id no POST.
+        Verifica se o retorno inclui dados de WhatsApp formatados corretamente.
+        """
+        self.client.force_login(self.admin)
+        url = reverse('admin_painel:assinaturas_gerar_cobranca')
+
+        mock_checkout.return_value = (
+            True,
+            'https://sandbox.asaas.com/checkout/chk_wa_test',
+            {'id': 'chk_wa_test'},
+            None
+        )
+
+        data = {
+            'band_id': self.band.id,
+            'plan_type': 'AVANCADO',
+            'billing_cycle': 'MENSAL',
+            'responsible_name': 'Carlos Silva',
+            'email': 'produtor@rockstar.com',
+            'phone': '71988887777',
+            'format': 'json'
+        }
+
+        resp = self.client.post(url, data=data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(resp.status_code, 200)
+        res_json = resp.json()
+        self.assertTrue(res_json['ok'])
+        self.assertIn('whatsapp', res_json)
+        wa = res_json['whatsapp']
+        self.assertTrue(wa['has_phone'])
+        self.assertEqual(wa['phone_normalized'], '5571988887777')
+        self.assertIn('Olá, Carlos Silva!', wa['message_text'])
+        self.assertIn('Banda:* Banda Rock Star', wa['message_text'])
+        self.assertIn('Plano:* AVANÇADO', wa['message_text'])
+        self.assertIn('Ciclo:* MENSAL', wa['message_text'])
+        self.assertIn('Valor:* R$ 49,90', wa['message_text'])
+        self.assertIn('https://sandbox.asaas.com/checkout/chk_wa_test', wa['message_text'])
+        self.assertIn('https://wa.me/5571988887777?text=', wa['whatsapp_mobile_url'])
+        self.assertIn('whatsapp://send?phone=5571988887777&text=', wa['whatsapp_app_url'])
+        self.assertIn('https://web.whatsapp.com/send?phone=5571988887777&text=', wa['whatsapp_web_url'])
+
+    def test_08_whatsapp_message_exact_format_and_unicode_emojis(self):
+        """Valida que build_whatsapp_charge_data gera a mensagem exata com todos os emojis e quebras de linha."""
+        from core.views import build_whatsapp_charge_data
+        from urllib.parse import unquote
+
+        data = build_whatsapp_charge_data(
+            responsible_name='João Silva',
+            band_name='Banda Alfa',
+            plan_type='BASICO',
+            billing_cycle='ANUAL',
+            amount_str='199,90',
+            checkout_url='https://asaas.com/c/12345',
+            phone='(11) 98765-4321'
+        )
+
+        expected_text = (
+            "Olá, João Silva! 👋\n\n"
+            "Segue o link de pagamento referente à assinatura do Backstage Pro:\n\n"
+            "🎤 *Banda:* Banda Alfa\n"
+            "📦 *Plano:* BÁSICO\n"
+            "🔄 *Ciclo:* ANUAL\n"
+            "💰 *Valor:* R$ 199,90\n\n"
+            "🔗 *Link para pagamento:*\n"
+            "https://asaas.com/c/12345\n\n"
+            "Após a confirmação do pagamento, a assinatura desta banda será atualizada automaticamente.\n\n"
+            "Backstage Pro\n"
+            "Gestão profissional para bandas e artistas."
+        )
+
+        self.assertEqual(data['message_text'], expected_text)
+        self.assertEqual(data['phone_normalized'], '5511987654321')
+        self.assertTrue(data['has_phone'])
+
+        # Decodificar URL para assegurar que não houve dupla codificação ou quebra de emojis
+        raw_query = data['whatsapp_mobile_url'].split('?text=')[1]
+        decoded_query = unquote(raw_query)
+        self.assertEqual(decoded_query, expected_text)
+
+    def test_09_assinaturas_page_contains_gerar_cobranca_button_and_modal(self):
+        """Verifica se a página de Assinaturas contém o botão Gerar Cobrança e o modal correspondente."""
+        self.client.force_login(self.admin)
+        url = reverse('admin_painel:assinaturas')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        self.assertIn('Gerar Cobrança', content)
+        self.assertIn('Nova Assinatura', content)
+        self.assertIn('id="modalChargeBand"', content)
+        self.assertIn('id="modalWhatsappDesktopChoiceCharge"', content)
+        self.assertIn('id="chargeSelectBand"', content)
+
+    def test_10_bandas_page_does_not_contain_criar_cobranca_button(self):
+        """Verifica que o botão Criar Cobrança foi removido da página Gestão de Bandas."""
+        self.client.force_login(self.admin)
+        url = reverse('admin_painel:bandas')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        self.assertNotIn('Criar Cobrança', content)
+        self.assertNotIn('modalChargeBand', content)
+

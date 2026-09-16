@@ -2788,6 +2788,82 @@ def build_whatsapp_access_data(band=None, user=None, raw_password="", is_admin_c
     }
 
 
+def build_whatsapp_charge_data(responsible_name, band_name, plan_type, billing_cycle, amount_str, checkout_url, phone=""):
+    """
+    BP-PEND-61: Constrói mensagem e links (mobile, app, web) para compartilhamento de cobrança via WhatsApp.
+    Preserva emojis Unicode e formatação canônica de cobrança por banda.
+    """
+    import re
+    from urllib.parse import quote
+
+    phone_raw = (phone or '').strip()
+    digits = re.sub(r'\D', '', phone_raw)
+    phone_normalized = ''
+
+    if digits:
+        if len(digits) in (10, 11):
+            phone_normalized = '55' + digits
+        elif len(digits) in (12, 13) and digits.startswith('55'):
+            phone_normalized = digits
+        else:
+            phone_normalized = digits
+
+    # Escapes Unicode para garantir consistência e evitar problemas de encoding
+    w_hand = "\U0001F44B"
+    w_mic = "\U0001F3A4"
+    w_box = "\U0001F4E6"
+    w_cycle = "\U0001F504"
+    w_money = "\U0001F4B0"
+    w_link = "\U0001F517"
+
+    resp_name = (responsible_name or '').strip() or 'Cliente'
+    b_name = (band_name or '').strip()
+
+    p_upper = (plan_type or '').strip().upper()
+    plan_display = 'AVANÇADO' if 'AVANC' in p_upper else 'BÁSICO'
+
+    c_upper = (billing_cycle or '').strip().upper()
+    cycle_display = 'ANUAL' if 'ANUAL' in c_upper else 'MENSAL'
+
+    val_display = str(amount_str).strip()
+
+    message_text = (
+        f"Olá, {resp_name}! {w_hand}\n\n"
+        f"Segue o link de pagamento referente à assinatura do Backstage Pro:\n\n"
+        f"{w_mic} *Banda:* {b_name}\n"
+        f"{w_box} *Plano:* {plan_display}\n"
+        f"{w_cycle} *Ciclo:* {cycle_display}\n"
+        f"{w_money} *Valor:* R$ {val_display}\n\n"
+        f"{w_link} *Link para pagamento:*\n"
+        f"{checkout_url}\n\n"
+        f"Após a confirmação do pagamento, a assinatura desta banda será atualizada automaticamente.\n\n"
+        f"Backstage Pro\n"
+        f"Gestão profissional para bandas e artistas."
+    )
+
+    whatsapp_url = ""
+    whatsapp_mobile_url = ""
+    whatsapp_app_url = ""
+    whatsapp_web_url = ""
+
+    if phone_normalized:
+        encoded_text = quote(message_text, safe='')
+        whatsapp_mobile_url = f"https://wa.me/{phone_normalized}?text={encoded_text}"
+        whatsapp_app_url = f"whatsapp://send?phone={phone_normalized}&text={encoded_text}"
+        whatsapp_web_url = f"https://web.whatsapp.com/send?phone={phone_normalized}&text={encoded_text}"
+        whatsapp_url = whatsapp_mobile_url
+
+    return {
+        'has_phone': bool(phone_normalized),
+        'phone_normalized': phone_normalized,
+        'message_text': message_text,
+        'whatsapp_url': whatsapp_url,
+        'whatsapp_mobile_url': whatsapp_mobile_url,
+        'whatsapp_app_url': whatsapp_app_url,
+        'whatsapp_web_url': whatsapp_web_url,
+    }
+
+
 @login_required
 @band_required
 def usuarios_list_view(request, band_slug):
