@@ -34,6 +34,11 @@ urlpatterns = [
     # Webhook Asaas
     path('webhooks/asaas/', views_asaas.asaas_webhook_view, name='asaas_webhook'),
 
+
+    # BP-PEND-62: Rotas globais de Multilogin (devem vir antes de <slug:band_slug>/)
+    path('selecionar-banda/', views.selecionar_banda_view, name='selecionar_banda'),
+    path('trocar-banda/', views.trocar_banda_view, name='trocar_banda'),
+
     path('<slug:band_slug>/', include('core.urls')),
 ]
 

@@ -142,12 +142,102 @@ class User(AbstractUser):
             return self.profile_picture.url
         return None
 
-    def is_produtor(self):
-        return self.role in ['PRODUTOR', 'EMPRESARIO'] or self.is_superuser
+    def get_active_memberships(self):
+        """Retorna os memberships ativos do usuário para bandas ativas."""
+        return self.band_memberships.filter(is_active=True, band__is_active=True).select_related('band')
+
+    def get_membership_for_band(self, band):
+        """Retorna o vínculo do usuário com uma banda específica, se houver."""
+        if not band:
+            return None
+        return self.band_memberships.filter(band=band).first()
+
+    def get_role_for_band(self, band):
+        """
+        BP-PEND-62: Retorna o papel (role) do usuário no contexto da banda ativa.
+        Prioriza o role definido no UserBandMembership ativo.
+        Mantém fallback para o role legado de user.role caso pertença a user.band.
+        """
+        if not band:
+            return self.role
+
+        membership = self.band_memberships.filter(band=band, is_active=True).first()
+        if membership and membership.role:
+            return membership.role
+
+        if self.band_id == band.id:
+            return self.role
+
+        return self.role
+
+    def is_produtor_for_band(self, band=None):
+        """Verifica se o usuário é PRODUTOR ou EMPRESARIO para a banda fornecida."""
+        if self.is_superuser:
+            return True
+        role = self.get_role_for_band(band) if band else self.role
+        return role in ['PRODUTOR', 'EMPRESARIO']
+
+    def has_access_to_band(self, band):
+        """
+        BP-PEND-62: Valida se o usuário possui acesso autorizado e ativo à banda especificada.
+        Retorna True se houver UserBandMembership ativo ou se for a banda legada (user.band).
+        Superusuários possuem acesso irrestrito.
+        """
+        if self.is_superuser:
+            return True
+        if not band:
+            return False
+
+        has_active_membership = self.band_memberships.filter(
+            band=band,
+            is_active=True,
+            band__is_active=True
+        ).exists()
+        if has_active_membership:
+            return True
+
+        if self.band_id == band.id and band.is_active:
+            return True
+
+        return False
+
+    def is_produtor(self, band=None):
+        """
+        Verifica se o usuário é PRODUTOR ou EMPRESARIO.
+        Se band for informada, verifica o role daquele vínculo.
+        Caso contrário, usa role global do usuário.
+        """
+        if self.is_superuser:
+            return True
+        if band:
+            return self.is_produtor_for_band(band)
+        return self.role in ['PRODUTOR', 'EMPRESARIO']
 
     class Meta:
         verbose_name = "Usuário"
         verbose_name_plural = "Usuários"
+
+
+class UserBandMembership(models.Model):
+    """
+    BP-PEND-62: Relacionamento muitos-para-muitos entre User e Band com perfil (role) por vínculo.
+    Permite que um mesmo usuário (ex: Empresário) acesse múltiplas bandas com uma única credencial.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='band_memberships', verbose_name='Usuário')
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='user_memberships', verbose_name='Banda')
+    role = models.CharField(max_length=20, choices=User.ROLE_CHOICES, default='INTEGRANTE', verbose_name='Perfil nesta Banda')
+    is_active = models.BooleanField(default=True, verbose_name='Vínculo Ativo')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+
+    class Meta:
+        verbose_name = "Vínculo Usuário-Banda"
+        verbose_name_plural = "Vínculos Usuário-Banda"
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'band'], name='unique_user_band_membership')
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.band.name} ({self.get_role_display()})"
 
 class Show(models.Model):
     STATUS_PRE_RESERVADO = 'PRE_RESERVADO'

@@ -45,7 +45,7 @@ from django.http import HttpResponseForbidden, HttpResponseNotAllowed, JsonRespo
 
 from django.contrib.auth import update_session_auth_hash
 
-from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem, AdministrativeBandNotice, RiderDocument
+from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem, AdministrativeBandNotice, RiderDocument, UserBandMembership
 
 from .forms import FinancialReceiptForm, UserForm, UserEditForm, ContactForm, ShowForm, ContractDocumentFormSet, FinancialReceiptFormSet, ShowPaymentForm, ShowTeamCostForm, ContractDocumentForm, RiderDocumentForm, ProfileForm, ProfilePasswordChangeForm, MandatoryPasswordChangeForm
 
@@ -273,11 +273,10 @@ def band_required(view_func):
         if request.user.must_change_password and view_func.__name__ != 'band_logout':
             return redirect('troca_senha_obrigatoria')
 
-        if request.user.band != band and not request.user.is_superuser:
+        # BP-PEND-62: Validação de segurança / isolamento com suporte a múltiplos vínculos
+        if not request.user.has_access_to_band(band) and not request.user.is_superuser:
 
             raise PermissionDenied("Você não pertence a esta banda.")
-
-
 
         if not band.is_active and not request.user.is_superuser:
 
@@ -288,6 +287,13 @@ def band_required(view_func):
             if not band.has_active_subscription:
                 if view_func.__name__ not in ('minha_assinatura_view', 'band_logout'):
                     return redirect('minha_assinatura', band_slug=band.slug)
+
+        # Guarda banda ativa na sessão
+        request.session['active_band_id'] = band.id
+
+        # Ajusta dinamicamente role do usuário para o contexto desta banda
+        if not request.user.is_superuser:
+            request.user.role = request.user.get_role_for_band(band)
 
         request.band = band
 
@@ -310,7 +316,20 @@ def band_root_redirect_view(request, band_slug):
 
             return redirect('admin_painel:dashboard')
 
-        if request.user.band:
+        # BP-PEND-62: Suporte a múltiplos vínculos
+        active_memberships = request.user.get_active_memberships()
+        count = active_memberships.count()
+
+        if count >= 2:
+            return redirect('selecionar_banda')
+        elif count == 1:
+            m = active_memberships.first()
+            target_slug = m.band.slug
+            if not m.band.has_active_subscription:
+                return redirect('minha_assinatura', band_slug=target_slug)
+            return redirect('dashboard', band_slug=target_slug)
+        elif request.user.band:
+            # Fallback legado
             target_slug = request.user.band.slug
             if not request.user.band.has_active_subscription:
                 return redirect('minha_assinatura', band_slug=target_slug)
@@ -340,30 +359,25 @@ class BandLoginView(LoginView):
 
             band = get_object_or_404(Band, slug=band_slug)
 
-
-
             if request.user.is_superuser:
 
                 return redirect('admin_painel:dashboard')
 
-
-
-            if request.user.band:
-
-                if request.user.band != band:
-
-                    raise PermissionDenied("Você não pertence a esta banda.")
-
+            # BP-PEND-62: Verifica acesso via membership ou fallback legado
+            if request.user.has_access_to_band(band):
+                active_memberships = request.user.get_active_memberships()
+                if active_memberships.count() >= 2:
+                    return redirect('selecionar_banda')
                 if not band.has_active_subscription:
                     return redirect('minha_assinatura', band_slug=band.slug)
-
                 return redirect('dashboard', band_slug=band.slug)
-
+            elif request.user.band == band:
+                # Fallback legado: user.band aponta para esta banda mas sem membership
+                if not band.has_active_subscription:
+                    return redirect('minha_assinatura', band_slug=band.slug)
+                return redirect('dashboard', band_slug=band.slug)
             else:
-
                 raise PermissionDenied("Você não pertence a esta banda.")
-
-
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -394,6 +408,19 @@ class BandLoginView(LoginView):
 
             return reverse('admin_painel:dashboard')
 
+        # BP-PEND-62: Multi-band redirect
+        active_memberships = user.get_active_memberships()
+        count = active_memberships.count()
+
+        if count >= 2:
+            return reverse('selecionar_banda')
+        elif count == 1:
+            m = active_memberships.first()
+            if not m.band.has_active_subscription:
+                return reverse('minha_assinatura', kwargs={'band_slug': m.band.slug})
+            return reverse('dashboard', kwargs={'band_slug': m.band.slug})
+
+        # Fallback legado: user.band
         if user.band:
             if not user.band.has_active_subscription:
                 return reverse('minha_assinatura', kwargs={'band_slug': user.band.slug})
@@ -416,17 +443,14 @@ class BandLoginView(LoginView):
 
         band = get_object_or_404(Band, slug=band_slug)
 
-
-
         if not band.is_active and not user.is_superuser:
 
             messages.error(self.request, "O acesso desta banda está suspenso. Procure a administração.")
 
             return self.form_invalid(form)
 
-
-
-        if user.band != band and not user.is_superuser:
+        # BP-PEND-62: Verifica acesso via membership ou fallback legado
+        if not user.has_access_to_band(band) and user.band != band and not user.is_superuser:
 
             messages.error(self.request, "Usuário não pertence a esta banda.")
 
@@ -444,6 +468,63 @@ def band_logout(request, band_slug):
 
     return redirect('login', band_slug=band_slug)
 
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# BP-PEND-62: MULTILOGIN — Seleção e Troca de Banda
+# ──────────────────────────────────────────────────────────────────────────────
+
+@login_required
+def selecionar_banda_view(request):
+    """
+    Página de seleção de banda para usuários com múltiplos vínculos.
+    Rota global: /selecionar-banda/
+    """
+    if request.user.must_change_password:
+        return redirect('troca_senha_obrigatoria')
+
+    memberships = request.user.get_active_memberships().select_related('band')
+
+    # Se só tem 1 banda ativa, vai direto sem mostrar tela de seleção
+    if memberships.count() == 1:
+        m = memberships.first()
+        request.session['active_band_id'] = m.band.id
+        if not m.band.has_active_subscription:
+            return redirect('minha_assinatura', band_slug=m.band.slug)
+        return redirect('dashboard', band_slug=m.band.slug)
+
+    if request.method == 'POST':
+        band_id = request.POST.get('band_id')
+        if not band_id:
+            messages.error(request, "Selecione uma banda.")
+            return redirect('selecionar_banda')
+
+        try:
+            membership = memberships.get(band_id=band_id)
+        except memberships.model.DoesNotExist:
+            raise PermissionDenied("Você não tem acesso a esta banda.")
+
+        band = membership.band
+        request.session['active_band_id'] = band.id
+
+        if not band.has_active_subscription:
+            return redirect('minha_assinatura', band_slug=band.slug)
+        return redirect('dashboard', band_slug=band.slug)
+
+    return render(request, 'core/selecionar_banda.html', {
+        'memberships': memberships,
+        'page_title': 'Selecionar Banda',
+    })
+
+
+@login_required
+def trocar_banda_view(request):
+    """
+    Limpa a banda ativa da sessão e redireciona para seleção de banda.
+    Rota global: /trocar-banda/
+    """
+    request.session.pop('active_band_id', None)
+    return redirect('selecionar_banda')
 
 
 @login_required

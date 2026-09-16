@@ -23,15 +23,14 @@ class AdminUserCreateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'phone', 'band', 'role', 'is_active', 'is_staff']
+        # BP-PEND-62: band e role são gerenciados via UserBandMembership no admin_user_create
+        fields = ['first_name', 'last_name', 'username', 'email', 'phone', 'is_active', 'is_staff']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'username': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'phone': forms.TextInput(attrs={'class': 'form-control phone-mask'}),
-            'band': forms.Select(attrs={'class': 'form-select'}),
-            'role': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
             'is_staff': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
         }
@@ -41,8 +40,6 @@ class AdminUserCreateForm(forms.ModelForm):
             'username': 'Login',
             'email': 'E-mail',
             'phone': 'Telefone',
-            'band': 'Banda Vinculada',
-            'role': 'Perfil de Acesso',
             'is_active': 'Usuário Ativo?',
             'is_staff': 'Acesso ao Painel Admin Geral (Staff)',
         }
@@ -74,8 +71,7 @@ class AdminUserCreateForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.set_password(self.cleaned_data['password'])
-        if user.role == 'INTEGRANTE':
-            user.must_change_password = True
+        # Nota: must_change_password baseado no role é definido no admin_user_create após criar memberships
         if commit:
             user.save()
         return user
@@ -83,15 +79,14 @@ class AdminUserCreateForm(forms.ModelForm):
 class AdminUserEditForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email', 'phone', 'band', 'role', 'is_active', 'is_staff']
+        # BP-PEND-62: band e role são gerenciados via UserBandMembership no admin_user_edit
+        fields = ['first_name', 'last_name', 'username', 'email', 'phone', 'is_active', 'is_staff']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'username': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'phone': forms.TextInput(attrs={'class': 'form-control phone-mask'}),
-            'band': forms.Select(attrs={'class': 'form-select'}),
-            'role': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
             'is_staff': forms.CheckboxInput(attrs={'class': 'form-check-input', 'role': 'switch'}),
         }

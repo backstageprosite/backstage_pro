@@ -371,6 +371,16 @@
                                 <span class="badge bg-secondary ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-guitar"></i><span class="d-none d-md-inline ms-1">Integrante</span></span>
                             {% endif %}
                         </span>
+                        {% if band %}
+                            {# BP-PEND-62: Botão Trocar Banda para usuários com múltiplos vínculos #}
+                            {% with mc=request.user.get_active_memberships %}
+                                {% if mc.count >= 2 %}
+                                <a href="{% url 'selecionar_banda' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold me-2" style="height: 31px; display: inline-flex; align-items: center;" title="Trocar Banda">
+                                    <i class="fa-solid fa-arrow-right-arrow-left me-1"></i><span class="d-none d-md-inline">Trocar Banda</span>
+                                </a>
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
                         <a href="{% url 'perfil' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold me-2" style="height: 31px; display: inline-flex; align-items: center;">
                             <i class="fa-regular fa-id-badge me-1"></i><span class="d-none d-md-inline">Perfil</span>
                         </a>

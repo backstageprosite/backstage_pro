@@ -1,0 +1,191 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selecionar Banda — Backstage Pro</title>
+    <link rel="icon" type="image/png" href="{% static 'core/pwa/icons/backstage-icon-192.png' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bp-green: #6BD443;
+            --bp-green-dark: #57b336;
+        }
+        body {
+            background: linear-gradient(135deg, #f0f9eb 0%, #e8f5e9 100%);
+            min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .bp-logo {
+            max-height: 48px;
+        }
+        .band-card {
+            background: #fff;
+            border-radius: 16px;
+            border: 2px solid transparent;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .band-card:hover {
+            border-color: var(--bp-green);
+            box-shadow: 0 6px 24px rgba(107,212,67,0.18);
+            transform: translateY(-2px);
+        }
+        .band-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+        .band-avatar-placeholder {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--bp-green) 0%, var(--bp-green-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .role-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 50rem;
+        }
+        .btn-acessar {
+            background-color: var(--bp-green);
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            border-radius: 50rem;
+            padding: 7px 22px;
+            font-size: 14px;
+            transition: background 0.15s;
+        }
+        .btn-acessar:hover {
+            background-color: var(--bp-green-dark);
+            color: #fff;
+        }
+        .page-wrapper {
+            width: 100%;
+            max-width: 640px;
+            padding: 24px 16px;
+        }
+        .header-card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 32px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <div class="header-card">
+        <!-- Logo Backstage Pro -->
+        <div class="text-center mb-4">
+            <img src="{% static 'core/pwa/icons/backstage-icon-192.png' %}"
+                 alt="Backstage Pro"
+                 class="bp-logo mb-3"
+                 style="max-height: 52px; border-radius: 12px;">
+            <h4 class="fw-bold text-dark mb-1" style="font-size: 20px;">
+                Selecionar Banda
+            </h4>
+            <p class="text-muted mb-0" style="font-size: 14px;">
+                Olá, <strong>{{ request.user.first_name|default:request.user.username }}</strong>! Escolha qual banda deseja acessar.
+            </p>
+        </div>
+
+        {% if messages %}
+        <div class="mb-3">
+            {% for msg in messages %}
+            <div class="alert alert-{{ msg.tags }} alert-dismissible fade show py-2 px-3" style="border-radius: 10px; font-size: 13px;" role="alert">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Grid de Bandas -->
+        <div class="d-flex flex-column gap-3">
+            {% for membership in memberships %}
+            <form method="post" action="{% url 'selecionar_banda' %}">
+                {% csrf_token %}
+                <input type="hidden" name="band_id" value="{{ membership.band.id }}">
+                <button type="submit" class="band-card d-flex align-items-center gap-3 p-3 w-100 text-start border-0 bg-transparent" style="display: block !important;">
+                    <!-- Logo / Avatar da Banda -->
+                    {% if membership.band.logo %}
+                    <img src="{{ membership.band.logo.url }}" alt="{{ membership.band.name }}" class="band-avatar flex-shrink-0">
+                    {% else %}
+                    <div class="band-avatar-placeholder flex-shrink-0">
+                        {{ membership.band.name|make_list|first|upper }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Info -->
+                    <div class="flex-grow-1 min-width-0">
+                        <div class="fw-bold text-dark" style="font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ membership.band.name }}
+                        </div>
+                        <div class="mt-1">
+                            {% if membership.role == 'EMPRESARIO' %}
+                            <span class="role-badge bg-opacity-10" style="background-color: rgba(111,66,193,0.12); color: #6f42c1; border: 1px solid rgba(111,66,193,0.3);">
+                                <i class="fa-solid fa-crown me-1"></i>Empresário
+                            </span>
+                            {% elif membership.role == 'PRODUTOR' %}
+                            <span class="role-badge bg-opacity-10" style="background-color: rgba(13,110,253,0.1); color: #0d6efd; border: 1px solid rgba(13,110,253,0.25);">
+                                <i class="fa-solid fa-crown me-1"></i>Produtor
+                            </span>
+                            {% else %}
+                            <span class="role-badge bg-opacity-10" style="background-color: rgba(253,126,20,0.12); color: #d65b00; border: 1px solid rgba(253,126,20,0.3);">
+                                <i class="fa-solid fa-guitar me-1"></i>Integrante
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Botão Acessar -->
+                    <div class="flex-shrink-0">
+                        <span class="btn-acessar">
+                            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>Acessar
+                        </span>
+                    </div>
+                </button>
+            </form>
+            {% empty %}
+            <div class="text-center py-4 text-muted">
+                <i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-warning"></i>
+                <p class="mb-0">Nenhuma banda ativa vinculada ao seu usuário.<br>
+                Entre em contato com a administração do Backstage Pro.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Logout -->
+        <div class="text-center mt-4 pt-3 border-top">
+            <a href="#" class="text-muted small" style="text-decoration: none; font-size: 13px;"
+               onclick="document.getElementById('formLogout').submit(); return false;">
+                <i class="fa-solid fa-right-from-bracket me-1"></i>Sair do Backstage Pro
+            </a>
+            <form id="formLogout" method="post" action="{% url 'admin_painel:logout' %}" class="d-none">
+                {% csrf_token %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

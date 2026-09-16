@@ -190,13 +190,21 @@
                                 </div>
                             </td>
                             <td>
-                                {% if u.band %}
-                                    <span class="badge {{ u.band.name|band_color }} rounded-pill px-3 py-1" style="font-size: 11px;">
-                                        {{ u.band.name }}
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-secondary bg-opacity-10 text-dark border border-secondary border-opacity-25 rounded-pill px-3 py-1" style="font-size: 11px;">Sem Banda</span>
-                                {% endif %}
+                                {% with membs=u.userbandmembership_set.all %}
+                                    {% if membs %}
+                                        {% for m in membs %}
+                                            <span class="badge {{ m.band.name|band_color }} rounded-pill px-2 py-1 me-1 mb-1" style="font-size: 10px;">
+                                                {{ m.band.name }}
+                                            </span>
+                                        {% endfor %}
+                                    {% elif u.band %}
+                                        <span class="badge {{ u.band.name|band_color }} rounded-pill px-3 py-1" style="font-size: 11px;">
+                                            {{ u.band.name }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-dark border border-secondary border-opacity-25 rounded-pill px-3 py-1" style="font-size: 11px;">Sem Banda</span>
+                                    {% endif %}
+                                {% endwith %}
                             </td>
                             <td class="text-center">
                                 {% if u.is_superuser %}
@@ -300,22 +308,29 @@
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Confirmar Senha</label>
                             <input type="password" name="confirm_password" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Tipo de Perfil</label>
-                            <select name="role" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
-                                <option value="INTEGRANTE" {% if form_create.role.value == 'INTEGRANTE' %}selected{% endif %}>Integrante</option>
-                                <option value="PRODUTOR" {% if form_create.role.value == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
-                                <option value="EMPRESARIO" {% if form_create.role.value == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Vincular à Banda</label>
-                            <select name="band" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
-                                <option value="">Nenhuma / Sem Vínculo</option>
+                        {# BP-PEND-62: Bandas Vinculadas — checkbox + perfil por banda #}
+                        <div class="col-12">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 6px;">Bandas Vinculadas e Perfis</label>
+                            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 8px;">
                                 {% for b in bandas_list %}
-                                    <option value="{{ b.id }}" {% if form_create.band.value|stringformat:"s" == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                                <div class="d-flex align-items-center gap-2 py-2 px-2 border-bottom border-opacity-25" style="border-color: #dee2e6 !important;">
+                                    <input type="checkbox"
+                                           class="form-check-input bp-band-cb flex-shrink-0"
+                                           name="band_ids"
+                                           value="{{ b.id }}"
+                                           id="cb_create_{{ b.id }}"
+                                           style="margin-top: 0;"
+                                           onchange="this.nextElementSibling.nextElementSibling.disabled = !this.checked;">
+                                    <label class="form-check-label fw-semibold flex-grow-1 mb-0" for="cb_create_{{ b.id }}" style="font-size: 13px; cursor: pointer;">{{ b.name }}</label>
+                                    <select name="role_{{ b.id }}" class="form-select form-select-sm" style="width: 130px; font-size: 12px;" disabled>
+                                        <option value="INTEGRANTE">Integrante</option>
+                                        <option value="PRODUTOR">Produtor</option>
+                                        <option value="EMPRESARIO">Empresário</option>
+                                    </select>
+                                </div>
                                 {% endfor %}
-                            </select>
+                            </div>
+                            <div class="form-text text-muted mt-1" style="font-size: 11px;">Marque as bandas e defina o perfil de acesso em cada uma. A primeira selecionada será a banda principal.</div>
                         </div>
                         <div class="col-12 mt-3 d-flex flex-column flex-sm-row gap-4">
                             <div class="form-check form-switch">
@@ -372,23 +387,56 @@
                         <label class="form-label">Telefone</label>
                         <input type="text" name="phone" class="form-control phone-mask" value="{{ u.phone|default:'' }}" maxlength="20">
                     </div>
+                    {# BP-PEND-62: Bandas Vinculadas — pré-popula via JS com os vínculos atuais #}
                     <div class="mb-3">
-                        <label class="form-label">Banda Vinculada</label>
-                        <select name="band" class="form-select">
-                            <option value="">-- Nenhuma Banda --</option>
-                            {% for band in bandas_list %}
-                                <option value="{{ band.id }}" {% if u.band and u.band.id == band.id %}selected{% endif %}>{{ band.name }}</option>
+                        <label class="form-label">Bandas Vinculadas e Perfis</label>
+                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 8px;" id="bands-edit-{{ u.id }}">
+                            {% for b in bandas_list %}
+                            <div class="d-flex align-items-center gap-2 py-2 px-2 border-bottom border-opacity-25" style="border-color: #dee2e6 !important;">
+                                <input type="checkbox"
+                                       class="form-check-input flex-shrink-0"
+                                       name="band_ids"
+                                       value="{{ b.id }}"
+                                       id="cb_edit_{{ u.id }}_{{ b.id }}"
+                                       style="margin-top: 0;"
+                                       onchange="this.nextElementSibling.nextElementSibling.disabled = !this.checked;">
+                                <label class="form-check-label fw-semibold flex-grow-1 mb-0" for="cb_edit_{{ u.id }}_{{ b.id }}" style="font-size: 13px; cursor: pointer;">{{ b.name }}</label>
+                                <select name="role_{{ b.id }}" class="form-select form-select-sm" style="width: 130px; font-size: 12px;" disabled>
+                                    <option value="INTEGRANTE">Integrante</option>
+                                    <option value="PRODUTOR">Produtor</option>
+                                    <option value="EMPRESARIO">Empresário</option>
+                                </select>
+                            </div>
                             {% endfor %}
-                        </select>
+                        </div>
+                        <div class="form-text text-muted mt-1" style="font-size: 11px;">Marque as bandas e defina o perfil. Desmarcar uma banda remove o vínculo.</div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Perfil</label>
-                        <select name="role" class="form-select">
-                            <option value="INTEGRANTE" {% if u.role == 'INTEGRANTE' %}selected{% endif %}>Integrante</option>
-                            <option value="PRODUTOR" {% if u.role == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
-                            <option value="EMPRESARIO" {% if u.role == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
-                        </select>
-                    </div>
+                    {# Dados dos vínculos atuais para pré-popular via JS #}
+                    <script>
+                    (function() {
+                        var membs_{{ u.id }} = {
+                            {% for m in u.userbandmembership_set.all %}"{{ m.band_id }}": "{{ m.role }}"{% if not forloop.last %},{% endif %}{% endfor %}
+                        };
+                        document.getElementById('modalEditUser{{ u.id }}').addEventListener('show.bs.modal', function() {
+                            var container = document.getElementById('bands-edit-{{ u.id }}');
+                            // Reset all
+                            container.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+                                cb.checked = false;
+                                var sel = cb.parentElement.querySelector('select');
+                                if (sel) { sel.disabled = true; sel.value = 'INTEGRANTE'; }
+                            });
+                            // Pre-check memberships
+                            Object.keys(membs_{{ u.id }}).forEach(function(bandId) {
+                                var cb = container.querySelector('input[value="' + bandId + '"]');
+                                if (cb) {
+                                    cb.checked = true;
+                                    var sel = cb.parentElement.querySelector('select');
+                                    if (sel) { sel.disabled = false; sel.value = membs_{{ u.id }}[bandId]; }
+                                }
+                            });
+                        }, { once: false });
+                    })();
+                    </script>
                     <div class="mt-2">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserEdit{{ u.id }}" {% if u.is_active %}checked{% endif %}>

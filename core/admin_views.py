@@ -10,7 +10,7 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView, View
 from django.db.models import Count, F, Q
-from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket, SystemSettings
+from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket, SystemSettings, UserBandMembership
 from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm, AdminPartnerForm
 from core.views import build_whatsapp_access_data
 import datetime
@@ -301,8 +301,9 @@ class AdminUserListView(AdminRequiredMixin, ListView):
                 qs = qs.filter(band__isnull=True)
             else:
                 qs = qs.filter(band_id=band_id)
-                
-        return qs
+
+        # BP-PEND-62: prefetch memberships para exibir múltiplas bandas sem N+1 queries
+        return qs.prefetch_related('userbandmembership_set__band')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -923,7 +924,43 @@ def admin_user_create(request):
         form = AdminUserCreateForm(request.POST)
         if form.is_valid():
             raw_password = form.cleaned_data.get('password')
-            user = form.save()
+            user = form.save(commit=False)
+            user.save()
+
+            # BP-PEND-62: Criar UserBandMembership para cada banda selecionada
+            band_ids = request.POST.getlist('band_ids')
+            first_band = None
+            first_role = 'INTEGRANTE'
+            valid_roles = {'INTEGRANTE', 'PRODUTOR', 'EMPRESARIO'}
+            for idx, band_id in enumerate(band_ids):
+                try:
+                    band_obj = Band.objects.get(id=band_id)
+                    role = request.POST.get(f'role_{band_id}', 'INTEGRANTE')
+                    if role not in valid_roles:
+                        role = 'INTEGRANTE'
+                    UserBandMembership.objects.update_or_create(
+                        user=user, band=band_obj,
+                        defaults={'role': role, 'is_active': True}
+                    )
+                    if idx == 0:
+                        first_band = band_obj
+                        first_role = role
+                except Band.DoesNotExist:
+                    pass
+
+            # Backward compat: sincroniza user.band e user.role com o primeiro vínculo
+            update_fields = []
+            if first_band:
+                user.band = first_band
+                user.role = first_role
+                update_fields.extend(['band', 'role'])
+            # Força must_change_password para integrantes
+            if first_role == 'INTEGRANTE':
+                user.must_change_password = True
+                update_fields.append('must_change_password')
+            if update_fields:
+                user.save(update_fields=update_fields)
+
             request.session['whatsapp_access_data'] = build_whatsapp_access_data(
                 band=user.band,
                 user=user,
@@ -955,6 +992,47 @@ def admin_user_edit(request, pk):
         form = AdminUserEditForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
+
+            # BP-PEND-62: Atualizar UserBandMembership
+            band_ids_submitted = set(request.POST.getlist('band_ids'))
+            valid_roles = {'INTEGRANTE', 'PRODUTOR', 'EMPRESARIO'}
+
+            # Remove vínculos que foram desmarcados
+            UserBandMembership.objects.filter(user=user).exclude(
+                band_id__in=band_ids_submitted
+            ).delete()
+
+            # Cria ou atualiza vínculos submetidos
+            first_band = None
+            first_role = 'INTEGRANTE'
+            for idx, band_id in enumerate(request.POST.getlist('band_ids')):
+                try:
+                    band_obj = Band.objects.get(id=band_id)
+                    role = request.POST.get(f'role_{band_id}', 'INTEGRANTE')
+                    if role not in valid_roles:
+                        role = 'INTEGRANTE'
+                    UserBandMembership.objects.update_or_create(
+                        user=user, band=band_obj,
+                        defaults={'role': role, 'is_active': True}
+                    )
+                    if idx == 0:
+                        first_band = band_obj
+                        first_role = role
+                except Band.DoesNotExist:
+                    pass
+
+            # Backward compat: sincroniza user.band e user.role
+            update_fields = []
+            if first_band:
+                user.band = first_band
+                user.role = first_role
+                update_fields.extend(['band', 'role'])
+            elif not band_ids_submitted:
+                user.band = None
+                update_fields.append('band')
+            if update_fields:
+                user.save(update_fields=update_fields)
+
             messages.success(request, "Usuário atualizado com sucesso!")
         else:
             for field, errors in form.errors.items():
