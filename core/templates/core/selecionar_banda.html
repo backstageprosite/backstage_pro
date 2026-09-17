@@ -8,84 +8,122 @@
     <link rel="icon" type="image/png" href="{% static 'core/pwa/icons/backstage-icon-192.png' %}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bp-green: #6BD443;
             --bp-green-dark: #57b336;
         }
         body {
-            background: linear-gradient(135deg, #f0f9eb 0%, #e8f5e9 100%);
+            background: linear-gradient(135deg, #f4fbf1 0%, #eaf5e7 100%);
             min-height: 100vh;
-            font-family: 'Inter', 'Segoe UI', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 24px 12px;
+        }
+        .page-wrapper {
+            width: 100%;
+            max-width: 1040px;
+            margin: 0 auto;
+        }
+        .header-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            padding: 40px 32px;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+        @media (max-width: 576px) {
+            .header-card {
+                padding: 28px 18px;
+                border-radius: 16px;
+            }
         }
         .bp-logo {
-            max-height: 48px;
+            max-height: 72px;
+            width: auto;
+            object-fit: contain;
+            transition: transform 0.2s ease;
+        }
+        .bp-logo:hover {
+            transform: scale(1.02);
+        }
+        .band-card-form {
+            height: 100%;
         }
         .band-card {
-            background: #fff;
+            background: #ffffff;
             border-radius: 16px;
-            border: 2px solid transparent;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-            transition: all 0.2s ease;
+            border: 1.5px solid #e9ecef;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+            transition: all 0.22s ease-in-out;
             cursor: pointer;
+            width: 100%;
+            height: 100%;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-align: left;
+            position: relative;
         }
         .band-card:hover {
             border-color: var(--bp-green);
-            box-shadow: 0 6px 24px rgba(107,212,67,0.18);
-            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(107, 212, 67, 0.2);
+            transform: translateY(-3px);
+            background: #ffffff;
         }
         .band-avatar {
             width: 64px;
             height: 64px;
-            border-radius: 12px;
+            border-radius: 14px;
             object-fit: cover;
+            background-color: #f8f9fa;
+            border: 1px solid rgba(0,0,0,0.06);
+            flex-shrink: 0;
         }
         .band-avatar-placeholder {
             width: 64px;
             height: 64px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--bp-green) 0%, var(--bp-green-dark) 100%);
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 1px solid #bbf7d0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
-            color: #fff;
+            color: #166534;
             flex-shrink: 0;
+            text-transform: uppercase;
         }
         .role-badge {
             font-size: 11px;
             font-weight: 600;
             padding: 3px 10px;
             border-radius: 50rem;
+            display: inline-flex;
+            align-items: center;
         }
         .btn-acessar {
             background-color: var(--bp-green);
             border: none;
-            color: #fff;
+            color: #ffffff;
             font-weight: 700;
             border-radius: 50rem;
-            padding: 7px 22px;
-            font-size: 14px;
-            transition: background 0.15s;
+            padding: 8px 18px;
+            font-size: 13.5px;
+            letter-spacing: 0.2px;
+            transition: background 0.15s, transform 0.15s;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(107, 212, 67, 0.35);
         }
-        .btn-acessar:hover {
+        .band-card:hover .btn-acessar {
             background-color: var(--bp-green-dark);
-            color: #fff;
-        }
-        .page-wrapper {
-            width: 100%;
-            max-width: 640px;
-            padding: 24px 16px;
-        }
-        .header-card {
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-            padding: 32px;
+            box-shadow: 0 4px 10px rgba(87, 179, 54, 0.45);
         }
     </style>
 </head>
@@ -93,22 +131,22 @@
 
 <div class="page-wrapper">
     <div class="header-card">
-        <!-- Logo Backstage Pro -->
+        <!-- Logo Backstage Pro no Topo -->
         <div class="text-center mb-4">
-            <img src="{% static 'core/pwa/icons/backstage-icon-192.png' %}"
+            <img src="{% static 'images/backstage-pro-logo.png' %}"
                  alt="Backstage Pro"
                  class="bp-logo mb-3"
-                 style="max-height: 52px; border-radius: 12px;">
-            <h4 class="fw-bold text-dark mb-1" style="font-size: 20px;">
+                 onerror="this.onerror=null; this.src='{% static 'core/pwa/icons/backstage-icon-192.png' %}';">
+            <h4 class="fw-bold text-dark mb-1" style="font-size: 22px;">
                 Selecionar Banda
             </h4>
             <p class="text-muted mb-0" style="font-size: 14px;">
-                Olá, <strong>{{ request.user.first_name|default:request.user.username }}</strong>! Escolha qual banda deseja acessar.
+                Olá, <strong>{{ request.user.first_name|default:request.user.username }}</strong>! Escolha qual banda deseja acessar:
             </p>
         </div>
 
         {% if messages %}
-        <div class="mb-3">
+        <div class="mb-4">
             {% for msg in messages %}
             <div class="alert alert-{{ msg.tags }} alert-dismissible fade show py-2 px-3" style="border-radius: 10px; font-size: 13px;" role="alert">
                 {{ msg }}
@@ -118,66 +156,77 @@
         </div>
         {% endif %}
 
-        <!-- Grid de Bandas -->
-        <div class="d-flex flex-column gap-3">
+        <!-- Grid Responsivo de Bandas -->
+        <div class="row g-3">
             {% for membership in memberships %}
-            <form method="post" action="{% url 'selecionar_banda' %}">
-                {% csrf_token %}
-                <input type="hidden" name="band_id" value="{{ membership.band.id }}">
-                <button type="submit" class="band-card d-flex align-items-center gap-3 p-3 w-100 text-start border-0 bg-transparent" style="display: block !important;">
-                    <!-- Logo / Avatar da Banda -->
-                    {% if membership.band.logo %}
-                    <img src="{{ membership.band.logo.url }}" alt="{{ membership.band.name }}" class="band-avatar flex-shrink-0">
-                    {% else %}
-                    <div class="band-avatar-placeholder flex-shrink-0">
-                        {{ membership.band.name|make_list|first|upper }}
-                    </div>
-                    {% endif %}
-
-                    <!-- Info -->
-                    <div class="flex-grow-1 min-width-0">
-                        <div class="fw-bold text-dark" style="font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            {{ membership.band.name }}
+            <div class="col-12 col-md-6 col-lg-4">
+                <form method="post" action="{% url 'selecionar_banda' %}" class="band-card-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="band_id" value="{{ membership.band.id }}">
+                    <button type="submit" class="band-card border-0">
+                        <!-- Logo / Avatar da Banda -->
+                        {% if membership.band.logo %}
+                        <img src="{% url 'public_band_logo' membership.band.slug %}"
+                             alt=""
+                             class="band-avatar"
+                             onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                        <div class="band-avatar-placeholder" style="display: none;">
+                            <i class="fa-solid fa-guitar" style="font-size: 20px;"></i>
                         </div>
-                        <div class="mt-1">
-                            {% if membership.role == 'EMPRESARIO' %}
-                            <span class="role-badge bg-opacity-10" style="background-color: rgba(111,66,193,0.12); color: #6f42c1; border: 1px solid rgba(111,66,193,0.3);">
-                                <i class="fa-solid fa-crown me-1"></i>Empresário
-                            </span>
-                            {% elif membership.role == 'PRODUTOR' %}
-                            <span class="role-badge bg-opacity-10" style="background-color: rgba(13,110,253,0.1); color: #0d6efd; border: 1px solid rgba(13,110,253,0.25);">
-                                <i class="fa-solid fa-crown me-1"></i>Produtor
-                            </span>
-                            {% else %}
-                            <span class="role-badge bg-opacity-10" style="background-color: rgba(253,126,20,0.12); color: #d65b00; border: 1px solid rgba(253,126,20,0.3);">
-                                <i class="fa-solid fa-guitar me-1"></i>Integrante
-                            </span>
-                            {% endif %}
+                        {% else %}
+                        <div class="band-avatar-placeholder">
+                            {{ membership.band.name|make_list|first|upper }}
                         </div>
-                    </div>
+                        {% endif %}
 
-                    <!-- Botão Acessar -->
-                    <div class="flex-shrink-0">
-                        <span class="btn-acessar">
-                            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>Acessar
-                        </span>
-                    </div>
-                </button>
-            </form>
+                        <!-- Info -->
+                        <div class="flex-grow-1 min-width-0 pe-1">
+                            <div class="fw-bold text-dark mb-1 text-truncate" style="font-size: 15px;" title="{{ membership.band.name }}">
+                                {{ membership.band.name }}
+                            </div>
+                            <div>
+                                {% if membership.role == 'EMPRESARIO' %}
+                                <span class="role-badge" style="background-color: rgba(111,66,193,0.12); color: #6f42c1; border: 1px solid rgba(111,66,193,0.25);">
+                                    <i class="fa-solid fa-crown me-1" style="font-size: 10px;"></i>Empresário
+                                </span>
+                                {% elif membership.role == 'PRODUTOR' %}
+                                <span class="role-badge" style="background-color: rgba(13,110,253,0.1); color: #0d6efd; border: 1px solid rgba(13,110,253,0.25);">
+                                    <i class="fa-solid fa-crown me-1" style="font-size: 10px;"></i>Produtor
+                                </span>
+                                {% else %}
+                                <span class="role-badge" style="background-color: rgba(253,126,20,0.12); color: #d65b00; border: 1px solid rgba(253,126,20,0.25);">
+                                    <i class="fa-solid fa-guitar me-1" style="font-size: 10px;"></i>Integrante
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Botão Acessar -->
+                        <div class="flex-shrink-0">
+                            <span class="btn-acessar">
+                                Acessar <i class="fa-solid fa-arrow-right ms-1" style="font-size: 11px;"></i>
+                            </span>
+                        </div>
+                    </button>
+                </form>
+            </div>
             {% empty %}
-            <div class="text-center py-4 text-muted">
-                <i class="fa-solid fa-circle-exclamation fa-2x mb-2 text-warning"></i>
-                <p class="mb-0">Nenhuma banda ativa vinculada ao seu usuário.<br>
-                Entre em contato com a administração do Backstage Pro.</p>
+            <div class="col-12">
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-circle-exclamation fa-3x mb-3 text-warning"></i>
+                    <h5 class="fw-bold text-dark">Nenhuma banda ativa encontrada</h5>
+                    <p class="mb-0 small">Não há bandas vinculadas ou ativas para sua conta.<br>
+                    Entre em contato com o suporte ou com o administrador do Backstage Pro.</p>
+                </div>
             </div>
             {% endfor %}
         </div>
 
         <!-- Logout -->
         <div class="text-center mt-4 pt-3 border-top">
-            <a href="#" class="text-muted small" style="text-decoration: none; font-size: 13px;"
+            <a href="#" class="text-muted small fw-medium" style="text-decoration: none; font-size: 13px;"
                onclick="document.getElementById('formLogout').submit(); return false;">
-                <i class="fa-solid fa-right-from-bracket me-1"></i>Sair do Backstage Pro
+                <i class="fa-solid fa-right-from-bracket me-1 text-danger"></i>Sair do Backstage Pro
             </a>
             <form id="formLogout" method="post" action="{% url 'admin_painel:logout' %}" class="d-none">
                 {% csrf_token %}
