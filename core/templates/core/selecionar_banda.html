@@ -75,19 +75,30 @@
             transform: translateY(-3px);
             background: #ffffff;
         }
-        .band-avatar {
-            width: 64px;
-            height: 64px;
-            border-radius: 14px;
-            object-fit: cover;
-            background-color: #f8f9fa;
-            border: 1px solid rgba(0,0,0,0.06);
+        .band-logo-box {
+            width: 80px;
+            height: 68px;
+            border-radius: 12px;
+            background-color: #ffffff;
+            border: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
             flex-shrink: 0;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .band-logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
         }
         .band-avatar-placeholder {
-            width: 64px;
-            height: 64px;
-            border-radius: 14px;
+            width: 80px;
+            height: 68px;
+            border-radius: 12px;
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
             border: 1px solid #bbf7d0;
             display: flex;
@@ -166,12 +177,14 @@
                     <button type="submit" class="band-card border-0">
                         <!-- Logo / Avatar da Banda -->
                         {% if membership.band.logo %}
-                        <img src="{% url 'public_band_logo' membership.band.slug %}"
-                             alt=""
-                             class="band-avatar"
-                             onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                        <div class="band-logo-box">
+                            <img src="{% url 'public_band_logo' membership.band.slug %}"
+                                 alt=""
+                                 class="band-logo-img"
+                                 onerror="this.style.display='none'; if(this.parentElement.nextElementSibling) this.parentElement.nextElementSibling.style.display='flex'; this.parentElement.style.display='none';">
+                        </div>
                         <div class="band-avatar-placeholder" style="display: none;">
-                            <i class="fa-solid fa-guitar" style="font-size: 20px;"></i>
+                            <i class="fa-solid fa-guitar" style="font-size: 22px;"></i>
                         </div>
                         {% else %}
                         <div class="band-avatar-placeholder">
