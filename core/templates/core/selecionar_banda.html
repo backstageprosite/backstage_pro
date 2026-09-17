@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Selecionar Banda — Backstage Pro</title>
     <link rel="icon" type="image/png" href="{% static 'core/pwa/icons/backstage-icon-192.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'core/pwa/icons/backstage-apple-touch-icon.png' %}?v=white-bg-v2">
+    <meta name="apple-mobile-web-app-title" content="Backstage Pro">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#6BD443">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,19 +30,19 @@
         }
         .page-wrapper {
             width: 100%;
-            max-width: 1040px;
+            max-width: 1140px;
             margin: 0 auto;
         }
         .header-card {
             background: #ffffff;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.06);
-            padding: 40px 32px;
+            padding: 36px 28px;
             border: 1px solid rgba(0,0,0,0.04);
         }
         @media (max-width: 576px) {
             .header-card {
-                padding: 28px 18px;
+                padding: 24px 14px;
                 border-radius: 16px;
             }
         }
@@ -62,12 +67,13 @@
             cursor: pointer;
             width: 100%;
             height: 100%;
-            padding: 18px;
+            padding: 14px 14px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             text-align: left;
             position: relative;
+            box-sizing: border-box;
         }
         .band-card:hover {
             border-color: var(--bp-green);
@@ -76,15 +82,15 @@
             background: #ffffff;
         }
         .band-logo-box {
-            width: 80px;
-            height: 68px;
+            width: 74px;
+            height: 64px;
             border-radius: 12px;
             background-color: #ffffff;
             border: 1px solid #e9ecef;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 6px;
+            padding: 5px;
             flex-shrink: 0;
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0,0,0,0.02);
@@ -96,15 +102,15 @@
             display: block;
         }
         .band-avatar-placeholder {
-            width: 80px;
-            height: 68px;
+            width: 74px;
+            height: 64px;
             border-radius: 12px;
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
             border: 1px solid #bbf7d0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             color: #166534;
             flex-shrink: 0;
@@ -113,10 +119,11 @@
         .role-badge {
             font-size: 11px;
             font-weight: 600;
-            padding: 3px 10px;
+            padding: 3px 8px;
             border-radius: 50rem;
             display: inline-flex;
             align-items: center;
+            white-space: nowrap;
         }
         .btn-acessar {
             background-color: var(--bp-green);
@@ -124,12 +131,14 @@
             color: #ffffff;
             font-weight: 700;
             border-radius: 50rem;
-            padding: 8px 18px;
-            font-size: 13.5px;
+            padding: 7px 13px;
+            font-size: 12.5px;
             letter-spacing: 0.2px;
             transition: background 0.15s, transform 0.15s;
             display: inline-flex;
             align-items: center;
+            white-space: nowrap;
+            flex-shrink: 0;
             box-shadow: 0 2px 6px rgba(107, 212, 67, 0.35);
         }
         .band-card:hover .btn-acessar {

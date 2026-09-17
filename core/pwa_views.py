@@ -59,14 +59,75 @@ def get_band_icon_version(band):
         return token_hash, is_reliable
     return "fallback", True
 
+def is_multilogin_user(user):
+    """
+    BP-PEND-62: Retorna True se o usuário possui 2 ou mais memberships ativos.
+    Nesse caso, a identidade PWA do usuário deve ser Backstage Pro, e não a logo de uma banda.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    return user.get_active_memberships().count() >= 2
+
+
 def band_manifest(request, band_slug):
     """
     Retorna o manifest dinâmico de uma banda específica.
+    Se o usuário autenticado tiver 2 ou mais bandas vinculadas (multilogin),
+    serve o manifest com branding oficial do Backstage Pro.
     """
     band = get_object_or_404(Band, slug=band_slug)
 
     if not band.is_active:
         raise Http404("Banda inativa.")
+
+    # Regra Multilogin PWA: 2+ bandas ativas -> branding Backstage Pro
+    if is_multilogin_user(request.user):
+        start_url = reverse('selecionar_banda') + '?source=pwa'
+        v = "white-bg-v2"
+        icons = [
+            {
+                "src": static("core/pwa/icons/backstage-icon-192.png") + f"?v={v}",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any"
+            },
+            {
+                "src": static("core/pwa/icons/backstage-icon-512.png") + f"?v={v}",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any"
+            },
+            {
+                "src": static("core/pwa/icons/backstage-icon-maskable-192.png") + f"?v={v}",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "maskable"
+            },
+            {
+                "src": static("core/pwa/icons/backstage-icon-maskable-512.png") + f"?v={v}",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable"
+            }
+        ]
+        manifest = {
+            "name": "Backstage Pro",
+            "short_name": "Backstage Pro",
+            "id": "/selecionar-banda/",
+            "start_url": start_url,
+            "scope": "/",
+            "display": "standalone",
+            "orientation": "any",
+            "theme_color": "#6BD443",
+            "background_color": "#6BD443",
+            "lang": "pt-BR",
+            "description": "Gestão completa de shows, agenda e equipe - Backstage Pro.",
+            "icons": icons
+        }
+        response = JsonResponse(manifest)
+        response['Content-Type'] = 'application/manifest+json'
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return response
 
     start_url = reverse('dashboard', kwargs={'band_slug': band.slug}) + '?source=pwa'
 
@@ -197,6 +258,17 @@ def band_icon_view(request, band_slug, filename):
     band = get_object_or_404(Band, slug=band_slug)
     if not band.is_active:
         raise Http404("Banda inativa.")
+
+    # Regra Multilogin PWA: se o usuário tiver 2+ bandas ativas, serve o ícone oficial Backstage Pro
+    if is_multilogin_user(request.user):
+        fallback_filename = f"backstage-{filename}"
+        fallback_path = finders.find(f"core/pwa/icons/{fallback_filename}")
+        if fallback_path and os.path.exists(fallback_path):
+            with open(fallback_path, 'rb') as f:
+                icon_data = f.read()
+            response = HttpResponse(icon_data, content_type='image/png')
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return response
 
     icon_data = generate_band_icon(band.logo, size, maskable, apple)
 

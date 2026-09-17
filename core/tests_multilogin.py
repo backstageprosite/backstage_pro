@@ -124,3 +124,71 @@ class TestAdminUsuariosPage(TestCase):
         self.assertEqual(user.get_role_for_band(band), 'EMPRESARIO')
         # get_role_for_band sem band retorna user.role
         self.assertEqual(user.get_role_for_band(None), 'INTEGRANTE')
+
+
+class TestPwaMultilogin(TestCase):
+    """Testes para o comportamento de PWA com 1 banda vs Multilogin (2+ bandas)."""
+
+    def setUp(self):
+        self.band_a = make_band('Banda Alfa PWA', 'banda-alfa-pwa')
+        self.band_b = make_band('Banda Beta PWA', 'banda-beta-pwa')
+        self.client = Client()
+
+    def test_single_band_user_gets_band_manifest(self):
+        """Usuário com 1 banda continua recebendo o manifest com a identidade da banda."""
+        user_single = make_regular_user('user_single_pwa', band=self.band_a, role='PRODUTOR')
+        UserBandMembership.objects.get_or_create(
+            user=user_single, band=self.band_a,
+            defaults={'role': 'PRODUTOR', 'is_active': True}
+        )
+        self.client.force_login(user_single)
+
+        response = self.client.get(reverse('manifest', kwargs={'band_slug': self.band_a.slug}))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['name'], 'Banda Alfa PWA')
+        self.assertIn(self.band_a.slug, data['id'])
+
+    def test_multilogin_user_gets_backstage_pro_manifest(self):
+        """Usuário com 2+ bandas ativas recebe manifest com identidade oficial Backstage Pro."""
+        user_multi = make_regular_user('user_multi_pwa', band=self.band_a, role='EMPRESARIO')
+        UserBandMembership.objects.get_or_create(
+            user=user_multi, band=self.band_a,
+            defaults={'role': 'EMPRESARIO', 'is_active': True}
+        )
+        UserBandMembership.objects.get_or_create(
+            user=user_multi, band=self.band_b,
+            defaults={'role': 'PRODUTOR', 'is_active': True}
+        )
+        self.client.force_login(user_multi)
+
+        # Mesmo acessando a URL de manifest da banda_a, retorna Backstage Pro
+        response = self.client.get(reverse('manifest', kwargs={'band_slug': self.band_a.slug}))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['name'], 'Backstage Pro')
+        self.assertEqual(data['short_name'], 'Backstage Pro')
+        self.assertIn('backstage-icon-192.png', data['icons'][0]['src'])
+
+    def test_selecionar_banda_renders_cards_and_acessar_buttons(self):
+        """A tela Selecionar Banda renderiza com os botões Acessar e badges de role."""
+        user_multi = make_regular_user('user_multi_cards', band=self.band_a, role='EMPRESARIO')
+        UserBandMembership.objects.get_or_create(
+            user=user_multi, band=self.band_a,
+            defaults={'role': 'EMPRESARIO', 'is_active': True}
+        )
+        UserBandMembership.objects.get_or_create(
+            user=user_multi, band=self.band_b,
+            defaults={'role': 'INTEGRANTE', 'is_active': True}
+        )
+        self.client.force_login(user_multi)
+
+        response = self.client.get(reverse('selecionar_banda'))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8', errors='replace')
+        self.assertIn('btn-acessar', content)
+        self.assertIn('band-logo-box', content)
+        self.assertIn('Acessar', content)
+        self.assertIn('Empresário', content)
+        self.assertIn('Integrante', content)
+

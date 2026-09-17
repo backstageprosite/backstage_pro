@@ -7,7 +7,12 @@
 {% if band %}
     <link rel="manifest" href="{% url 'manifest' band.slug %}">
     <meta name="apple-mobile-web-app-title" content="{% get_pwa_short_name band %}">
-    <link rel="apple-touch-icon" href="{% url 'band_icon' band.slug 'apple-touch-icon.png' %}?v={% get_pwa_icon_version band %}">
+    {% is_multilogin_pwa as user_is_multilogin %}
+    {% if user_is_multilogin %}
+        <link rel="apple-touch-icon" href="{% static 'core/pwa/icons/backstage-apple-touch-icon.png' %}?v=white-bg-v2">
+    {% else %}
+        <link rel="apple-touch-icon" href="{% url 'band_icon' band.slug 'apple-touch-icon.png' %}?v={% get_pwa_icon_version band %}">
+    {% endif %}
     <script id="pwa-register-script" src="{% static 'core/pwa/pwa-register.js' %}" data-sw-url="{% url 'band_sw' band.slug %}" data-sw-scope="/{{ band.slug }}/" defer></script>
 {% elif request.resolver_match.namespace == 'admin_painel' %}
     <link rel="manifest" href="{% url 'admin_painel:manifest' %}">
