@@ -169,45 +169,20 @@
                 </div>
             </div>
 
-            <!-- Cronograma -->
+            <!-- Cronograma (Horários no Local) -->
             <div class="col-6 mb-3">
                 <div class="card h-100">
                     <div class="card-header header-cronograma py-1"><i class="fa-regular fa-clock me-1"></i> Cronograma</div>
                     <div class="card-body p-0">
                         <ul class="list-group list-group-flush">
-                            {% if show.departure_location or show.departure_location_link %}
-                            <li class="list-group-item">
-                                {% if show.departure_location %}<strong>Local de Saída:</strong> {{ show.departure_location }}{% endif %}
-                                {% if show.departure_location and show.departure_location_link %} - {% endif %}
-                                {% if show.departure_location_link %}
-                                <a href="{{ show.departure_location_link }}" target="_blank">
-                                    <i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa
-                                </a>
-                                {% endif %}
+                            {% if show.soundcheck_time or show.soundcheck_end_time %}
+                            <li class="list-group-item text-warning">
+                                <strong>Passagem de Som:</strong>
+                                {% if show.soundcheck_time %} Início: {{ show.soundcheck_time|time:"H:i" }}{% endif %}
+                                {% if show.soundcheck_time and show.soundcheck_end_time %} <span class="mx-1">|</span> {% endif %}
+                                {% if show.soundcheck_end_time %} Final: {{ show.soundcheck_end_time|time:"H:i" }}{% endif %}
                             </li>
                             {% endif %}
-                            {% if show.distance_km or show.travel_time %}
-                            <li class="list-group-item">
-                                {% if show.distance_km %}<strong>Distância:</strong> {{ show.distance_km }}{% endif %}
-                                {% if show.distance_km and show.travel_time %} <span class="mx-1">|</span> {% endif %}
-                                {% if show.travel_time %}<strong>Tempo de Desloc.:</strong> {{ show.travel_time }}{% endif %}
-                            </li>
-                            {% endif %}
-                            {% if show.departure_time or show.arrival_time %}
-                        <li class="list-group-item">
-                            {% if show.departure_time %}<strong>Saída:</strong> {{ show.departure_time|date:"H:i - d/m/Y" }}{% endif %}
-                            {% if show.departure_time and show.arrival_time %} <span class="mx-1">|</span> {% endif %}
-                            {% if show.arrival_time %}<strong>Chegada:</strong> {{ show.arrival_time|date:"H:i - d/m/Y" }}{% endif %}
-                        </li>
-                        {% endif %}
-                        {% if show.soundcheck_time or show.soundcheck_end_time %}
-                        <li class="list-group-item text-warning">
-                            <strong>Passagem de Som:</strong>
-                            {% if show.soundcheck_time %} Início: {{ show.soundcheck_time|time:"H:i" }}{% endif %}
-                            {% if show.soundcheck_time and show.soundcheck_end_time %} <span class="mx-1">|</span> {% endif %}
-                            {% if show.soundcheck_end_time %} Final: {{ show.soundcheck_end_time|time:"H:i" }}{% endif %}
-                        </li>
-                        {% endif %}
                             {% if show.show_time or show.show_end_time %}
                             <li class="list-group-item">
                                 {% if show.show_time %}<span class="text-success"><strong>Início do Show:</strong> {{ show.show_time|time:"H:i" }}</span>{% endif %}
@@ -218,37 +193,227 @@
                             {% if show.duration %}
                             <li class="list-group-item"><strong>Duração:</strong> {{ show.duration }}</li>
                             {% endif %}
+                            {% if show.attractions %}
+                            <li class="list-group-item">
+                                <strong>Outras Atrações / Horários:</strong><br>
+                                {{ show.attractions|linebreaksbr }}
+                            </li>
+                            {% endif %}
                         </ul>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Logística e Produção -->
-        {% if show.transport or show.flight_number or show.airline or show.accommodation or show.transfer or show.dressing_room or show.catering or show.wardrobe or show.attractions %}
+        <!-- Deslocamento & Transporte (Full-width) -->
+        {% if show.departure_location or show.arrival_location or show.departure_time or show.arrival_time or show.distance_km or show.travel_time or show.transport or show.has_air_travel or show.flight_number or show.airline or show.has_specific_tech_logistics or show.has_specific_artist_logistics %}
+        <div class="card mb-2 border-primary">
+            <div class="card-header bg-primary text-white py-1" style="-webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #0d6efd !important; color: white !important;">
+                <i class="fa-solid fa-route me-1"></i> Deslocamento & Transporte
+            </div>
+            <div class="card-body p-2">
+                <!-- Logística Principal -->
+                <div class="border rounded p-2 mb-2 bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1">
+                        <strong class="text-primary" style="font-size: 12px;"><i class="fa-solid fa-users me-1"></i> Logística Principal — {{ show.get_logistics_principal_label }}</strong>
+                    </div>
+                    <div class="row g-2">
+                        {% if show.departure_location or show.departure_location_link %}
+                        <div class="col-6">
+                            <strong>Saída:</strong> {{ show.departure_location|default:"-" }}
+                            {% if show.departure_location_link %}
+                            <a href="{{ show.departure_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.arrival_location or show.arrival_location_link %}
+                        <div class="col-6">
+                            <strong>Chegada:</strong> {{ show.arrival_location|default:"-" }}
+                            {% if show.arrival_location_link %}
+                            <a href="{{ show.arrival_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.departure_time or show.arrival_time %}
+                        <div class="col-6">
+                            {% if show.departure_time %}<strong>Horário Saída:</strong> {{ show.departure_time|date:"d/m/Y H:i" }}{% endif %}
+                            {% if show.departure_time and show.arrival_time %} <span class="mx-1">|</span> {% endif %}
+                            {% if show.arrival_time %}<strong>Previsão Chegada:</strong> {{ show.arrival_time|date:"d/m/Y H:i" }}{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.travel_time or show.distance_km %}
+                        <div class="col-6">
+                            {% if show.distance_km %}<strong>Distância:</strong> {{ show.distance_km }}{% endif %}
+                            {% if show.distance_km and show.travel_time %} <span class="mx-1">|</span> {% endif %}
+                            {% if show.travel_time %}<strong>Tempo de Desloc.:</strong> {{ show.travel_time }}{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.transport or show.transport_contact %}
+                        <div class="col-12">
+                            <strong>Meio de Transporte:</strong> {{ show.transport|default:"-" }}
+                            {% if show.transport_contact %}<span class="text-info ms-2"><i class="fa-brands fa-whatsapp me-1"></i> Contato: {{ show.transport_contact }}</span>{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.transport_notes %}
+                        <div class="col-12">
+                            <strong>Observações:</strong> {{ show.transport_notes|linebreaksbr }}
+                        </div>
+                        {% endif %}
+                        {% if show.has_air_travel or show.flight_number or show.airline or show.departure_airport or show.arrival_airport %}
+                        <div class="col-12 mt-1 pt-1 border-top">
+                            <strong class="text-dark"><i class="fa-solid fa-plane me-1"></i> Trecho Aéreo:</strong>
+                            <span class="ms-1">
+                                {% if show.departure_airport or show.arrival_airport %}{{ show.departure_airport|default:"" }} {% if show.arrival_airport %}➔ {{ show.arrival_airport }}{% endif %} | {% endif %}
+                                {% if show.airline %}<strong>Cia:</strong> {{ show.airline }} | {% endif %}
+                                {% if show.flight_number %}<strong>Voo:</strong> {{ show.flight_number }} | {% endif %}
+                                {% if show.boarding_datetime %}<strong>Embarque:</strong> {{ show.boarding_datetime|date:"d/m/Y H:i" }} | {% elif show.boarding_time %}<strong>Embarque:</strong> {{ show.boarding_time|time:"H:i" }} | {% endif %}
+                                {% if show.flight_departure_time %}<strong>Voo:</strong> {{ show.flight_departure_time|date:"d/m/Y H:i" }} | {% endif %}
+                                {% if show.flight_arrival_time %}<strong>Pouso:</strong> {{ show.flight_arrival_time|date:"d/m/Y H:i" }}{% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Logística Específica Técnica (se ativada) -->
+                {% if show.has_specific_tech_logistics %}
+                <div class="border rounded p-2 mb-2 bg-light border-warning">
+                    <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1">
+                        <strong class="text-dark" style="font-size: 12px;"><i class="fa-solid fa-wrench me-1"></i> Logística Específica — Técnica</strong>
+                    </div>
+                    <div class="row g-2">
+                        {% if show.tech_departure_location or show.tech_departure_location_link %}
+                        <div class="col-6">
+                            <strong>Saída:</strong> {{ show.tech_departure_location|default:"-" }}
+                            {% if show.tech_departure_location_link %}
+                            <a href="{{ show.tech_departure_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.tech_arrival_location or show.tech_arrival_location_link %}
+                        <div class="col-6">
+                            <strong>Chegada:</strong> {{ show.tech_arrival_location|default:"-" }}
+                            {% if show.tech_arrival_location_link %}
+                            <a href="{{ show.tech_arrival_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.tech_departure_time or show.tech_arrival_time %}
+                        <div class="col-6">
+                            {% if show.tech_departure_time %}<strong>Horário Saída:</strong> {{ show.tech_departure_time|date:"d/m/Y H:i" }}{% endif %}
+                            {% if show.tech_departure_time and show.tech_arrival_time %} <span class="mx-1">|</span> {% endif %}
+                            {% if show.tech_arrival_time %}<strong>Previsão Chegada:</strong> {{ show.tech_arrival_time|date:"d/m/Y H:i" }}{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.tech_travel_time or show.tech_distance_km %}
+                        <div class="col-6">
+                            {% if show.tech_distance_km %}<strong>Distância:</strong> {{ show.tech_distance_km }}{% endif %}
+                            {% if show.tech_distance_km and show.tech_travel_time %} <span class="mx-1">|</span> {% endif %}
+                            {% if show.tech_travel_time %}<strong>Tempo de Desloc.:</strong> {{ show.tech_travel_time }}{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.tech_transport or show.tech_transport_contact %}
+                        <div class="col-12">
+                            <strong>Meio de Transporte:</strong> {{ show.tech_transport|default:"-" }}
+                            {% if show.tech_transport_contact %}<span class="text-info ms-2"><i class="fa-brands fa-whatsapp me-1"></i> Contato: {{ show.tech_transport_contact }}</span>{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.tech_transport_notes %}
+                        <div class="col-12">
+                            <strong>Observações:</strong> {{ show.tech_transport_notes|linebreaksbr }}
+                        </div>
+                        {% endif %}
+                        {% if show.tech_has_air_travel %}
+                        <div class="col-12 mt-1 pt-1 border-top">
+                            <strong class="text-dark"><i class="fa-solid fa-plane me-1"></i> Trecho Aéreo:</strong>
+                            <span class="ms-1">
+                                {% if show.tech_departure_airport or show.tech_arrival_airport %}{{ show.tech_departure_airport|default:"" }} {% if show.tech_arrival_airport %}➔ {{ show.tech_arrival_airport }}{% endif %} | {% endif %}
+                                {% if show.tech_airline %}<strong>Cia:</strong> {{ show.tech_airline }} | {% endif %}
+                                {% if show.tech_flight_number %}<strong>Voo:</strong> {{ show.tech_flight_number }} | {% endif %}
+                                {% if show.tech_boarding_datetime %}<strong>Embarque:</strong> {{ show.tech_boarding_datetime|date:"d/m/Y H:i" }} | {% endif %}
+                                {% if show.tech_flight_departure_time %}<strong>Voo:</strong> {{ show.tech_flight_departure_time|date:"d/m/Y H:i" }} | {% endif %}
+                                {% if show.tech_flight_arrival_time %}<strong>Pouso:</strong> {{ show.tech_flight_arrival_time|date:"d/m/Y H:i" }}{% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Logística Específica Artista (se ativada) -->
+                {% if show.has_specific_artist_logistics %}
+                <div class="border rounded p-2 bg-light border-info">
+                    <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1">
+                        <strong class="text-dark" style="font-size: 12px;"><i class="fa-solid fa-microphone-lines me-1"></i> Logística Específica — Artista</strong>
+                    </div>
+                    <div class="row g-2">
+                        {% if show.artist_departure_location or show.artist_departure_location_link %}
+                        <div class="col-6">
+                            <strong>Saída:</strong> {{ show.artist_departure_location|default:"-" }}
+                            {% if show.artist_departure_location_link %}
+                            <a href="{{ show.artist_departure_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.artist_arrival_location or show.artist_arrival_location_link %}
+                        <div class="col-6">
+                            <strong>Chegada:</strong> {{ show.artist_arrival_location|default:"-" }}
+                            {% if show.artist_arrival_location_link %}
+                            <a href="{{ show.artist_arrival_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.artist_departure_time or show.artist_arrival_time %}
+                        <div class="col-6">
+                            {% if show.artist_departure_time %}<strong>Horário Saída:</strong> {{ show.artist_departure_time|date:"d/m/Y H:i" }}{% endif %}
+                            {% if show.artist_departure_time and show.artist_arrival_time %} <span class="mx-1">|</span> {% endif %}
+                            {% if show.artist_arrival_time %}<strong>Previsão Chegada:</strong> {{ show.artist_arrival_time|date:"d/m/Y H:i" }}{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.artist_travel_time or show.artist_distance_km %}
+                        <div class="col-6">
+                            {% if show.artist_distance_km %}<strong>Distância:</strong> {{ show.artist_distance_km }}{% endif %}
+                            {% if show.artist_distance_km and show.artist_travel_time %} <span class="mx-1">|</span> {% endif %}
+                            {% if show.artist_travel_time %}<strong>Tempo de Desloc.:</strong> {{ show.artist_travel_time }}{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.artist_transport or show.artist_transport_contact %}
+                        <div class="col-12">
+                            <strong>Meio de Transporte:</strong> {{ show.artist_transport|default:"-" }}
+                            {% if show.artist_transport_contact %}<span class="text-info ms-2"><i class="fa-brands fa-whatsapp me-1"></i> Contato: {{ show.artist_transport_contact }}</span>{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if show.artist_transport_notes %}
+                        <div class="col-12">
+                            <strong>Observações:</strong> {{ show.artist_transport_notes|linebreaksbr }}
+                        </div>
+                        {% endif %}
+                        {% if show.artist_has_air_travel %}
+                        <div class="col-12 mt-1 pt-1 border-top">
+                            <strong class="text-dark"><i class="fa-solid fa-plane me-1"></i> Trecho Aéreo:</strong>
+                            <span class="ms-1">
+                                {% if show.artist_departure_airport or show.artist_arrival_airport %}{{ show.artist_departure_airport|default:"" }} {% if show.artist_arrival_airport %}➔ {{ show.artist_arrival_airport }}{% endif %} | {% endif %}
+                                {% if show.artist_airline %}<strong>Cia:</strong> {{ show.artist_airline }} | {% endif %}
+                                {% if show.artist_flight_number %}<strong>Voo:</strong> {{ show.artist_flight_number }} | {% endif %}
+                                {% if show.artist_boarding_datetime %}<strong>Embarque:</strong> {{ show.artist_boarding_datetime|date:"d/m/Y H:i" }} | {% endif %}
+                                {% if show.artist_flight_departure_time %}<strong>Voo:</strong> {{ show.artist_flight_departure_time|date:"d/m/Y H:i" }} | {% endif %}
+                                {% if show.artist_flight_arrival_time %}<strong>Pouso:</strong> {{ show.artist_flight_arrival_time|date:"d/m/Y H:i" }}{% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Produção (Hospedagem, Camarim & Apoio) -->
+        {% if show.accommodation or show.accommodation_responsible or show.accommodation_contact or show.transfer or show.dressing_room or show.catering or show.wardrobe %}
         <div class="card mb-2 border-success">
-            <div class="card-header header-logistica py-1"><i class="fa-solid fa-truck-fast me-1"></i> Logística & Produção</div>
+            <div class="card-header header-logistica py-1"><i class="fa-solid fa-hotel me-1"></i> Produção</div>
             <div class="card-body">
                 <div class="row">
-                    {% if show.transport %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-bus me-1"></i> Transporte</h6>
-                        <p class="mb-1">
-                            {{ show.transport|linebreaksbr }}
-                            {% if show.transport_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.transport_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.transport_contact }}</a></span>{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                    {% if show.flight_number or show.airline or show.boarding_time %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-plane me-1"></i> Aéreo</h6>
-                        <p class="mb-1">
-                            {% if show.airline %}<strong>Empresa Aérea:</strong> {{ show.airline }}<br>{% endif %}
-                            {% if show.flight_number %}<strong>Voo:</strong> {{ show.flight_number }}<br>{% endif %}
-                            {% if show.boarding_time %}<strong>Embarque:</strong> {{ show.boarding_time|time:"H:i" }}{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
                     {% if show.accommodation or show.accommodation_responsible or show.accommodation_contact %}
                     <div class="col-6 mb-3">
                         <h6 class="text-muted">
@@ -270,21 +435,12 @@
                         </p>
                         {% if show.checkout_time %}
                         <p class="mb-1">
-                            <strong>Saída p/ Show:</strong> {{ show.checkout_time|time:"H:i" }}
+                            <strong>Saída do Hotel para o Show:</strong> {{ show.checkout_time|time:"H:i" }}
                         </p>
                         {% endif %}
                         {% if show.accommodation_link %}
-                        <p class="mb-0 mt-1"><a href="{{ show.accommodation_link }}" target="_blank" style="font-size: 0.85em;"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir Localização no Mapa</a></p>
+                        <p class="mb-0 mt-1"><a href="{{ show.accommodation_link }}" target="_blank" style="font-size: 0.85em;"><i class="fa-solid fa-map-location-dot me-1"></i> Link do Hotel</a></p>
                         {% endif %}
-                    </div>
-                    {% endif %}
-                    {% if show.transfer %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-right-left me-1"></i> Palco/Baldeação</h6>
-                        <p class="mb-1">
-                            {{ show.transfer|linebreaksbr }}
-                            {% if show.transfer_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.transfer_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.transfer_contact }}</a></span>{% endif %}
-                        </p>
                     </div>
                     {% endif %}
                     {% if show.dressing_room %}
@@ -293,6 +449,15 @@
                         <p class="mb-1">
                             {{ show.dressing_room|linebreaksbr }}
                             {% if show.dressing_room_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.dressing_room_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.dressing_room_contact }}</a></span>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    {% if show.transfer %}
+                    <div class="col-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-right-left me-1"></i> Palco / Baldeação</h6>
+                        <p class="mb-1">
+                            {{ show.transfer|linebreaksbr }}
+                            {% if show.transfer_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.transfer_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.transfer_contact }}</a></span>{% endif %}
                         </p>
                     </div>
                     {% endif %}
@@ -306,12 +471,6 @@
                     <div class="col-6 mb-3">
                         <h6 class="text-muted"><i class="fa-solid fa-shirt me-1"></i> Figurino</h6>
                         <p>{{ show.wardrobe|linebreaksbr }}</p>
-                    </div>
-                    {% endif %}
-                    {% if show.attractions %}
-                    <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-users me-1"></i> Outras Atrações no Evento</h6>
-                        <p class="mb-1">{{ show.attractions|linebreaksbr }}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -372,7 +531,7 @@
                     {% endif %}
                     {% if show.pyrotechnics %}
                     <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-fire me-1"></i> Efeitos / Pirotecnia</h6>
+                        <h6 class="text-muted"><i class="fa-solid fa-fire me-1"></i> Pirotecnia / Efeitos</h6>
                         <p class="mb-1">
                             {{ show.pyrotechnics|linebreaksbr }}
                             {% if show.pyrotechnics_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.pyrotechnics_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.pyrotechnics_contact }}</a></span>{% endif %}
@@ -381,7 +540,7 @@
                     {% endif %}
                     {% if show.generator_system %}
                     <div class="col-6 mb-3">
-                        <h6 class="text-muted"><i class="fa-solid fa-bolt me-1"></i> Geradores</h6>
+                        <h6 class="text-muted"><i class="fa-solid fa-bolt me-1"></i> Gerador</h6>
                         <p class="mb-1">
                             {{ show.generator_system|linebreaksbr }}
                             {% if show.generator_contact %}<span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato: <a href="https://wa.me/55{{ show.generator_contact|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="text-info text-decoration-none">{{ show.generator_contact }}</a></span>{% endif %}

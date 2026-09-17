@@ -292,12 +292,71 @@ class Show(models.Model):
     fee = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name='Valor do Cachê')
     payment_status = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='PENDENTE', verbose_name='Status do Pagamento')
 
-    # Logística
-    transport = models.TextField(blank=True, null=True, verbose_name='Transporte')
-    flight_number = models.CharField(max_length=50, blank=True, null=True, verbose_name='Número do Voo (Aéreo)')
-    airline = models.CharField(max_length=50, blank=True, null=True, verbose_name='Empresa Aérea (Aéreo)')
-    transport_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Transporte)')
-    boarding_time = models.TimeField(blank=True, null=True, verbose_name='Horário de Embarque')
+    # Logística Principal - Transporte e Deslocamento
+    arrival_location = models.CharField(max_length=200, blank=True, null=True, verbose_name='Local de Chegada')
+    arrival_location_link = models.URLField(max_length=500, blank=True, null=True, verbose_name='Link do Local de Chegada')
+    transport = models.TextField(blank=True, null=True, verbose_name='Meio de Transporte')
+    transport_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato do Transporte')
+    transport_notes = models.TextField(blank=True, null=True, verbose_name='Observações do Deslocamento')
+
+    # Logística Principal - Trecho Aéreo
+    has_air_travel = models.BooleanField(default=False, verbose_name='Inclui trecho aéreo')
+    departure_airport = models.CharField(max_length=100, blank=True, null=True, verbose_name='Aeroporto de Embarque')
+    arrival_airport = models.CharField(max_length=100, blank=True, null=True, verbose_name='Aeroporto de Desembarque')
+    airline = models.CharField(max_length=50, blank=True, null=True, verbose_name='Empresa Aérea')
+    flight_number = models.CharField(max_length=50, blank=True, null=True, verbose_name='Número do Voo')
+    boarding_time = models.TimeField(blank=True, null=True, verbose_name='Horário de Embarque (Legado)')
+    boarding_datetime = models.DateTimeField(blank=True, null=True, verbose_name='Data e Horário de Embarque')
+    flight_departure_time = models.DateTimeField(blank=True, null=True, verbose_name='Data e Horário do Voo')
+    flight_arrival_time = models.DateTimeField(blank=True, null=True, verbose_name='Previsão de Chegada do Voo')
+
+    # Controles de Logística Específica
+    has_specific_tech_logistics = models.BooleanField(default=False, verbose_name='Logística Específica para Técnica')
+    has_specific_artist_logistics = models.BooleanField(default=False, verbose_name='Logística Específica para Artista')
+
+    # Logística Específica - Técnica
+    tech_departure_location = models.CharField(max_length=200, blank=True, null=True, verbose_name='Local de Saída (Técnica)')
+    tech_departure_location_link = models.URLField(max_length=500, blank=True, null=True, verbose_name='Link do Local de Saída (Técnica)')
+    tech_arrival_location = models.CharField(max_length=200, blank=True, null=True, verbose_name='Local de Chegada (Técnica)')
+    tech_arrival_location_link = models.URLField(max_length=500, blank=True, null=True, verbose_name='Link do Local de Chegada (Técnica)')
+    tech_departure_time = models.DateTimeField(blank=True, null=True, verbose_name='Data e Horário Saída (Técnica)')
+    tech_arrival_time = models.DateTimeField(blank=True, null=True, verbose_name='Data e Previsão Chegada (Técnica)')
+    tech_travel_time = models.CharField(max_length=100, blank=True, null=True, verbose_name='Tempo de Deslocamento (Técnica)')
+    tech_distance_km = models.CharField(max_length=100, blank=True, null=True, verbose_name='Distância (Técnica)')
+    tech_transport = models.TextField(blank=True, null=True, verbose_name='Meio de Transporte (Técnica)')
+    tech_transport_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato do Transporte (Técnica)')
+    tech_transport_notes = models.TextField(blank=True, null=True, verbose_name='Observações do Deslocamento (Técnica)')
+    tech_has_air_travel = models.BooleanField(default=False, verbose_name='Inclui trecho aéreo (Técnica)')
+    tech_departure_airport = models.CharField(max_length=100, blank=True, null=True, verbose_name='Aeroporto de Embarque (Técnica)')
+    tech_arrival_airport = models.CharField(max_length=100, blank=True, null=True, verbose_name='Aeroporto de Desembarque (Técnica)')
+    tech_airline = models.CharField(max_length=50, blank=True, null=True, verbose_name='Empresa Aérea (Técnica)')
+    tech_flight_number = models.CharField(max_length=50, blank=True, null=True, verbose_name='Número do Voo (Técnica)')
+    tech_boarding_datetime = models.DateTimeField(blank=True, null=True, verbose_name='Data e Horário de Embarque (Técnica)')
+    tech_flight_departure_time = models.DateTimeField(blank=True, null=True, verbose_name='Data e Horário do Voo (Técnica)')
+    tech_flight_arrival_time = models.DateTimeField(blank=True, null=True, verbose_name='Previsão de Chegada do Voo (Técnica)')
+
+    # Logística Específica - Artista
+    artist_departure_location = models.CharField(max_length=200, blank=True, null=True, verbose_name='Local de Saída (Artista)')
+    artist_departure_location_link = models.URLField(max_length=500, blank=True, null=True, verbose_name='Link do Local de Saída (Artista)')
+    artist_arrival_location = models.CharField(max_length=200, blank=True, null=True, verbose_name='Local de Chegada (Artista)')
+    artist_arrival_location_link = models.URLField(max_length=500, blank=True, null=True, verbose_name='Link do Local de Chegada (Artista)')
+    artist_departure_time = models.DateTimeField(blank=True, null=True, verbose_name='Data e Horário Saída (Artista)')
+    artist_arrival_time = models.DateTimeField(blank=True, null=True, verbose_name='Data e Previsão Chegada (Artista)')
+    artist_travel_time = models.CharField(max_length=100, blank=True, null=True, verbose_name='Tempo de Deslocamento (Artista)')
+    artist_distance_km = models.CharField(max_length=100, blank=True, null=True, verbose_name='Distância (Artista)')
+    artist_transport = models.TextField(blank=True, null=True, verbose_name='Meio de Transporte (Artista)')
+    artist_transport_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato do Transporte (Artista)')
+    artist_transport_notes = models.TextField(blank=True, null=True, verbose_name='Observações do Deslocamento (Artista)')
+    artist_has_air_travel = models.BooleanField(default=False, verbose_name='Inclui trecho aéreo (Artista)')
+    artist_departure_airport = models.CharField(max_length=100, blank=True, null=True, verbose_name='Aeroporto de Embarque (Artista)')
+    artist_arrival_airport = models.CharField(max_length=100, blank=True, null=True, verbose_name='Aeroporto de Desembarque (Artista)')
+    artist_airline = models.CharField(max_length=50, blank=True, null=True, verbose_name='Empresa Aérea (Artista)')
+    artist_flight_number = models.CharField(max_length=50, blank=True, null=True, verbose_name='Número do Voo (Artista)')
+    artist_boarding_datetime = models.DateTimeField(blank=True, null=True, verbose_name='Data e Horário de Embarque (Artista)')
+    artist_flight_departure_time = models.DateTimeField(blank=True, null=True, verbose_name='Data e Horário do Voo (Artista)')
+    artist_flight_arrival_time = models.DateTimeField(blank=True, null=True, verbose_name='Previsão de Chegada do Voo (Artista)')
+
+    # Hospedagem e Apoio (Produção)
     location_link = models.URLField(max_length=500, blank=True, null=True, verbose_name='Link de Localização')
     accommodation_responsible = models.CharField(max_length=255, blank=True, null=True, verbose_name="Responsável")
     accommodation_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Contato (Responsável)')
@@ -368,6 +427,19 @@ class Show(models.Model):
         if self.date:
             return self.date < date.today()
         return False
+
+    def get_logistics_principal_label(self):
+        """Retorna o rótulo dos grupos atendidos pela Logística Principal."""
+        tech_specific = self.has_specific_tech_logistics
+        artist_specific = self.has_specific_artist_logistics
+        if not tech_specific and not artist_specific:
+            return "Banda + Técnica + Artista"
+        elif not tech_specific and artist_specific:
+            return "Banda + Técnica"
+        elif tech_specific and not artist_specific:
+            return "Banda + Artista"
+        else:
+            return "Banda"
 
     def save(self, *args, **kwargs):
         # BP-PEND-57: Garantir que updated_at reflita alterações reais.

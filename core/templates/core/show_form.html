@@ -158,7 +158,7 @@
                 <button class="nav-link fw-bold text-nowrap" id="cronograma-tab" data-bs-toggle="tab" data-bs-target="#cronograma" type="button" role="tab" aria-controls="cronograma" aria-selected="false">Cronograma</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold text-nowrap" id="logistica-tab" data-bs-toggle="tab" data-bs-target="#logistica" type="button" role="tab" aria-controls="logistica" aria-selected="false">Logística</button>
+                <button class="nav-link fw-bold text-nowrap" id="producao-tab" data-bs-toggle="tab" data-bs-target="#producao" type="button" role="tab" aria-controls="producao" aria-selected="false">Produção</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link fw-bold text-nowrap" id="tecnica-tab" data-bs-toggle="tab" data-bs-target="#tecnica" type="button" role="tab" aria-controls="tecnica" aria-selected="false">Técnica</button>
@@ -195,9 +195,9 @@
 
             <div class="tab-content" id="showFormTabsContent">
                 
-                <!-- ABA GERAL -->
+                <!-- ABA EVENTO -->
                 <div class="tab-pane fade show active" id="geral" role="tabpanel" aria-labelledby="geral-tab">
-                    <h5 class="section-title mb-3 text-primary pb-1">Informações Principais</h5>
+                    <h5 class="section-title mb-3 text-primary pb-1">Dados do Show</h5>
                     <div class="row g-2 mb-3">
                         <div class="col-md-8">
                             <label class="form-label">{{ form.title.label }}</label>
@@ -243,45 +243,330 @@
                             {{ form.address_link }}
                             {% if form.address_link.errors %}<div class="text-danger small mt-1">{{ form.address_link.errors }}</div>{% endif %}
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">{{ form.attractions.label }}</label>
-                            {{ form.attractions }}
-                            {% if form.attractions.errors %}<div class="text-danger small mt-1">{{ form.attractions.errors }}</div>{% endif %}
-                        </div>
                     </div>
                 </div>
                 
                 <!-- ABA CRONOGRAMA -->
                 <div class="tab-pane fade" id="cronograma" role="tabpanel" aria-labelledby="cronograma-tab">
-                    <h5 class="section-title mb-3 text-primary pb-1">Deslocamento</h5>
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.departure_location.label }}</label>
-                            {{ form.departure_location }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.departure_location_link.label }}</label>
-                            {{ form.departure_location_link }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.departure_time.label }}</label>
-                            {{ form.departure_time }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.arrival_time.label }}</label>
-                            {{ form.arrival_time }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.travel_time.label }}</label>
-                            {{ form.travel_time }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.distance_km.label }}</label>
-                            {{ form.distance_km }}
+                    
+                    <!-- 1. Deslocamento & Transporte -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 pb-1 border-bottom">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h5 class="section-title mb-0 text-primary">Logística Principal</h5>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" id="badge-principal-groups" style="font-size: 11px; font-weight: 600;">
+                                Banda + Técnica + Artista
+                            </span>
                         </div>
                     </div>
 
-                    <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">No Local</h5>
+                    <!-- Seleção de Logística Específica -->
+                    <div class="p-2 mb-3 bg-light rounded border d-flex flex-wrap align-items-center gap-3" style="font-size: 13px;">
+                        <span class="text-muted fw-semibold"><i class="fa-solid fa-code-fork me-1"></i> Usar logística específica para:</span>
+                        <div class="form-check form-check-inline mb-0">
+                            {{ form.has_specific_tech_logistics }}
+                            <label class="form-check-label fw-bold" for="id_has_specific_tech_logistics">Técnica</label>
+                        </div>
+                        <div class="form-check form-check-inline mb-0">
+                            {{ form.has_specific_artist_logistics }}
+                            <label class="form-check-label fw-bold" for="id_has_specific_artist_logistics">Artista</label>
+                        </div>
+                    </div>
+
+                    <!-- BLOCO LOGÍSTICA PRINCIPAL -->
+                    <div class="card border mb-3 shadow-none bg-white" style="border-radius: 8px;">
+                        <div class="card-body p-3">
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.departure_location.label }}</label>
+                                    {{ form.departure_location }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.departure_location_link.label }}</label>
+                                    {{ form.departure_location_link }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.arrival_location.label }}</label>
+                                    {{ form.arrival_location }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.arrival_location_link.label }}</label>
+                                    {{ form.arrival_location_link }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.departure_time.label }}</label>
+                                    {{ form.departure_time }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.arrival_time.label }}</label>
+                                    {{ form.arrival_time }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.travel_time.label }}</label>
+                                    {{ form.travel_time }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.distance_km.label }}</label>
+                                    {{ form.distance_km }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.transport.label }}</label>
+                                    {{ form.transport }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.transport_contact.label }}</label>
+                                    {{ form.transport_contact }}
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">{{ form.transport_notes.label }}</label>
+                                    {{ form.transport_notes }}
+                                </div>
+                            </div>
+
+                            <!-- Trecho Aéreo da Principal -->
+                            <div class="mt-2 pt-2 border-top">
+                                <div class="form-check form-switch mb-2">
+                                    {{ form.has_air_travel }}
+                                    <label class="form-check-label fw-bold text-dark" for="id_has_air_travel">
+                                        <i class="fa-solid fa-plane-departure text-primary me-1"></i> Inclui trecho aéreo
+                                    </label>
+                                </div>
+                                <div id="bloco-aereo-principal" style="display: none;" class="p-3 bg-light rounded border mt-2">
+                                    <h6 class="subsection-title text-primary mb-2"><i class="fa-solid fa-plane me-1"></i> Dados do Voo (Logística Principal)</h6>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.departure_airport.label }}</label>
+                                            {{ form.departure_airport }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.arrival_airport.label }}</label>
+                                            {{ form.arrival_airport }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.airline.label }}</label>
+                                            {{ form.airline }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.flight_number.label }}</label>
+                                            {{ form.flight_number }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.boarding_datetime.label }}</label>
+                                            {{ form.boarding_datetime }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.flight_departure_time.label }}</label>
+                                            {{ form.flight_departure_time }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.flight_arrival_time.label }}</label>
+                                            {{ form.flight_arrival_time }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BLOCO LOGÍSTICA ESPECÍFICA - TÉCNICA -->
+                    <div id="bloco-logistica-tecnica" style="display: none;" class="card border border-warning-subtle mb-3 shadow-none bg-white" style="border-radius: 8px;">
+                        <div class="card-header bg-warning-subtle py-2 d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-dark"><i class="fa-solid fa-wrench me-1"></i> Logística Específica — Técnica</span>
+                            <span class="badge bg-warning text-dark">Específica</span>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.tech_departure_location.label }}</label>
+                                    {{ form.tech_departure_location }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.tech_departure_location_link.label }}</label>
+                                    {{ form.tech_departure_location_link }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.tech_arrival_location.label }}</label>
+                                    {{ form.tech_arrival_location }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.tech_arrival_location_link.label }}</label>
+                                    {{ form.tech_arrival_location_link }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.tech_departure_time.label }}</label>
+                                    {{ form.tech_departure_time }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.tech_arrival_time.label }}</label>
+                                    {{ form.tech_arrival_time }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.tech_travel_time.label }}</label>
+                                    {{ form.tech_travel_time }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.tech_distance_km.label }}</label>
+                                    {{ form.tech_distance_km }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.tech_transport.label }}</label>
+                                    {{ form.tech_transport }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.tech_transport_contact.label }}</label>
+                                    {{ form.tech_transport_contact }}
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">{{ form.tech_transport_notes.label }}</label>
+                                    {{ form.tech_transport_notes }}
+                                </div>
+                            </div>
+
+                            <!-- Trecho Aéreo da Técnica -->
+                            <div class="mt-2 pt-2 border-top">
+                                <div class="form-check form-switch mb-2">
+                                    {{ form.tech_has_air_travel }}
+                                    <label class="form-check-label fw-bold text-dark" for="id_tech_has_air_travel">
+                                        <i class="fa-solid fa-plane-departure text-warning me-1"></i> Inclui trecho aéreo
+                                    </label>
+                                </div>
+                                <div id="bloco-aereo-tecnica" style="display: none;" class="p-3 bg-light rounded border mt-2">
+                                    <h6 class="subsection-title text-dark mb-2"><i class="fa-solid fa-plane me-1"></i> Dados do Voo (Técnica)</h6>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.tech_departure_airport.label }}</label>
+                                            {{ form.tech_departure_airport }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.tech_arrival_airport.label }}</label>
+                                            {{ form.tech_arrival_airport }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.tech_airline.label }}</label>
+                                            {{ form.tech_airline }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.tech_flight_number.label }}</label>
+                                            {{ form.tech_flight_number }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.tech_boarding_datetime.label }}</label>
+                                            {{ form.tech_boarding_datetime }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.tech_flight_departure_time.label }}</label>
+                                            {{ form.tech_flight_departure_time }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.tech_flight_arrival_time.label }}</label>
+                                            {{ form.tech_flight_arrival_time }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BLOCO LOGÍSTICA ESPECÍFICA - ARTISTA -->
+                    <div id="bloco-logistica-artista" style="display: none;" class="card border border-info-subtle mb-3 shadow-none bg-white" style="border-radius: 8px;">
+                        <div class="card-header bg-info-subtle py-2 d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-dark"><i class="fa-solid fa-microphone-lines me-1"></i> Logística Específica — Artista</span>
+                            <span class="badge bg-info text-dark">Específica</span>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.artist_departure_location.label }}</label>
+                                    {{ form.artist_departure_location }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.artist_departure_location_link.label }}</label>
+                                    {{ form.artist_departure_location_link }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.artist_arrival_location.label }}</label>
+                                    {{ form.artist_arrival_location }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.artist_arrival_location_link.label }}</label>
+                                    {{ form.artist_arrival_location_link }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.artist_departure_time.label }}</label>
+                                    {{ form.artist_departure_time }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.artist_arrival_time.label }}</label>
+                                    {{ form.artist_arrival_time }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.artist_travel_time.label }}</label>
+                                    {{ form.artist_travel_time }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.artist_distance_km.label }}</label>
+                                    {{ form.artist_distance_km }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.artist_transport.label }}</label>
+                                    {{ form.artist_transport }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ form.artist_transport_contact.label }}</label>
+                                    {{ form.artist_transport_contact }}
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">{{ form.artist_transport_notes.label }}</label>
+                                    {{ form.artist_transport_notes }}
+                                </div>
+                            </div>
+
+                            <!-- Trecho Aéreo do Artista -->
+                            <div class="mt-2 pt-2 border-top">
+                                <div class="form-check form-switch mb-2">
+                                    {{ form.artist_has_air_travel }}
+                                    <label class="form-check-label fw-bold text-dark" for="id_artist_has_air_travel">
+                                        <i class="fa-solid fa-plane-departure text-info me-1"></i> Inclui trecho aéreo
+                                    </label>
+                                </div>
+                                <div id="bloco-aereo-artista" style="display: none;" class="p-3 bg-light rounded border mt-2">
+                                    <h6 class="subsection-title text-dark mb-2"><i class="fa-solid fa-plane me-1"></i> Dados do Voo (Artista)</h6>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.artist_departure_airport.label }}</label>
+                                            {{ form.artist_departure_airport }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.artist_arrival_airport.label }}</label>
+                                            {{ form.artist_arrival_airport }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.artist_airline.label }}</label>
+                                            {{ form.artist_airline }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ form.artist_flight_number.label }}</label>
+                                            {{ form.artist_flight_number }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.artist_boarding_datetime.label }}</label>
+                                            {{ form.artist_boarding_datetime }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.artist_flight_departure_time.label }}</label>
+                                            {{ form.artist_flight_departure_time }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.artist_flight_arrival_time.label }}</label>
+                                            {{ form.artist_flight_arrival_time }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Horários no Local -->
+                    <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Horários no Local</h5>
                     
                     <div class="mb-3">
                         <h6 class="subsection-title mb-2">Passagem de som</h6>
@@ -319,49 +604,31 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.attractions.label }}</label>
+                        {{ form.attractions }}
+                    </div>
                     
+                    <!-- 3. Observações -->
                     <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Observações</h5>
                     <div class="row g-2">
                         <div class="col-md-6">
                             <label class="form-label">{{ form.internal_notes.label }}</label>
                             {{ form.internal_notes }}
-                            <div class="form-text text-muted">{{ form.internal_notes.help_text }}</div>
+                            <div class="form-text text-muted">Visível apenas para a produção.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">{{ form.band_notes.label }}</label>
                             {{ form.band_notes }}
-                            <div class="form-text text-muted">{{ form.band_notes.help_text }}</div>
+                            <div class="form-text text-muted">Visível para todos os integrantes.</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- ABA LOGÍSTICA -->
-                <div class="tab-pane fade" id="logistica" role="tabpanel" aria-labelledby="logistica-tab">
-                    <h5 class="section-title mb-3 text-primary pb-1">Transporte</h5>
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.transport.label }}</label>
-                            {{ form.transport }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.transport_contact.label }}</label>
-                            {{ form.transport_contact }}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.flight_number.label }}</label>
-                            {{ form.flight_number }}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.airline.label }}</label>
-                            {{ form.airline }}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.boarding_time.label }}</label>
-                            {{ form.boarding_time }}
-                        </div>
-                    </div>
-
-                    <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Hospedagem</h5>
+                <!-- ABA PRODUÇÃO -->
+                <div class="tab-pane fade" id="producao" role="tabpanel" aria-labelledby="producao-tab">
+                    <h5 class="section-title mb-3 text-primary pb-1">Hospedagem</h5>
                     <div class="row g-2 mb-3">
                         <div class="col-md-6">
                             <label class="form-label">{{ form.accommodation.label }}</label>
@@ -393,7 +660,7 @@
                         </div>
                     </div>
 
-                    <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Apoio (Camarim / Alimentação / Palco)</h5>
+                    <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Camarim & Apoio</h5>
                     <div class="row g-2">
                         <div class="col-md-6">
                             <label class="form-label">{{ form.dressing_room.label }}</label>
@@ -475,7 +742,7 @@
                             {{ form.backline_contact }}
                         </div>
 
-                        <!-- Pirotécnia -->
+                        <!-- Pirotecnia -->
                         <div class="col-md-6">
                             <label class="form-label">{{ form.pyrotechnics.label }}</label>
                             {{ form.pyrotechnics }}
@@ -539,9 +806,7 @@
                         </div>
                     </div>
                 </div>
-
                 {% endif %}
-
 
                 {% if band.is_advanced %}
                 <!-- ABA ANEXOS -->
@@ -566,8 +831,8 @@
                     {% if not is_edit %}
                         <div class="text-center py-4">
                             <i class="fa-solid fa-cloud-arrow-up fa-3x text-muted mb-2"></i>
-                            <h5 class="fw-bold fs-6">Salve o evento primeiro</h5>
-                            <p class="text-muted small mb-0">Para enviar documentos e anexar comprovantes, você precisa salvar este Show primeiro.</p>
+                            <h5 class="fw-bold fs-6">Salve o show para adicionar anexos</h5>
+                            <p class="text-muted small mb-0">Após salvar o show, você poderá enviar documentos e comprovantes.</p>
                         </div>
                     {% else %}
                         <div class="row g-3 align-items-stretch">
@@ -750,6 +1015,52 @@
                 tab.show();
             }
         }
+
+        // BP-PEND-67: Controle Dinâmico da Logística (Principal, Técnica, Artista e Aéreos)
+        const checkTech = document.getElementById('id_has_specific_tech_logistics');
+        const checkArtist = document.getElementById('id_has_specific_artist_logistics');
+        const badgePrincipal = document.getElementById('badge-principal-groups');
+        const blocoTech = document.getElementById('bloco-logistica-tecnica');
+        const blocoArtist = document.getElementById('bloco-logistica-artista');
+
+        function updateLogisticsVisibility() {
+            const hasTech = checkTech && checkTech.checked;
+            const hasArtist = checkArtist && checkArtist.checked;
+
+            if (blocoTech) blocoTech.style.display = hasTech ? 'block' : 'none';
+            if (blocoArtist) blocoArtist.style.display = hasArtist ? 'block' : 'none';
+
+            if (badgePrincipal) {
+                if (!hasTech && !hasArtist) {
+                    badgePrincipal.textContent = 'Banda + Técnica + Artista';
+                } else if (!hasTech && hasArtist) {
+                    badgePrincipal.textContent = 'Banda + Técnica';
+                } else if (hasTech && !hasArtist) {
+                    badgePrincipal.textContent = 'Banda + Artista';
+                } else {
+                    badgePrincipal.textContent = 'Banda';
+                }
+            }
+        }
+
+        if (checkTech) checkTech.addEventListener('change', updateLogisticsVisibility);
+        if (checkArtist) checkArtist.addEventListener('change', updateLogisticsVisibility);
+        updateLogisticsVisibility();
+
+        // Controle dos Trechos Aéreos
+        function setupAirToggle(checkboxId, blocoId) {
+            const cb = document.getElementById(checkboxId);
+            const bl = document.getElementById(blocoId);
+            if (!cb || !bl) return;
+            function updateAir() {
+                bl.style.display = cb.checked ? 'block' : 'none';
+            }
+            cb.addEventListener('change', updateAir);
+            updateAir();
+        }
+        setupAirToggle('id_has_air_travel', 'bloco-aereo-principal');
+        setupAirToggle('id_tech_has_air_travel', 'bloco-aereo-tecnica');
+        setupAirToggle('id_artist_has_air_travel', 'bloco-aereo-artista');
 
         // Money mask for fee field
         var feeField = document.querySelector('input[name="fee"]');

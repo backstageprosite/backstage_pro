@@ -345,15 +345,51 @@ class ShowAdmin(admin.ModelAdmin):
         ('Cronograma', {
             'fields': (
                 ('departure_location', 'departure_location_link'),
+                ('arrival_location', 'arrival_location_link'),
                 ('distance_km', 'travel_time'),
                 ('departure_time', 'arrival_time'),
+                ('transport', 'transport_contact'),
+                'transport_notes',
+                ('has_air_travel', 'departure_airport', 'arrival_airport'),
+                ('airline', 'flight_number'),
+                ('boarding_datetime', 'flight_departure_time', 'flight_arrival_time'),
+                ('has_specific_tech_logistics', 'has_specific_artist_logistics'),
                 ('soundcheck_time', 'soundcheck_end_time'),
                 ('show_time', 'show_end_time', 'duration'),
+                'attractions',
                 'band_notes'
             )
         }),
-        ('Logística & Produção', {
-            'fields': (('transport', 'transport_contact'), ('flight_number', 'airline'), ('accommodation', 'accommodation_link', 'accommodation_contact'), ('transfer', 'transfer_contact'), ('dressing_room', 'dressing_room_contact'), 'catering', 'wardrobe', 'attractions')
+        ('Logística Específica — Técnica', {
+            'classes': ('collapse',),
+            'fields': (
+                ('tech_departure_location', 'tech_departure_location_link'),
+                ('tech_arrival_location', 'tech_arrival_location_link'),
+                ('tech_distance_km', 'tech_travel_time'),
+                ('tech_departure_time', 'tech_arrival_time'),
+                ('tech_transport', 'tech_transport_contact'),
+                'tech_transport_notes',
+                ('tech_has_air_travel', 'tech_departure_airport', 'tech_arrival_airport'),
+                ('tech_airline', 'tech_flight_number'),
+                ('tech_boarding_datetime', 'tech_flight_departure_time', 'tech_flight_arrival_time'),
+            )
+        }),
+        ('Logística Específica — Artista', {
+            'classes': ('collapse',),
+            'fields': (
+                ('artist_departure_location', 'artist_departure_location_link'),
+                ('artist_arrival_location', 'artist_arrival_location_link'),
+                ('artist_distance_km', 'artist_travel_time'),
+                ('artist_departure_time', 'artist_arrival_time'),
+                ('artist_transport', 'artist_transport_contact'),
+                'artist_transport_notes',
+                ('artist_has_air_travel', 'artist_departure_airport', 'artist_arrival_airport'),
+                ('artist_airline', 'artist_flight_number'),
+                ('artist_boarding_datetime', 'artist_flight_departure_time', 'artist_flight_arrival_time'),
+            )
+        }),
+        ('Produção', {
+            'fields': (('accommodation', 'accommodation_link', 'accommodation_contact', 'checkout_time'), ('transfer', 'transfer_contact'), ('dressing_room', 'dressing_room_contact'), 'catering', 'wardrobe')
         }),
         ('Informações Técnicas', {
             'fields': (
