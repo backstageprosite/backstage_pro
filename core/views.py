@@ -1857,6 +1857,300 @@ def relatorios_view(request, band_slug):
     return render(request, 'core/relatorios.html', context)
 
 
+def _compute_financial_aggregates(band, date_start=None, date_end=None, payment_status=None):
+    """
+    Função utilitária compartilhada para consolidar indicadores e séries mensais
+    respeitando as regras operacionais e de elegibilidade do sistema (Show.STATUS_FINANCIALLY_ELIGIBLE).
+    """
+    from decimal import Decimal
+    from collections import defaultdict
+    import datetime
+
+    shows_qs = Show.objects.filter(
+        band=band,
+        status__in=Show.STATUS_FINANCIALLY_ELIGIBLE
+    ).prefetch_related('payments', 'team_costs', 'receipts').order_by('date')
+
+    if date_start:
+        try:
+            d_start = datetime.datetime.strptime(date_start, '%Y-%m-%d').date()
+            shows_qs = shows_qs.filter(date__gte=d_start)
+        except ValueError:
+            pass
+
+    if date_end:
+        try:
+            d_end = datetime.datetime.strptime(date_end, '%Y-%m-%d').date()
+            shows_qs = shows_qs.filter(date__lte=d_end)
+        except ValueError:
+            pass
+
+    if payment_status:
+        shows_qs = shows_qs.filter(payment_status=payment_status)
+
+    today = datetime.date.today()
+
+    total_faturamento = Decimal('0')
+    total_recebido = Decimal('0')
+    total_custos_logistica = Decimal('0')
+    total_custos_equipe = Decimal('0')
+    total_em_atraso = Decimal('0')
+
+    # Agrupamentos mensais: chave "YYYY-MM"
+    monthly_data = defaultdict(lambda: {
+        'faturamento': Decimal('0'),
+        'recebido': Decimal('0'),
+        'a_receber': Decimal('0'),
+        'custos': Decimal('0'),
+    })
+
+    # Status de shows
+    status_counts = {'PAGO': 0, 'PARCIAL': 0, 'PENDENTE': 0}
+
+    # Shows com dados processados para tabelas
+    processed_shows = []
+
+    for s in shows_qs:
+        fee = s.fee or Decimal('0')
+        logistica = sum((r.value for r in s.receipts.all() if r.value), Decimal('0'))
+        equipe = sum((t.value for t in s.team_costs.all() if t.value), Decimal('0'))
+        custos_show = logistica + equipe
+
+        rec = sum((p.value for p in s.payments.all() if p.status == 'RECEBIDO' and p.value), Decimal('0'))
+        pend = fee - rec
+        if pend < Decimal('0'):
+            pend = Decimal('0')
+
+        # Verificação de pagamentos em atraso do show
+        for p in s.payments.all():
+            if p.status == 'ATRASADO' and p.value:
+                total_em_atraso += p.value
+            elif p.status == 'PENDENTE' and p.expected_date and p.expected_date < today and p.value:
+                total_em_atraso += p.value
+
+        # Status count
+        if s.payment_status in status_counts:
+            status_counts[s.payment_status] += 1
+        else:
+            status_counts['PENDENTE'] += 1
+
+        total_faturamento += fee
+        total_recebido += rec
+        total_custos_logistica += logistica
+        total_custos_equipe += equipe
+
+        # Dados mensais pelo mês do show (se tiver data)
+        if s.date:
+            month_key = s.date.strftime('%Y-%m')
+            monthly_data[month_key]['faturamento'] += fee
+            monthly_data[month_key]['recebido'] += rec
+            monthly_data[month_key]['a_receber'] += pend
+            monthly_data[month_key]['custos'] += custos_show
+
+        s.computed_fee = fee
+        s.computed_logistica = logistica
+        s.computed_equipe = equipe
+        s.computed_custos = custos_show
+        s.computed_recebido = rec
+        s.computed_pendente = pend
+        s.computed_resultado = fee - custos_show
+        s.computed_caixa_realizado = rec - custos_show
+        processed_shows.append(s)
+
+    total_custos_geral = total_custos_logistica + total_custos_equipe
+    total_a_receber = total_faturamento - total_recebido
+    if total_a_receber < Decimal('0'):
+        total_a_receber = Decimal('0')
+
+    resultado_previsto = total_faturamento - total_custos_geral
+    caixa_realizado = total_recebido - total_custos_geral
+
+    # Organizar séries mensais ordenadas
+    sorted_months = sorted(monthly_data.keys())
+    chart_months_labels = []
+    chart_faturamento_data = []
+    chart_recebido_data = []
+    chart_a_receber_data = []
+    chart_custos_data = []
+
+    MESES_ABREV = {
+        1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
+        7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
+    }
+
+    for m_key in sorted_months:
+        y, m = m_key.split('-')
+        label = f"{MESES_ABREV.get(int(m), m)}/{y[2:]}"
+        chart_months_labels.append(label)
+        chart_faturamento_data.append(float(monthly_data[m_key]['faturamento']))
+        chart_recebido_data.append(float(monthly_data[m_key]['recebido']))
+        chart_a_receber_data.append(float(monthly_data[m_key]['a_receber']))
+        chart_custos_data.append(float(monthly_data[m_key]['custos']))
+
+    # Top 10 shows por cachê/faturamento
+    top_shows = sorted(processed_shows, key=lambda x: x.computed_fee, reverse=True)[:10]
+    chart_top_shows_labels = [s.event_name or s.title or f"Show {s.date.strftime('%d/%m') if s.date else s.id}" for s in top_shows]
+    chart_top_shows_data = [float(s.computed_fee) for s in top_shows]
+
+    return {
+        'shows_qs': shows_qs,
+        'processed_shows': processed_shows,
+        'total_faturamento': total_faturamento,
+        'total_recebido': total_recebido,
+        'total_a_receber': total_a_receber,
+        'total_em_atraso': total_em_atraso,
+        'total_custos_logistica': total_custos_logistica,
+        'total_custos_equipe': total_custos_equipe,
+        'total_custos_geral': total_custos_geral,
+        'resultado_previsto': resultado_previsto,
+        'caixa_realizado': caixa_realizado,
+        'status_counts': status_counts,
+        'chart_months_labels': chart_months_labels,
+        'chart_faturamento_data': chart_faturamento_data,
+        'chart_recebido_data': chart_recebido_data,
+        'chart_a_receber_data': chart_a_receber_data,
+        'chart_custos_data': chart_custos_data,
+        'chart_top_shows_labels': chart_top_shows_labels,
+        'chart_top_shows_data': chart_top_shows_data,
+    }
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def relatorio_financeiro_graficos_view(request, band_slug):
+    """
+    BP-PEND-64: Nova página analítica com cards consolidados e gráficos visuais (Chart.js)
+    isolada da tabela operacional do Financeiro.
+    """
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores têm acesso aos gráficos financeiros.")
+
+    band = get_object_or_404(Band, slug=band_slug)
+    date_start = request.GET.get('date_start', '')
+    date_end = request.GET.get('date_end', '')
+    payment_status = request.GET.get('payment_status', '')
+
+    data = _compute_financial_aggregates(band, date_start, date_end, payment_status)
+
+    context = {
+        'band': band,
+        'date_start': date_start,
+        'date_end': date_end,
+        'payment_status': payment_status,
+        **data,
+    }
+    return render(request, 'core/financeiro/graficos.html', context)
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def relatorio_financeiro_graficos_export_view(request, band_slug):
+    """
+    BP-PEND-64: Página otimizada para impressão/PDF da visão de Gráficos e Indicadores,
+    com cabeçalho da banda, data/hora de geração, botões de ação e rodapé padrão.
+    """
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores têm acesso à exportação dos gráficos.")
+
+    band = get_object_or_404(Band, slug=band_slug)
+    date_start = request.GET.get('date_start', '')
+    date_end = request.GET.get('date_end', '')
+    payment_status = request.GET.get('payment_status', '')
+
+    data = _compute_financial_aggregates(band, date_start, date_end, payment_status)
+    user_name = request.user.get_full_name() or request.user.username
+
+    context = {
+        'band': band,
+        'date_start': date_start,
+        'date_end': date_end,
+        'payment_status': payment_status,
+        'pdf_logo_base64': get_image_base64(band.logo),
+        'user_name': user_name,
+        **data,
+    }
+    return render(request, 'core/financeiro/graficos_export_pdf.html', context)
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def relatorio_financeiro_pdf_view(request, band_slug):
+    """
+    BP-PEND-64: Geração sob demanda de 5 tipos de relatórios financeiros diagramados em PDF:
+    1. Resumo Financeiro
+    2. Contas a Receber
+    3. Recebimentos
+    4. Resultado por Show
+    5. Fechamento do Período
+    """
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores têm acesso aos relatórios em PDF.")
+
+    band = get_object_or_404(Band, slug=band_slug)
+    date_start = request.GET.get('date_start', '')
+    date_end = request.GET.get('date_end', '')
+    report_type = request.GET.get('report_type', 'resumo')
+
+    data = _compute_financial_aggregates(band, date_start, date_end)
+    user_name = request.user.get_full_name() or request.user.username
+
+    # Montar listagens específicas por tipo
+    a_receber_items = []
+    recebimentos_items = []
+
+    for s in data['processed_shows']:
+        # Parcelas pendentes e atrasadas
+        for p in s.payments.all():
+            if p.status in ['PENDENTE', 'ATRASADO']:
+                a_receber_items.append({
+                    'show': s,
+                    'payment': p,
+                    'is_overdue': (p.status == 'ATRASADO') or (p.expected_date and p.expected_date < datetime.date.today()),
+                })
+            elif p.status == 'RECEBIDO':
+                recebimentos_items.append({
+                    'show': s,
+                    'payment': p,
+                })
+
+    # Ordenar parcelas a receber por data prevista (asc)
+    a_receber_items.sort(key=lambda x: (x['payment'].expected_date or datetime.date.max, x['payment'].id))
+
+    # Ordenar recebimentos por data de recebimento ou criação (desc)
+    recebimentos_items.sort(
+        key=lambda x: (x['payment'].receipt_date or x['payment'].expected_date or datetime.date.min),
+        reverse=True
+    )
+
+    report_titles = {
+        'resumo': ('RESUMO FINANCEIRO', 'Visão consolidada de faturamento, recebimentos e custos'),
+        'a_receber': ('CONTAS A RECEBER', 'Detalhamento de parcelas pendentes e atrasadas'),
+        'recebimentos': ('RECEBIMENTOS EFETIVADOS', 'Histórico detalhado de pagamentos recebidos no período'),
+        'resultado_show': ('RESULTADO POR SHOW', 'Discriminação de cachês, equipe, logística e lucro por show'),
+        'fechamento': ('FECHAMENTO DO PERÍODO', 'Demonstrativo e conciliação de caixa do período selecionado'),
+    }
+
+    doc_title, doc_subtitle = report_titles.get(report_type, ('RELATÓRIO FINANCEIRO', 'Demonstrativo do Período'))
+
+    context = {
+        'band': band,
+        'report_type': report_type,
+        'doc_title': doc_title,
+        'doc_subtitle': doc_subtitle,
+        'date_start': date_start,
+        'date_end': date_end,
+        'user_name': user_name,
+        'pdf_logo_base64': get_image_base64(band.logo),
+        'a_receber_items': a_receber_items,
+        'recebimentos_items': recebimentos_items,
+        **data,
+    }
+    return render(request, 'core/financeiro/financeiro_pdf.html', context)
+
+
 @login_required
 @band_required
 @advanced_plan_required

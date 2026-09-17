@@ -18,6 +18,15 @@
         align-items: center;
         border-radius: 50rem;
     }
+    .bp-reports-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
     .bp-reports-page .filter-card {
         border-radius: 10px;
         background-color: #f8f9fa;
@@ -130,12 +139,18 @@
 
 {% block content %}
 <div class="bp-reports-page">
-    <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
-        <h4 class="page-title text-start mb-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Relatórios Financeiros</h4>
-        <div>
+    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+        <h4 class="page-title text-start mb-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Financeiro</h4>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
             <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-back fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
             </a>
+            <a href="{% url 'relatorio_financeiro_graficos' band.slug %}" class="btn btn-primary btn-header-action shadow-sm fw-bold transition-hover text-nowrap" style="background-color: #0d6efd; border-color: #0d6efd; color: #ffffff !important;">
+                <i class="fa-solid fa-chart-pie me-1"></i> Gráficos
+            </a>
+            <button type="button" class="btn btn-dark btn-header-action shadow-sm fw-bold transition-hover text-nowrap" data-bs-toggle="modal" data-bs-target="#modalExportFinanceiroPdf">
+                <i class="fa-solid fa-file-pdf me-1"></i> Gerar PDF
+            </button>
         </div>
     </div>
 
@@ -306,4 +321,114 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Gerar Relatórios Financeiros em PDF -->
+<div class="modal fade" id="modalExportFinanceiroPdf" tabindex="-1" aria-labelledby="modalExportFinanceiroPdfLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold" id="modalExportFinanceiroPdfLabel" style="font-size: 16px;">
+            <i class="fa-solid fa-file-pdf me-2 text-danger"></i>Gerar Relatório Financeiro (PDF)
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{% url 'relatorio_financeiro_pdf' band.slug %}" method="GET" target="_blank">
+          <div class="modal-body py-3">
+            <p class="text-muted small mb-2 fw-semibold">Filtre o período desejado (opcional):</p>
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <label for="pdf_date_start" class="form-label small fw-bold text-muted mb-1">Data inicial:</label>
+                    <input type="date" class="form-control form-control-sm" name="date_start" id="pdf_date_start" value="{{ request.GET.date_start }}">
+                </div>
+                <div class="col-6">
+                    <label for="pdf_date_end" class="form-label small fw-bold text-muted mb-1">Data final:</label>
+                    <input type="date" class="form-control form-control-sm" name="date_end" id="pdf_date_end" value="{{ request.GET.date_end }}">
+                </div>
+            </div>
+
+            <!-- Atalhos de Período -->
+            <div class="d-flex gap-1 mb-3 flex-wrap">
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="setPdfDates('current_month')">Este mês</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="setPdfDates('last_month')">Mês anterior</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="setPdfDates('current_year')">Este ano</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="setPdfDates('all')">Limpar período</button>
+            </div>
+
+            <p class="text-muted small mb-2 fw-semibold">Selecione o tipo de relatório:</p>
+            <div class="border rounded p-2 bg-light">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="report_type" id="rep_resumo" value="resumo" checked>
+                    <label class="form-check-label fw-bold small text-dark" for="rep_resumo">
+                        1. Resumo Financeiro
+                        <span class="d-block text-muted fw-normal" style="font-size: 11px;">Visão consolidada do período com faturamento, recebido, a receber e custos.</span>
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="report_type" id="rep_receber" value="a_receber">
+                    <label class="form-check-label fw-bold small text-dark" for="rep_receber">
+                        2. Contas a Receber
+                        <span class="d-block text-muted fw-normal" style="font-size: 11px;">Detalhamento de parcelas pendentes e atrasadas com previsão de entrada.</span>
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="report_type" id="rep_recebimentos" value="recebimentos">
+                    <label class="form-check-label fw-bold small text-dark" for="rep_recebimentos">
+                        3. Recebimentos
+                        <span class="d-block text-muted fw-normal" style="font-size: 11px;">Histórico de valores efetivamente recebidos no período com data e forma.</span>
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="report_type" id="rep_resultado_show" value="resultado_show">
+                    <label class="form-check-label fw-bold small text-dark" for="rep_resultado_show">
+                        4. Resultado por Show
+                        <span class="d-block text-muted fw-normal" style="font-size: 11px;">Cachê, custos de logística e custos de equipe discriminados por show.</span>
+                    </label>
+                </div>
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="radio" name="report_type" id="rep_fechamento" value="fechamento">
+                    <label class="form-check-label fw-bold small text-dark" for="rep_fechamento">
+                        5. Fechamento do Período
+                        <span class="d-block text-muted fw-normal" style="font-size: 11px;">Demonstrativo financeiro completo com conciliação e resultado de caixa.</span>
+                    </label>
+                </div>
+            </div>
+          </div>
+          <div class="modal-footer border-top-0 pt-0 flex-column flex-md-row w-100">
+            <button type="button" class="btn btn-light rounded-pill px-4 w-100 mb-2 mb-md-0" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn rounded-pill px-4 fw-bold w-100 text-white" style="background-color: #212529; border-color: #212529; color: #ffffff !important;">
+                <i class="fa-solid fa-file-pdf me-1"></i> Visualizar / Imprimir PDF
+            </button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function setPdfDates(period) {
+    const today = new Date();
+    const startInput = document.getElementById('pdf_date_start');
+    const endInput = document.getElementById('pdf_date_end');
+
+    if (period === 'current_month') {
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        startInput.value = firstDay.toISOString().split('T')[0];
+        endInput.value = lastDay.toISOString().split('T')[0];
+    } else if (period === 'last_month') {
+        const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+        startInput.value = firstDay.toISOString().split('T')[0];
+        endInput.value = lastDay.toISOString().split('T')[0];
+    } else if (period === 'current_year') {
+        const firstDay = new Date(today.getFullYear(), 0, 1);
+        const lastDay = new Date(today.getFullYear(), 11, 31);
+        startInput.value = firstDay.toISOString().split('T')[0];
+        endInput.value = lastDay.toISOString().split('T')[0];
+    } else if (period === 'all') {
+        startInput.value = '';
+        endInput.value = '';
+    }
+}
+</script>
 {% endblock %}

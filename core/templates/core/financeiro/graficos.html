@@ -1,0 +1,506 @@
+{% extends 'core/base.html' %}
+{% load static admin_tags %}
+
+{% block extra_head %}
+<style>
+    /* BP-PEND-64: Estilos para Página de Gráficos Financeiros */
+    .bp-fin-charts-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-fin-charts-page .page-subtitle {
+        font-size: 13px;
+        color: #6c757d;
+        margin: 0;
+    }
+    .bp-fin-charts-page .btn-header-action {
+        font-size: 14px;
+        padding: 5px 14px;
+        line-height: 1.25;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-fin-charts-page .filter-card {
+        border-radius: 10px;
+        background-color: #f8f9fa;
+    }
+    .bp-fin-charts-page .filter-card .card-body {
+        padding: 12px 14px;
+    }
+    .bp-fin-charts-page .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 4px;
+        display: block;
+    }
+    .bp-fin-charts-page .filter-control {
+        font-size: 14px;
+        height: 34px;
+        min-height: 34px;
+        padding: 5px 10px;
+        border-radius: 6px;
+    }
+    .bp-fin-charts-page .btn-filter-action {
+        height: 30px;
+        font-family: Inter, sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 4px;
+    }
+    .bp-fin-charts-page .kpi-card {
+        border-radius: 10px;
+    }
+    .bp-fin-charts-page .kpi-card .card-body {
+        padding: 12px 14px;
+    }
+    .bp-fin-charts-page .kpi-label {
+        font-size: 11px;
+        letter-spacing: 0.03em;
+        margin-bottom: 2px;
+    }
+    .bp-fin-charts-page .kpi-value {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .bp-fin-charts-page .chart-card {
+        border-radius: 12px;
+    }
+    .bp-fin-charts-page .chart-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #212529;
+        margin-bottom: 12px;
+    }
+    .bp-fin-charts-page .chart-container {
+        position: relative;
+        height: 260px;
+        width: 100%;
+    }
+
+    @media (max-width: 767.98px) {
+        .bp-fin-charts-page .page-title {
+            font-size: 18px !important;
+        }
+        .bp-fin-charts-page .filter-control {
+            font-size: 16px !important;
+            height: 36px;
+            min-height: 36px;
+        }
+        .bp-fin-charts-page .btn-header-action {
+            height: 34px !important;
+            padding: 4px 14px !important;
+            font-size: 13px !important;
+        }
+    }
+</style>
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="bp-fin-charts-page">
+    <!-- Topo da Página -->
+    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+        <div>
+            <h4 class="page-title text-start mb-0"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Financeiro</h4>
+            <span class="page-subtitle"><i class="fa-solid fa-chart-column me-1"></i>Gráficos e Indicadores Estratégicos</span>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <a href="{% url 'relatorio_financeiro' band.slug %}" class="btn btn-outline-dark btn-header-action fw-bold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
+            </a>
+            <a href="{% url 'relatorio_financeiro_graficos_export' band.slug %}?date_start={{ date_start }}&date_end={{ date_end }}&payment_status={{ payment_status }}" target="_blank" class="btn btn-dark btn-header-action shadow-sm fw-bold transition-hover text-nowrap">
+                <i class="fa-solid fa-file-pdf me-1"></i> Exportar Gráficos
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra de Filtros com Atalhos -->
+    <div class="card shadow-sm border-0 mb-3 filter-card">
+        <div class="card-body">
+            <form method="GET" id="chartsFilterForm" class="row g-2 align-items-end">
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="filter-label">Data Inicial</label>
+                    <input type="date" name="date_start" id="chart_date_start" class="form-control filter-control" value="{{ date_start }}">
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="filter-label">Data Final</label>
+                    <input type="date" name="date_end" id="chart_date_end" class="form-control filter-control" value="{{ date_end }}">
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <label class="filter-label">Status Show</label>
+                    <select name="payment_status" class="form-select filter-control">
+                        <option value="">Todos</option>
+                        <option value="PAGO" {% if payment_status == 'PAGO' %}selected{% endif %}>Pago</option>
+                        <option value="PARCIAL" {% if payment_status == 'PARCIAL' %}selected{% endif %}>Pgt. Parcial</option>
+                        <option value="PENDENTE" {% if payment_status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-auto ms-md-auto mt-2 mt-md-0 text-end d-flex gap-2 justify-content-end align-items-center flex-wrap">
+                    <a href="{% url 'relatorio_financeiro_graficos' band.slug %}" class="btn btn-sm btn-outline-secondary px-3 btn-filter-action" style="border: 1px solid #6C757D;"><i class="fa-solid fa-eraser me-1"></i> Limpar</a>
+                    <button type="submit" class="btn btn-sm btn-dark px-4 btn-filter-action" style="background-color: #212529;"><i class="fa-solid fa-filter me-1"></i> Filtrar</button>
+                </div>
+            </form>
+            <!-- Atalhos rápidos -->
+            <div class="d-flex gap-1 mt-2 flex-wrap">
+                <span class="small text-muted me-1 align-self-center" style="font-size: 11px;">Atalhos:</span>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="applyQuickFilter('current_month')">Este mês</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="applyQuickFilter('last_month')">Mês anterior</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="applyQuickFilter('current_year')">Este ano</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicadores Gerenciais (Cards) -->
+    <div class="row g-2 g-md-3 mb-4">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Faturamento</p>
+                    <h4 class="kpi-value mb-0 text-primary">R$ {{ total_faturamento|default:"0,00"|floatformat:"2g" }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 border-start border-4 border-success h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Recebido</p>
+                    <h4 class="kpi-value mb-0 text-success">R$ {{ total_recebido|default:"0,00"|floatformat:"2g" }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">A Receber</p>
+                    <h4 class="kpi-value mb-0 text-warning">R$ {{ total_a_receber|default:"0,00"|floatformat:"2g" }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 border-start border-4 border-danger h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Em Atraso</p>
+                    <h4 class="kpi-value mb-0 text-danger">R$ {{ total_em_atraso|default:"0,00"|floatformat:"2g" }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 border-start border-4 border-secondary h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Custos Shows</p>
+                    <h4 class="kpi-value mb-0 text-secondary">R$ {{ total_custos_geral|default:"0,00"|floatformat:"2g" }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+            <div class="card shadow-sm border-0 border-start border-4 border-info h-100 kpi-card">
+                <div class="card-body">
+                    <p class="text-muted text-uppercase fw-bold kpi-label">Caixa Realizado</p>
+                    <h4 class="kpi-value mb-0 text-info">R$ {{ caixa_realizado|default:"0,00"|floatformat:"2g" }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos Principais -->
+    <div class="row g-3 mb-4">
+        <!-- Gráfico 1: Faturamento por Mês -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100 chart-card">
+                <div class="card-body p-3">
+                    <h6 class="chart-title"><i class="fa-solid fa-chart-line text-primary me-2"></i>Faturamento por Mês</h6>
+                    <div class="chart-container">
+                        <canvas id="chartFaturamento"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico 2: Recebido x A Receber -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100 chart-card">
+                <div class="card-body p-3">
+                    <h6 class="chart-title"><i class="fa-solid fa-chart-column text-success me-2"></i>Recebido vs A Receber por Mês</h6>
+                    <div class="chart-container">
+                        <canvas id="chartRecebidoAReceber"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico 3: Situação Financeira (Status) -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 chart-card">
+                <div class="card-body p-3">
+                    <h6 class="chart-title"><i class="fa-solid fa-chart-pie text-warning me-2"></i>Situação dos Shows</h6>
+                    <div class="chart-container">
+                        <canvas id="chartSituacao"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico 4: Receita por Show (Top 10) -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm h-100 chart-card">
+                <div class="card-body p-3">
+                    <h6 class="chart-title"><i class="fa-solid fa-ranking-star text-info me-2"></i>Top Shows por Cachê / Receita</h6>
+                    <div class="chart-container">
+                        <canvas id="chartTopShows"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico 5: Receita x Custos/Despesas -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm h-100 chart-card">
+                <div class="card-body p-3">
+                    <h6 class="chart-title"><i class="fa-solid fa-scale-balanced text-danger me-2"></i>Evolução: Receita vs Custos de Shows</h6>
+                    <div class="chart-container" style="height: 280px;">
+                        <canvas id="chartReceitaCustos"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function applyQuickFilter(period) {
+    const today = new Date();
+    const startInput = document.getElementById('chart_date_start');
+    const endInput = document.getElementById('chart_date_end');
+
+    if (period === 'current_month') {
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        startInput.value = firstDay.toISOString().split('T')[0];
+        endInput.value = lastDay.toISOString().split('T')[0];
+    } else if (period === 'last_month') {
+        const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+        startInput.value = firstDay.toISOString().split('T')[0];
+        endInput.value = lastDay.toISOString().split('T')[0];
+    } else if (period === 'current_year') {
+        const firstDay = new Date(today.getFullYear(), 0, 1);
+        const lastDay = new Date(today.getFullYear(), 11, 31);
+        startInput.value = firstDay.toISOString().split('T')[0];
+        endInput.value = lastDay.toISOString().split('T')[0];
+    }
+    document.getElementById('chartsFilterForm').submit();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const monthsLabels = {{ chart_months_labels|safe }};
+    const faturamentoData = {{ chart_faturamento_data|safe }};
+    const recebidoData = {{ chart_recebido_data|safe }};
+    const aReceberData = {{ chart_a_receber_data|safe }};
+    const custosData = {{ chart_custos_data|safe }};
+
+    const statusCounts = {{ status_counts|safe }};
+    const topShowsLabels = {{ chart_top_shows_labels|safe }};
+    const topShowsData = {{ chart_top_shows_data|safe }};
+
+    const formatCurrency = (val) => 'R$ ' + Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // 1. Gráfico Faturamento por Mês
+    if (document.getElementById('chartFaturamento')) {
+        new Chart(document.getElementById('chartFaturamento'), {
+            type: 'line',
+            data: {
+                labels: monthsLabels.length ? monthsLabels : ['Sem dados'],
+                datasets: [{
+                    label: 'Faturamento (R$)',
+                    data: faturamentoData.length ? faturamentoData : [0],
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#0d6efd',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return 'Faturamento: ' + formatCurrency(ctx.parsed.y); }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: function(val) { return 'R$ ' + Number(val).toLocaleString('pt-BR'); } }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Gráfico Recebido vs A Receber por Mês
+    if (document.getElementById('chartRecebidoAReceber')) {
+        new Chart(document.getElementById('chartRecebidoAReceber'), {
+            type: 'bar',
+            data: {
+                labels: monthsLabels.length ? monthsLabels : ['Sem dados'],
+                datasets: [
+                    {
+                        label: 'Recebido (R$)',
+                        data: recebidoData.length ? recebidoData : [0],
+                        backgroundColor: 'rgba(25, 135, 84, 0.85)',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'A Receber (R$)',
+                        data: aReceberData.length ? aReceberData : [0],
+                        backgroundColor: 'rgba(255, 193, 7, 0.85)',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return ctx.dataset.label + ': ' + formatCurrency(ctx.parsed.y); }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: function(val) { return 'R$ ' + Number(val).toLocaleString('pt-BR'); } }
+                    }
+                }
+            }
+        });
+    }
+
+    // 3. Gráfico Situação dos Shows (Rosca)
+    if (document.getElementById('chartSituacao')) {
+        const totalStatus = (statusCounts.PAGO || 0) + (statusCounts.PARCIAL || 0) + (statusCounts.PENDENTE || 0);
+        let labels = ['Pago', 'Parcial', 'Pendente'];
+        let dataValues = [statusCounts.PAGO || 0, statusCounts.PARCIAL || 0, statusCounts.PENDENTE || 0];
+        let colors = ['#198754', '#ffc107', '#dc3545'];
+
+        if (totalStatus === 0) {
+            labels = ['Sem shows no período'];
+            dataValues = [1];
+            colors = ['#e9ecef'];
+        }
+
+        new Chart(document.getElementById('chartSituacao'), {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+
+    // 4. Gráfico Top Shows por Cachê (Barras Horizontais)
+    if (document.getElementById('chartTopShows')) {
+        new Chart(document.getElementById('chartTopShows'), {
+            type: 'bar',
+            data: {
+                labels: topShowsLabels.length ? topShowsLabels : ['Nenhum show no período'],
+                datasets: [{
+                    label: 'Cachê (R$)',
+                    data: topShowsData.length ? topShowsData : [0],
+                    backgroundColor: 'rgba(13, 110, 253, 0.8)',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return 'Cachê: ' + formatCurrency(ctx.parsed.x); }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { callback: function(val) { return 'R$ ' + Number(val).toLocaleString('pt-BR'); } }
+                    }
+                }
+            }
+        });
+    }
+
+    // 5. Gráfico Receita vs Custos
+    if (document.getElementById('chartReceitaCustos')) {
+        new Chart(document.getElementById('chartReceitaCustos'), {
+            type: 'bar',
+            data: {
+                labels: monthsLabels.length ? monthsLabels : ['Sem dados'],
+                datasets: [
+                    {
+                        label: 'Receita (R$)',
+                        data: faturamentoData.length ? faturamentoData : [0],
+                        backgroundColor: 'rgba(13, 110, 253, 0.85)',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Custos Cadastrados (R$)',
+                        data: custosData.length ? custosData : [0],
+                        backgroundColor: 'rgba(220, 53, 69, 0.85)',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) { return ctx.dataset.label + ': ' + formatCurrency(ctx.parsed.y); }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: function(val) { return 'R$ ' + Number(val).toLocaleString('pt-BR'); } }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

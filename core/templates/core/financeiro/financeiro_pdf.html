@@ -1,0 +1,512 @@
+{% load static admin_tags %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>[{% now "H:i_d-m-Y" %}] - {{ doc_title }} {{ band.name|upper }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+            color: #000;
+            font-size: 10px;
+        }
+        .pdf-container {
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 12px 15px;
+        }
+        .header-logo {
+            max-height: 55px;
+            max-width: 120px;
+            object-fit: contain;
+        }
+        .doc-title {
+            font-size: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            line-height: 1.15;
+            color: #111;
+        }
+        .doc-subtitle {
+            font-size: 11px;
+            color: #6c757d;
+            margin-top: 1px;
+        }
+        .band-subtitle {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #212529;
+        }
+        .kpi-mini-card {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 6px 8px;
+            background-color: #f8f9fa;
+        }
+        .kpi-mini-title {
+            font-size: 8.5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+        .kpi-mini-value {
+            font-size: 13px;
+            font-weight: bold;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .table-pdf {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+        .table-pdf thead {
+            display: table-header-group;
+        }
+        .table-pdf tr {
+            page-break-inside: avoid;
+        }
+        .table-pdf th {
+            background-color: #f1f3f5;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 4px 6px;
+            border-bottom: 1.5px solid #dee2e6;
+            color: #495057;
+        }
+        .table-pdf td {
+            padding: 4px 6px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+            font-size: 9.5px;
+            line-height: 1.25;
+        }
+        .table-pdf tfoot td {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            border-top: 1.5px solid #dee2e6;
+            border-bottom: none;
+            padding: 5px 6px;
+            font-size: 10px;
+        }
+        .badge-status {
+            font-size: 8px;
+            padding: 2px 6px;
+            font-weight: bold;
+            border-radius: 3px;
+            display: inline-block;
+            text-align: center;
+            color: #fff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .bg-pago { background-color: #198754 !important; }
+        .bg-parcial { background-color: #ffc107 !important; color: #000 !important; }
+        .bg-pendente { background-color: #dc3545 !important; }
+        .bg-atrasado { background-color: #dc3545 !important; }
+
+        @media print {
+            .print-only { display: block !important; }
+            #print-footer { display: flex !important; }
+            .no-print { display: none !important; }
+            body { padding: 0; margin: 0; }
+            .pdf-container { padding: 0; max-width: 100%; }
+            @page { margin: 0.8cm 0.8cm 1.2cm 0.8cm; }
+            .table-pdf tr { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="pdf-container">
+        <!-- Cabeçalho -->
+        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+            <div class="d-flex align-items-center">
+                {% if pdf_logo_base64 %}
+                    <img src="{{ pdf_logo_base64 }}" alt="{{ band.name }}" class="header-logo me-3">
+                {% elif band.logo %}
+                    <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="header-logo me-3">
+                {% else %}
+                    <div style="font-weight: bold; font-size: 14px; margin-right: 15px;">{{ band.name }}</div>
+                {% endif %}
+                <div>
+                    <div class="doc-title">{{ doc_title }}</div>
+                    <div class="band-subtitle">{{ band.name }}</div>
+                    <div class="doc-subtitle">{{ doc_subtitle }}</div>
+                </div>
+            </div>
+            <div class="text-end text-muted" style="font-size: 9px; line-height: 1.3;">
+                <div><strong>Período:</strong> {% if date_start %}{{ date_start|date:"d/m/Y" }}{% else %}Início{% endif %} até {% if date_end %}{{ date_end|date:"d/m/Y" }}{% else %}Atual{% endif %}</div>
+                <div><strong>Gerado em:</strong> {% now "d/m/Y \a\s H:i" %}</div>
+                <div><strong>Usuário:</strong> {{ user_name }}</div>
+            </div>
+        </div>
+
+        <!-- Indicadores Consolidadores Topo -->
+        <div class="row g-2 mb-3">
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">Faturamento</div>
+                    <div class="kpi-mini-value text-primary">R$ {{ total_faturamento|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">Recebido</div>
+                    <div class="kpi-mini-value text-success">R$ {{ total_recebido|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">A Receber</div>
+                    <div class="kpi-mini-value text-warning">R$ {{ total_a_receber|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">Em Atraso</div>
+                    <div class="kpi-mini-value text-danger">R$ {{ total_em_atraso|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">Custos Shows</div>
+                    <div class="kpi-mini-value text-secondary">R$ {{ total_custos_geral|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">Caixa Realizado</div>
+                    <div class="kpi-mini-value text-info">R$ {{ caixa_realizado|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO ESPECÍFICO POR TIPO DE RELATÓRIO -->
+
+        <!-- 1. RESUMO FINANCEIRO -->
+        {% if report_type == 'resumo' %}
+        <table class="table-pdf">
+            <thead>
+                <tr>
+                    <th style="width: 11%;">Data</th>
+                    <th style="width: 25%;">Show / Evento</th>
+                    <th style="width: 16%;">Cidade / Local</th>
+                    <th style="width: 12%; text-align: right;">Cachê</th>
+                    <th style="width: 12%; text-align: right;">Recebido</th>
+                    <th style="width: 12%; text-align: right;">A Receber</th>
+                    <th style="width: 12%; text-align: center;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for show in processed_shows %}
+                <tr>
+                    <td class="fw-bold">{{ show.date|date:"d/m/Y"|default:"-" }}</td>
+                    <td>
+                        <strong>{{ show.event_name|default:show.title|default:"Sem Título" }}</strong>
+                        {% if show.contract_type %}<br><small class="text-muted">{{ show.contract_type }}</small>{% endif %}
+                    </td>
+                    <td>{{ show.city|default:"-" }}{% if show.venue %} &bull; {{ show.venue }}{% endif %}</td>
+                    <td class="text-end fw-bold text-primary">R$ {{ show.computed_fee|floatformat:"2g" }}</td>
+                    <td class="text-end text-success">R$ {{ show.computed_recebido|floatformat:"2g" }}</td>
+                    <td class="text-end text-warning">R$ {{ show.computed_pendente|floatformat:"2g" }}</td>
+                    <td class="text-center">
+                        {% if show.payment_status == 'PAGO' %}
+                            <span class="badge-status bg-pago">PAGO</span>
+                        {% elif show.payment_status == 'PARCIAL' %}
+                            <span class="badge-status bg-parcial">PARCIAL</span>
+                        {% else %}
+                            <span class="badge-status bg-pendente">PENDENTE</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-3 text-muted">Nenhum show localizado para os critérios informados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-uppercase">Total Geral ({{ processed_shows|length }} shows)</td>
+                    <td class="text-end text-primary">R$ {{ total_faturamento|floatformat:"2g" }}</td>
+                    <td class="text-end text-success">R$ {{ total_recebido|floatformat:"2g" }}</td>
+                    <td class="text-end text-warning">R$ {{ total_a_receber|floatformat:"2g" }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- 2. CONTAS A RECEBER -->
+        {% elif report_type == 'a_receber' %}
+        <table class="table-pdf">
+            <thead>
+                <tr>
+                    <th style="width: 12%;">Vencimento</th>
+                    <th style="width: 26%;">Show / Evento</th>
+                    <th style="width: 22%;">Descrição da Parcela</th>
+                    <th style="width: 14%;">Forma Pgt.</th>
+                    <th style="width: 14%; text-align: right;">Valor</th>
+                    <th style="width: 12%; text-align: center;">Situação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in a_receber_items %}
+                <tr>
+                    <td class="fw-bold {% if item.is_overdue %}text-danger{% endif %}">
+                        {{ item.payment.expected_date|date:"d/m/Y"|default:"Sem data" }}
+                    </td>
+                    <td>
+                        <strong>{{ item.show.event_name|default:item.show.title|default:"Sem Título" }}</strong>
+                        <br><small class="text-muted">{{ item.show.date|date:"d/m/Y"|default:"-" }} &bull; {{ item.show.city|default:"-" }}</small>
+                    </td>
+                    <td>{{ item.payment.description }}</td>
+                    <td>{{ item.payment.get_payment_method_display }}</td>
+                    <td class="text-end fw-bold {% if item.is_overdue %}text-danger{% else %}text-warning{% endif %}">
+                        R$ {{ item.payment.value|floatformat:"2g" }}
+                    </td>
+                    <td class="text-center">
+                        {% if item.is_overdue %}
+                            <span class="badge-status bg-atrasado">ATRASADO</span>
+                        {% else %}
+                            <span class="badge-status bg-pendente">A RECEBER</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-3 text-muted">Nenhuma conta ou parcela pendente para o período.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4" class="text-uppercase">Total de Parcelas a Receber</td>
+                    <td class="text-end text-warning" colspan="2">R$ {{ total_a_receber|floatformat:"2g" }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- 3. RECEBIMENTOS -->
+        {% elif report_type == 'recebimentos' %}
+        <table class="table-pdf">
+            <thead>
+                <tr>
+                    <th style="width: 12%;">Data Receb.</th>
+                    <th style="width: 26%;">Show / Evento</th>
+                    <th style="width: 24%;">Descrição</th>
+                    <th style="width: 14%;">Forma Pgt.</th>
+                    <th style="width: 14%; text-align: right;">Valor Recebido</th>
+                    <th style="width: 10%; text-align: center;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in recebimentos_items %}
+                <tr>
+                    <td class="fw-bold">{{ item.payment.receipt_date|date:"d/m/Y"|default:item.payment.expected_date|date:"d/m/Y"|default:"-" }}</td>
+                    <td>
+                        <strong>{{ item.show.event_name|default:item.show.title|default:"Sem Título" }}</strong>
+                        <br><small class="text-muted">{{ item.show.date|date:"d/m/Y"|default:"-" }} &bull; {{ item.show.city|default:"-" }}</small>
+                    </td>
+                    <td>{{ item.payment.description }}</td>
+                    <td>{{ item.payment.get_payment_method_display }}</td>
+                    <td class="text-end fw-bold text-success">R$ {{ item.payment.value|floatformat:"2g" }}</td>
+                    <td class="text-center"><span class="badge-status bg-pago">RECEBIDO</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-3 text-muted">Nenhum recebimento registrado para o período informado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4" class="text-uppercase">Total Recebido Efetivado</td>
+                    <td class="text-end text-success" colspan="2">R$ {{ total_recebido|floatformat:"2g" }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- 4. RESULTADO POR SHOW -->
+        {% elif report_type == 'resultado_show' %}
+        <table class="table-pdf">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Data</th>
+                    <th style="width: 24%;">Show / Evento</th>
+                    <th style="width: 13%; text-align: right;">Cachê</th>
+                    <th style="width: 13%; text-align: right;">Logística</th>
+                    <th style="width: 13%; text-align: right;">Equipe</th>
+                    <th style="width: 13%; text-align: right;">Total Custos</th>
+                    <th style="width: 14%; text-align: right;">Resultado Previsto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for show in processed_shows %}
+                <tr>
+                    <td class="fw-bold">{{ show.date|date:"d/m/Y"|default:"-" }}</td>
+                    <td>
+                        <strong>{{ show.event_name|default:show.title|default:"Sem Título" }}</strong>
+                        <br><small class="text-muted">{{ show.city|default:"-" }}</small>
+                    </td>
+                    <td class="text-end text-primary fw-bold">R$ {{ show.computed_fee|floatformat:"2g" }}</td>
+                    <td class="text-end text-muted">R$ {{ show.computed_logistica|floatformat:"2g" }}</td>
+                    <td class="text-end text-muted">R$ {{ show.computed_equipe|floatformat:"2g" }}</td>
+                    <td class="text-end text-danger">R$ {{ show.computed_custos|floatformat:"2g" }}</td>
+                    <td class="text-end fw-bold {% if show.computed_resultado >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        R$ {{ show.computed_resultado|floatformat:"2g" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-3 text-muted">Nenhum show localizado no período informado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2" class="text-uppercase">Totais Consolidados</td>
+                    <td class="text-end text-primary">R$ {{ total_faturamento|floatformat:"2g" }}</td>
+                    <td class="text-end text-muted">R$ {{ total_custos_logistica|floatformat:"2g" }}</td>
+                    <td class="text-end text-muted">R$ {{ total_custos_equipe|floatformat:"2g" }}</td>
+                    <td class="text-end text-danger">R$ {{ total_custos_geral|floatformat:"2g" }}</td>
+                    <td class="text-end fw-bold {% if resultado_previsto >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        R$ {{ resultado_previsto|floatformat:"2g" }}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- 5. FECHAMENTO DO PERÍODO -->
+        {% elif report_type == 'fechamento' %}
+        <div class="row g-3 mb-3">
+            <div class="col-6">
+                <div class="p-2 border rounded bg-light">
+                    <h6 class="fw-bold mb-2 text-dark" style="font-size: 11px; text-transform: uppercase;">Conciliação Financeira Prevista</h6>
+                    <table class="w-100" style="font-size: 9.5px; line-height: 1.8;">
+                        <tr>
+                            <td>(+) Faturamento Contratado (Shows):</td>
+                            <td class="text-end fw-bold text-primary">R$ {{ total_faturamento|floatformat:"2g" }}</td>
+                        </tr>
+                        <tr>
+                            <td>(-) Custos de Logística/Comprovantes:</td>
+                            <td class="text-end text-danger">R$ {{ total_custos_logistica|floatformat:"2g" }}</td>
+                        </tr>
+                        <tr>
+                            <td>(-) Custos de Equipe Cadastrados:</td>
+                            <td class="text-end text-danger">R$ {{ total_custos_equipe|floatformat:"2g" }}</td>
+                        </tr>
+                        <tr class="border-top">
+                            <td><strong>(=) Resultado Operacional Previsto:</strong></td>
+                            <td class="text-end fw-bold {% if resultado_previsto >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                R$ {{ resultado_previsto|floatformat:"2g" }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-2 border rounded bg-light">
+                    <h6 class="fw-bold mb-2 text-dark" style="font-size: 11px; text-transform: uppercase;">Conciliação de Caixa Realizado</h6>
+                    <table class="w-100" style="font-size: 9.5px; line-height: 1.8;">
+                        <tr>
+                            <td>(+) Total Recebido Efetivado:</td>
+                            <td class="text-end fw-bold text-success">R$ {{ total_recebido|floatformat:"2g" }}</td>
+                        </tr>
+                        <tr>
+                            <td>(-) Custos Gerais de Shows:</td>
+                            <td class="text-end text-danger">R$ {{ total_custos_geral|floatformat:"2g" }}</td>
+                        </tr>
+                        <tr>
+                            <td>(&bull;) Saldo a Receber Pendente:</td>
+                            <td class="text-end text-warning">R$ {{ total_a_receber|floatformat:"2g" }}</td>
+                        </tr>
+                        <tr class="border-top">
+                            <td><strong>(=) Caixa Realizado Líquido:</strong></td>
+                            <td class="text-end fw-bold {% if caixa_realizado >= 0 %}text-info{% else %}text-danger{% endif %}">
+                                R$ {{ caixa_realizado|floatformat:"2g" }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-1 text-dark" style="font-size: 11px; text-transform: uppercase;">Demonstrativo Detalhado por Show</h6>
+        <table class="table-pdf">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Data</th>
+                    <th style="width: 25%;">Show / Evento</th>
+                    <th style="width: 13%; text-align: right;">Cachê</th>
+                    <th style="width: 13%; text-align: right;">Recebido</th>
+                    <th style="width: 13%; text-align: right;">Custos</th>
+                    <th style="width: 13%; text-align: right;">Caixa Realiz.</th>
+                    <th style="width: 13%; text-align: center;">Status Pgt.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for show in processed_shows %}
+                <tr>
+                    <td class="fw-bold">{{ show.date|date:"d/m/Y"|default:"-" }}</td>
+                    <td>
+                        <strong>{{ show.event_name|default:show.title|default:"Sem Título" }}</strong>
+                        <br><small class="text-muted">{{ show.city|default:"-" }}</small>
+                    </td>
+                    <td class="text-end fw-bold text-primary">R$ {{ show.computed_fee|floatformat:"2g" }}</td>
+                    <td class="text-end text-success">R$ {{ show.computed_recebido|floatformat:"2g" }}</td>
+                    <td class="text-end text-danger">R$ {{ show.computed_custos|floatformat:"2g" }}</td>
+                    <td class="text-end fw-bold {% if show.computed_caixa_realizado >= 0 %}text-info{% else %}text-danger{% endif %}">
+                        R$ {{ show.computed_caixa_realizado|floatformat:"2g" }}
+                    </td>
+                    <td class="text-center">
+                        {% if show.payment_status == 'PAGO' %}
+                            <span class="badge-status bg-pago">PAGO</span>
+                        {% elif show.payment_status == 'PARCIAL' %}
+                            <span class="badge-status bg-parcial">PARCIAL</span>
+                        {% else %}
+                            <span class="badge-status bg-pendente">PENDENTE</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-3 text-muted">Nenhum registro para o período informado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2" class="text-uppercase">Totais do Fechamento</td>
+                    <td class="text-end text-primary">R$ {{ total_faturamento|floatformat:"2g" }}</td>
+                    <td class="text-end text-success">R$ {{ total_recebido|floatformat:"2g" }}</td>
+                    <td class="text-end text-danger">R$ {{ total_custos_geral|floatformat:"2g" }}</td>
+                    <td class="text-end text-info">R$ {{ caixa_realizado|floatformat:"2g" }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+        {% endif %}
+
+        <!-- Botões de Ação (Aparecem somente na tela, não na impressão) -->
+        <div class="text-center mt-3 no-print">
+            <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print me-2"></i> Imprimir / Salvar PDF</button>
+            <button onclick="window.close()" class="btn btn-outline-secondary ms-2">Fechar aba</button>
+        </div>
+    </div>
+
+    <!-- Rodapé Exclusivo de Impressão -->
+    <div id="print-footer" class="print-only" style="border-top: 1px solid #dee2e6; padding-top: 5px; font-size: 10px; position: fixed; bottom: 0; left: 0; width: 100%; display: none; background: white;">
+        <div class="d-flex w-100 justify-content-between align-items-center px-1">
+            <span style="flex: 1; text-align: left;"><strong>Documento:</strong> {{ doc_title }} ({{ band.name }})</span>
+            <span style="flex: 1; text-align: center;">Desenvolvido por Backstage Pro<br>@backstagepro.site</span>
+            <span style="flex: 1; text-align: right;"><strong>Gerado em:</strong> {% now "d/m/Y \a\s H:i" %}</span>
+        </div>
+    </div>
+</body>
+</html>

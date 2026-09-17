@@ -1,0 +1,332 @@
+{% load static admin_tags %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>[{% now "H:i_d-m-Y" %}] - FINANCEIRO GRÁFICOS {{ band.name|upper }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+            color: #000;
+            font-size: 10px;
+        }
+        .pdf-container {
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 12px 15px;
+        }
+        .header-logo {
+            max-height: 55px;
+            max-width: 120px;
+            object-fit: contain;
+        }
+        .page-title {
+            font-size: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            line-height: 1.15;
+            color: #111;
+        }
+        .band-subtitle {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #495057;
+        }
+        .kpi-mini-card {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 6px 8px;
+            background-color: #f8f9fa;
+        }
+        .kpi-mini-title {
+            font-size: 8.5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #6c757d;
+            margin-bottom: 2px;
+        }
+        .kpi-mini-value {
+            font-size: 13px;
+            font-weight: bold;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .chart-block {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 8px 10px;
+            background: #fff;
+            margin-bottom: 12px;
+            page-break-inside: avoid;
+        }
+        .chart-block-title {
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #212529;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 3px;
+        }
+        .chart-container-pdf {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+
+        @media print {
+            .print-only { display: block !important; }
+            #print-footer { display: flex !important; }
+            .no-print { display: none !important; }
+            body { padding: 0; margin: 0; }
+            .pdf-container { padding: 0; max-width: 100%; }
+            @page { margin: 0.8cm 0.8cm 1.2cm 0.8cm; }
+            .chart-block { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="pdf-container">
+        <!-- Cabeçalho -->
+        <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+            <div class="d-flex align-items-center">
+                {% if pdf_logo_base64 %}
+                    <img src="{{ pdf_logo_base64 }}" alt="{{ band.name }}" class="header-logo me-3">
+                {% elif band.logo %}
+                    <img src="{{ band.logo.url }}" alt="{{ band.name }}" class="header-logo me-3">
+                {% else %}
+                    <div style="font-weight: bold; font-size: 14px; margin-right: 15px;">{{ band.name }}</div>
+                {% endif %}
+                <div>
+                    <div class="page-title">FINANCEIRO — GRÁFICOS E INDICADORES</div>
+                    <div class="band-subtitle">{{ band.name }}</div>
+                </div>
+            </div>
+            <div class="text-end text-muted" style="font-size: 9px; line-height: 1.3;">
+                <div><strong>Período:</strong> {% if date_start %}{{ date_start|date:"d/m/Y" }}{% else %}Início{% endif %} até {% if date_end %}{{ date_end|date:"d/m/Y" }}{% else %}Atual{% endif %}</div>
+                {% if payment_status %}<div><strong>Status:</strong> {{ payment_status }}</div>{% endif %}
+                <div><strong>Gerado em:</strong> {% now "d/m/Y \a\s H:i" %}</div>
+            </div>
+        </div>
+
+        <!-- Indicadores Consolidadores -->
+        <div class="row g-2 mb-3">
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">Faturamento</div>
+                    <div class="kpi-mini-value text-primary">R$ {{ total_faturamento|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">Recebido</div>
+                    <div class="kpi-mini-value text-success">R$ {{ total_recebido|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">A Receber</div>
+                    <div class="kpi-mini-value text-warning">R$ {{ total_a_receber|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">Em Atraso</div>
+                    <div class="kpi-mini-value text-danger">R$ {{ total_em_atraso|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">Custos Shows</div>
+                    <div class="kpi-mini-value text-secondary">R$ {{ total_custos_geral|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+            <div class="col-4 col-sm-2">
+                <div class="kpi-mini-card">
+                    <div class="kpi-mini-title">Caixa Realizado</div>
+                    <div class="kpi-mini-value text-info">R$ {{ caixa_realizado|default:"0,00"|floatformat:"2g" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bloco de Gráficos -->
+        <div class="row g-2">
+            <div class="col-6">
+                <div class="chart-block">
+                    <div class="chart-block-title"><i class="fa-solid fa-chart-line text-primary me-1"></i>Faturamento por Mês</div>
+                    <div class="chart-container-pdf">
+                        <canvas id="pdfChartFaturamento"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="chart-block">
+                    <div class="chart-block-title"><i class="fa-solid fa-chart-column text-success me-1"></i>Recebido vs A Receber por Mês</div>
+                    <div class="chart-container-pdf">
+                        <canvas id="pdfChartRecebidoAReceber"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-5">
+                <div class="chart-block">
+                    <div class="chart-block-title"><i class="fa-solid fa-chart-pie text-warning me-1"></i>Situação dos Shows</div>
+                    <div class="chart-container-pdf">
+                        <canvas id="pdfChartSituacao"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-7">
+                <div class="chart-block">
+                    <div class="chart-block-title"><i class="fa-solid fa-ranking-star text-info me-1"></i>Top Shows por Cachê</div>
+                    <div class="chart-container-pdf">
+                        <canvas id="pdfChartTopShows"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="chart-block">
+                    <div class="chart-block-title"><i class="fa-solid fa-scale-balanced text-danger me-1"></i>Evolução: Receita vs Custos Cadastrados de Shows</div>
+                    <div class="chart-container-pdf" style="height: 220px;">
+                        <canvas id="pdfChartReceitaCustos"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões de Ação na visualização prévia -->
+        <div class="text-center mt-3 no-print">
+            <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print me-2"></i> Imprimir / Salvar PDF</button>
+            <button onclick="window.close()" class="btn btn-outline-secondary ms-2">Fechar aba</button>
+        </div>
+    </div>
+
+    <!-- Rodapé Exclusivo de Impressão -->
+    <div id="print-footer" class="print-only" style="border-top: 1px solid #dee2e6; padding-top: 5px; font-size: 10px; position: fixed; bottom: 0; left: 0; width: 100%; display: none; background: white;">
+        <div class="d-flex w-100 justify-content-between align-items-center px-1">
+            <span style="flex: 1; text-align: left;"><strong>Documento:</strong> FINANCEIRO — GRÁFICOS ({{ band.name }})</span>
+            <span style="flex: 1; text-align: center;">Desenvolvido por Backstage Pro<br>@backstagepro.site</span>
+            <span style="flex: 1; text-align: right;"><strong>Gerado em:</strong> {% now "d/m/Y \a\s H:i" %}</span>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const monthsLabels = {{ chart_months_labels|safe }};
+        const faturamentoData = {{ chart_faturamento_data|safe }};
+        const recebidoData = {{ chart_recebido_data|safe }};
+        const aReceberData = {{ chart_a_receber_data|safe }};
+        const custosData = {{ chart_custos_data|safe }};
+
+        const statusCounts = {{ status_counts|safe }};
+        const topShowsLabels = {{ chart_top_shows_labels|safe }};
+        const topShowsData = {{ chart_top_shows_data|safe }};
+
+        const printAnim = { animation: false, responsive: true, maintainAspectRatio: false };
+
+        // 1. Faturamento
+        new Chart(document.getElementById('pdfChartFaturamento'), {
+            type: 'line',
+            data: {
+                labels: monthsLabels.length ? monthsLabels : ['Sem dados'],
+                datasets: [{
+                    label: 'Faturamento',
+                    data: faturamentoData.length ? faturamentoData : [0],
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.2,
+                    borderWidth: 2,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                ...printAnim,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // 2. Recebido x A Receber
+        new Chart(document.getElementById('pdfChartRecebidoAReceber'), {
+            type: 'bar',
+            data: {
+                labels: monthsLabels.length ? monthsLabels : ['Sem dados'],
+                datasets: [
+                    { label: 'Recebido', data: recebidoData.length ? recebidoData : [0], backgroundColor: 'rgba(25, 135, 84, 0.85)' },
+                    { label: 'A Receber', data: aReceberData.length ? aReceberData : [0], backgroundColor: 'rgba(255, 193, 7, 0.85)' }
+                ]
+            },
+            options: {
+                ...printAnim,
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // 3. Situação
+        const totalStatus = (statusCounts.PAGO || 0) + (statusCounts.PARCIAL || 0) + (statusCounts.PENDENTE || 0);
+        let labels = ['Pago', 'Parcial', 'Pendente'];
+        let dataValues = [statusCounts.PAGO || 0, statusCounts.PARCIAL || 0, statusCounts.PENDENTE || 0];
+        let colors = ['#198754', '#ffc107', '#dc3545'];
+        if (totalStatus === 0) {
+            labels = ['Sem shows'];
+            dataValues = [1];
+            colors = ['#e9ecef'];
+        }
+        new Chart(document.getElementById('pdfChartSituacao'), {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{ data: dataValues, backgroundColor: colors, borderWidth: 1, borderColor: '#fff' }]
+            },
+            options: {
+                ...printAnim,
+                plugins: { legend: { position: 'bottom' } },
+                cutout: '60%'
+            }
+        });
+
+        // 4. Top Shows
+        new Chart(document.getElementById('pdfChartTopShows'), {
+            type: 'bar',
+            data: {
+                labels: topShowsLabels.length ? topShowsLabels : ['Nenhum show'],
+                datasets: [{
+                    label: 'Cachê',
+                    data: topShowsData.length ? topShowsData : [0],
+                    backgroundColor: 'rgba(13, 110, 253, 0.8)'
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                ...printAnim,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true } }
+            }
+        });
+
+        // 5. Receita x Custos
+        new Chart(document.getElementById('pdfChartReceitaCustos'), {
+            type: 'bar',
+            data: {
+                labels: monthsLabels.length ? monthsLabels : ['Sem dados'],
+                datasets: [
+                    { label: 'Receita', data: faturamentoData.length ? faturamentoData : [0], backgroundColor: 'rgba(13, 110, 253, 0.85)' },
+                    { label: 'Custos Cadastrados', data: custosData.length ? custosData : [0], backgroundColor: 'rgba(220, 53, 69, 0.85)' }
+                ]
+            },
+            options: {
+                ...printAnim,
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    });
+    </script>
+</body>
+</html>

@@ -49,6 +49,9 @@ urlpatterns = [
     path('parceiros/', views.partners_list_view, name='parceiros'),
     path('relatorios/assinatura/', views.minha_assinatura_view, name='minha_assinatura'),
     path('relatorios/relatorio-financeiro/', views.relatorios_view, name='relatorio_financeiro'),
+    path('relatorios/relatorio-financeiro/graficos/', views.relatorio_financeiro_graficos_view, name='relatorio_financeiro_graficos'),
+    path('relatorios/relatorio-financeiro/graficos/exportar/', views.relatorio_financeiro_graficos_export_view, name='relatorio_financeiro_graficos_export'),
+    path('relatorios/relatorio-financeiro/pdf/', views.relatorio_financeiro_pdf_view, name='relatorio_financeiro_pdf'),
 
     # Comercial
     path('relatorios/comercial/', views.commercial_index_view, name='commercial_index'),
