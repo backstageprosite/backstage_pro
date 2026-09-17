@@ -192,3 +192,112 @@ class TestPwaMultilogin(TestCase):
         self.assertIn('Empresário', content)
         self.assertIn('Integrante', content)
 
+
+class TestAdminBandSearchAndMembershipManagement(TestCase):
+    """BP-PEND-63: Testes de busca assíncrona de bandas e gestão escalável de memberships."""
+
+    def setUp(self):
+        self.admin = make_admin_user('admin_bp63')
+        self.client = Client()
+        self.client.force_login(self.admin)
+        self.band1 = make_band('Banda Revelação', 'banda-revelacao')
+        self.band2 = make_band('Banda Raça Negra', 'banda-raca-negra')
+        self.band3 = make_band('Tiago Maracajá', 'tiagomaracaja')
+
+    def test_band_search_api_requires_admin(self):
+        """Apenas superusuário pode consultar o endpoint de busca de bandas."""
+        regular_user = make_regular_user('user_comum_bp63')
+        unauth_client = Client()
+        unauth_client.force_login(regular_user)
+
+        response = unauth_client.get(reverse('admin_painel:bandas_buscar') + '?q=banda')
+        self.assertEqual(response.status_code, 302)
+
+    def test_band_search_api_empty_query_returns_empty_list(self):
+        """Query vazia ou menor que 2 caracteres retorna lista vazia."""
+        response = self.client.get(reverse('admin_painel:bandas_buscar') + '?q=')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'results': []})
+
+        response = self.client.get(reverse('admin_painel:bandas_buscar') + '?q=b')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'results': []})
+
+    def test_band_search_api_finds_by_name_and_slug(self):
+        """Busca por nome ou slug retorna os resultados corretos com id, name e slug."""
+        response = self.client.get(reverse('admin_painel:bandas_buscar') + '?q=revelação')
+        self.assertEqual(response.status_code, 200)
+        results = response.json()['results']
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['id'], self.band1.id)
+        self.assertEqual(results[0]['name'], 'Banda Revelação')
+        self.assertEqual(results[0]['slug'], 'banda-revelacao')
+
+        # Teste por slug
+        response = self.client.get(reverse('admin_painel:bandas_buscar') + '?q=maracaja')
+        self.assertEqual(response.status_code, 200)
+        results = response.json()['results']
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['id'], self.band3.id)
+
+    def test_band_search_api_limit_max_20(self):
+        """Busca não deve retornar mais de 20 resultados."""
+        for i in range(25):
+            make_band(f'Banda Grupo {i}', f'banda-grupo-{i}')
+        response = self.client.get(reverse('admin_painel:bandas_buscar') + '?q=grupo')
+        self.assertEqual(response.status_code, 200)
+        results = response.json()['results']
+        self.assertLessEqual(len(results), 20)
+
+    def test_admin_user_create_with_memberships_and_deduplication(self):
+        """Criar usuário vinculando bandas sem permitir registros duplicados."""
+        data = {
+            'first_name': 'Carlos',
+            'last_name': 'Silva',
+            'username': 'carlos_silva_bp63',
+            'email': 'carlos@exemplo.com',
+            'password': 'Password123!',
+            'confirm_password': 'Password123!',
+            'band_ids': [str(self.band1.id), str(self.band1.id), str(self.band2.id)],
+            f'role_{self.band1.id}': 'PRODUTOR',
+            f'role_{self.band2.id}': 'EMPRESARIO',
+            'is_active': 'on',
+        }
+        response = self.client.post(reverse('admin_painel:usuarios_novo'), data)
+        self.assertEqual(response.status_code, 302)
+
+        created_user = User.objects.get(username='carlos_silva_bp63')
+        memberships = UserBandMembership.objects.filter(user=created_user)
+        # Deve ter exatamente 2 memberships (band1 deduplicada)
+        self.assertEqual(memberships.count(), 2)
+
+        m1 = memberships.get(band=self.band1)
+        self.assertEqual(m1.role, 'PRODUTOR')
+        m2 = memberships.get(band=self.band2)
+        self.assertEqual(m2.role, 'EMPRESARIO')
+
+    def test_admin_user_edit_membership_update_and_removal(self):
+        """Editar usuário remove vínculos excluídos e atualiza perfis existentes."""
+        user = make_regular_user('user_edit_bp63')
+        UserBandMembership.objects.create(user=user, band=self.band1, role='INTEGRANTE')
+        UserBandMembership.objects.create(user=user, band=self.band2, role='INTEGRANTE')
+
+        # Submete apenas band2 agora com perfil EMPRESARIO (removendo band1)
+        data = {
+            'first_name': user.first_name or 'Nome',
+            'last_name': user.last_name or 'Sobrenome',
+            'username': user.username,
+            'email': 'user_edit@exemplo.com',
+            'band_ids': [str(self.band2.id)],
+            f'role_{self.band2.id}': 'EMPRESARIO',
+            'is_active': 'on',
+        }
+        response = self.client.post(reverse('admin_painel:usuarios_editar', kwargs={'pk': user.pk}), data)
+        self.assertEqual(response.status_code, 302)
+
+        memberships = UserBandMembership.objects.filter(user=user)
+        self.assertEqual(memberships.count(), 1)
+        self.assertEqual(memberships.first().band, self.band2)
+        self.assertEqual(memberships.first().role, 'EMPRESARIO')
+
+

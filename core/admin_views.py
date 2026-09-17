@@ -927,15 +927,26 @@ def admin_user_create(request):
             user = form.save(commit=False)
             user.save()
 
-            # BP-PEND-62: Criar UserBandMembership para cada banda selecionada
-            band_ids = request.POST.getlist('band_ids')
+            # BP-PEND-62/63: Criar UserBandMembership para cada banda selecionada (sem duplicidade)
+            band_ids_raw = request.POST.getlist('band_ids')
+            legacy_band = request.POST.get('band')
+            if not band_ids_raw and legacy_band:
+                band_ids_raw = [legacy_band]
+
+            seen_band_ids = set()
+            ordered_band_ids = []
+            for b_id in band_ids_raw:
+                if b_id and str(b_id).isdigit() and b_id not in seen_band_ids:
+                    seen_band_ids.add(b_id)
+                    ordered_band_ids.append(b_id)
+
             first_band = None
-            first_role = 'INTEGRANTE'
+            first_role = request.POST.get('role', 'INTEGRANTE')
             valid_roles = {'INTEGRANTE', 'PRODUTOR', 'EMPRESARIO'}
-            for idx, band_id in enumerate(band_ids):
+            for idx, band_id in enumerate(ordered_band_ids):
                 try:
                     band_obj = Band.objects.get(id=band_id)
-                    role = request.POST.get(f'role_{band_id}', 'INTEGRANTE')
+                    role = request.POST.get(f'role_{band_id}', request.POST.get('role', 'INTEGRANTE'))
                     if role not in valid_roles:
                         role = 'INTEGRANTE'
                     UserBandMembership.objects.update_or_create(
@@ -993,22 +1004,34 @@ def admin_user_edit(request, pk):
         if form.is_valid():
             form.save()
 
-            # BP-PEND-62: Atualizar UserBandMembership
-            band_ids_submitted = set(request.POST.getlist('band_ids'))
+            # BP-PEND-62/63: Atualizar UserBandMembership com deduplicação
+            band_ids_raw = request.POST.getlist('band_ids')
+            legacy_band = request.POST.get('band')
+            if not band_ids_raw and legacy_band is not None:
+                band_ids_raw = [legacy_band] if legacy_band else []
+
+            seen_band_ids = set()
+            ordered_band_ids = []
+            for b_id in band_ids_raw:
+                if b_id and str(b_id).isdigit() and b_id not in seen_band_ids:
+                    seen_band_ids.add(b_id)
+                    ordered_band_ids.append(b_id)
+
+            band_ids_submitted = set(ordered_band_ids)
             valid_roles = {'INTEGRANTE', 'PRODUTOR', 'EMPRESARIO'}
 
-            # Remove vínculos que foram desmarcados
+            # Remove vínculos que foram desmarcados/removidos
             UserBandMembership.objects.filter(user=user).exclude(
                 band_id__in=band_ids_submitted
             ).delete()
 
             # Cria ou atualiza vínculos submetidos
             first_band = None
-            first_role = 'INTEGRANTE'
-            for idx, band_id in enumerate(request.POST.getlist('band_ids')):
+            first_role = request.POST.get('role', 'INTEGRANTE')
+            for idx, band_id in enumerate(ordered_band_ids):
                 try:
                     band_obj = Band.objects.get(id=band_id)
-                    role = request.POST.get(f'role_{band_id}', 'INTEGRANTE')
+                    role = request.POST.get(f'role_{band_id}', request.POST.get('role', 'INTEGRANTE'))
                     if role not in valid_roles:
                         role = 'INTEGRANTE'
                     UserBandMembership.objects.update_or_create(
@@ -1039,6 +1062,23 @@ def admin_user_edit(request, pk):
                 for error in errors:
                     messages.error(request, f"Erro ({field}): {error}")
     return redirect('admin_painel:usuarios')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_band_search_api(request):
+    """
+    BP-PEND-63: Endpoint assíncrono para busca escalável de bandas no admin geral.
+    Busca case-insensitive por nome ou slug, limitada a até 20 resultados.
+    """
+    q = request.GET.get('q', '').strip()
+    if not q or len(q) < 2:
+        return JsonResponse({'results': []})
+
+    bands = Band.objects.filter(
+        Q(name__icontains=q) | Q(slug__icontains=q)
+    ).order_by('name')[:20]
+
+    results = [{'id': b.id, 'name': b.name, 'slug': b.slug} for b in bands]
+    return JsonResponse({'results': results})
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_user_toggle_active(request, pk):

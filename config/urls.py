@@ -5,11 +5,12 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.contrib.auth import views as auth_views
-from core import views, views_activation, views_checkout
+from core import views, views_activation, views_checkout, admin_views
 from core.views import landing_page_view, termos_de_uso_view, politica_de_privacidade_view
 from core.services.payments.asaas import views as views_asaas
 
 urlpatterns = [
+    path('admin-master/bandas/buscar/', admin_views.admin_band_search_api, name='admin_band_search_alias'),
     path('admin-master/', admin.site.urls),
     path('painel/', include('core.admin_urls')),
     path('', landing_page_view, name='home'),

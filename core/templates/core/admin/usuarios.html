@@ -308,29 +308,18 @@
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Confirmar Senha</label>
                             <input type="password" name="confirm_password" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
-                        {# BP-PEND-62: Bandas Vinculadas — checkbox + perfil por banda #}
+                        {# BP-PEND-63: Seleção Escalável de Bandas Vinculadas #}
                         <div class="col-12">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 6px;">Bandas Vinculadas e Perfis</label>
-                            <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 8px;">
-                                {% for b in bandas_list %}
-                                <div class="d-flex align-items-center gap-2 py-2 px-2 border-bottom border-opacity-25" style="border-color: #dee2e6 !important;">
-                                    <input type="checkbox"
-                                           class="form-check-input bp-band-cb flex-shrink-0"
-                                           name="band_ids"
-                                           value="{{ b.id }}"
-                                           id="cb_create_{{ b.id }}"
-                                           style="margin-top: 0;"
-                                           onchange="this.nextElementSibling.nextElementSibling.disabled = !this.checked;">
-                                    <label class="form-check-label fw-semibold flex-grow-1 mb-0" for="cb_create_{{ b.id }}" style="font-size: 13px; cursor: pointer;">{{ b.name }}</label>
-                                    <select name="role_{{ b.id }}" class="form-select form-select-sm" style="width: 130px; font-size: 12px;" disabled>
-                                        <option value="INTEGRANTE">Integrante</option>
-                                        <option value="PRODUTOR">Produtor</option>
-                                        <option value="EMPRESARIO">Empresário</option>
-                                    </select>
-                                </div>
-                                {% endfor %}
+                            <div id="containerBandsCreate" class="p-2 border rounded" style="background-color: #fcfcfd; min-height: 52px; max-height: 240px; overflow-y: auto;">
+                                <div class="text-muted small py-2 px-1 fst-italic bp-empty-msg" style="font-size: 12.5px;">Nenhuma banda adicionada.</div>
                             </div>
-                            <div class="form-text text-muted mt-1" style="font-size: 11px;">Marque as bandas e defina o perfil de acesso em cada uma. A primeira selecionada será a banda principal.</div>
+                            <div class="mt-2 d-flex align-items-center justify-content-between">
+                                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3" onclick="BpBandSelector.openSearchRow('containerBandsCreate')">
+                                    <i class="fa-solid fa-plus me-1"></i> Adicionar Banda
+                                </button>
+                                <span class="text-muted" style="font-size: 11px;">A primeira banda adicionada será a banda principal.</span>
+                            </div>
                         </div>
                         <div class="col-12 mt-3 d-flex flex-column flex-sm-row gap-4">
                             <div class="form-check form-switch">
@@ -387,56 +376,36 @@
                         <label class="form-label">Telefone</label>
                         <input type="text" name="phone" class="form-control phone-mask" value="{{ u.phone|default:'' }}" maxlength="20">
                     </div>
-                    {# BP-PEND-62: Bandas Vinculadas — pré-popula via JS com os vínculos atuais #}
+                    {# BP-PEND-63: Bandas Vinculadas do Usuário no Modal Editar #}
                     <div class="mb-3">
-                        <label class="form-label">Bandas Vinculadas e Perfis</label>
-                        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 8px;" id="bands-edit-{{ u.id }}">
-                            {% for b in bandas_list %}
-                            <div class="d-flex align-items-center gap-2 py-2 px-2 border-bottom border-opacity-25" style="border-color: #dee2e6 !important;">
-                                <input type="checkbox"
-                                       class="form-check-input flex-shrink-0"
-                                       name="band_ids"
-                                       value="{{ b.id }}"
-                                       id="cb_edit_{{ u.id }}_{{ b.id }}"
-                                       style="margin-top: 0;"
-                                       onchange="this.nextElementSibling.nextElementSibling.disabled = !this.checked;">
-                                <label class="form-check-label fw-semibold flex-grow-1 mb-0" for="cb_edit_{{ u.id }}_{{ b.id }}" style="font-size: 13px; cursor: pointer;">{{ b.name }}</label>
-                                <select name="role_{{ b.id }}" class="form-select form-select-sm" style="width: 130px; font-size: 12px;" disabled>
-                                    <option value="INTEGRANTE">Integrante</option>
-                                    <option value="PRODUTOR">Produtor</option>
-                                    <option value="EMPRESARIO">Empresário</option>
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 6px;">Bandas Vinculadas e Perfis</label>
+                        <div id="containerBandsEdit{{ u.id }}" class="p-2 border rounded" style="background-color: #fcfcfd; min-height: 52px; max-height: 240px; overflow-y: auto;">
+                            {% for m in u.band_memberships.all %}
+                            <div class="band-membership-row d-flex align-items-center gap-2 mb-2 p-2 border rounded bg-white shadow-sm" data-band-id="{{ m.band_id }}">
+                                <input type="hidden" name="band_ids" value="{{ m.band_id }}">
+                                <div class="flex-grow-1 fw-semibold text-dark text-truncate" style="font-size: 13px;" title="{{ m.band.name }}">
+                                    <i class="fa-solid fa-guitar text-secondary me-1"></i> {{ m.band.name }}
+                                </div>
+                                <select name="role_{{ m.band_id }}" class="form-select form-select-sm" style="width: 135px; font-size: 12px;">
+                                    <option value="INTEGRANTE" {% if m.role == 'INTEGRANTE' %}selected{% endif %}>Integrante</option>
+                                    <option value="PRODUTOR" {% if m.role == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
+                                    <option value="EMPRESARIO" {% if m.role == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
                                 </select>
+                                <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1 px-2" onclick="BpBandSelector.removeRow(this)" title="Remover vínculo">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
                             </div>
+                            {% empty %}
+                            <div class="text-muted small py-2 px-1 fst-italic bp-empty-msg" style="font-size: 12.5px;">Nenhuma banda vinculada.</div>
                             {% endfor %}
                         </div>
-                        <div class="form-text text-muted mt-1" style="font-size: 11px;">Marque as bandas e defina o perfil. Desmarcar uma banda remove o vínculo.</div>
+                        <div class="mt-2 d-flex align-items-center justify-content-between">
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3" onclick="BpBandSelector.openSearchRow('containerBandsEdit{{ u.id }}')">
+                                <i class="fa-solid fa-plus me-1"></i> Adicionar Banda
+                            </button>
+                            <span class="text-muted" style="font-size: 11px;">Remover desfaz o vínculo da banda com o usuário.</span>
+                        </div>
                     </div>
-                    {# Dados dos vínculos atuais para pré-popular via JS #}
-                    <script>
-                    (function() {
-                        var membs_{{ u.id }} = {
-                            {% for m in u.band_memberships.all %}"{{ m.band_id }}": "{{ m.role }}"{% if not forloop.last %},{% endif %}{% endfor %}
-                        };
-                        document.getElementById('modalEditUser{{ u.id }}').addEventListener('show.bs.modal', function() {
-                            var container = document.getElementById('bands-edit-{{ u.id }}');
-                            // Reset all
-                            container.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
-                                cb.checked = false;
-                                var sel = cb.parentElement.querySelector('select');
-                                if (sel) { sel.disabled = true; sel.value = 'INTEGRANTE'; }
-                            });
-                            // Pre-check memberships
-                            Object.keys(membs_{{ u.id }}).forEach(function(bandId) {
-                                var cb = container.querySelector('input[value="' + bandId + '"]');
-                                if (cb) {
-                                    cb.checked = true;
-                                    var sel = cb.parentElement.querySelector('select');
-                                    if (sel) { sel.disabled = false; sel.value = membs_{{ u.id }}[bandId]; }
-                                }
-                            });
-                        }, { once: false });
-                    })();
-                    </script>
                     <div class="mt-2">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="is_active" id="isActiveUserEdit{{ u.id }}" {% if u.is_active %}checked{% endif %}>
@@ -589,6 +558,180 @@
 {% endif %}
 
 <script>
+    // BP-PEND-63: Gerenciamento Escalável de Bandas nos Modais de Usuário
+    const BpBandSelector = {
+        searchUrl: "{% url 'admin_painel:bandas_buscar' %}",
+
+        openSearchRow: function(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // Se já existir uma linha de busca aberta neste container, foca nela
+            const existingSearch = container.querySelector('.bp-band-search-row');
+            if (existingSearch) {
+                const input = existingSearch.querySelector('.bp-band-search-input');
+                if (input) input.focus();
+                return;
+            }
+
+            // Cria linha de busca temporária
+            const searchRow = document.createElement('div');
+            searchRow.className = 'bp-band-search-row mb-2 p-2 border rounded bg-white position-relative shadow-sm';
+            searchRow.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <div class="position-relative flex-grow-1">
+                        <input type="text"
+                               class="form-control form-control-sm bp-band-search-input"
+                               placeholder="Digite o nome ou slug da banda..."
+                               autocomplete="off"
+                               style="font-size: 13px;">
+                        <div class="bp-band-search-spinner position-absolute top-50 end-0 translate-middle-y me-2 d-none">
+                            <span class="spinner-border spinner-border-sm text-primary" role="status" style="width: 14px; height: 14px;"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary border-0 p-1 px-2" onclick="BpBandSelector.closeSearchRow(this)" title="Cancelar">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="bp-band-search-results list-group shadow position-absolute w-100 start-0 mt-1 d-none"
+                     style="z-index: 1055; max-height: 200px; overflow-y: auto; font-size: 13px; top: 100%;">
+                </div>
+                <div class="bp-band-search-msg text-danger small mt-1 d-none" style="font-size: 11.5px;"></div>
+            `;
+
+            container.appendChild(searchRow);
+            const input = searchRow.querySelector('.bp-band-search-input');
+            input.focus();
+
+            let debounceTimer = null;
+            input.addEventListener('input', function(e) {
+                clearTimeout(debounceTimer);
+                const query = e.target.value.trim();
+                const resultsBox = searchRow.querySelector('.bp-band-search-results');
+                const spinner = searchRow.querySelector('.bp-band-search-spinner');
+                const msgBox = searchRow.querySelector('.bp-band-search-msg');
+
+                msgBox.classList.add('d-none');
+                msgBox.textContent = '';
+
+                if (query.length < 2) {
+                    resultsBox.innerHTML = '';
+                    resultsBox.classList.add('d-none');
+                    return;
+                }
+
+                spinner.classList.remove('d-none');
+                debounceTimer = setTimeout(() => {
+                    fetch(`${BpBandSelector.searchUrl}?q=${encodeURIComponent(query)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            spinner.classList.add('d-none');
+                            resultsBox.innerHTML = '';
+                            if (!data.results || data.results.length === 0) {
+                                resultsBox.innerHTML = '<div class="list-group-item text-muted small py-2">Nenhuma banda encontrada</div>';
+                                resultsBox.classList.remove('d-none');
+                                return;
+                            }
+
+                            data.results.forEach(band => {
+                                const item = document.createElement('a');
+                                item.href = 'javascript:void(0);';
+                                item.className = 'list-group-item list-group-item-action py-2 d-flex justify-content-between align-items-center';
+                                item.innerHTML = `
+                                    <span class="fw-semibold text-dark text-truncate">${band.name}</span>
+                                    <span class="badge bg-light text-secondary border ms-2" style="font-size: 10px;">${band.slug}</span>
+                                `;
+                                item.addEventListener('click', () => {
+                                    BpBandSelector.selectBand(containerId, searchRow, band);
+                                });
+                                resultsBox.appendChild(item);
+                            });
+                            resultsBox.classList.remove('d-none');
+                        })
+                        .catch(() => {
+                            spinner.classList.add('d-none');
+                            resultsBox.innerHTML = '<div class="list-group-item text-danger small py-2">Erro ao buscar bandas</div>';
+                            resultsBox.classList.remove('d-none');
+                        });
+                }, 250);
+            });
+        },
+
+        closeSearchRow: function(btn) {
+            const row = btn.closest('.bp-band-search-row');
+            if (row) row.remove();
+        },
+
+        selectBand: function(containerId, searchRow, band) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // Verifica se a banda já foi adicionada
+            const exists = container.querySelector(`.band-membership-row[data-band-id="${band.id}"]`);
+            if (exists) {
+                const msgBox = searchRow.querySelector('.bp-band-search-msg');
+                if (msgBox) {
+                    msgBox.textContent = `A banda "${band.name}" já está vinculada.`;
+                    msgBox.classList.remove('d-none');
+                }
+                return;
+            }
+
+            // Cria linha de vínculo definitiva
+            const membershipRow = document.createElement('div');
+            membershipRow.className = 'band-membership-row d-flex align-items-center gap-2 mb-2 p-2 border rounded bg-white shadow-sm';
+            membershipRow.setAttribute('data-band-id', band.id);
+            membershipRow.innerHTML = `
+                <input type="hidden" name="band_ids" value="${band.id}">
+                <div class="flex-grow-1 fw-semibold text-dark text-truncate" style="font-size: 13px;" title="${band.name}">
+                    <i class="fa-solid fa-guitar text-secondary me-1"></i> ${band.name}
+                </div>
+                <select name="role_${band.id}" class="form-select form-select-sm" style="width: 135px; font-size: 12px;">
+                    <option value="INTEGRANTE">Integrante</option>
+                    <option value="PRODUTOR">Produtor</option>
+                    <option value="EMPRESARIO">Empresário</option>
+                </select>
+                <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1 px-2" onclick="BpBandSelector.removeRow(this)" title="Remover vínculo">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            `;
+
+            // Oculta mensagem de lista vazia se houver
+            const emptyMsg = container.querySelector('.bp-empty-msg');
+            if (emptyMsg) {
+                emptyMsg.classList.add('d-none');
+            }
+
+            // Insere antes da linha de busca ou no container
+            container.insertBefore(membershipRow, searchRow);
+            searchRow.remove();
+        },
+
+        removeRow: function(btn) {
+            const row = btn.closest('.band-membership-row');
+            if (!row) return;
+            const container = row.parentElement;
+            row.remove();
+
+            // Se não houver mais linhas de membership, exibe o aviso
+            if (container) {
+                const remainingRows = container.querySelectorAll('.band-membership-row');
+                if (remainingRows.length === 0) {
+                    let emptyMsg = container.querySelector('.bp-empty-msg');
+                    if (!emptyMsg) {
+                        emptyMsg = document.createElement('div');
+                        emptyMsg.className = 'text-muted small py-2 px-1 fst-italic bp-empty-msg';
+                        emptyMsg.style.fontSize = '12.5px';
+                        emptyMsg.textContent = 'Nenhuma banda vinculada.';
+                        container.appendChild(emptyMsg);
+                    } else {
+                        emptyMsg.classList.remove('d-none');
+                    }
+                }
+            }
+        }
+    };
+
     document.addEventListener("DOMContentLoaded", function() {
         const phoneInputs = document.querySelectorAll(".phone-mask");
         phoneInputs.forEach(input => {

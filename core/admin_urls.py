@@ -11,6 +11,7 @@ urlpatterns = [
     path('logout/', admin_views.admin_logout, name='logout'),
     
     path('bandas/', admin_views.AdminBandListView.as_view(), name='bandas'),
+    path('bandas/buscar/', admin_views.admin_band_search_api, name='bandas_buscar'),
     path('bandas/nova/', admin_views.admin_band_create, name='bandas_nova'),
     path('bandas/<int:pk>/editar/', admin_views.admin_band_edit, name='bandas_editar'),
     path('bandas/<int:pk>/desativar/', admin_views.admin_band_toggle_active, name='bandas_desativar'),

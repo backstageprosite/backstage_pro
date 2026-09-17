@@ -14,8 +14,8 @@ class AdminUserBandLinkTests(TestCase):
         self.band_tiago = Band.objects.create(name='Tiago Maracajá', slug='tiago-maracaja', is_active=True)
         self.band_matheus = Band.objects.create(name='Matheus Kennedy', slug='matheus-kennedy', is_active=True)
 
-    def test_1_modal_novo_usuario_carrega_todas_bandas_existentes(self):
-        """Valida que o modal de criação de usuário carrega todas as bandas existentes."""
+    def test_1_pagina_usuarios_carrega_com_sucesso_e_contexto_bandas(self):
+        """Valida que a página de usuários carrega com sucesso e disponibiliza o contexto de bandas."""
         self.client.login(username='admin_master', password='password123')
         response = self.client.get(reverse('admin_painel:usuarios'))
         self.assertEqual(response.status_code, 200)
@@ -23,15 +23,15 @@ class AdminUserBandLinkTests(TestCase):
         self.assertIn('bandas', response.context)
         
         content = response.content.decode('utf-8')
-        # Verifica se o select do modal de criação contém o name="band" e as opções
+        # Verifica se o filtro de bandas do topo contém as opções
         self.assertIn('name="band"', content)
-        self.assertIn('Nenhuma / Sem Vínculo', content)
+        self.assertIn('Sem Banda (Admin/Geral)', content)
         self.assertIn('Danniel Vieira', content)
         self.assertIn('Tiago Maracajá', content)
         self.assertIn('Matheus Kennedy', content)
 
-    def test_2_banda_criada_futuramente_aparece_automaticamente(self):
-        """Valida que bandas criadas futuramente aparecem no select sem alteração de código."""
+    def test_2_banda_criada_futuramente_aparece_no_filtro(self):
+        """Valida que bandas criadas futuramente aparecem no filtro de bandas."""
         Band.objects.create(name='Banda Futura Show', slug='banda-futura-show', is_active=True)
         self.client.login(username='admin_master', password='password123')
         response = self.client.get(reverse('admin_painel:usuarios'))
@@ -117,8 +117,9 @@ class AdminUserBandLinkTests(TestCase):
         response = self.client.get(reverse('admin_painel:usuarios'))
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('utf-8')
-        # Verifica se o option da banda Tiago está marcado como selected no modal do João
-        self.assertIn(f'<option value="{self.band_tiago.id}" selected>{self.band_tiago.name}</option>', content)
+        # Verifica se o vínculo da banda Tiago está renderizado no modal do João
+        self.assertIn(f'containerBandsEdit{user.id}', content)
+        self.assertIn(self.band_tiago.name, content)
 
         # Altera para Matheus Kennedy
         data_edit = {
