@@ -2102,12 +2102,22 @@ def relatorio_financeiro_pdf_view(request, band_slug):
     recebimentos_items = []
 
     for s in data['processed_shows']:
-        # Parcelas pendentes e atrasadas
+        # 1. Parcelas registradas em ShowPayment
+        has_pending_payment = False
+        sum_pending_payments = Decimal('0')
+
         for p in s.payments.all():
             if p.status in ['PENDENTE', 'ATRASADO']:
+                has_pending_payment = True
+                val = p.value or Decimal('0')
+                sum_pending_payments += val
                 a_receber_items.append({
                     'show': s,
                     'payment': p,
+                    'description': p.description or 'Parcela pendente',
+                    'payment_method_display': p.get_payment_method_display(),
+                    'value': val,
+                    'expected_date': p.expected_date,
                     'is_overdue': (p.status == 'ATRASADO') or (p.expected_date and p.expected_date < datetime.date.today()),
                 })
             elif p.status == 'RECEBIDO':
@@ -2116,8 +2126,29 @@ def relatorio_financeiro_pdf_view(request, band_slug):
                     'payment': p,
                 })
 
+        # 2. Se o show possui saldo pendente (computed_pendente > 0)
+        # e não possui parcelas pendentes cadastradas cobrindo esse saldo,
+        # adiciona item sintético com o saldo a receber do show
+        if s.computed_pendente > Decimal('0'):
+            saldo_remanescente = s.computed_pendente - sum_pending_payments
+            if not has_pending_payment or saldo_remanescente > Decimal('0'):
+                valor_item = saldo_remanescente if has_pending_payment else s.computed_pendente
+                is_show_overdue = bool(s.date and s.date < datetime.date.today())
+                a_receber_items.append({
+                    'show': s,
+                    'payment': None,
+                    'description': 'Saldo a receber do cachê' if has_pending_payment else 'Cachê a receber (a faturar)',
+                    'payment_method_display': s.contract_type or 'A combinar',
+                    'value': valor_item,
+                    'expected_date': s.date,
+                    'is_overdue': is_show_overdue,
+                })
+
     # Ordenar parcelas a receber por data prevista (asc)
-    a_receber_items.sort(key=lambda x: (x['payment'].expected_date or datetime.date.max, x['payment'].id))
+    a_receber_items.sort(key=lambda x: (x['expected_date'] or datetime.date.max, x['show'].id))
+
+    # Total consolidado exato dos itens a receber listados
+    total_a_receber_relatorio = sum((item['value'] for item in a_receber_items), Decimal('0'))
 
     # Ordenar recebimentos por data de recebimento ou criação (desc)
     recebimentos_items.sort(
@@ -2146,6 +2177,7 @@ def relatorio_financeiro_pdf_view(request, band_slug):
         'pdf_logo_base64': get_image_base64(band.logo),
         'a_receber_items': a_receber_items,
         'recebimentos_items': recebimentos_items,
+        'total_a_receber_relatorio': total_a_receber_relatorio,
         **data,
     }
     return render(request, 'core/financeiro/financeiro_pdf.html', context)

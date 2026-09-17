@@ -96,20 +96,23 @@
             font-size: 10px;
         }
         .badge-status {
-            font-size: 8px;
-            padding: 2px 6px;
+            font-size: 8.5px;
+            padding: 3px 0;
             font-weight: bold;
-            border-radius: 3px;
+            border-radius: 4px;
             display: inline-block;
+            width: 72px;
             text-align: center;
+            line-height: 1.2;
             color: #fff !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            box-sizing: border-box;
         }
-        .bg-pago { background-color: #198754 !important; }
+        .bg-pago { background-color: #198754 !important; color: #fff !important; }
         .bg-parcial { background-color: #ffc107 !important; color: #000 !important; }
-        .bg-pendente { background-color: #dc3545 !important; }
-        .bg-atrasado { background-color: #dc3545 !important; }
+        .bg-pendente { background-color: #dc3545 !important; color: #fff !important; }
+        .bg-atrasado { background-color: #dc3545 !important; color: #fff !important; }
 
         @media print {
             .print-only { display: block !important; }
@@ -152,37 +155,37 @@
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">Faturamento</div>
-                    <div class="kpi-mini-value text-primary">R$ {{ total_faturamento|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-primary">R$ {{ total_faturamento|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">Recebido</div>
-                    <div class="kpi-mini-value text-success">R$ {{ total_recebido|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-success">R$ {{ total_recebido|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">A Receber</div>
-                    <div class="kpi-mini-value text-warning">R$ {{ total_a_receber|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-warning">R$ {{ total_a_receber|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">Em Atraso</div>
-                    <div class="kpi-mini-value text-danger">R$ {{ total_em_atraso|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-danger">R$ {{ total_em_atraso|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">Custos Shows</div>
-                    <div class="kpi-mini-value text-secondary">R$ {{ total_custos_geral|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-secondary">R$ {{ total_custos_geral|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">Caixa Realizado</div>
-                    <div class="kpi-mini-value text-info">R$ {{ caixa_realizado|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-info">R$ {{ caixa_realizado|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
@@ -259,16 +262,16 @@
                 {% for item in a_receber_items %}
                 <tr>
                     <td class="fw-bold {% if item.is_overdue %}text-danger{% endif %}">
-                        {{ item.payment.expected_date|date:"d/m/Y"|default:"Sem data" }}
+                        {{ item.expected_date|date:"d/m/Y"|default:"Sem data" }}
                     </td>
                     <td>
                         <strong>{{ item.show.event_name|default:item.show.title|default:"Sem Título" }}</strong>
                         <br><small class="text-muted">{{ item.show.date|date:"d/m/Y"|default:"-" }} &bull; {{ item.show.city|default:"-" }}</small>
                     </td>
-                    <td>{{ item.payment.description }}</td>
-                    <td>{{ item.payment.get_payment_method_display }}</td>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.payment_method_display }}</td>
                     <td class="text-end fw-bold {% if item.is_overdue %}text-danger{% else %}text-warning{% endif %}">
-                        R$ {{ item.payment.value|floatformat:"2g" }}
+                        R$ {{ item.value|floatformat:"2g" }}
                     </td>
                     <td class="text-center">
                         {% if item.is_overdue %}
@@ -287,7 +290,7 @@
             <tfoot>
                 <tr>
                     <td colspan="4" class="text-uppercase">Total de Parcelas a Receber</td>
-                    <td class="text-end text-warning" colspan="2">R$ {{ total_a_receber|floatformat:"2g" }}</td>
+                    <td class="text-end text-warning" colspan="2">R$ {{ total_a_receber_relatorio|default_if_none:0|floatformat:"2g" }}</td>
                 </tr>
             </tfoot>
         </table>

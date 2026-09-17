@@ -126,3 +126,43 @@ class FinancialReportsTests(TestCase):
             self.assertEqual(response.status_code, 200, f"Falha no tipo de relatório {r_type}")
             self.assertContains(response, "Banda Teste")
             self.assertContains(response, "window.print()")
+            # Valida badge padronizada de 72px
+            self.assertContains(response, "width: 72px;")
+
+    def test_relatorio_cards_zero_formatting(self):
+        # Para a outra banda sem shows nem valores, os cards devem exibir R$ 0,00 e não apenas R$
+        self.client.login(username="produtor_fin", password="password123")
+        # Vincular produtor na outra banda
+        UserBandMembership.objects.create(
+            user=self.produtor,
+            band=self.other_band,
+            role="PRODUTOR",
+            is_active=True
+        )
+        url = f"{reverse('relatorio_financeiro_pdf', args=[self.other_band.slug])}?report_type=resumo"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # Deve exibir R$ 0,00 no card Em Atraso e Faturamento
+        self.assertContains(response, "R$ 0,00")
+        self.assertNotContains(response, '<div class="kpi-mini-value text-danger">R$ </div>')
+
+    def test_relatorio_a_receber_consistency_with_synthetic_item(self):
+        # Cria um show com fee mas sem nenhum ShowPayment cadastrado
+        Show.objects.create(
+            band=self.band,
+            title="Show Sem Pagamentos Cadastrados",
+            status=Show.STATUS_CONFIRMADO,
+            date=datetime.date(2026, 9, 25),
+            fee=Decimal('5000.00'),
+            payment_status='PENDENTE'
+        )
+        self.client.login(username="produtor_fin", password="password123")
+        url = f"{reverse('relatorio_financeiro_pdf', args=[self.band.slug])}?report_type=a_receber&date_start=2026-09-01&date_end=2026-09-30"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # Deve listar tanto a parcela pendente do show 1 quanto o cachê a faturar do show 2
+        self.assertContains(response, "Restante")
+        self.assertContains(response, "Cachê a receber (a faturar)")
+        # Total a receber deve ser 6.000 + 5.000 = 11.000,00
+        self.assertContains(response, "11.000,00")
+

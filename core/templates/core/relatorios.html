@@ -194,7 +194,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-primary h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Receita Contratada</p>
-                    <h4 class="kpi-value mb-0 text-primary">R$ {{ total_receita|default:"0,00"|floatformat:"2g" }}</h4>
+                    <h4 class="kpi-value mb-0 text-primary">R$ {{ total_receita|default_if_none:0|floatformat:"2g" }}</h4>
                 </div>
             </div>
         </div>
@@ -202,7 +202,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-success h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Total Recebido</p>
-                    <h4 class="kpi-value mb-0 text-success">R$ {{ total_recebido_geral|default:"0,00"|floatformat:"2g" }}</h4>
+                    <h4 class="kpi-value mb-0 text-success">R$ {{ total_recebido_geral|default_if_none:0|floatformat:"2g" }}</h4>
                 </div>
             </div>
         </div>
@@ -210,7 +210,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-warning h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Total Pendente</p>
-                    <h4 class="kpi-value mb-0 text-warning">R$ {{ total_pendente_geral|default:"0,00"|floatformat:"2g" }}</h4>
+                    <h4 class="kpi-value mb-0 text-warning">R$ {{ total_pendente_geral|default_if_none:0|floatformat:"2g" }}</h4>
                 </div>
             </div>
         </div>
@@ -219,7 +219,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-danger h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Custos Cadastrados</p>
-                    <h4 class="kpi-value mb-0 text-danger">R$ {{ total_custos|default:"0,00"|floatformat:"2g" }}</h4>
+                    <h4 class="kpi-value mb-0 text-danger">R$ {{ total_custos|default_if_none:0|floatformat:"2g" }}</h4>
                 </div>
             </div>
         </div>
@@ -227,7 +227,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-info h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Resultado Previsto</p>
-                    <h4 class="kpi-value mb-0 text-info">R$ {{ resultado_previsto_total|default:"0,00"|floatformat:"2g" }}</h4>
+                    <h4 class="kpi-value mb-0 text-info">R$ {{ resultado_previsto_total|default_if_none:0|floatformat:"2g" }}</h4>
                 </div>
             </div>
         </div>
@@ -235,7 +235,7 @@
             <div class="card shadow-sm border-0 border-start border-4 border-success h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Caixa Realizado</p>
-                    <h4 class="kpi-value mb-0 text-success">R$ {{ caixa_realizado_geral|default:"0,00"|floatformat:"2g" }}</h4>
+                    <h4 class="kpi-value mb-0 text-success">R$ {{ caixa_realizado_geral|default_if_none:0|floatformat:"2g" }}</h4>
                 </div>
             </div>
         </div>

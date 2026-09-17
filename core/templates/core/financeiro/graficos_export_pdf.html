@@ -119,37 +119,37 @@
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">Faturamento</div>
-                    <div class="kpi-mini-value text-primary">R$ {{ total_faturamento|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-primary">R$ {{ total_faturamento|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">Recebido</div>
-                    <div class="kpi-mini-value text-success">R$ {{ total_recebido|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-success">R$ {{ total_recebido|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">A Receber</div>
-                    <div class="kpi-mini-value text-warning">R$ {{ total_a_receber|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-warning">R$ {{ total_a_receber|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">Em Atraso</div>
-                    <div class="kpi-mini-value text-danger">R$ {{ total_em_atraso|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-danger">R$ {{ total_em_atraso|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">Custos Shows</div>
-                    <div class="kpi-mini-value text-secondary">R$ {{ total_custos_geral|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-secondary">R$ {{ total_custos_geral|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
                     <div class="kpi-mini-title">Caixa Realizado</div>
-                    <div class="kpi-mini-value text-info">R$ {{ caixa_realizado|default:"0,00"|floatformat:"2g" }}</div>
+                    <div class="kpi-mini-value text-info">R$ {{ caixa_realizado|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
