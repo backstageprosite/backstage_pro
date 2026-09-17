@@ -303,7 +303,7 @@ class AdminUserListView(AdminRequiredMixin, ListView):
                 qs = qs.filter(band_id=band_id)
 
         # BP-PEND-62: prefetch memberships para exibir múltiplas bandas sem N+1 queries
-        return qs.prefetch_related('userbandmembership_set__band')
+        return qs.prefetch_related('band_memberships__band')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -190,7 +190,7 @@
                                 </div>
                             </td>
                             <td>
-                                {% with membs=u.userbandmembership_set.all %}
+                                {% with membs=u.band_memberships.all %}
                                     {% if membs %}
                                         {% for m in membs %}
                                             <span class="badge {{ m.band.name|band_color }} rounded-pill px-2 py-1 me-1 mb-1" style="font-size: 10px;">
@@ -415,7 +415,7 @@
                     <script>
                     (function() {
                         var membs_{{ u.id }} = {
-                            {% for m in u.userbandmembership_set.all %}"{{ m.band_id }}": "{{ m.role }}"{% if not forloop.last %},{% endif %}{% endfor %}
+                            {% for m in u.band_memberships.all %}"{{ m.band_id }}": "{{ m.role }}"{% if not forloop.last %},{% endif %}{% endfor %}
                         };
                         document.getElementById('modalEditUser{{ u.id }}').addEventListener('show.bs.modal', function() {
                             var container = document.getElementById('bands-edit-{{ u.id }}');
