@@ -311,11 +311,14 @@
                         {# BP-PEND-63: Seleção Escalável de Bandas Vinculadas #}
                         <div class="col-12">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 6px;">Bandas Vinculadas e Perfis</label>
-                            <div id="containerBandsCreate" class="p-2 border rounded" style="background-color: #fcfcfd; min-height: 52px; max-height: 240px; overflow-y: auto;">
+                            {# ÁREA 1 — VÍNCULOS ATUAIS (container com scroll) #}
+                            <div id="containerBandsCreate" class="p-2 border rounded mb-2" style="background-color: #fcfcfd; min-height: 52px; max-height: 200px; overflow-y: auto;">
                                 <div class="text-muted small py-2 px-1 fst-italic bp-empty-msg" style="font-size: 12.5px;">Nenhuma banda adicionada.</div>
                             </div>
-                            <div class="mt-2 d-flex align-items-center justify-content-between">
-                                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3" onclick="BpBandSelector.openSearchRow('containerBandsCreate')">
+                            {# ÁREA 2 — ADICIONAR BANDA (fora do container rolável) #}
+                            <div id="searchAreaBandsCreate" class="mb-2"></div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3" onclick="BpBandSelector.openSearchRow('containerBandsCreate', 'searchAreaBandsCreate')">
                                     <i class="fa-solid fa-plus me-1"></i> Adicionar Banda
                                 </button>
                                 <span class="text-muted" style="font-size: 11px;">A primeira banda adicionada será a banda principal.</span>
@@ -379,7 +382,8 @@
                     {# BP-PEND-63: Bandas Vinculadas do Usuário no Modal Editar #}
                     <div class="mb-3">
                         <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 6px;">Bandas Vinculadas e Perfis</label>
-                        <div id="containerBandsEdit{{ u.id }}" class="p-2 border rounded" style="background-color: #fcfcfd; min-height: 52px; max-height: 240px; overflow-y: auto;">
+                        {# ÁREA 1 — VÍNCULOS ATUAIS (container com scroll) #}
+                        <div id="containerBandsEdit{{ u.id }}" class="p-2 border rounded mb-2" style="background-color: #fcfcfd; min-height: 52px; max-height: 200px; overflow-y: auto;">
                             {% for m in u.band_memberships.all %}
                             <div class="band-membership-row d-flex align-items-center gap-2 mb-2 p-2 border rounded bg-white shadow-sm" data-band-id="{{ m.band_id }}">
                                 <input type="hidden" name="band_ids" value="{{ m.band_id }}">
@@ -399,8 +403,10 @@
                             <div class="text-muted small py-2 px-1 fst-italic bp-empty-msg" style="font-size: 12.5px;">Nenhuma banda vinculada.</div>
                             {% endfor %}
                         </div>
-                        <div class="mt-2 d-flex align-items-center justify-content-between">
-                            <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3" onclick="BpBandSelector.openSearchRow('containerBandsEdit{{ u.id }}')">
+                        {# ÁREA 2 — ADICIONAR BANDA (fora do container rolável) #}
+                        <div id="searchAreaBandsEdit{{ u.id }}" class="mb-2"></div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3" onclick="BpBandSelector.openSearchRow('containerBandsEdit{{ u.id }}', 'searchAreaBandsEdit{{ u.id }}')">
                                 <i class="fa-solid fa-plus me-1"></i> Adicionar Banda
                             </button>
                             <span class="text-muted" style="font-size: 11px;">Remover desfaz o vínculo da banda com o usuário.</span>
@@ -562,44 +568,47 @@
     const BpBandSelector = {
         searchUrl: "{% url 'admin_painel:bandas_buscar' %}",
 
-        openSearchRow: function(containerId) {
+        openSearchRow: function(containerId, searchAreaId) {
+            // Se searchAreaId não foi passado, tenta usar o container ou acha elemento irmão
+            const searchArea = searchAreaId ? document.getElementById(searchAreaId) : null;
             const container = document.getElementById(containerId);
-            if (!container) return;
+            const targetParent = searchArea || container;
+            if (!targetParent) return;
 
-            // Se já existir uma linha de busca aberta neste container, foca nela
-            const existingSearch = container.querySelector('.bp-band-search-row');
+            // Se já existir uma linha de busca aberta nesta área, foca nela (evita criar múltiplas)
+            const existingSearch = targetParent.querySelector('.bp-band-search-row');
             if (existingSearch) {
                 const input = existingSearch.querySelector('.bp-band-search-input');
                 if (input) input.focus();
                 return;
             }
 
-            // Cria linha de busca temporária
+            // Cria a área de busca fora do container rolável
             const searchRow = document.createElement('div');
-            searchRow.className = 'bp-band-search-row mb-2 p-2 border rounded bg-white position-relative shadow-sm';
+            searchRow.className = 'bp-band-search-row p-2 border rounded bg-white position-relative shadow-sm';
             searchRow.innerHTML = `
                 <div class="d-flex align-items-center gap-2">
                     <div class="position-relative flex-grow-1">
                         <input type="text"
                                class="form-control form-control-sm bp-band-search-input"
-                               placeholder="Digite o nome ou slug da banda..."
+                               placeholder="Buscar banda (digite nome ou slug)..."
                                autocomplete="off"
                                style="font-size: 13px;">
                         <div class="bp-band-search-spinner position-absolute top-50 end-0 translate-middle-y me-2 d-none">
                             <span class="spinner-border spinner-border-sm text-primary" role="status" style="width: 14px; height: 14px;"></span>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-secondary border-0 p-1 px-2" onclick="BpBandSelector.closeSearchRow(this)" title="Cancelar">
-                        <i class="fa-solid fa-xmark"></i>
+                    <button type="button" class="btn btn-sm btn-outline-secondary border-0 p-1 px-2 text-muted" onclick="BpBandSelector.closeSearchRow(this)" title="Cancelar inclusão">
+                        <i class="fa-solid fa-xmark fs-6"></i>
                     </button>
                 </div>
                 <div class="bp-band-search-results list-group shadow position-absolute w-100 start-0 mt-1 d-none"
-                     style="z-index: 1055; max-height: 200px; overflow-y: auto; font-size: 13px; top: 100%;">
+                     style="z-index: 1065; max-height: 200px; overflow-y: auto; font-size: 13px; top: 100%; border-radius: 8px;">
                 </div>
                 <div class="bp-band-search-msg text-danger small mt-1 d-none" style="font-size: 11.5px;"></div>
             `;
 
-            container.appendChild(searchRow);
+            targetParent.appendChild(searchRow);
             const input = searchRow.querySelector('.bp-band-search-input');
             input.focus();
 
@@ -666,7 +675,7 @@
             const container = document.getElementById(containerId);
             if (!container) return;
 
-            // Verifica se a banda já foi adicionada
+            // Verifica se a banda já foi adicionada (duplicidade no container de memberships)
             const exists = container.querySelector(`.band-membership-row[data-band-id="${band.id}"]`);
             if (exists) {
                 const msgBox = searchRow.querySelector('.bp-band-search-msg');
@@ -702,8 +711,12 @@
                 emptyMsg.classList.add('d-none');
             }
 
-            // Insere antes da linha de busca ou no container
-            container.insertBefore(membershipRow, searchRow);
+            // Insere na lista de memberships rolável
+            container.appendChild(membershipRow);
+            // Rola suavemente para o final da lista para exibir a nova banda inserida
+            container.scrollTop = container.scrollHeight;
+
+            // Fecha/remove a área de busca temporária
             searchRow.remove();
         },
 
