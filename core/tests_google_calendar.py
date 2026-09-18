@@ -79,7 +79,7 @@ class GoogleCalendarTests(TestCase):
         self.assertContains(resp_config, 'banda.alfa@gmail.com')
 
     def test_confirmado_payload_format(self):
-        """3. Show CONFIRMADO gera payload com '[Banda] — [Nome]' e detalhes corretos."""
+        """Show CONFIRMADO com início + duração calcula término corretamente."""
         show = Show.objects.create(
             band=self.band,
             title='Festival de Verão',
@@ -99,8 +99,43 @@ class GoogleCalendarTests(TestCase):
         self.assertEqual(payload['start']['dateTime'], '2026-11-20T22:00:00')
         self.assertEqual(payload['end']['dateTime'], '2026-11-21T00:00:00') # 22h + 2 horas
 
+    def test_show_with_start_and_end_time(self):
+        """Show com início e fim definidos usa início/fim sem inventar duração."""
+        show = Show.objects.create(
+            band=self.band,
+            title='Show Com Fim Definido',
+            status=Show.STATUS_CONFIRMADO,
+            date=datetime.date(2026, 11, 20),
+            show_time=datetime.time(20, 0),
+            show_end_time=datetime.time(21, 30),
+            venue='Teatro',
+            city='Salvador/BA'
+        )
+        payload = google_calendar.build_event_payload(show)
+        self.assertEqual(payload['start']['dateTime'], '2026-11-20T20:00:00')
+        self.assertEqual(payload['end']['dateTime'], '2026-11-20T21:30:00')
+
+    def test_show_with_start_time_but_no_end_or_duration_becomes_all_day(self):
+        """Regra 1: Show com início mas sem término nem duração válida vira dia inteiro, sem fallback de 2h."""
+        show = Show.objects.create(
+            band=self.band,
+            title='Show Sem Fim Nem Duração',
+            status=Show.STATUS_CONFIRMADO,
+            date=datetime.date(2026, 11, 20),
+            show_time=datetime.time(21, 0),
+            show_end_time=None,
+            duration='', # Vazio ou não numérico
+            venue='Praça',
+            city='Salvador/BA'
+        )
+        payload = google_calendar.build_event_payload(show)
+        # Deve ser dia inteiro e não ter start.dateTime nem 2 horas inventadas
+        self.assertNotIn('dateTime', payload['start'])
+        self.assertEqual(payload['start']['date'], '2026-11-20')
+        self.assertEqual(payload['end']['date'], '2026-11-21')
+
     def test_reserva_payload_format(self):
-        """4. Show RESERVA (PRE_RESERVADO) gera evento com prefixo 'RESERVA —'."""
+        """Show RESERVA (PRE_RESERVADO) gera evento com prefixo 'RESERVA —' e dia inteiro se sem horário completo."""
         show = Show.objects.create(
             band=self.band,
             title='Show em Negociação',
@@ -116,6 +151,14 @@ class GoogleCalendarTests(TestCase):
         # Sem horário: evento de dia inteiro
         self.assertEqual(payload['start']['date'], '2026-12-10')
         self.assertEqual(payload['end']['date'], '2026-12-11')
+
+    def test_google_scopes_least_privilege(self):
+        """Regra 2: Verifica que os escopos utilizam calendarlist.readonly em vez de calendar.readonly."""
+        self.assertIn('https://www.googleapis.com/auth/calendar.calendarlist.readonly', google_calendar.GOOGLE_SCOPES)
+        self.assertNotIn('https://www.googleapis.com/auth/calendar.readonly', google_calendar.GOOGLE_SCOPES)
+        self.assertIn('https://www.googleapis.com/auth/calendar.events', google_calendar.GOOGLE_SCOPES)
+        self.assertIn('https://www.googleapis.com/auth/userinfo.email', google_calendar.GOOGLE_SCOPES)
+
 
     @patch('core.services.google_calendar.requests.post')
     def test_create_show_syncs_and_saves_google_event_id(self, mock_post):

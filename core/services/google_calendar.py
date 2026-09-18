@@ -18,7 +18,7 @@ GOOGLE_CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
 
 GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/calendar.events",
-    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
     "https://www.googleapis.com/auth/userinfo.email",
 ]
 
@@ -294,33 +294,33 @@ def build_event_payload(show, request=None) -> dict:
 
     description = "\n".join(desc_lines)
 
-    # Definição de data/horário
+    # Definição de data/horário:
+    # 1. Se houver início + fim válidos: usar início/fim com horário definido.
+    # 2. Se houver início + duração válida (> 0): calcular término pela duração.
+    # 3. Se não houver informação suficiente para definir com segurança início e término:
+    #    criar evento de dia inteiro na data do show (sem inventar duração ou horários arbitrários).
     app_timezone = getattr(settings, 'TIME_ZONE', 'America/Sao_Paulo')
     start_payload = {}
     end_payload = {}
 
-    if show.date and show.show_time:
-        # Temos data e início definidos
+    has_valid_end_time = bool(show.date and show.show_time and show.show_end_time)
+    duration_mins = parse_duration_to_minutes(show.duration) if (show.date and show.show_time) else 0
+    has_valid_duration = (duration_mins > 0)
+
+    if show.date and show.show_time and (has_valid_end_time or has_valid_duration):
         start_dt = datetime.combine(show.date, show.show_time)
         start_payload = {
             'dateTime': start_dt.strftime('%Y-%m-%dT%H:%M:%S'),
             'timeZone': app_timezone,
         }
 
-        # Regra de término:
-        # 1. show_end_time se informado
-        # 2. cálculo por duração
-        # 3. padrão de 2 horas caso não haja final nem duração
-        if show.show_end_time:
+        if has_valid_end_time:
             end_date = show.date
-            # Se horário de término for menor que início, assume que virou a madrugada
+            # Se horário de término for menor que início, assume virada de madrugada (+1 dia)
             if show.show_end_time < show.show_time:
                 end_date = show.date + timedelta(days=1)
             end_dt = datetime.combine(end_date, show.show_end_time)
         else:
-            duration_mins = parse_duration_to_minutes(show.duration)
-            if duration_mins <= 0:
-                duration_mins = 120  # Padrão seguro de 2 horas para show com horário definido
             end_dt = start_dt + timedelta(minutes=duration_mins)
 
         end_payload = {
@@ -328,13 +328,13 @@ def build_event_payload(show, request=None) -> dict:
             'timeZone': app_timezone,
         }
     elif show.date:
-        # Dia inteiro
+        # Evento de dia inteiro na data do show (quando não há início + fim nem duração confiáveis)
         start_date_str = show.date.strftime('%Y-%m-%d')
         end_date_str = (show.date + timedelta(days=1)).strftime('%Y-%m-%d')
         start_payload = {'date': start_date_str}
         end_payload = {'date': end_date_str}
     else:
-        # Sem data, dia de hoje como fallback
+        # Fallback para ausência total de data
         today = timezone.localdate()
         start_payload = {'date': today.strftime('%Y-%m-%d')}
         end_payload = {'date': (today + timedelta(days=1)).strftime('%Y-%m-%d')}
