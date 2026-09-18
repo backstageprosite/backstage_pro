@@ -71,6 +71,12 @@ class ShowLogisticsDiffTest(TestCase):
         self.assertEqual(form.fields['loaders_contact'].label, 'Contato dos Carregadores')
         self.assertEqual(form.fields['internal_notes'].label, 'Observações da Produção')
         self.assertEqual(form.fields['band_notes'].label, 'Avisos para a Banda')
+        # Verificar rows de textareas compactos
+        self.assertEqual(form.fields['transport_notes'].widget.attrs.get('rows'), 1)
+        self.assertEqual(form.fields['tech_transport_notes'].widget.attrs.get('rows'), 1)
+        self.assertEqual(form.fields['artist_transport_notes'].widget.attrs.get('rows'), 1)
+        self.assertEqual(form.fields['internal_notes'].widget.attrs.get('rows'), 1)
+        self.assertEqual(form.fields['band_notes'].widget.attrs.get('rows'), 1)
 
     def test_show_pdf_view_rendering(self):
         self.client.login(username="produtor_bp67", password="password123")

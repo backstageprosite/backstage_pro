@@ -394,7 +394,7 @@ class ShowForm(forms.ModelForm):
             'distance_km': forms.TextInput(attrs={'class': 'form-control'}),
             'transport': forms.TextInput(attrs={'class': 'form-control'}),
             'transport_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            'transport_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'transport_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
             'has_air_travel': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_has_air_travel'}),
             'departure_airport': forms.TextInput(attrs={'class': 'form-control'}),
             'arrival_airport': forms.TextInput(attrs={'class': 'form-control'}),
@@ -417,7 +417,7 @@ class ShowForm(forms.ModelForm):
             'tech_distance_km': forms.TextInput(attrs={'class': 'form-control'}),
             'tech_transport': forms.TextInput(attrs={'class': 'form-control'}),
             'tech_transport_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            'tech_transport_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'tech_transport_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
             'tech_has_air_travel': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_tech_has_air_travel'}),
             'tech_departure_airport': forms.TextInput(attrs={'class': 'form-control'}),
             'tech_arrival_airport': forms.TextInput(attrs={'class': 'form-control'}),
@@ -437,7 +437,7 @@ class ShowForm(forms.ModelForm):
             'artist_distance_km': forms.TextInput(attrs={'class': 'form-control'}),
             'artist_transport': forms.TextInput(attrs={'class': 'form-control'}),
             'artist_transport_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
-            'artist_transport_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'artist_transport_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
             'artist_has_air_travel': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_artist_has_air_travel'}),
             'artist_departure_airport': forms.TextInput(attrs={'class': 'form-control'}),
             'artist_arrival_airport': forms.TextInput(attrs={'class': 'form-control'}),
@@ -484,8 +484,8 @@ class ShowForm(forms.ModelForm):
             'loaders_system': forms.TextInput(attrs={'class': 'form-control'}),
             'loaders_contact': forms.TextInput(attrs={'class': 'form-control phone-mask', 'maxlength': '15'}),
             # Observações
-            'internal_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'band_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'internal_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
+            'band_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 1}),
         }
 
 # Formsets para a aba de Anexos

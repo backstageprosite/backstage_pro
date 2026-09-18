@@ -223,22 +223,25 @@
                     
                     <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Localização</h5>
                     <div class="row g-2 mb-3">
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <!-- Linha 1: Cidade e Local do Show -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.city.label }}</label>
                             {{ form.city }}
                             {% if form.city.errors %}<div class="text-danger small mt-1">{{ form.city.errors }}</div>{% endif %}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.venue.label }}</label>
                             {{ form.venue }}
                             {% if form.venue.errors %}<div class="text-danger small mt-1">{{ form.venue.errors }}</div>{% endif %}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+
+                        <!-- Linha 2: Endereço Completo e Link do Local do Show -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.address.label }}</label>
                             {{ form.address }}
                             {% if form.address.errors %}<div class="text-danger small mt-1">{{ form.address.errors }}</div>{% endif %}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.address_link.label }}</label>
                             {{ form.address_link }}
                             {% if form.address_link.errors %}<div class="text-danger small mt-1">{{ form.address_link.errors }}</div>{% endif %}
@@ -702,74 +705,82 @@
                 <!-- ABA TÉCNICA -->
                 <div class="tab-pane fade" id="tecnica" role="tabpanel" aria-labelledby="tecnica-tab">
                     <div class="row g-2">
-                        <!-- Linha 1: Produção Local & Som -->
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <!-- Linha 1: Produção Local -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.local_production.label }}</label>
                             {{ form.local_production }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.local_production_contact.label }}</label>
                             {{ form.local_production_contact }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+
+                        <!-- Linha 2: Som -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.sound_system.label }}</label>
                             {{ form.sound_system }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.sound_contact.label }}</label>
                             {{ form.sound_contact }}
                         </div>
 
-                        <!-- Linha 2: Luz & LED -->
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <!-- Linha 3: Luz -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.lighting_system.label }}</label>
                             {{ form.lighting_system }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.lighting_contact.label }}</label>
                             {{ form.lighting_contact }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+
+                        <!-- Linha 4: LED -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.led_system.label }}</label>
                             {{ form.led_system }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.led_contact.label }}</label>
                             {{ form.led_contact }}
                         </div>
 
-                        <!-- Linha 3: Backline & Pirotecnia -->
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <!-- Linha 5: Backline -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.backline.label }}</label>
                             {{ form.backline }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.backline_contact.label }}</label>
                             {{ form.backline_contact }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+
+                        <!-- Linha 6: Pirotecnia -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.pyrotechnics.label }}</label>
                             {{ form.pyrotechnics }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.pyrotechnics_contact.label }}</label>
                             {{ form.pyrotechnics_contact }}
                         </div>
 
-                        <!-- Linha 4: Gerador & Carregadores -->
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <!-- Linha 7: Gerador -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.generator_system.label }}</label>
                             {{ form.generator_system }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.generator_contact.label }}</label>
                             {{ form.generator_contact }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+
+                        <!-- Linha 8: Carregadores -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.loaders_system.label }}</label>
                             {{ form.loaders_system }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.loaders_contact.label }}</label>
                             {{ form.loaders_contact }}
                         </div>
@@ -783,26 +794,29 @@
                         <i class="fa-solid fa-lock me-2"></i> Apenas produtores possuem acesso a essas informações
                     </div>
                     <div class="row g-2">
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <!-- Linha 1: Contratante e Contato -->
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.contractor_name.label }}</label>
                             {{ form.contractor_name }}
                         </div>
-                        <div class="col-12 col-md-6 col-xl-3">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.contractor_phone.label }}</label>
                             {{ form.contractor_phone }}
                         </div>
-                        <div class="col-12 col-md-4 col-xl-2">
+
+                        <!-- Linha 2: Tipo de Contratação, Valor do Cachê e Status -->
+                        <div class="col-12 col-md-4">
                             <label class="form-label">{{ form.contract_type.label }}</label>
                             {{ form.contract_type }}
                         </div>
-                        <div class="col-12 col-md-4 col-xl-2">
+                        <div class="col-12 col-md-4">
                             <label class="form-label">{{ form.fee.label }}</label>
                             <div class="input-group">
                                 <span class="input-group-text" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">R$</span>
                                 {{ form.fee }}
                             </div>
                         </div>
-                        <div class="col-12 col-md-4 col-xl-2">
+                        <div class="col-12 col-md-4">
                             <label class="form-label">{{ form.payment_status.label }}</label>
                             {{ form.payment_status }}
                         </div>
