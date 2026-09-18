@@ -223,11 +223,11 @@
                                         <form method="post" action="{% url 'google_calendar_sync_now' band.slug %}" class="d-inline m-0 p-0">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-outline-primary fw-bold btn-subaction" title="Sincronizar shows existentes com o Google Calendar">
-                                                <i class="fa-solid fa-rotate me-1"></i> Sincronizar agora
+                                                <i class="fa-solid fa-rotate me-1"></i> Sincronizar
                                             </button>
                                         </form>
                                         <a href="{% url 'google_calendar_select' band.slug %}" class="btn btn-outline-secondary fw-bold btn-subaction" title="Alterar o calendário selecionado">
-                                            <i class="fa-solid fa-calendar-days me-1"></i> Alterar calendário
+                                            <i class="fa-solid fa-calendar-days me-1"></i> Alterar
                                         </a>
                                         <button type="button" class="btn btn-outline-danger fw-bold btn-subaction" data-bs-toggle="modal" data-bs-target="#modalDesconectarGoogleCalendar">
                                             <i class="fa-solid fa-link-slash me-1"></i> Desconectar

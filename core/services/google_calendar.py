@@ -241,17 +241,17 @@ def parse_duration_to_minutes(duration_str: str) -> int:
 
 def build_event_payload(show, request=None) -> dict:
     """
-    Monta o payload JSON do evento para a API do Google Calendar segundo as regras da BP-PEND-48:
+    Monta o payload JSON do evento para a API do Google Calendar segundo a regra definitiva da BP-PEND-48:
+    - TODO show vira evento de DIA INTEIRO no Google Calendar;
+    - data do evento é SEMPRE Show.date (data oficial/operacional do show);
+    - início: {'date': 'YYYY-MM-DD'};
+    - fim: {'date': 'YYYY-MM-DD' + 1 dia} (exigência do Google para dia inteiro);
+    - NUNCA enviar start.dateTime, end.dateTime ou timeZone;
+    - horários reais do show (e duração, se aplicável) são exibidos EXCLUSIVAMENTE na Descrição;
+    - sem lembretes: useDefault=False, overrides=[];
     - CONFIRMADO: [Nome da Banda] — [Nome do Show]
     - RESERVA: RESERVA — [Nome da Banda] — [Nome do Show]
-    - Caso A (Início + Final): start.dateTime e end.dateTime (com virada de dia se final < início)
-    - Caso B (Início + Duração): start.dateTime e end.dateTime calculado pela duração exata cadastrada
-    - Caso C (Dia Inteiro): start.date e end.date (apenas quando não houver horário/término suficiente)
-    - Lembretes:
-      * Com horário: useDefault=False, overrides=[popup 60 min]
-      * Dia inteiro: useDefault=False, overrides=[] (sem lembretes)
     - Local: [Local do Show] — [Endereço Completo] — [Cidade] (omitindo partes vazias).
-    - Descrição: Apenas dados operacionais públicos (Status, Cidade, Local, link Backstage Pro).
     """
     band = show.band
     band_name = band.name if band else ''
@@ -284,6 +284,21 @@ def build_event_payload(show, request=None) -> dict:
     desc_lines = [
         f"Status: {status_label}",
     ]
+
+    # Regras de exibição de horário na descrição:
+    # Caso A: início + final -> Horário do Show: HH:MM às HH:MM
+    # Caso B: somente início (sem final nem duração) -> Horário do Show: HH:MM
+    # Caso C: início + duração -> Horário do Show: HH:MM \n Duração: <duração>
+    # Caso D: sem horário -> nenhuma linha de horário
+    if show.show_time and show.show_end_time:
+        desc_lines.append(f"Horário do Show: {show.show_time.strftime('%H:%M')} às {show.show_end_time.strftime('%H:%M')}")
+    elif show.show_time:
+        desc_lines.append(f"Horário do Show: {show.show_time.strftime('%H:%M')}")
+        if show.duration:
+            desc_lines.append(f"Duração: {show.duration.strip()}")
+    elif show.duration:
+        desc_lines.append(f"Duração: {show.duration.strip()}")
+
     if show.city:
         desc_lines.append(f"Cidade: {show.city.strip()}")
     if show.venue:
@@ -306,80 +321,19 @@ def build_event_payload(show, request=None) -> dict:
 
     description = "\n".join(desc_lines)
 
-    app_timezone = getattr(settings, 'TIME_ZONE', 'America/Sao_Paulo')
-    start_payload = {}
-    end_payload = {}
+    # Evento de DIA INTEIRO sempre ancorado em Show.date
+    show_date = show.date or timezone.localdate()
+    start_date_str = show_date.strftime('%Y-%m-%d')
+    end_date_str = (show_date + timedelta(days=1)).strftime('%Y-%m-%d')
 
-    has_show_time = bool(show.date and show.show_time)
-    has_valid_end_time = bool(has_show_time and show.show_end_time)
-    duration_mins = parse_duration_to_minutes(show.duration) if has_show_time else 0
-    has_valid_duration = (duration_mins > 0)
+    start_payload = {'date': start_date_str}
+    end_payload = {'date': end_date_str}
 
-    # ORDEM DE PRIORIDADE OFICIAL DO BACKSTAGE PRO:
-    # 1. Show Início + Show Final -> usar início/final (com virada de dia se final < início)
-    # 2. Show Início + Duração válida -> calcular término pela duração cadastrada
-    # 3. Somente Show Início (sem final nem duração) -> usar duração padrão oficial de 2 horas
-    # 4. Sem Show Início -> evento de dia inteiro na data do show
-    if has_show_time:
-        start_dt = datetime.combine(show.date, show.show_time)
-
-        if has_valid_end_time:
-            # 1. Início + Final
-            end_date = show.date
-            if show.show_end_time < show.show_time:
-                end_date = show.date + timedelta(days=1)
-            end_dt = datetime.combine(end_date, show.show_end_time)
-        elif has_valid_duration:
-            # 2. Início + Duração cadastrada
-            end_dt = start_dt + timedelta(minutes=duration_mins)
-        else:
-            # 3. Somente Show Início -> Regra oficial do produto: 2 horas padrão
-            end_dt = start_dt + timedelta(hours=2)
-
-        start_payload = {
-            'dateTime': start_dt.strftime('%Y-%m-%dT%H:%M:%S'),
-            'timeZone': app_timezone,
-        }
-        end_payload = {
-            'dateTime': end_dt.strftime('%Y-%m-%dT%H:%M:%S'),
-            'timeZone': app_timezone,
-        }
-
-        reminders_payload = {
-            'useDefault': False,
-            'overrides': [
-                {'method': 'popup', 'minutes': 60}
-            ]
-        }
-    elif show.date:
-        # 4. Sem Show Início: Evento de dia inteiro na data do show
-        start_date_str = show.date.strftime('%Y-%m-%d')
-        end_date_str = (show.date + timedelta(days=1)).strftime('%Y-%m-%d')
-        start_payload = {
-            'date': start_date_str,
-        }
-        end_payload = {
-            'date': end_date_str,
-        }
-
-        reminders_payload = {
-            'useDefault': False,
-            'overrides': []
-        }
-    else:
-        # Fallback para ausência total de data
-        today = timezone.localdate()
-        start_payload = {
-            'date': today.strftime('%Y-%m-%d'),
-        }
-        end_payload = {
-            'date': (today + timedelta(days=1)).strftime('%Y-%m-%d'),
-        }
-
-        reminders_payload = {
-            'useDefault': False,
-            'overrides': []
-        }
+    # Desativa lembretes para eventos de dia inteiro conforme especificação
+    reminders_payload = {
+        'useDefault': False,
+        'overrides': []
+    }
 
     payload = {
         'summary': summary,
@@ -451,6 +405,7 @@ def sync_show_to_google_calendar(show, request=None) -> bool:
     """
     Sincroniza um único show com o Google Calendar da banda correspondente.
     Trata regras de CONFIRMADO, RESERVA, CANCELADO e DESISTÊNCIA.
+    Atualiza eventos existentes usando PUT (events.update) para substituição completa e segura.
     Falhas na API do Google NUNCA quebram a execução local nem o salvamento do Show.
     """
     if not show or not show.band_id:
@@ -491,10 +446,10 @@ def sync_show_to_google_calendar(show, request=None) -> bool:
         payload = build_event_payload(show, request=request)
 
         if show.google_calendar_event_id:
-            # Já possui evento remoto: Atualiza (PATCH ou PUT)
+            # Já possui evento remoto: Atualização completa via PUT (events.update)
             event_id = show.google_calendar_event_id
             url = f"{GOOGLE_CALENDAR_API_BASE}/calendars/{urllib.parse.quote(calendar_id)}/events/{urllib.parse.quote(event_id)}"
-            resp = requests.patch(url, json=payload, headers=headers, timeout=15)
+            resp = requests.put(url, json=payload, headers=headers, timeout=15)
 
             if resp.status_code in [200, 201]:
                 return True
@@ -527,9 +482,9 @@ def sync_show_to_google_calendar(show, request=None) -> bool:
 
 def sync_band_calendar(band, request=None) -> dict:
     """
-    Executa a sincronização manual 'Sincronizar agora' de todos os shows da banda.
-    - CONFIRMADOS: criar/atualizar
-    - RESERVAS: criar/atualizar
+    Executa a sincronização manual 'Sincronizar' de todos os shows da banda.
+    - CONFIRMADOS: criar/atualizar (via PUT)
+    - RESERVAS: criar/atualizar (via PUT)
     - CANCELADOS com referência remota: remover do Google
     Retorna dicionário com contadores de sucessos e falhas.
     Registra diagnóstico detalhado de cada falha e preenche last_error_message se houver erros.
@@ -573,7 +528,7 @@ def sync_band_calendar(band, request=None) -> dict:
                 if show.google_calendar_event_id:
                     event_id = show.google_calendar_event_id
                     url = f"{GOOGLE_CALENDAR_API_BASE}/calendars/{urllib.parse.quote(calendar_id)}/events/{urllib.parse.quote(event_id)}"
-                    resp = requests.patch(url, json=payload, headers=headers, timeout=15)
+                    resp = requests.put(url, json=payload, headers=headers, timeout=15)
                     if resp.status_code in [200, 201]:
                         updated_count += 1
                     elif resp.status_code == 404:

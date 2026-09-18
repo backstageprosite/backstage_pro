@@ -78,32 +78,34 @@ class GoogleCalendarTests(TestCase):
         self.assertContains(resp_config, 'Google Calendar')
         self.assertContains(resp_config, 'banda.alfa@gmail.com')
 
-    def test_confirmado_payload_format(self):
-        """Show CONFIRMADO com início + duração calcula término corretamente e define lembrete popup de 60 min."""
+    def test_teste_a_show_com_horario_inicio_e_final(self):
+        """Teste A — Show com horário (24/10/2026, início 03:00, fim 05:00):
+        evento de dia inteiro ancorado em 24/10/2026, horário exibido na descrição, sem dateTime, sem lembretes."""
         show = Show.objects.create(
             band=self.band,
-            title='Festival de Verão',
+            title='Festival da Madrugada',
             status=Show.STATUS_CONFIRMADO,
-            date=datetime.date(2026, 11, 20),
-            show_time=datetime.time(22, 0),
-            venue='Arena Fonte Nova',
-            city='Salvador/BA',
-            duration='2 horas'
+            date=datetime.date(2026, 10, 24),
+            show_time=datetime.time(3, 0),
+            show_end_time=datetime.time(5, 0),
+            venue='Palco Principal',
+            city='Salvador/BA'
         )
         payload = google_calendar.build_event_payload(show)
-        self.assertEqual(payload['summary'], 'Banda Alfa — Festival de Verão')
-        self.assertIn('Status: Confirmado', payload['description'])
-        self.assertIn('Cidade: Salvador/BA', payload['description'])
-        self.assertIn('Local: Arena Fonte Nova', payload['description'])
-        self.assertNotIn('R$', payload['description'])  # Não exibe financeiro
-        self.assertEqual(payload['start']['dateTime'], '2026-11-20T22:00:00')
-        self.assertEqual(payload['end']['dateTime'], '2026-11-21T00:00:00')  # 22h + 2 horas
-        # Lembrete
+        self.assertEqual(payload['start'], {'date': '2026-10-24'})
+        self.assertEqual(payload['end'], {'date': '2026-10-25'})
+        self.assertNotIn('dateTime', payload['start'])
+        self.assertNotIn('dateTime', payload['end'])
+        self.assertNotIn('timeZone', payload['start'])
+        self.assertNotIn('timeZone', payload['end'])
+        self.assertIn('Horário do Show: 03:00 às 05:00', payload['description'])
+        self.assertNotIn('Duração:', payload['description'])
         self.assertFalse(payload['reminders']['useDefault'])
-        self.assertEqual(payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
+        self.assertEqual(payload['reminders']['overrides'], [])
 
-    def test_teste_a_somente_inicio(self):
-        """Teste A — somente início: 27/09/2026 22:00 -> 22:00 às 00:00 do dia seguinte (2h padrão, não dia inteiro)."""
+    def test_teste_b_somente_inicio(self):
+        """Teste B — Show com somente início (27/09/2026, início 22:00):
+        evento de dia inteiro em 27/09/2026, Horário do Show: 22:00 na descrição, sem dateTime."""
         show = Show.objects.create(
             band=self.band,
             title='Show Somente Início',
@@ -114,81 +116,44 @@ class GoogleCalendarTests(TestCase):
             duration=''
         )
         payload = google_calendar.build_event_payload(show)
-        self.assertNotIn('date', payload['start'])
-        self.assertEqual(payload['start']['dateTime'], '2026-09-27T22:00:00')
-        self.assertEqual(payload['end']['dateTime'], '2026-09-28T00:00:00')
+        self.assertEqual(payload['start'], {'date': '2026-09-27'})
+        self.assertEqual(payload['end'], {'date': '2026-09-28'})
+        self.assertNotIn('dateTime', payload['start'])
+        self.assertNotIn('dateTime', payload['end'])
+        self.assertIn('Horário do Show: 22:00', payload['description'])
+        self.assertNotIn('Duração:', payload['description'])
         self.assertFalse(payload['reminders']['useDefault'])
-        self.assertEqual(payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
+        self.assertEqual(payload['reminders']['overrides'], [])
 
-    def test_teste_b_inicio_e_final(self):
-        """Teste B — início + final: 20/09/2026 18:00 às 19:30 -> 18:00 às 19:30."""
+    def test_teste_c_reserva_com_horario(self):
+        """Teste C — RESERVA com horário:
+        evento de dia inteiro na data do show, prefixo RESERVA —, horário apenas na descrição."""
         show = Show.objects.create(
             band=self.band,
-            title='Show Início e Final',
-            status=Show.STATUS_CONFIRMADO,
-            date=datetime.date(2026, 9, 20),
-            show_time=datetime.time(18, 0),
-            show_end_time=datetime.time(19, 30)
-        )
-        payload = google_calendar.build_event_payload(show)
-        self.assertEqual(payload['start']['dateTime'], '2026-09-20T18:00:00')
-        self.assertEqual(payload['end']['dateTime'], '2026-09-20T19:30:00')
-        self.assertFalse(payload['reminders']['useDefault'])
-        self.assertEqual(payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
-
-    def test_teste_c_inicio_e_duracao(self):
-        """Teste C — início + duração: 20:00 + 01:30 -> 20:00 às 21:30."""
-        show = Show.objects.create(
-            band=self.band,
-            title='Show Acústico',
-            status=Show.STATUS_CONFIRMADO,
-            date=datetime.date(2026, 9, 20),
-            show_time=datetime.time(20, 0),
-            duration='01:30'
-        )
-        payload = google_calendar.build_event_payload(show)
-        self.assertEqual(payload['start']['dateTime'], '2026-09-20T20:00:00')
-        self.assertEqual(payload['end']['dateTime'], '2026-09-20T21:30:00')
-        self.assertFalse(payload['reminders']['useDefault'])
-        self.assertEqual(payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
-
-    def test_teste_d_virada_de_dia(self):
-        """Teste D — virada de dia: Início 22:00 e Final 00:30 -> Início 20/09 e Fim 21/09."""
-        show = Show.objects.create(
-            band=self.band,
-            title='Baile da Madrugada',
-            status=Show.STATUS_CONFIRMADO,
-            date=datetime.date(2026, 9, 20),
-            show_time=datetime.time(22, 0),
-            show_end_time=datetime.time(0, 30)
-        )
-        payload = google_calendar.build_event_payload(show)
-        self.assertEqual(payload['start']['dateTime'], '2026-09-20T22:00:00')
-        self.assertEqual(payload['end']['dateTime'], '2026-09-21T00:30:00')
-
-    def test_teste_e_reserva_somente_com_inicio(self):
-        """Teste E — RESERVA somente com início: PRE_RESERVADO 22:00 -> prefixo RESERVA, 2h padrão, popup 60m."""
-        show = Show.objects.create(
-            band=self.band,
-            title='Show Reserva Teste',
+            title='Show Reservado',
             status=Show.STATUS_PRE_RESERVADO,
             date=datetime.date(2026, 10, 10),
             show_time=datetime.time(22, 0),
-            show_end_time=None,
-            duration=''
+            duration='02:00'
         )
         payload = google_calendar.build_event_payload(show)
         self.assertTrue(payload['summary'].startswith('RESERVA —'))
-        self.assertEqual(payload['start']['dateTime'], '2026-10-10T22:00:00')
-        self.assertEqual(payload['end']['dateTime'], '2026-10-11T00:00:00')
+        self.assertEqual(payload['start'], {'date': '2026-10-10'})
+        self.assertEqual(payload['end'], {'date': '2026-10-11'})
+        self.assertNotIn('dateTime', payload['start'])
+        self.assertNotIn('dateTime', payload['end'])
+        self.assertIn('Status: Reserva', payload['description'])
+        self.assertIn('Horário do Show: 22:00', payload['description'])
+        self.assertIn('Duração: 02:00', payload['description'])
         self.assertFalse(payload['reminders']['useDefault'])
-        self.assertEqual(payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
+        self.assertEqual(payload['reminders']['overrides'], [])
 
-    def test_teste_f_sem_inicio_dia_inteiro(self):
-        """Teste F — sem início: evento de dia inteiro, sem lembrete."""
+    def test_teste_d_sem_horario(self):
+        """Teste D — Show sem horário:
+        evento de dia inteiro, nenhuma linha de horário na descrição, sem lembretes."""
         show = Show.objects.create(
             band=self.band,
-            title='Show Data Confirmada Sem Horário',
+            title='Show Sem Horário',
             status=Show.STATUS_CONFIRMADO,
             date=datetime.date(2026, 11, 20),
             show_time=None,
@@ -196,50 +161,86 @@ class GoogleCalendarTests(TestCase):
             duration=''
         )
         payload = google_calendar.build_event_payload(show)
+        self.assertEqual(payload['start'], {'date': '2026-11-20'})
+        self.assertEqual(payload['end'], {'date': '2026-11-21'})
         self.assertNotIn('dateTime', payload['start'])
         self.assertNotIn('dateTime', payload['end'])
-        self.assertEqual(payload['start']['date'], '2026-11-20')
-        self.assertEqual(payload['end']['date'], '2026-11-21')
+        self.assertNotIn('Horário do Show', payload['description'])
+        self.assertNotIn('Duração', payload['description'])
         self.assertFalse(payload['reminders']['useDefault'])
         self.assertEqual(payload['reminders']['overrides'], [])
 
-    @patch('core.services.google_calendar.requests.patch')
-    def test_teste_g_conversao_dia_inteiro_para_horario(self, mock_patch):
-        """Teste G — conversão dia inteiro -> horário: mesmo event ID, passa para horário 22h-00h sem duplicar."""
+    @patch('core.services.google_calendar.requests.put')
+    def test_teste_e_atualizacao_evento_remoto_antigo(self, mock_put):
+        """Teste E — Atualização de evento remoto existente (substitui com PUT, preserva ID, converte para dia inteiro)."""
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        mock_resp.json.return_value = {'id': 'google_evt_conv_123'}
-        mock_patch.return_value = mock_resp
+        mock_resp.json.return_value = {'id': 'google_evt_existing_777'}
+        mock_put.return_value = mock_resp
 
-        # Show antes como dia inteiro
         show = Show.objects.create(
             band=self.band,
-            title='Show Itanagra',
+            title='Show Antigo Com DateTime',
             status=Show.STATUS_CONFIRMADO,
             date=datetime.date(2026, 9, 27),
-            show_time=None,
-            google_calendar_event_id='google_evt_conv_123'
+            show_time=datetime.time(22, 0),
+            google_calendar_event_id='google_evt_existing_777'
         )
-
-        # Atualiza para Show Início 22:00
-        show.show_time = datetime.time(22, 0)
-        show.save()
 
         success = google_calendar.sync_show_to_google_calendar(show)
         self.assertTrue(success)
-        self.assertTrue(mock_patch.called)
+        self.assertTrue(mock_put.called)
 
-        called_url, called_kwargs = mock_patch.call_args
-        self.assertIn('google_evt_conv_123', called_url[0])
-        sent_payload = called_kwargs.get('json')
-        self.assertEqual(sent_payload['start']['dateTime'], '2026-09-27T22:00:00')
-        self.assertEqual(sent_payload['end']['dateTime'], '2026-09-28T00:00:00')
-        self.assertNotIn('date', sent_payload['start'])
-        self.assertNotIn('date', sent_payload['end'])
-        self.assertEqual(sent_payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
-        # Mantém mesmo event_id
+        called_url, called_kwargs = mock_put.call_args
+        self.assertIn('google_evt_existing_777', called_url[0])
+        payload = called_kwargs.get('json')
+        self.assertEqual(payload['start'], {'date': '2026-09-27'})
+        self.assertEqual(payload['end'], {'date': '2026-09-28'})
+        self.assertNotIn('dateTime', payload['start'])
+        self.assertNotIn('dateTime', payload['end'])
+        self.assertIn('Horário do Show: 22:00', payload['description'])
+        self.assertEqual(payload['reminders']['overrides'], [])
+
         show.refresh_from_db()
-        self.assertEqual(show.google_calendar_event_id, 'google_evt_conv_123')
+        self.assertEqual(show.google_calendar_event_id, 'google_evt_existing_777')
+
+    @patch('core.services.google_calendar.requests.put')
+    @patch('core.services.google_calendar.requests.post')
+    def test_teste_f_nao_duplicacao_apos_sincronizacao(self, mock_post, mock_put):
+        """Teste F — Não duplicação: primeira sincronização faz POST e salva ID; segunda faz PUT usando o mesmo ID."""
+        post_resp = MagicMock()
+        post_resp.status_code = 200
+        post_resp.json.return_value = {'id': 'google_first_created_id'}
+        mock_post.return_value = post_resp
+
+        put_resp = MagicMock()
+        put_resp.status_code = 200
+        put_resp.json.return_value = {'id': 'google_first_created_id'}
+        mock_put.return_value = put_resp
+
+        show = Show.objects.create(
+            band=self.band,
+            title='Show Teste Duplicação',
+            status=Show.STATUS_CONFIRMADO,
+            date=datetime.date(2026, 10, 15),
+            show_time=datetime.time(21, 0)
+        )
+
+        # 1ª Sincronização -> POST
+        self.assertTrue(google_calendar.sync_show_to_google_calendar(show))
+        self.assertEqual(mock_post.call_count, 1)
+        self.assertEqual(mock_put.call_count, 0)
+        show.refresh_from_db()
+        self.assertEqual(show.google_calendar_event_id, 'google_first_created_id')
+
+        # 2ª Sincronização -> PUT no mesmo ID
+        self.assertTrue(google_calendar.sync_show_to_google_calendar(show))
+        self.assertEqual(mock_post.call_count, 1)  # não chamou post de novo
+        self.assertEqual(mock_put.call_count, 1)  # chamou put
+        called_url = mock_put.call_args[0][0]
+        self.assertIn('google_first_created_id', called_url)
+        show.refresh_from_db()
+        self.assertEqual(show.google_calendar_event_id, 'google_first_created_id')
 
     def test_google_scopes_least_privilege(self):
         """Regra 2: Verifica que os escopos utilizam calendarlist.readonly em vez de calendar.readonly."""
@@ -269,13 +270,13 @@ class GoogleCalendarTests(TestCase):
         show.refresh_from_db()
         self.assertEqual(show.google_calendar_event_id, 'google_evt_xyz999')
 
-    @patch('core.services.google_calendar.requests.patch')
-    def test_edit_show_updates_same_google_event_id(self, mock_patch):
+    @patch('core.services.google_calendar.requests.put')
+    def test_edit_show_updates_same_google_event_id(self, mock_put):
         """5. Edição atualiza o mesmo evento remoto sem recriar ID."""
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.json.return_value = {'id': 'google_evt_xyz999'}
-        mock_patch.return_value = mock_resp
+        mock_put.return_value = mock_resp
 
         show = Show.objects.create(
             band=self.band,
@@ -290,9 +291,9 @@ class GoogleCalendarTests(TestCase):
         success = google_calendar.sync_show_to_google_calendar(show)
         self.assertTrue(success)
 
-        # Validar que chamou patch na URL com o event_id existente
-        self.assertTrue(mock_patch.called)
-        called_url = mock_patch.call_args[0][0]
+        # Validar que chamou put na URL com o event_id existente
+        self.assertTrue(mock_put.called)
+        called_url = mock_put.call_args[0][0]
         self.assertIn('google_evt_xyz999', called_url)
 
     @patch('core.services.google_calendar.requests.delete')
