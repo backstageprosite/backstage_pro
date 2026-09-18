@@ -323,3 +323,69 @@ class GoogleCalendarTests(TestCase):
         resp = self.client.post(url_alfa)
         # band_required bloqueia com 403 por não pertencer à Banda Alfa
         self.assertEqual(resp.status_code, 403)
+
+    @patch('core.services.google_calendar.requests.post')
+    def test_sync_band_calendar_handles_http_400_and_logs_diagnostics(self, mock_post):
+        """Simula resposta Google HTTP 400: contabiliza erro, continua o lote e preenche last_error_message sem vazar tokens."""
+        # 2 shows: 1 vai falhar com 400 e o outro vai ter sucesso 200
+        show_erro = Show.objects.create(
+            band=self.band,
+            title='Show Com Erro',
+            status=Show.STATUS_CONFIRMADO,
+            date=datetime.date(2026, 9, 27),
+            show_time=datetime.time(22, 0)
+        )
+        show_ok = Show.objects.create(
+            band=self.band,
+            title='Show Bem Sucedido',
+            status=Show.STATUS_CONFIRMADO,
+            date=datetime.date(2026, 9, 28),
+            show_time=datetime.time(20, 0)
+        )
+
+        resp_400 = MagicMock()
+        resp_400.status_code = 400
+        resp_400.text = '{"error": {"code": 400, "message": "Invalid conference data", "errors": [{"reason": "invalid"}]}}'
+        resp_400.json.return_value = {
+            "error": {
+                "code": 400,
+                "message": "Invalid conference data",
+                "errors": [{"reason": "invalid"}]
+            }
+        }
+
+        resp_200 = MagicMock()
+        resp_200.status_code = 200
+        resp_200.json.return_value = {"id": "google_ok_777"}
+
+        mock_post.side_effect = [resp_400, resp_200]
+
+        with self.assertLogs('core.services.google_calendar', level='ERROR') as cm:
+            stats = google_calendar.sync_band_calendar(self.band)
+
+        # 1. Confirma contagem de erro e criação
+        self.assertEqual(stats['errors'], 1)
+        self.assertEqual(stats['created'], 1)
+
+        # 2. Confirma que o lote continuou e salvou o show_ok
+        show_ok.refresh_from_db()
+        self.assertEqual(show_ok.google_calendar_event_id, 'google_ok_777')
+
+        # 3. Confirma preenchimento sanitizado de last_error_message
+        self.integration.refresh_from_db()
+        self.assertIn(f"Show {show_erro.id}", self.integration.last_error_message)
+        self.assertIn("HTTP 400", self.integration.last_error_message)
+        self.assertIn("Invalid conference data", self.integration.last_error_message)
+
+        # 4. Confirma que tokens e segredos não vazam nem no log nem no last_error_message
+        access_token = self.integration.get_access_token()
+        refresh_token = self.integration.get_refresh_token()
+        self.assertNotIn(access_token, self.integration.last_error_message)
+        self.assertNotIn(refresh_token, self.integration.last_error_message)
+
+        log_output = "\n".join(cm.output)
+        self.assertIn("Google Calendar sync failed", log_output)
+        self.assertIn(f"show_id={show_erro.id}", log_output)
+        self.assertIn("status=400", log_output)
+        self.assertNotIn(access_token, log_output)
+        self.assertNotIn(refresh_token, log_output)

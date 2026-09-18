@@ -394,6 +394,55 @@ def build_event_payload(show, request=None) -> dict:
     return payload
 
 
+def _parse_and_log_google_error(band, show, operation: str, event_id: str, resp=None, exc=None) -> str:
+    """
+    Registra com logger.error uma falha de sincronização com o Google Calendar em formato estruturado.
+    Garante que NENHUM dado sensível (tokens, segredos, headers de autorização) seja logado.
+    Retorna uma mensagem de erro sanitizada e resumida para exibição em last_error_message.
+    """
+    band_id = band.id if band else None
+    band_name = band.name if band else 'N/A'
+    show_id = show.id if show else None
+    show_title = (show.title or show.event_name or 'Sem título') if show else 'N/A'
+    show_status = show.status if show else 'N/A'
+    evt_id_str = event_id or 'N/A'
+
+    status_code = getattr(resp, 'status_code', None) if resp else 'N/A'
+    reason = ''
+    message = ''
+    raw_body = ''
+    if resp is not None:
+        try:
+            raw_body = getattr(resp, 'text', '') or ''
+            data = resp.json()
+            err = data.get('error', {})
+            message = err.get('message', '')
+            errors_list = err.get('errors', [])
+            if errors_list and isinstance(errors_list, list) and isinstance(errors_list[0], dict):
+                reason = errors_list[0].get('reason', '')
+        except Exception:
+            pass
+
+    sanitized_body = raw_body[:300].replace('\n', ' ').strip()
+    error_detail = message or reason or sanitized_body or (str(exc) if exc else f"HTTP {status_code}")
+
+    # Log estruturado e seguro
+    logger.error(
+        f"Google Calendar sync failed | band_id={band_id} | band_name={band_name} | "
+        f"show_id={show_id} | show_title={show_title} | show_status={show_status} | "
+        f"operation={operation} | event_id={evt_id_str} | status={status_code} | "
+        f"reason={reason or 'N/A'} | detail={error_detail}"
+    )
+
+    # Mensagem sanitizada para last_error_message
+    if status_code != 'N/A':
+        return f"Show {show_id} ({show_title}): HTTP {status_code} - {error_detail[:120]}"
+    elif exc:
+        return f"Show {show_id} ({show_title}): {str(exc)[:120]}"
+    else:
+        return f"Show {show_id} ({show_title}): Falha na operação {operation}"
+
+
 # ==============================================================================
 # SINCRONIZAÇÃO DE SHOWS COM O GOOGLE CALENDAR
 # ==============================================================================
@@ -435,7 +484,7 @@ def sync_show_to_google_calendar(show, request=None) -> bool:
                     show.save(update_fields=['google_calendar_event_id'])
                     return True
                 else:
-                    logger.warning(f"Erro ao remover evento {event_id} do Google Calendar: {resp.status_code} - {resp.text}")
+                    _parse_and_log_google_error(show.band, show, 'DELETE', event_id, resp=resp)
             return True
 
         # Regra para CONFIRMADO e RESERVA (PRE_RESERVADO):
@@ -453,7 +502,7 @@ def sync_show_to_google_calendar(show, request=None) -> bool:
                 # Evento não existe mais no Google (pode ter sido apagado manualmente lá): recria
                 show.google_calendar_event_id = None
             else:
-                logger.error(f"Erro ao atualizar evento Google {event_id}: {resp.status_code} - {resp.text}")
+                _parse_and_log_google_error(show.band, show, 'UPDATE', event_id, resp=resp)
                 return False
 
         # Se não tiver event_id ou se foi recriado após 404:
@@ -468,11 +517,11 @@ def sync_show_to_google_calendar(show, request=None) -> bool:
                 show.save(update_fields=['google_calendar_event_id'])
             return True
         else:
-            logger.error(f"Erro ao criar evento no Google Calendar: {resp.status_code} - {resp.text}")
+            _parse_and_log_google_error(show.band, show, 'CREATE', '', resp=resp)
             return False
 
     except Exception as e:
-        logger.error(f"Exceção silenciosa em sync_show_to_google_calendar para Show {show.id}: {e}")
+        _parse_and_log_google_error(show.band, show, 'SYNC_EXCEPTION', show.google_calendar_event_id, exc=e)
         return False
 
 
@@ -483,6 +532,7 @@ def sync_band_calendar(band, request=None) -> dict:
     - RESERVAS: criar/atualizar
     - CANCELADOS com referência remota: remover do Google
     Retorna dicionário com contadores de sucessos e falhas.
+    Registra diagnóstico detalhado de cada falha e preenche last_error_message se houver erros.
     """
     from core.models import GoogleCalendarIntegration, Show
     integration = GoogleCalendarIntegration.objects.filter(band=band).first()
@@ -501,6 +551,7 @@ def sync_band_calendar(band, request=None) -> dict:
     updated_count = 0
     deleted_count = 0
     error_count = 0
+    last_error_str = ""
 
     for show in shows:
         try:
@@ -514,6 +565,7 @@ def sync_band_calendar(band, request=None) -> dict:
                         show.save(update_fields=['google_calendar_event_id'])
                         deleted_count += 1
                     else:
+                        last_error_str = _parse_and_log_google_error(band, show, 'DELETE', event_id, resp=resp)
                         error_count += 1
             else:
                 # CONFIRMADO ou PRE_RESERVADO
@@ -533,8 +585,10 @@ def sync_band_calendar(band, request=None) -> dict:
                             show.save(update_fields=['google_calendar_event_id'])
                             updated_count += 1
                         else:
+                            last_error_str = _parse_and_log_google_error(band, show, 'CREATE_AFTER_404', event_id, resp=c_resp)
                             error_count += 1
                     else:
+                        last_error_str = _parse_and_log_google_error(band, show, 'UPDATE', event_id, resp=resp)
                         error_count += 1
                 else:
                     create_url = f"{GOOGLE_CALENDAR_API_BASE}/calendars/{urllib.parse.quote(calendar_id)}/events"
@@ -544,14 +598,18 @@ def sync_band_calendar(band, request=None) -> dict:
                         show.save(update_fields=['google_calendar_event_id'])
                         created_count += 1
                     else:
+                        last_error_str = _parse_and_log_google_error(band, show, 'CREATE', '', resp=c_resp)
                         error_count += 1
         except Exception as e:
-            logger.error(f"Erro ao sincronizar show {show.id} no Google Calendar: {e}")
+            last_error_str = _parse_and_log_google_error(band, show, 'SYNC_EXCEPTION', show.google_calendar_event_id, exc=e)
             error_count += 1
 
     integration.last_synced_at = timezone.now()
     integration.status = integration.Status.CONNECTED
-    integration.last_error_message = ""
+    if error_count > 0 and last_error_str:
+        integration.last_error_message = last_error_str
+    else:
+        integration.last_error_message = ""
     integration.save(update_fields=['last_synced_at', 'status', 'last_error_message', 'updated_at'])
 
     return {
