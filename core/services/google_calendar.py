@@ -205,26 +205,33 @@ def revoke_google_token(integration):
 
 def parse_duration_to_minutes(duration_str: str) -> int:
     """
-    Converte strings de duração comuns (ex: '2 horas', '1h30', '90 min') em minutos.
+    Converte strings de duração comuns (ex: '01:30', '02:00', '2 horas', '1h30', '90 min') em minutos.
     Retorna 0 se não for possível interpretar com precisão.
     """
     if not duration_str:
         return 0
-    s = duration_str.strip().lower()
+    s = str(duration_str).strip().lower()
 
-    # Formato: 1h30, 2h, 1h 30m
-    h_match = re.search(r'(\d+)\s*h(?:oras?)?(?:\s*(\d+)\s*m(?:in(?:utos?)?)?)?', s)
+    # Formato HH:MM ou H:MM (ex: '01:30', '1:30', '02:00', '2:00')
+    time_match = re.match(r'^(\d{1,2}):(\d{2})$', s)
+    if time_match:
+        hours = int(time_match.group(1))
+        minutes = int(time_match.group(2))
+        return hours * 60 + minutes
+
+    # Formato: 1h30, 1h30m, 2h, 1h 30m, 2 horas, 1 hora e 30 minutos
+    h_match = re.search(r'(\d+)\s*h(?:oras?)?(?:\s*(?:e\s*)?(\d+)\s*(?:m(?:in(?:utos?)?)?)?)?', s)
     if h_match:
         hours = int(h_match.group(1))
         minutes = int(h_match.group(2)) if h_match.group(2) else 0
         return hours * 60 + minutes
 
-    # Formato: 90 min, 120 minutos
+    # Formato: 90 min, 120 minutos, 90m
     m_match = re.search(r'(\d+)\s*m(?:in(?:utos?)?)?', s)
     if m_match:
         return int(m_match.group(1))
 
-    # Formato numérico simples (assumindo horas se < 10, minutos se >= 10)
+    # Formato numérico simples (assumindo horas se <= 8, minutos se > 8)
     if s.isdigit():
         val = int(s)
         return val * 60 if val <= 8 else val
@@ -237,7 +244,12 @@ def build_event_payload(show, request=None) -> dict:
     Monta o payload JSON do evento para a API do Google Calendar segundo as regras da BP-PEND-48:
     - CONFIRMADO: [Nome da Banda] — [Nome do Show]
     - RESERVA: RESERVA — [Nome da Banda] — [Nome do Show]
-    - Horários: início + fim se existirem; se início + duração confiável, calcula término; senão dia inteiro.
+    - Caso A (Início + Final): start.dateTime e end.dateTime (com virada de dia se final < início)
+    - Caso B (Início + Duração): start.dateTime e end.dateTime calculado pela duração exata cadastrada
+    - Caso C (Dia Inteiro): start.date e end.date (apenas quando não houver horário/término suficiente)
+    - Lembretes:
+      * Com horário: useDefault=False, overrides=[popup 60 min]
+      * Dia inteiro: useDefault=False, overrides=[] (sem lembretes)
     - Local: [Local do Show] — [Endereço Completo] — [Cidade] (omitindo partes vazias).
     - Descrição: Apenas dados operacionais públicos (Status, Cidade, Local, link Backstage Pro).
     """
@@ -294,11 +306,6 @@ def build_event_payload(show, request=None) -> dict:
 
     description = "\n".join(desc_lines)
 
-    # Definição de data/horário:
-    # 1. Se houver início + fim válidos: usar início/fim com horário definido.
-    # 2. Se houver início + duração válida (> 0): calcular término pela duração.
-    # 3. Se não houver informação suficiente para definir com segurança início e término:
-    #    criar evento de dia inteiro na data do show (sem inventar duração ou horários arbitrários).
     app_timezone = getattr(settings, 'TIME_ZONE', 'America/Sao_Paulo')
     start_payload = {}
     end_payload = {}
@@ -307,6 +314,7 @@ def build_event_payload(show, request=None) -> dict:
     duration_mins = parse_duration_to_minutes(show.duration) if (show.date and show.show_time) else 0
     has_valid_duration = (duration_mins > 0)
 
+    # Caso A e Caso B: Horário definido
     if show.date and show.show_time and (has_valid_end_time or has_valid_duration):
         start_dt = datetime.combine(show.date, show.show_time)
         start_payload = {
@@ -327,23 +335,41 @@ def build_event_payload(show, request=None) -> dict:
             'dateTime': end_dt.strftime('%Y-%m-%dT%H:%M:%S'),
             'timeZone': app_timezone,
         }
+
+        reminders_payload = {
+            'useDefault': False,
+            'overrides': [
+                {'method': 'popup', 'minutes': 60}
+            ]
+        }
     elif show.date:
-        # Evento de dia inteiro na data do show (quando não há início + fim nem duração confiáveis)
+        # Caso C: Evento de dia inteiro na data do show
         start_date_str = show.date.strftime('%Y-%m-%d')
         end_date_str = (show.date + timedelta(days=1)).strftime('%Y-%m-%d')
         start_payload = {'date': start_date_str}
         end_payload = {'date': end_date_str}
+
+        reminders_payload = {
+            'useDefault': False,
+            'overrides': []
+        }
     else:
         # Fallback para ausência total de data
         today = timezone.localdate()
         start_payload = {'date': today.strftime('%Y-%m-%d')}
         end_payload = {'date': (today + timedelta(days=1)).strftime('%Y-%m-%d')}
 
+        reminders_payload = {
+            'useDefault': False,
+            'overrides': []
+        }
+
     payload = {
         'summary': summary,
         'description': description,
         'start': start_payload,
         'end': end_payload,
+        'reminders': reminders_payload,
     }
     if location:
         payload['location'] = location
