@@ -310,27 +310,36 @@ def build_event_payload(show, request=None) -> dict:
     start_payload = {}
     end_payload = {}
 
-    has_valid_end_time = bool(show.date and show.show_time and show.show_end_time)
-    duration_mins = parse_duration_to_minutes(show.duration) if (show.date and show.show_time) else 0
+    has_show_time = bool(show.date and show.show_time)
+    has_valid_end_time = bool(has_show_time and show.show_end_time)
+    duration_mins = parse_duration_to_minutes(show.duration) if has_show_time else 0
     has_valid_duration = (duration_mins > 0)
 
-    # Caso A e Caso B: Horário definido
-    if show.date and show.show_time and (has_valid_end_time or has_valid_duration):
+    # ORDEM DE PRIORIDADE OFICIAL DO BACKSTAGE PRO:
+    # 1. Show Início + Show Final -> usar início/final (com virada de dia se final < início)
+    # 2. Show Início + Duração válida -> calcular término pela duração cadastrada
+    # 3. Somente Show Início (sem final nem duração) -> usar duração padrão oficial de 2 horas
+    # 4. Sem Show Início -> evento de dia inteiro na data do show
+    if has_show_time:
         start_dt = datetime.combine(show.date, show.show_time)
+
+        if has_valid_end_time:
+            # 1. Início + Final
+            end_date = show.date
+            if show.show_end_time < show.show_time:
+                end_date = show.date + timedelta(days=1)
+            end_dt = datetime.combine(end_date, show.show_end_time)
+        elif has_valid_duration:
+            # 2. Início + Duração cadastrada
+            end_dt = start_dt + timedelta(minutes=duration_mins)
+        else:
+            # 3. Somente Show Início -> Regra oficial do produto: 2 horas padrão
+            end_dt = start_dt + timedelta(hours=2)
+
         start_payload = {
             'dateTime': start_dt.strftime('%Y-%m-%dT%H:%M:%S'),
             'timeZone': app_timezone,
         }
-
-        if has_valid_end_time:
-            end_date = show.date
-            # Se horário de término for menor que início, assume virada de madrugada (+1 dia)
-            if show.show_end_time < show.show_time:
-                end_date = show.date + timedelta(days=1)
-            end_dt = datetime.combine(end_date, show.show_end_time)
-        else:
-            end_dt = start_dt + timedelta(minutes=duration_mins)
-
         end_payload = {
             'dateTime': end_dt.strftime('%Y-%m-%dT%H:%M:%S'),
             'timeZone': app_timezone,
@@ -343,11 +352,15 @@ def build_event_payload(show, request=None) -> dict:
             ]
         }
     elif show.date:
-        # Caso C: Evento de dia inteiro na data do show
+        # 4. Sem Show Início: Evento de dia inteiro na data do show
         start_date_str = show.date.strftime('%Y-%m-%d')
         end_date_str = (show.date + timedelta(days=1)).strftime('%Y-%m-%d')
-        start_payload = {'date': start_date_str}
-        end_payload = {'date': end_date_str}
+        start_payload = {
+            'date': start_date_str,
+        }
+        end_payload = {
+            'date': end_date_str,
+        }
 
         reminders_payload = {
             'useDefault': False,
@@ -356,8 +369,12 @@ def build_event_payload(show, request=None) -> dict:
     else:
         # Fallback para ausência total de data
         today = timezone.localdate()
-        start_payload = {'date': today.strftime('%Y-%m-%d')}
-        end_payload = {'date': (today + timedelta(days=1)).strftime('%Y-%m-%d')}
+        start_payload = {
+            'date': today.strftime('%Y-%m-%d'),
+        }
+        end_payload = {
+            'date': (today + timedelta(days=1)).strftime('%Y-%m-%d'),
+        }
 
         reminders_payload = {
             'useDefault': False,

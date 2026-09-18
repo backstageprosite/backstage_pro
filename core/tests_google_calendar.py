@@ -102,74 +102,49 @@ class GoogleCalendarTests(TestCase):
         self.assertFalse(payload['reminders']['useDefault'])
         self.assertEqual(payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
 
-    def test_show_confirmado_com_horario_inicio_e_final(self):
-        """Confirmado com horário: 20/09/2026 22:00 às 23:30 -> start.dateTime, end.dateTime, popup 60m."""
+    def test_teste_a_somente_inicio(self):
+        """Teste A — somente início: 27/09/2026 22:00 -> 22:00 às 00:00 do dia seguinte (2h padrão, não dia inteiro)."""
         show = Show.objects.create(
             band=self.band,
-            title='Show de Primavera',
+            title='Show Somente Início',
             status=Show.STATUS_CONFIRMADO,
-            date=datetime.date(2026, 9, 20),
+            date=datetime.date(2026, 9, 27),
             show_time=datetime.time(22, 0),
-            show_end_time=datetime.time(23, 30),
-            venue='Arena Show',
-            city='São Paulo/SP'
+            show_end_time=None,
+            duration=''
         )
         payload = google_calendar.build_event_payload(show)
-        self.assertEqual(payload['start']['dateTime'], '2026-09-20T22:00:00')
-        self.assertEqual(payload['end']['dateTime'], '2026-09-20T23:30:00')
         self.assertNotIn('date', payload['start'])
-        self.assertNotIn('date', payload['end'])
+        self.assertEqual(payload['start']['dateTime'], '2026-09-27T22:00:00')
+        self.assertEqual(payload['end']['dateTime'], '2026-09-28T00:00:00')
         self.assertFalse(payload['reminders']['useDefault'])
         self.assertEqual(payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
 
-    def test_show_reserva_com_horario_inicio_e_final(self):
-        """Reserva com horário: 10/10/2026 21:00 às 22:30 -> prefixo RESERVA, start.dateTime, end.dateTime, popup 60m."""
+    def test_teste_b_inicio_e_final(self):
+        """Teste B — início + final: 20/09/2026 18:00 às 19:30 -> 18:00 às 19:30."""
         show = Show.objects.create(
             band=self.band,
-            title='Show Corporativo',
-            status=Show.STATUS_PRE_RESERVADO,
-            date=datetime.date(2026, 10, 10),
-            show_time=datetime.time(21, 0),
-            show_end_time=datetime.time(22, 30),
-            venue='Centro de Convenções',
-            city='Rio de Janeiro/RJ'
+            title='Show Início e Final',
+            status=Show.STATUS_CONFIRMADO,
+            date=datetime.date(2026, 9, 20),
+            show_time=datetime.time(18, 0),
+            show_end_time=datetime.time(19, 30)
         )
         payload = google_calendar.build_event_payload(show)
-        self.assertTrue(payload['summary'].startswith('RESERVA —'))
-        self.assertEqual(payload['start']['dateTime'], '2026-10-10T21:00:00')
-        self.assertEqual(payload['end']['dateTime'], '2026-10-10T22:30:00')
-        self.assertNotIn('date', payload['start'])
-        self.assertNotIn('date', payload['end'])
+        self.assertEqual(payload['start']['dateTime'], '2026-09-20T18:00:00')
+        self.assertEqual(payload['end']['dateTime'], '2026-09-20T19:30:00')
         self.assertFalse(payload['reminders']['useDefault'])
         self.assertEqual(payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
 
-    def test_show_virada_de_dia(self):
-        """Virada de dia: Início 22:00 e Final 00:30 -> Início 20/09 e Fim 21/09."""
-        show = Show.objects.create(
-            band=self.band,
-            title='Baile da Madrugada',
-            status=Show.STATUS_CONFIRMADO,
-            date=datetime.date(2026, 9, 20),
-            show_time=datetime.time(22, 0),
-            show_end_time=datetime.time(0, 30),
-            venue='Clube Central',
-            city='Belo Horizonte/MG'
-        )
-        payload = google_calendar.build_event_payload(show)
-        self.assertEqual(payload['start']['dateTime'], '2026-09-20T22:00:00')
-        self.assertEqual(payload['end']['dateTime'], '2026-09-21T00:30:00')
-
-    def test_show_com_duracao_hh_mm(self):
-        """Duração em formato HH:MM (ex: 01:30) calcula término corretamente."""
+    def test_teste_c_inicio_e_duracao(self):
+        """Teste C — início + duração: 20:00 + 01:30 -> 20:00 às 21:30."""
         show = Show.objects.create(
             band=self.band,
             title='Show Acústico',
             status=Show.STATUS_CONFIRMADO,
             date=datetime.date(2026, 9, 20),
             show_time=datetime.time(20, 0),
-            duration='01:30',
-            venue='Teatro Municipal',
-            city='Campinas/SP'
+            duration='01:30'
         )
         payload = google_calendar.build_event_payload(show)
         self.assertEqual(payload['start']['dateTime'], '2026-09-20T20:00:00')
@@ -177,18 +152,50 @@ class GoogleCalendarTests(TestCase):
         self.assertFalse(payload['reminders']['useDefault'])
         self.assertEqual(payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
 
-    def test_show_dia_inteiro_sem_horario_suficiente(self):
-        """Dia inteiro: Show sem horário suficiente -> start.date, end.date, useDefault=false, sem overrides."""
-        # Caso 1: Show sem horários
-        show_sem_horario = Show.objects.create(
+    def test_teste_d_virada_de_dia(self):
+        """Teste D — virada de dia: Início 22:00 e Final 00:30 -> Início 20/09 e Fim 21/09."""
+        show = Show.objects.create(
             band=self.band,
-            title='Show Sem Horários',
+            title='Baile da Madrugada',
+            status=Show.STATUS_CONFIRMADO,
+            date=datetime.date(2026, 9, 20),
+            show_time=datetime.time(22, 0),
+            show_end_time=datetime.time(0, 30)
+        )
+        payload = google_calendar.build_event_payload(show)
+        self.assertEqual(payload['start']['dateTime'], '2026-09-20T22:00:00')
+        self.assertEqual(payload['end']['dateTime'], '2026-09-21T00:30:00')
+
+    def test_teste_e_reserva_somente_com_inicio(self):
+        """Teste E — RESERVA somente com início: PRE_RESERVADO 22:00 -> prefixo RESERVA, 2h padrão, popup 60m."""
+        show = Show.objects.create(
+            band=self.band,
+            title='Show Reserva Teste',
+            status=Show.STATUS_PRE_RESERVADO,
+            date=datetime.date(2026, 10, 10),
+            show_time=datetime.time(22, 0),
+            show_end_time=None,
+            duration=''
+        )
+        payload = google_calendar.build_event_payload(show)
+        self.assertTrue(payload['summary'].startswith('RESERVA —'))
+        self.assertEqual(payload['start']['dateTime'], '2026-10-10T22:00:00')
+        self.assertEqual(payload['end']['dateTime'], '2026-10-11T00:00:00')
+        self.assertFalse(payload['reminders']['useDefault'])
+        self.assertEqual(payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
+
+    def test_teste_f_sem_inicio_dia_inteiro(self):
+        """Teste F — sem início: evento de dia inteiro, sem lembrete."""
+        show = Show.objects.create(
+            band=self.band,
+            title='Show Data Confirmada Sem Horário',
             status=Show.STATUS_CONFIRMADO,
             date=datetime.date(2026, 11, 20),
-            venue='Praça',
-            city='Salvador/BA'
+            show_time=None,
+            show_end_time=None,
+            duration=''
         )
-        payload = google_calendar.build_event_payload(show_sem_horario)
+        payload = google_calendar.build_event_payload(show)
         self.assertNotIn('dateTime', payload['start'])
         self.assertNotIn('dateTime', payload['end'])
         self.assertEqual(payload['start']['date'], '2026-11-20')
@@ -196,25 +203,43 @@ class GoogleCalendarTests(TestCase):
         self.assertFalse(payload['reminders']['useDefault'])
         self.assertEqual(payload['reminders']['overrides'], [])
 
-        # Caso 2: Show com início mas sem término nem duração válida
-        show_so_inicio = Show.objects.create(
+    @patch('core.services.google_calendar.requests.patch')
+    def test_teste_g_conversao_dia_inteiro_para_horario(self, mock_patch):
+        """Teste G — conversão dia inteiro -> horário: mesmo event ID, passa para horário 22h-00h sem duplicar."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {'id': 'google_evt_conv_123'}
+        mock_patch.return_value = mock_resp
+
+        # Show antes como dia inteiro
+        show = Show.objects.create(
             band=self.band,
-            title='Show Só Com Início',
+            title='Show Itanagra',
             status=Show.STATUS_CONFIRMADO,
-            date=datetime.date(2026, 11, 20),
-            show_time=datetime.time(21, 0),
-            show_end_time=None,
-            duration='',
-            venue='Praça',
-            city='Salvador/BA'
+            date=datetime.date(2026, 9, 27),
+            show_time=None,
+            google_calendar_event_id='google_evt_conv_123'
         )
-        payload2 = google_calendar.build_event_payload(show_so_inicio)
-        self.assertNotIn('dateTime', payload2['start'])
-        self.assertNotIn('dateTime', payload2['end'])
-        self.assertEqual(payload2['start']['date'], '2026-11-20')
-        self.assertEqual(payload2['end']['date'], '2026-11-21')
-        self.assertFalse(payload2['reminders']['useDefault'])
-        self.assertEqual(payload2['reminders']['overrides'], [])
+
+        # Atualiza para Show Início 22:00
+        show.show_time = datetime.time(22, 0)
+        show.save()
+
+        success = google_calendar.sync_show_to_google_calendar(show)
+        self.assertTrue(success)
+        self.assertTrue(mock_patch.called)
+
+        called_url, called_kwargs = mock_patch.call_args
+        self.assertIn('google_evt_conv_123', called_url[0])
+        sent_payload = called_kwargs.get('json')
+        self.assertEqual(sent_payload['start']['dateTime'], '2026-09-27T22:00:00')
+        self.assertEqual(sent_payload['end']['dateTime'], '2026-09-28T00:00:00')
+        self.assertNotIn('date', sent_payload['start'])
+        self.assertNotIn('date', sent_payload['end'])
+        self.assertEqual(sent_payload['reminders']['overrides'], [{'method': 'popup', 'minutes': 60}])
+        # Mantém mesmo event_id
+        show.refresh_from_db()
+        self.assertEqual(show.google_calendar_event_id, 'google_evt_conv_123')
 
     def test_google_scopes_least_privilege(self):
         """Regra 2: Verifica que os escopos utilizam calendarlist.readonly em vez de calendar.readonly."""
