@@ -193,12 +193,6 @@
                             {% if show.duration %}
                             <li class="list-group-item"><strong>Duração:</strong> {{ show.duration }}</li>
                             {% endif %}
-                            {% if show.attractions %}
-                            <li class="list-group-item">
-                                <strong>Outras Atrações / Horários:</strong><br>
-                                {{ show.attractions|linebreaksbr }}
-                            </li>
-                            {% endif %}
                         </ul>
                     </div>
                 </div>
@@ -222,7 +216,7 @@
                         <div class="col-6">
                             <strong>Saída:</strong> {{ show.departure_location|default:"-" }}
                             {% if show.departure_location_link %}
-                            <a href="{{ show.departure_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            <a href="{{ show.departure_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa</a>
                             {% endif %}
                         </div>
                         {% endif %}
@@ -230,7 +224,7 @@
                         <div class="col-6">
                             <strong>Chegada:</strong> {{ show.arrival_location|default:"-" }}
                             {% if show.arrival_location_link %}
-                            <a href="{{ show.arrival_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            <a href="{{ show.arrival_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa</a>
                             {% endif %}
                         </div>
                         {% endif %}
@@ -286,7 +280,7 @@
                         <div class="col-6">
                             <strong>Saída:</strong> {{ show.tech_departure_location|default:"-" }}
                             {% if show.tech_departure_location_link %}
-                            <a href="{{ show.tech_departure_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            <a href="{{ show.tech_departure_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa</a>
                             {% endif %}
                         </div>
                         {% endif %}
@@ -294,7 +288,7 @@
                         <div class="col-6">
                             <strong>Chegada:</strong> {{ show.tech_arrival_location|default:"-" }}
                             {% if show.tech_arrival_location_link %}
-                            <a href="{{ show.tech_arrival_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            <a href="{{ show.tech_arrival_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa</a>
                             {% endif %}
                         </div>
                         {% endif %}
@@ -351,7 +345,7 @@
                         <div class="col-6">
                             <strong>Saída:</strong> {{ show.artist_departure_location|default:"-" }}
                             {% if show.artist_departure_location_link %}
-                            <a href="{{ show.artist_departure_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            <a href="{{ show.artist_departure_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa</a>
                             {% endif %}
                         </div>
                         {% endif %}
@@ -359,7 +353,7 @@
                         <div class="col-6">
                             <strong>Chegada:</strong> {{ show.artist_arrival_location|default:"-" }}
                             {% if show.artist_arrival_location_link %}
-                            <a href="{{ show.artist_arrival_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot"></i> Mapa</a>
+                            <a href="{{ show.artist_arrival_location_link }}" target="_blank" class="ms-1"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa</a>
                             {% endif %}
                         </div>
                         {% endif %}
@@ -408,8 +402,8 @@
         </div>
         {% endif %}
 
-        <!-- Produção (Hospedagem, Camarim & Apoio) -->
-        {% if show.accommodation or show.accommodation_responsible or show.accommodation_contact or show.transfer or show.dressing_room or show.catering or show.wardrobe %}
+        <!-- Produção (Hospedagem, Camarim & Apoio, Outras Atrações) -->
+        {% if show.accommodation or show.accommodation_responsible or show.accommodation_contact or show.transfer or show.dressing_room or show.catering or show.wardrobe or show.attractions %}
         <div class="card mb-2 border-success">
             <div class="card-header header-logistica py-1"><i class="fa-solid fa-hotel me-1"></i> Produção</div>
             <div class="card-body">
@@ -439,7 +433,7 @@
                         </p>
                         {% endif %}
                         {% if show.accommodation_link %}
-                        <p class="mb-0 mt-1"><a href="{{ show.accommodation_link }}" target="_blank" style="font-size: 0.85em;"><i class="fa-solid fa-map-location-dot me-1"></i> Link do Hotel</a></p>
+                        <p class="mb-0 mt-1"><a href="{{ show.accommodation_link }}" target="_blank" style="font-size: 0.85em;"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa</a></p>
                         {% endif %}
                     </div>
                     {% endif %}
@@ -471,6 +465,12 @@
                     <div class="col-6 mb-3">
                         <h6 class="text-muted"><i class="fa-solid fa-shirt me-1"></i> Figurino</h6>
                         <p>{{ show.wardrobe|linebreaksbr }}</p>
+                    </div>
+                    {% endif %}
+                    {% if show.attractions %}
+                    <div class="col-12 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-users-viewfinder me-1"></i> Outras Atrações</h6>
+                        <p class="mb-0">{{ show.attractions|linebreaksbr }}</p>
                     </div>
                     {% endif %}
                 </div>

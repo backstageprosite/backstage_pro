@@ -336,7 +336,8 @@ class ShowForm(forms.ModelForm):
         ]
         labels = {
             'address_link': 'Link do Local do Show',
-            'attractions': 'Outras Atrações / Horários',
+            'attractions': 'Outras Atrações',
+            'departure_location_link': 'Link do Local de Saída',
             'contractor_phone': 'Contato do Contratante',
             'accommodation_responsible': 'Responsável',
             'accommodation_contact': 'Contato (Responsável)',
@@ -359,6 +360,10 @@ class ShowForm(forms.ModelForm):
             'backline_contact': 'Contato do Backline',
             'pyrotechnics': 'Pirotecnia / Efeitos',
             'pyrotechnics_contact': 'Contato de Efeitos / Pirotecnia',
+            'generator_contact': 'Contato do Gerador',
+            'loaders_contact': 'Contato dos Carregadores',
+            'internal_notes': 'Observações da Produção',
+            'band_notes': 'Avisos para a Banda',
         }
         widgets = {
             # Principal

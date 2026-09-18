@@ -1,4 +1,4 @@
-﻿import datetime
+import datetime
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -64,6 +64,13 @@ class ShowLogisticsDiffTest(TestCase):
         self.assertIn('tech_departure_location', form.fields)
         self.assertIn('artist_departure_location', form.fields)
         self.assertEqual(form.fields['status'].widget.attrs.get('class'), 'form-select')
+        # Verificar labels refinadas
+        self.assertEqual(form.fields['attractions'].label, 'Outras Atrações')
+        self.assertEqual(form.fields['departure_location_link'].label, 'Link do Local de Saída')
+        self.assertEqual(form.fields['generator_contact'].label, 'Contato do Gerador')
+        self.assertEqual(form.fields['loaders_contact'].label, 'Contato dos Carregadores')
+        self.assertEqual(form.fields['internal_notes'].label, 'Observações da Produção')
+        self.assertEqual(form.fields['band_notes'].label, 'Avisos para a Banda')
 
     def test_show_pdf_view_rendering(self):
         self.client.login(username="produtor_bp67", password="password123")
@@ -75,6 +82,7 @@ class ShowLogisticsDiffTest(TestCase):
             city="Salvador",
             venue="Arena Fonte Nova",
             departure_location="Hotel Pelourinho",
+            departure_location_link="https://maps.google.com/?q=Hotel",
             arrival_location="Arena Fonte Nova",
             departure_time=now,
             arrival_time=now + datetime.timedelta(hours=1),
@@ -90,7 +98,10 @@ class ShowLogisticsDiffTest(TestCase):
             tech_transport="Caminhão",
             sound_system="Line Array D&B",
             sound_contact="71888888888",
-            band_notes="Levar figurino preto."
+            band_notes="Levar figurino preto.",
+            attractions="Banda Abertura: 20h\nEncerramento: 02h",
+            accommodation="Hotel Gran",
+            accommodation_link="https://maps.google.com/?q=HotelGran"
         )
 
         url = reverse('show_pdf', kwargs={'band_slug': self.band.slug, 'pk': show.id})
@@ -105,3 +116,7 @@ class ShowLogisticsDiffTest(TestCase):
         self.assertIn("Técnica", content)
         self.assertIn("Line Array D&amp;B", content)
         self.assertIn("Levar figurino preto.", content)
+        self.assertIn("Abrir no Mapa", content)
+        self.assertIn("Outras Atrações", content)
+        self.assertIn("Banda Abertura: 20h", content)
+

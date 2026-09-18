@@ -199,22 +199,22 @@
                 <div class="tab-pane fade show active" id="geral" role="tabpanel" aria-labelledby="geral-tab">
                     <h5 class="section-title mb-3 text-primary pb-1">Dados do Show</h5>
                     <div class="row g-2 mb-3">
-                        <div class="col-md-8">
+                        <div class="col-12 col-md-6 col-xl-4">
                             <label class="form-label">{{ form.title.label }}</label>
                             {{ form.title }}
                             {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors }}</div>{% endif %}
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.date.label }}</label>
-                            {{ form.date }}
-                            {% if form.date.errors %}<div class="text-danger small mt-1">{{ form.date.errors }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-8">
+                        <div class="col-12 col-md-6 col-xl-4">
                             <label class="form-label">{{ form.event_name.label }}</label>
                             {{ form.event_name }}
                             {% if form.event_name.errors %}<div class="text-danger small mt-1">{{ form.event_name.errors }}</div>{% endif %}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-md-3 col-xl-2">
+                            <label class="form-label">{{ form.date.label }}</label>
+                            {{ form.date }}
+                            {% if form.date.errors %}<div class="text-danger small mt-1">{{ form.date.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-6 col-md-3 col-xl-2">
                             <label class="form-label">{{ form.status.label }}</label>
                             {{ form.status }}
                             {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors }}</div>{% endif %}
@@ -222,26 +222,34 @@
                     </div>
                     
                     <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Localização</h5>
-                    <div class="row g-2">
-                        <div class="col-md-6">
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.city.label }}</label>
                             {{ form.city }}
                             {% if form.city.errors %}<div class="text-danger small mt-1">{{ form.city.errors }}</div>{% endif %}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.venue.label }}</label>
                             {{ form.venue }}
                             {% if form.venue.errors %}<div class="text-danger small mt-1">{{ form.venue.errors }}</div>{% endif %}
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.address.label }}</label>
                             {{ form.address }}
                             {% if form.address.errors %}<div class="text-danger small mt-1">{{ form.address.errors }}</div>{% endif %}
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.address_link.label }}</label>
                             {{ form.address_link }}
                             {% if form.address_link.errors %}<div class="text-danger small mt-1">{{ form.address_link.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row g-2 border-top pt-3">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">{{ form.attractions.label }}</label>
+                            {{ form.attractions }}
+                            {% if form.attractions.errors %}<div class="text-danger small mt-1">{{ form.attractions.errors }}</div>{% endif %}
                         </div>
                     </div>
                 </div>
@@ -276,47 +284,52 @@
                     <div class="card border mb-3 shadow-none bg-white" style="border-radius: 8px;">
                         <div class="card-body p-3">
                             <div class="row g-2 mb-2">
-                                <div class="col-md-6">
+                                <!-- Linha 1: Saída, Link Saída, Chegada, Link Chegada -->
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.departure_location.label }}</label>
                                     {{ form.departure_location }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.departure_location_link.label }}</label>
                                     {{ form.departure_location_link }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.arrival_location.label }}</label>
                                     {{ form.arrival_location }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.arrival_location_link.label }}</label>
                                     {{ form.arrival_location_link }}
                                 </div>
-                                <div class="col-md-6">
+
+                                <!-- Linha 2: Data/Hora Saída, Data/Previsão Chegada, Tempo de Deslocamento, Distância -->
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.departure_time.label }}</label>
                                     {{ form.departure_time }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.arrival_time.label }}</label>
                                     {{ form.arrival_time }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.travel_time.label }}</label>
                                     {{ form.travel_time }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.distance_km.label }}</label>
                                     {{ form.distance_km }}
                                 </div>
-                                <div class="col-md-6">
+
+                                <!-- Linha 3: Meio de Transporte, Contato do Transporte, Observações do Deslocamento -->
+                                <div class="col-12 col-md-6 col-xl-4">
                                     <label class="form-label">{{ form.transport.label }}</label>
                                     {{ form.transport }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.transport_contact.label }}</label>
                                     {{ form.transport_contact }}
                                 </div>
-                                <div class="col-12">
+                                <div class="col-12 col-xl-5">
                                     <label class="form-label">{{ form.transport_notes.label }}</label>
                                     {{ form.transport_notes }}
                                 </div>
@@ -333,31 +346,31 @@
                                 <div id="bloco-aereo-principal" style="display: none;" class="p-3 bg-light rounded border mt-2">
                                     <h6 class="subsection-title text-primary mb-2"><i class="fa-solid fa-plane me-1"></i> Dados do Voo (Logística Principal)</h6>
                                     <div class="row g-2">
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.departure_airport.label }}</label>
                                             {{ form.departure_airport }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.arrival_airport.label }}</label>
                                             {{ form.arrival_airport }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.airline.label }}</label>
                                             {{ form.airline }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.flight_number.label }}</label>
                                             {{ form.flight_number }}
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-12 col-md-4 col-xl-4">
                                             <label class="form-label">{{ form.boarding_datetime.label }}</label>
                                             {{ form.boarding_datetime }}
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-12 col-md-4 col-xl-4">
                                             <label class="form-label">{{ form.flight_departure_time.label }}</label>
                                             {{ form.flight_departure_time }}
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-12 col-md-4 col-xl-4">
                                             <label class="form-label">{{ form.flight_arrival_time.label }}</label>
                                             {{ form.flight_arrival_time }}
                                         </div>
@@ -375,47 +388,52 @@
                         </div>
                         <div class="card-body p-3">
                             <div class="row g-2 mb-2">
-                                <div class="col-md-6">
+                                <!-- Linha 1 -->
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.tech_departure_location.label }}</label>
                                     {{ form.tech_departure_location }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.tech_departure_location_link.label }}</label>
                                     {{ form.tech_departure_location_link }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.tech_arrival_location.label }}</label>
                                     {{ form.tech_arrival_location }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.tech_arrival_location_link.label }}</label>
                                     {{ form.tech_arrival_location_link }}
                                 </div>
-                                <div class="col-md-6">
+
+                                <!-- Linha 2 -->
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.tech_departure_time.label }}</label>
                                     {{ form.tech_departure_time }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.tech_arrival_time.label }}</label>
                                     {{ form.tech_arrival_time }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.tech_travel_time.label }}</label>
                                     {{ form.tech_travel_time }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.tech_distance_km.label }}</label>
                                     {{ form.tech_distance_km }}
                                 </div>
-                                <div class="col-md-6">
+
+                                <!-- Linha 3 -->
+                                <div class="col-12 col-md-6 col-xl-4">
                                     <label class="form-label">{{ form.tech_transport.label }}</label>
                                     {{ form.tech_transport }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.tech_transport_contact.label }}</label>
                                     {{ form.tech_transport_contact }}
                                 </div>
-                                <div class="col-12">
+                                <div class="col-12 col-xl-5">
                                     <label class="form-label">{{ form.tech_transport_notes.label }}</label>
                                     {{ form.tech_transport_notes }}
                                 </div>
@@ -432,31 +450,31 @@
                                 <div id="bloco-aereo-tecnica" style="display: none;" class="p-3 bg-light rounded border mt-2">
                                     <h6 class="subsection-title text-dark mb-2"><i class="fa-solid fa-plane me-1"></i> Dados do Voo (Técnica)</h6>
                                     <div class="row g-2">
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.tech_departure_airport.label }}</label>
                                             {{ form.tech_departure_airport }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.tech_arrival_airport.label }}</label>
                                             {{ form.tech_arrival_airport }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.tech_airline.label }}</label>
                                             {{ form.tech_airline }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.tech_flight_number.label }}</label>
                                             {{ form.tech_flight_number }}
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-12 col-md-4 col-xl-4">
                                             <label class="form-label">{{ form.tech_boarding_datetime.label }}</label>
                                             {{ form.tech_boarding_datetime }}
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-12 col-md-4 col-xl-4">
                                             <label class="form-label">{{ form.tech_flight_departure_time.label }}</label>
                                             {{ form.tech_flight_departure_time }}
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-12 col-md-4 col-xl-4">
                                             <label class="form-label">{{ form.tech_flight_arrival_time.label }}</label>
                                             {{ form.tech_flight_arrival_time }}
                                         </div>
@@ -474,47 +492,52 @@
                         </div>
                         <div class="card-body p-3">
                             <div class="row g-2 mb-2">
-                                <div class="col-md-6">
+                                <!-- Linha 1 -->
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.artist_departure_location.label }}</label>
                                     {{ form.artist_departure_location }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.artist_departure_location_link.label }}</label>
                                     {{ form.artist_departure_location_link }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.artist_arrival_location.label }}</label>
                                     {{ form.artist_arrival_location }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.artist_arrival_location_link.label }}</label>
                                     {{ form.artist_arrival_location_link }}
                                 </div>
-                                <div class="col-md-6">
+
+                                <!-- Linha 2 -->
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.artist_departure_time.label }}</label>
                                     {{ form.artist_departure_time }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.artist_arrival_time.label }}</label>
                                     {{ form.artist_arrival_time }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.artist_travel_time.label }}</label>
                                     {{ form.artist_travel_time }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.artist_distance_km.label }}</label>
                                     {{ form.artist_distance_km }}
                                 </div>
-                                <div class="col-md-6">
+
+                                <!-- Linha 3 -->
+                                <div class="col-12 col-md-6 col-xl-4">
                                     <label class="form-label">{{ form.artist_transport.label }}</label>
                                     {{ form.artist_transport }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-12 col-md-6 col-xl-3">
                                     <label class="form-label">{{ form.artist_transport_contact.label }}</label>
                                     {{ form.artist_transport_contact }}
                                 </div>
-                                <div class="col-12">
+                                <div class="col-12 col-xl-5">
                                     <label class="form-label">{{ form.artist_transport_notes.label }}</label>
                                     {{ form.artist_transport_notes }}
                                 </div>
@@ -531,31 +554,31 @@
                                 <div id="bloco-aereo-artista" style="display: none;" class="p-3 bg-light rounded border mt-2">
                                     <h6 class="subsection-title text-dark mb-2"><i class="fa-solid fa-plane me-1"></i> Dados do Voo (Artista)</h6>
                                     <div class="row g-2">
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.artist_departure_airport.label }}</label>
                                             {{ form.artist_departure_airport }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.artist_arrival_airport.label }}</label>
                                             {{ form.artist_arrival_airport }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.artist_airline.label }}</label>
                                             {{ form.artist_airline }}
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-12 col-md-6 col-xl-3">
                                             <label class="form-label">{{ form.artist_flight_number.label }}</label>
                                             {{ form.artist_flight_number }}
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-12 col-md-4 col-xl-4">
                                             <label class="form-label">{{ form.artist_boarding_datetime.label }}</label>
                                             {{ form.artist_boarding_datetime }}
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-12 col-md-4 col-xl-4">
                                             <label class="form-label">{{ form.artist_flight_departure_time.label }}</label>
                                             {{ form.artist_flight_departure_time }}
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-12 col-md-4 col-xl-4">
                                             <label class="form-label">{{ form.artist_flight_arrival_time.label }}</label>
                                             {{ form.artist_flight_arrival_time }}
                                         </div>
@@ -568,57 +591,38 @@
                     <!-- 2. Horários no Local -->
                     <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Horários no Local</h5>
                     
-                    <div class="mb-3">
-                        <h6 class="subsection-title mb-2">Passagem de som</h6>
-                        <div class="row g-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Início</label>
-                                {{ form.soundcheck_time }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Final</label>
-                                {{ form.soundcheck_end_time }}
-                            </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <label class="form-label text-warning">Passagem Início</label>
+                            {{ form.soundcheck_time }}
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <h6 class="subsection-title mb-2">Show</h6>
-                        <div class="row g-2">
-                            <div class="col-md-6">
-                                <label class="form-label text-success">Início</label>
-                                {{ form.show_time }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-danger">Final</label>
-                                {{ form.show_end_time }}
-                            </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <label class="form-label text-warning">Passagem Final</label>
+                            {{ form.soundcheck_end_time }}
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <h6 class="subsection-title mb-2">Duração do Show</h6>
-                        <div class="row g-2">
-                            <div class="col-md-12">
-                                {{ form.duration }}
-                            </div>
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <label class="form-label text-success">Show Início</label>
+                            {{ form.show_time }}
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">{{ form.attractions.label }}</label>
-                        {{ form.attractions }}
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <label class="form-label text-danger">Show Final</label>
+                            {{ form.show_end_time }}
+                        </div>
+                        <div class="col-12 col-md-8 col-xl-4">
+                            <label class="form-label">Duração do Show</label>
+                            {{ form.duration }}
+                        </div>
                     </div>
                     
                     <!-- 3. Observações -->
                     <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Observações</h5>
                     <div class="row g-2">
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.internal_notes.label }}</label>
                             {{ form.internal_notes }}
                             <div class="form-text text-muted">Visível apenas para a produção.</div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             <label class="form-label">{{ form.band_notes.label }}</label>
                             {{ form.band_notes }}
                             <div class="form-text text-muted">Visível para todos os integrantes.</div>
@@ -630,31 +634,34 @@
                 <div class="tab-pane fade" id="producao" role="tabpanel" aria-labelledby="producao-tab">
                     <h5 class="section-title mb-3 text-primary pb-1">Hospedagem</h5>
                     <div class="row g-2 mb-3">
-                        <div class="col-md-6">
+                        <!-- Linha 1 -->
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.accommodation.label }}</label>
                             {{ form.accommodation }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-2">
                             <label class="form-label">{{ form.accommodation_city.label }}</label>
                             {{ form.accommodation_city }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-4">
                             <label class="form-label">{{ form.accommodation_address.label }}</label>
                             {{ form.accommodation_address }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.accommodation_link.label }}</label>
                             {{ form.accommodation_link }}
                         </div>
-                        <div class="col-md-6">
+
+                        <!-- Linha 2 -->
+                        <div class="col-12 col-md-4 col-xl-4">
                             <label class="form-label">{{ form.accommodation_responsible.label }}</label>
                             {{ form.accommodation_responsible }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-4 col-xl-4">
                             <label class="form-label">{{ form.accommodation_contact.label }}</label>
                             {{ form.accommodation_contact }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-4 col-xl-4">
                             <label class="form-label">{{ form.checkout_time.label }}</label>
                             {{ form.checkout_time }}
                         </div>
@@ -662,27 +669,30 @@
 
                     <h5 class="section-title mb-3 text-primary pb-1 border-top pt-3">Camarim & Apoio</h5>
                     <div class="row g-2">
-                        <div class="col-md-6">
+                        <!-- Linha 1: Camarim, Contato Camarim, Alimentação -->
+                        <div class="col-12 col-md-4 col-xl-4">
                             <label class="form-label">{{ form.dressing_room.label }}</label>
                             {{ form.dressing_room }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-4 col-xl-4">
                             <label class="form-label">{{ form.dressing_room_contact.label }}</label>
                             {{ form.dressing_room_contact }}
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.transfer.label }}</label>
-                            {{ form.transfer }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">{{ form.transfer_contact.label }}</label>
-                            {{ form.transfer_contact }}
-                        </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-4 col-xl-4">
                             <label class="form-label">{{ form.catering.label }}</label>
                             {{ form.catering }}
                         </div>
-                        <div class="col-md-6">
+
+                        <!-- Linha 2: Palco / Baldeação, Contato Palco / Baldeação, Figurino -->
+                        <div class="col-12 col-md-4 col-xl-4">
+                            <label class="form-label">{{ form.transfer.label }}</label>
+                            {{ form.transfer }}
+                        </div>
+                        <div class="col-12 col-md-4 col-xl-4">
+                            <label class="form-label">{{ form.transfer_contact.label }}</label>
+                            {{ form.transfer_contact }}
+                        </div>
+                        <div class="col-12 col-md-4 col-xl-4">
                             <label class="form-label">{{ form.wardrobe.label }}</label>
                             {{ form.wardrobe }}
                         </div>
@@ -692,82 +702,74 @@
                 <!-- ABA TÉCNICA -->
                 <div class="tab-pane fade" id="tecnica" role="tabpanel" aria-labelledby="tecnica-tab">
                     <div class="row g-2">
-                        <!-- Produção Local -->
-                        <div class="col-md-6">
+                        <!-- Linha 1: Produção Local & Som -->
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.local_production.label }}</label>
                             {{ form.local_production }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.local_production_contact.label }}</label>
                             {{ form.local_production_contact }}
                         </div>
-
-                        <!-- Som -->
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.sound_system.label }}</label>
                             {{ form.sound_system }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.sound_contact.label }}</label>
                             {{ form.sound_contact }}
                         </div>
 
-                        <!-- Luz -->
-                        <div class="col-md-6">
+                        <!-- Linha 2: Luz & LED -->
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.lighting_system.label }}</label>
                             {{ form.lighting_system }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.lighting_contact.label }}</label>
                             {{ form.lighting_contact }}
                         </div>
-
-                        <!-- LED -->
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.led_system.label }}</label>
                             {{ form.led_system }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.led_contact.label }}</label>
                             {{ form.led_contact }}
                         </div>
 
-                        <!-- Backline -->
-                        <div class="col-md-6">
+                        <!-- Linha 3: Backline & Pirotecnia -->
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.backline.label }}</label>
                             {{ form.backline }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.backline_contact.label }}</label>
                             {{ form.backline_contact }}
                         </div>
-
-                        <!-- Pirotecnia -->
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.pyrotechnics.label }}</label>
                             {{ form.pyrotechnics }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.pyrotechnics_contact.label }}</label>
                             {{ form.pyrotechnics_contact }}
                         </div>
 
-                        <!-- Gerador -->
-                        <div class="col-md-6">
+                        <!-- Linha 4: Gerador & Carregadores -->
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.generator_system.label }}</label>
                             {{ form.generator_system }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.generator_contact.label }}</label>
                             {{ form.generator_contact }}
                         </div>
-
-                        <!-- Carregadores -->
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.loaders_system.label }}</label>
                             {{ form.loaders_system }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.loaders_contact.label }}</label>
                             {{ form.loaders_contact }}
                         </div>
@@ -781,26 +783,26 @@
                         <i class="fa-solid fa-lock me-2"></i> Apenas produtores possuem acesso a essas informações
                     </div>
                     <div class="row g-2">
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.contractor_name.label }}</label>
                             {{ form.contractor_name }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6 col-xl-3">
                             <label class="form-label">{{ form.contractor_phone.label }}</label>
                             {{ form.contractor_phone }}
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-4 col-xl-2">
                             <label class="form-label">{{ form.contract_type.label }}</label>
                             {{ form.contract_type }}
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-4 col-xl-2">
                             <label class="form-label">{{ form.fee.label }}</label>
                             <div class="input-group">
                                 <span class="input-group-text" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">R$</span>
                                 {{ form.fee }}
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-4 col-xl-2">
                             <label class="form-label">{{ form.payment_status.label }}</label>
                             {{ form.payment_status }}
                         </div>
