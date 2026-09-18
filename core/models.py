@@ -402,6 +402,15 @@ class Show(models.Model):
     # Revisão de Notificações
     notification_revision = models.PositiveBigIntegerField(default=0, editable=False)
 
+    # Google Calendar Integration (BP-PEND-48)
+    google_calendar_event_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        db_index=True,
+        verbose_name='ID do Evento no Google Calendar'
+    )
+
     # Auditoria de Datas (BP-PEND-57)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True, verbose_name="Data de Criação")
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True, verbose_name="Última Atualização")
@@ -2878,6 +2887,119 @@ class ScheduledJobRun(models.Model):
         return f"[{self.job_name}] {self.started_at.strftime('%Y-%m-%d %H:%M:%S')} - {self.get_status_display()} ({self.processed_count} processados)"
 
 
+class GoogleCalendarIntegration(models.Model):
+    """
+    BP-PEND-48: Integração unidirecional da agenda de shows da Banda com o Google Calendar.
+    Cada banda possui sua própria integração isolada.
+    Tokens são armazenados estritamente criptografados com Fernet.
+    """
+    class Status(models.TextChoices):
+        CONNECTED = 'CONNECTED', 'Conectado'
+        ERROR = 'ERROR', 'Erro / Expirado'
+        DISCONNECTED = 'DISCONNECTED', 'Desconectado'
+
+    band = models.OneToOneField(
+        Band,
+        on_delete=models.CASCADE,
+        related_name='google_calendar_integration',
+        verbose_name='Banda'
+    )
+    google_account_email = models.EmailField(
+        blank=True,
+        null=True,
+        verbose_name='Conta Google Conectada'
+    )
+    calendar_id = models.CharField(
+        max_length=255,
+        default='primary',
+        verbose_name='ID do Calendário Google'
+    )
+    calendar_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name='Nome do Calendário Selecionado'
+    )
+    encrypted_access_token = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Access Token Criptografado'
+    )
+    encrypted_refresh_token = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Refresh Token Criptografado'
+    )
+    token_expires_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name='Expiração do Access Token'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DISCONNECTED,
+        db_index=True,
+        verbose_name='Status da Integração'
+    )
+    last_synced_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name='Última Sincronização'
+    )
+    last_error_message = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Última Mensagem de Erro'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Data de Conexão'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Última Atualização'
+    )
+
+    class Meta:
+        verbose_name = 'Integração Google Calendar'
+        verbose_name_plural = 'Integrações Google Calendar'
+
+    def __str__(self):
+        return f"{self.band.name} - Google Calendar ({self.get_status_display()})"
+
+    def set_access_token(self, token: str):
+        if not token:
+            self.encrypted_access_token = None
+            return
+        from core.services.google_calendar_crypto import encrypt_token
+        self.encrypted_access_token = encrypt_token(token)
+
+    def get_access_token(self) -> str:
+        if not self.encrypted_access_token:
+            return ''
+        from core.services.google_calendar_crypto import decrypt_token
+        return decrypt_token(self.encrypted_access_token)
+
+    def set_refresh_token(self, token: str):
+        if not token:
+            self.encrypted_refresh_token = None
+            return
+        from core.services.google_calendar_crypto import encrypt_token
+        self.encrypted_refresh_token = encrypt_token(token)
+
+    def get_refresh_token(self) -> str:
+        if not self.encrypted_refresh_token:
+            return ''
+        from core.services.google_calendar_crypto import decrypt_token
+        return decrypt_token(self.encrypted_refresh_token)
+
+    @property
+    def is_connected(self) -> bool:
+        return self.status == self.Status.CONNECTED and bool(self.encrypted_refresh_token or self.encrypted_access_token)
+
+
+
 
 # ============================================================
 # AUTOMATIC FILE DELETION ON RECORD DELETE
@@ -2905,3 +3027,26 @@ def auto_delete_file_on_delete(sender, instance, **kwargs):
                         os.remove(file_field.path)
                 except Exception:
                     pass
+
+@receiver(post_delete, sender=Show)
+def auto_delete_google_calendar_event(sender, instance, **kwargs):
+    """
+    BP-PEND-48: Se um show que possui evento no Google Calendar for excluído,
+    remove o evento correspondente do Google Calendar da banda.
+    """
+    if instance.google_calendar_event_id and instance.band_id:
+        try:
+            from core.models import GoogleCalendarIntegration
+            from core.services.google_calendar import refresh_access_token_if_needed, GOOGLE_CALENDAR_API_BASE
+            import urllib.parse
+            import requests
+
+            integration = GoogleCalendarIntegration.objects.filter(band=instance.band).first()
+            if integration and integration.is_connected:
+                calendar_id = integration.calendar_id or 'primary'
+                access_token = refresh_access_token_if_needed(integration)
+                headers = {'Authorization': f'Bearer {access_token}'}
+                url = f"{GOOGLE_CALENDAR_API_BASE}/calendars/{urllib.parse.quote(calendar_id)}/events/{urllib.parse.quote(instance.google_calendar_event_id)}"
+                requests.delete(url, headers=headers, timeout=10)
+        except Exception:
+            pass

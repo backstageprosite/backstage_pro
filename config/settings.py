@@ -366,4 +366,12 @@ if EMAIL_PROVIDER == 'smtp' and 'smtp.EmailBackend' in EMAIL_BACKEND:
     if not EMAIL_HOST_PASSWORD:
         raise ImproperlyConfigured("EMAIL_HOST_PASSWORD must be configured when using SMTP EmailBackend.")
 
+# ==============================================================================
+# GOOGLE CALENDAR INTEGRATION (BP-PEND-48)
+# ==============================================================================
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '').strip()
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()
+GOOGLE_OAUTH_REDIRECT_URI = os.getenv('GOOGLE_OAUTH_REDIRECT_URI', '').strip()
+GOOGLE_OAUTH_TOKEN_ENCRYPTION_KEY = os.getenv('GOOGLE_OAUTH_TOKEN_ENCRYPTION_KEY', None)
+
 

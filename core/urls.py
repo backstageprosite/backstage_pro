@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, pwa_views, file_views, notification_views, push_views, views_support
+from . import views, pwa_views, file_views, notification_views, push_views, views_support, google_calendar_views
 urlpatterns = [
     path('manifest.webmanifest', pwa_views.band_manifest, name='manifest'),
     path('sw.js', pwa_views.band_service_worker, name='band_sw'),
@@ -84,6 +84,12 @@ urlpatterns = [
 
     path('arquivos/', views.arquivos_view, name='arquivos'),
     path('configuracoes/', views.configuracoes_view, name='configuracoes'),
+
+    # Google Calendar (BP-PEND-48)
+    path('configuracoes/google-calendar/conectar/', google_calendar_views.google_calendar_connect, name='google_calendar_connect'),
+    path('configuracoes/google-calendar/selecionar/', google_calendar_views.google_calendar_select, name='google_calendar_select'),
+    path('configuracoes/google-calendar/sincronizar/', google_calendar_views.google_calendar_sync_now, name='google_calendar_sync_now'),
+    path('configuracoes/google-calendar/desconectar/', google_calendar_views.google_calendar_disconnect, name='google_calendar_disconnect'),
 
     path('shows/<int:show_id>/pagamentos/novo/', views.payment_create_view, name='payment_create'),
     path('pagamentos/<int:pk>/editar/', views.payment_edit_view, name='payment_edit'),

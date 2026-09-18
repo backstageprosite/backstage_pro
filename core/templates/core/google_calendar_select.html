@@ -1,0 +1,141 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+    .bp-gcal-page .page-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .bp-gcal-page .card-main {
+        border-radius: 12px;
+    }
+    .bp-gcal-page .card-main .card-body {
+        padding: 20px 24px;
+    }
+    .bp-gcal-page .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+    .bp-gcal-page .calendar-radio-item {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .bp-gcal-page .calendar-radio-item:hover {
+        background-color: #f8f9fa;
+        border-color: #0d6efd;
+    }
+    .bp-gcal-page .calendar-radio-item.selected {
+        border-color: #0d6efd;
+        background-color: #e7f1ff;
+    }
+    .bp-gcal-page .btn-submit-action {
+        font-size: 14px;
+        padding: 5px 18px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+    .bp-gcal-page .btn-cancel-action {
+        font-size: 14px;
+        padding: 5px 16px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 50rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bp-gcal-page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="page-title"><i class="fa-brands fa-google text-danger me-2"></i>Escolher Calendário do Google</h4>
+    </div>
+
+    <div class="row">
+        <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+            <div class="card shadow-sm border-0 card-main">
+                <div class="card-body">
+                    <p class="text-muted" style="font-size: 13px;">
+                        Conta conectada: <strong>{{ integration.google_account_email }}</strong>.<br>
+                        Selecione o calendário onde os shows da banda <strong>{{ band.name }}</strong> devem ser criados e atualizados:
+                    </p>
+
+                    <form method="post" id="formSelectCalendar">
+                        {% csrf_token %}
+                        <input type="hidden" name="calendar_name" id="selectedCalendarName" value="{{ integration.calendar_name|default:'' }}">
+
+                        <div class="d-flex flex-column gap-2 mb-4">
+                            {% for cal in calendars %}
+                            <label class="calendar-radio-item d-flex align-items-center justify-content-between {% if integration.calendar_id == cal.id %}selected{% endif %}">
+                                <div class="d-flex align-items-center gap-3">
+                                    <input type="radio" name="calendar_id" value="{{ cal.id }}" class="form-check-input mt-0"
+                                           data-name="{{ cal.summary }}"
+                                           {% if integration.calendar_id == cal.id or not integration.calendar_id and cal.primary %}checked{% endif %}
+                                           required>
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size: 14px;">
+                                            {{ cal.summary }}
+                                            {% if cal.primary %}
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2" style="font-size: 11px;">Principal</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if cal.description %}
+                                        <div class="text-muted" style="font-size: 12px;">{{ cal.description }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <i class="fa-regular fa-calendar text-secondary"></i>
+                            </label>
+                            {% empty %}
+                            <div class="alert alert-warning" style="font-size: 13px;">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Não encontramos calendários com permissão de edição nesta conta. Usaremos o calendário padrão <strong>primary</strong>.
+                                <input type="hidden" name="calendar_id" value="primary">
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'configuracoes' band.slug %}" class="btn btn-light border btn-cancel-action">
+                                Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary fw-bold shadow-sm btn-submit-action">
+                                <i class="fa-solid fa-check me-1"></i> Confirmar Calendário
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const radioInputs = document.querySelectorAll('input[name="calendar_id"]');
+    const nameInput = document.getElementById('selectedCalendarName');
+
+    radioInputs.forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.calendar-radio-item').forEach(item => item.classList.remove('selected'));
+            if (this.checked) {
+                this.closest('.calendar-radio-item').classList.add('selected');
+                if (nameInput) {
+                    nameInput.value = this.getAttribute('data-name') || this.value;
+                }
+            }
+        });
+        if (radio.checked && nameInput && !nameInput.value) {
+            nameInput.value = radio.getAttribute('data-name') || radio.value;
+        }
+    });
+});
+</script>
+{% endblock %}

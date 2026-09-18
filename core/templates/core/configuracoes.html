@@ -197,6 +197,94 @@
                         </div>
                     </div>
 
+                    <hr class="my-3">
+
+                    <h5 class="section-title"><i class="fa-brands fa-google text-danger me-2"></i>Google Calendar</h5>
+                    <div class="card bg-light border-0 rounded-3 mb-3">
+                        <div class="card-body feature-box">
+                            {% if google_calendar_integration and google_calendar_integration.is_connected %}
+                            <div class="d-flex flex-column gap-2">
+                                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 11px;">
+                                                <i class="fa-solid fa-circle-check me-1"></i>Conectado
+                                            </span>
+                                            <span class="fw-bold text-dark" style="font-size: 13px;">{{ google_calendar_integration.google_account_email|default:"Conta Google Conectada" }}</span>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 12px;">
+                                            <strong>Calendário:</strong> {{ google_calendar_integration.calendar_name|default:google_calendar_integration.calendar_id }}
+                                            {% if google_calendar_integration.last_synced_at %}
+                                            <span class="ms-2">• <em>Última sincronização: {{ google_calendar_integration.last_synced_at|date:"d/m/Y H:i" }}</em></span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-wrap align-items-center gap-2 align-self-start align-self-sm-center mt-2 mt-sm-0">
+                                        <form method="post" action="{% url 'google_calendar_sync_now' band.slug %}" class="d-inline m-0 p-0">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-primary fw-bold btn-subaction" title="Sincronizar shows existentes com o Google Calendar">
+                                                <i class="fa-solid fa-rotate me-1"></i> Sincronizar agora
+                                            </button>
+                                        </form>
+                                        <a href="{% url 'google_calendar_select' band.slug %}" class="btn btn-outline-secondary fw-bold btn-subaction" title="Alterar o calendário selecionado">
+                                            <i class="fa-solid fa-calendar-days me-1"></i> Alterar calendário
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger fw-bold btn-subaction" data-bs-toggle="modal" data-bs-target="#modalDesconectarGoogleCalendar">
+                                            <i class="fa-solid fa-link-slash me-1"></i> Desconectar
+                                        </button>
+                                    </div>
+                                </div>
+                                {% if google_calendar_integration.status == 'ERROR' and google_calendar_integration.last_error_message %}
+                                <div class="alert alert-warning py-1 px-2 mb-0 mt-2" style="font-size: 12px;">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ google_calendar_integration.last_error_message }}
+                                    <a href="{% url 'google_calendar_connect' band.slug %}" class="fw-bold ms-1 text-dark">Reconectar Google Calendar</a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                                <div>
+                                    <h6 class="feature-box-title">Sincronização de Shows com o Google Calendar</h6>
+                                    <small class="text-muted feature-box-desc">Conecte a agenda de shows da banda ao Google Calendar para manter seus eventos confirmados e reservas atualizados automaticamente.</small>
+                                </div>
+                                <div class="align-self-start align-self-sm-center flex-shrink-0">
+                                    <a href="{% url 'google_calendar_connect' band.slug %}" class="btn btn-outline-dark fw-bold btn-subaction">
+                                        <i class="fa-brands fa-google me-1 text-danger"></i> Conectar Google Calendar
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if google_calendar_integration and google_calendar_integration.is_connected %}
+                    <!-- Modal Confirmar Desconexão do Google Calendar -->
+                    <div class="modal fade" id="modalDesconectarGoogleCalendar" tabindex="-1" aria-labelledby="modalDesconectarGoogleCalendarLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                                <div class="modal-header border-bottom-0 pb-0">
+                                    <h5 class="modal-title fw-bold text-danger" id="modalDesconectarGoogleCalendarLabel" style="font-size: 16px;">
+                                        Desconectar Google Calendar?
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-3 p-md-4 text-dark" style="font-size: 13px; line-height: 1.4;">
+                                    <span>Tem certeza que deseja desconectar o Google Calendar da banda <strong>{{ band.name }}</strong>? As futuras sincronizações automáticas serão interrompidas. Os eventos já existentes no seu Google Calendar serão mantidos.</span>
+                                </div>
+                                <div class="modal-footer border-top-0 pt-0 d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                                    <form method="post" action="{% url 'google_calendar_disconnect' band.slug %}" class="d-inline m-0 p-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger fw-bold rounded-pill px-3 shadow-sm" style="height: 34px; font-size: 13px;">
+                                            Desconectar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     {% endif %}
 
                     {% include 'core/includes/web_push_card.html' %}

@@ -97,6 +97,9 @@ def sync_proposal_to_show(proposal, actor=None):
                     is_creation=False
                 )
 
+            from core.services.google_calendar import sync_show_to_google_calendar
+            transaction.on_commit(lambda s=show: sync_show_to_google_calendar(s))
+
             return show
 
 def sync_show_to_proposal(show, actor=None):

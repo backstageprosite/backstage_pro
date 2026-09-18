@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.contrib.auth import views as auth_views
-from core import views, views_activation, views_checkout, admin_views
+from core import views, views_activation, views_checkout, admin_views, google_calendar_views
 from core.views import landing_page_view, termos_de_uso_view, politica_de_privacidade_view
 from core.services.payments.asaas import views as views_asaas
 
@@ -39,6 +39,9 @@ urlpatterns = [
     # BP-PEND-62: Rotas globais de Multilogin (devem vir antes de <slug:band_slug>/)
     path('selecionar-banda/', views.selecionar_banda_view, name='selecionar_banda'),
     path('trocar-banda/', views.trocar_banda_view, name='trocar_banda'),
+
+    # BP-PEND-48: Google Calendar OAuth Callback Global
+    path('integracoes/google-calendar/callback/', google_calendar_views.google_calendar_oauth_callback, name='google_calendar_oauth_callback'),
 
     path('<slug:band_slug>/', include('core.urls')),
 ]

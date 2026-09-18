@@ -2688,8 +2688,12 @@ def configuracoes_view(request, band_slug):
             messages.success(request, "Logo da banda atualizada com sucesso!")
             return redirect('configuracoes', band_slug=band.slug)
 
+    from core.models import GoogleCalendarIntegration
+    google_calendar_integration = GoogleCalendarIntegration.objects.filter(band=band).first()
+
     context = {
         'band': band,
+        'google_calendar_integration': google_calendar_integration,
     }
     return render(request, 'core/configuracoes.html', context)
 
@@ -2832,6 +2836,10 @@ def show_create_view(request, band_slug):
                 from core.services.show_notifications import schedule_show_notifications
 
                 schedule_show_notifications(old_show=None, new_show=show, actor=request.user, is_creation=True)
+
+                # Google Calendar (BP-PEND-48)
+                from core.services.google_calendar import sync_show_to_google_calendar
+                transaction.on_commit(lambda s=show: sync_show_to_google_calendar(s, request=request))
 
 
 
@@ -2997,6 +3005,10 @@ def show_edit_view(request, band_slug, pk):
                 if band.is_advanced:
                     from core.services.commercial_sync import sync_show_to_proposal
                     sync_show_to_proposal(show_to_edit, actor=request.user)
+
+                # Google Calendar (BP-PEND-48)
+                from core.services.google_calendar import sync_show_to_google_calendar
+                transaction.on_commit(lambda s=show_to_edit: sync_show_to_google_calendar(s, request=request))
 
                 messages.success(request, "Show atualizado com sucesso!")
 

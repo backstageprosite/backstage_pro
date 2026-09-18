@@ -280,6 +280,8 @@ class ShowAdmin(admin.ModelAdmin):
             super().save_model(request, obj, form, change)
             from core.services.show_notifications import schedule_show_notifications
             schedule_show_notifications(old_show=None, new_show=obj, actor=request.user, is_creation=True)
+            from core.services.google_calendar import sync_show_to_google_calendar
+            sync_show_to_google_calendar(obj, request=request)
             return
 
         # Edição
@@ -300,6 +302,9 @@ class ShowAdmin(admin.ModelAdmin):
         if has_relevant_event:
             from core.services.show_notifications import schedule_show_notifications
             schedule_show_notifications(old_show=old_obj, new_show=obj, actor=request.user, is_creation=False)
+
+        from core.services.google_calendar import sync_show_to_google_calendar
+        sync_show_to_google_calendar(obj, request=request)
     
     def get_list_display(self, request):
         if not request.user.is_superuser:
@@ -570,4 +575,14 @@ class EmailDeliveryAdmin(admin.ModelAdmin):
         'sent_at', 'last_error_code', 'last_error_message', 'message_id',
         'created_at', 'updated_at'
     )
+
+from .models import GoogleCalendarIntegration
+
+@admin.register(GoogleCalendarIntegration)
+class GoogleCalendarIntegrationAdmin(admin.ModelAdmin):
+    list_display = ('band', 'google_account_email', 'calendar_name', 'calendar_id', 'status', 'last_synced_at', 'created_at')
+    list_filter = ('status', 'created_at', 'last_synced_at')
+    search_fields = ('band__name', 'google_account_email', 'calendar_id', 'calendar_name')
+    readonly_fields = ('created_at', 'updated_at', 'last_synced_at', 'last_error_message')
+    exclude = ('encrypted_access_token', 'encrypted_refresh_token')
 
