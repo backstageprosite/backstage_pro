@@ -109,18 +109,19 @@ def schedule_show_notifications(old_show, new_show, actor, is_creation=False):
                     event_key=f"show:{new_show.id}:rev:{rev}:SHOW_CONFIRMED"
                 ))
             
-        # 2. Mudança de Data
+        # 2. Mudança de Data (não notifica quando o show estiver em reserva)
         if old_show and old_show.date != new_show.date:
-            old_d = old_show.date.strftime('%d/%m/%Y') if old_show.date else "data não informada"
-            new_d = new_show.date.strftime('%d/%m/%Y') if new_show.date else "data não informada"
-            msg = f'A data do show "{show_name}" foi alterada de {old_d} para {new_d}.'
-            events.append(EventPayload(
-                event_type='SHOW_DATE_CHANGED',
-                title='Data do show alterada',
-                message=msg,
-                target_url=target_url,
-                event_key=f"show:{new_show.id}:rev:{rev}:SHOW_DATE_CHANGED"
-            ))
+            if old_show.status != 'PRE_RESERVADO' and new_show.status != 'PRE_RESERVADO':
+                old_d = old_show.date.strftime('%d/%m/%Y') if old_show.date else "data não informada"
+                new_d = new_show.date.strftime('%d/%m/%Y') if new_show.date else "data não informada"
+                msg = f'A data do show "{show_name}" foi alterada de {old_d} para {new_d}.'
+                events.append(EventPayload(
+                    event_type='SHOW_DATE_CHANGED',
+                    title='Data do show alterada',
+                    message=msg,
+                    target_url=target_url,
+                    event_key=f"show:{new_show.id}:rev:{rev}:SHOW_DATE_CHANGED"
+                ))
             
         # 3. Mudança de Horário
         # Só deve gerar notificação quando o evento estiver FECHADO / CONFIRMADO.

@@ -561,10 +561,26 @@ document.addEventListener("DOMContentLoaded", function() {
                         });
                     });
                     form.dataset.maskBound = "true";
-                }
             }
         }
     });
+
+    // Garantir funcionamento de botões de acionamento de modal dentro de dropdown menus
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-bs-toggle="modal"]');
+        if (btn && btn.closest('.dropdown-menu')) {
+            const targetSelector = btn.getAttribute('data-bs-target');
+            if (targetSelector) {
+                const modalEl = document.querySelector(targetSelector);
+                if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+                    setTimeout(function() {
+                        const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+                        modalInstance.show(btn);
+                    }, 50);
+                }
+            }
+        }
+    }, true);
 });
 </script>
 

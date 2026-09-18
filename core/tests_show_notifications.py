@@ -386,3 +386,85 @@ class ShowNotificationsTests(TestCase):
             resp_cancel = self.client.post(url_edit, data_cancel)
         self.assertEqual(resp_cancel.status_code, 302)
         self.assertEqual(Notification.objects.filter(related_show_id=show.id, event_type='SHOW_CANCELLED').count(), 2)
+
+    def test_bp_pend_65_show_in_reserva_date_change_no_notification(self):
+        """BP-PEND-65 Regra 1: Alteração de data em show com status RESERVA (PRE_RESERVADO) não gera notificação SHOW_DATE_CHANGED nem incrementa notification_revision."""
+        url_add = reverse('shows_add', kwargs={'band_slug': self.band.slug})
+        data_add = {
+            'title': 'Show em Reserva', 'status': 'PRE_RESERVADO', 'payment_status': 'PENDENTE',
+            'date': '2026-12-21', 'show_time': '21:00'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp_add = self.client.post(url_add, data_add)
+        self.assertEqual(resp_add.status_code, 302)
+        show = Show.objects.get(title='Show em Reserva')
+        initial_revision = show.notification_revision
+
+        # Alterar data de 21/12 para 05/12 permanecendo PRE_RESERVADO
+        url_edit = reverse('shows_edit', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        data_edit = {
+            'title': 'Show em Reserva', 'status': 'PRE_RESERVADO', 'payment_status': 'PENDENTE',
+            'date': '2026-12-05', 'show_time': '21:00',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp_edit = self.client.post(url_edit, data_edit)
+        self.assertEqual(resp_edit.status_code, 302)
+
+        show.refresh_from_db()
+        self.assertEqual(show.notification_revision, initial_revision)
+        self.assertFalse(Notification.objects.filter(related_show_id=show.id, event_type='SHOW_DATE_CHANGED').exists())
+
+    def test_bp_pend_65_show_in_reserva_to_cancelado_no_notification(self):
+        """BP-PEND-65 Regra 2: Mudança de status de RESERVA para CANCELADO não gera notificação de cancelamento."""
+        url_add = reverse('shows_add', kwargs={'band_slug': self.band.slug})
+        data_add = {
+            'title': 'Reserva a Cancelar', 'status': 'PRE_RESERVADO', 'payment_status': 'PENDENTE',
+            'date': '2026-12-21', 'show_time': '21:00'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(url_add, data_add)
+        show = Show.objects.get(title='Reserva a Cancelar')
+
+        url_edit = reverse('shows_edit', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        data_cancel = {
+            'title': 'Reserva a Cancelar', 'status': 'CANCELADO', 'payment_status': 'PENDENTE',
+            'date': '2026-12-21', 'show_time': '21:00',
+            'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0'
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            resp_cancel = self.client.post(url_edit, data_cancel)
+        self.assertEqual(resp_cancel.status_code, 302)
+
+        self.assertFalse(Notification.objects.filter(related_show_id=show.id, event_type='SHOW_CANCELLED').exists())
+
+    def test_bp_pend_66_band_notice_delete_permissions_and_success(self):
+        """BP-PEND-66: Exclusão de aviso por produtor funciona, bloqueia integrante e isola por banda."""
+        from core.models import BandNotice
+        notice = BandNotice.objects.create(
+            band=self.band,
+            message='Aviso de teste importante',
+            scheduled_at=timezone.now(),
+            created_by=self.produtor
+        )
+
+        # 1. Integrante não pode excluir (retorna 403)
+        self.client.login(username='integrante', password='123')
+        delete_url = reverse('band_notices_delete', kwargs={'band_slug': self.band.slug, 'pk': notice.id})
+        resp_int = self.client.post(delete_url)
+        self.assertEqual(resp_int.status_code, 403)
+        self.assertTrue(BandNotice.objects.filter(id=notice.id).exists())
+
+        # 2. Produtor de outra banda não pode excluir aviso desta banda (404 por isolamento)
+        self.client.login(username='outro', password='123')
+        other_band_delete_url = reverse('band_notices_delete', kwargs={'band_slug': self.other_band.slug, 'pk': notice.id})
+        resp_other = self.client.post(other_band_delete_url)
+        self.assertEqual(resp_other.status_code, 404)
+        self.assertTrue(BandNotice.objects.filter(id=notice.id).exists())
+
+        # 3. Produtor autorizado da banda exclui com sucesso via POST
+        self.client.login(username='produtor', password='123')
+        resp_prod = self.client.post(delete_url)
+        self.assertEqual(resp_prod.status_code, 302)
+        self.assertFalse(BandNotice.objects.filter(id=notice.id).exists())
+

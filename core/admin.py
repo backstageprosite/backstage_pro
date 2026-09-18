@@ -286,7 +286,7 @@ class ShowAdmin(admin.ModelAdmin):
         old_obj = Show.objects.select_for_update().get(pk=obj.pk, band=obj.band)
         
         has_relevant_event = (
-            (old_obj.date != obj.date) or
+            (old_obj.date != obj.date and old_obj.status != 'PRE_RESERVADO' and obj.status != 'PRE_RESERVADO') or
             (old_obj.show_time != obj.show_time and old_obj.status == 'CONFIRMADO' and obj.status != 'PRE_RESERVADO') or
             (old_obj.status == 'CONFIRMADO' and obj.status == 'CANCELADO') or
             (old_obj.status != 'CONFIRMADO' and obj.status == 'CONFIRMADO')

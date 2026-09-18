@@ -78,7 +78,7 @@ def sync_proposal_to_show(proposal, actor=None):
 
             # Checar necessidade de incremento de notificação conforme regras do BP-PEND-46
             has_relevant_event = (
-                (old_show_snapshot.date != show.date) or
+                (old_show_snapshot.date != show.date and old_show_snapshot.status != Show.STATUS_PRE_RESERVADO and show.status != Show.STATUS_PRE_RESERVADO) or
                 (old_show_snapshot.show_time != show.show_time and old_show_snapshot.status == Show.STATUS_CONFIRMADO and show.status != Show.STATUS_PRE_RESERVADO) or
                 (old_show_snapshot.status == Show.STATUS_CONFIRMADO and show.status == Show.STATUS_CANCELADO) or
                 (old_show_snapshot.status != Show.STATUS_CONFIRMADO and show.status == Show.STATUS_CONFIRMADO)

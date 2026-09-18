@@ -2958,7 +2958,7 @@ def show_edit_view(request, band_slug, pk):
 
 
                 has_relevant_event = (
-                    (old_date != new_date) or
+                    (old_date != new_date and old_status != 'PRE_RESERVADO' and new_status != 'PRE_RESERVADO') or
                     (old_show_time != new_show_time and old_status == 'CONFIRMADO' and new_status != 'PRE_RESERVADO') or
                     (old_status == 'CONFIRMADO' and new_status == 'CANCELADO') or
                     (old_status != 'CONFIRMADO' and new_status == 'CONFIRMADO')
@@ -5752,8 +5752,9 @@ def band_notices_edit(request, band_slug, pk):
 @band_required
 @advanced_plan_required
 def band_notices_delete(request, band_slug, pk):
-    if not request.user.is_produtor():
-        return redirect('dashboard', band_slug=band_slug)
+    if not request.user.is_produtor(request.band):
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden('Apenas produtores podem excluir avisos.')
 
     if request.method != 'POST':
         from django.core.exceptions import PermissionDenied
