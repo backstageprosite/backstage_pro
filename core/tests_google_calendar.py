@@ -70,13 +70,18 @@ class GoogleCalendarTests(TestCase):
         resp_sync_int = self.client.post(url_sync)
         self.assertEqual(resp_sync_int.status_code, 403)
 
-        # Produtor acessa a tela de configurações normalmente, mas Google Calendar agora está oculto da UI
+        # Produtor acessa a tela de configurações: teaser do Google Calendar aparece com selo "Em breve" e botão desabilitado
         self.client.login(username='produtor_alfa', password='123')
         url_config = reverse('configuracoes', kwargs={'band_slug': self.band.slug})
         resp_config = self.client.get(url_config)
         self.assertEqual(resp_config.status_code, 200)
-        self.assertNotContains(resp_config, 'Google Calendar')
+        self.assertContains(resp_config, 'Google Calendar')
+        self.assertContains(resp_config, 'Em breve')
+        self.assertContains(resp_config, 'disabled')
+        # Não exibe dados da conta conectada nem ações ativas
         self.assertNotContains(resp_config, 'banda.alfa@gmail.com')
+        self.assertNotContains(resp_config, 'Agenda Shows Alfa')
+        self.assertNotContains(resp_config, 'Desconectar')
 
     def test_teste_a_show_com_horario_inicio_e_final(self):
         """Teste A — Show com horário (24/10/2026, início 03:00, fim 05:00):
