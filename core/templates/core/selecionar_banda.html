@@ -298,9 +298,9 @@
         <div class="text-center mt-4 pt-3 border-top">
             <a href="#" class="text-muted small fw-medium" style="text-decoration: none; font-size: 13px;"
                onclick="document.getElementById('formLogout').submit(); return false;">
-                <i class="fa-solid fa-right-from-bracket me-1 text-danger"></i>Sair do Backstage Pro
+                <i class="fa-solid fa-right-from-bracket me-1 text-danger"></i>Sair
             </a>
-            <form id="formLogout" method="post" action="{% url 'admin_painel:logout' %}" class="d-none">
+            <form id="formLogout" method="post" action="{% url 'central_logout' %}" class="d-none">
                 {% csrf_token %}
             </form>
         </div>

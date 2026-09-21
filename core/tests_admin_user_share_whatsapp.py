@@ -107,7 +107,7 @@ class AdminUserWhatsAppShareTests(TestCase):
         self.assertTrue(whatsapp_data['has_phone'])
         self.assertEqual(whatsapp_data['phone_normalized'], '5511987654321')
         self.assertIn('Acessar o Backstage Pro:', whatsapp_data['message_text'])
-        self.assertIn('https://backstagepro.site/banda-alfa/login/', whatsapp_data['message_text'])
+        self.assertIn('https://backstagepro.site/entrar/', whatsapp_data['message_text'])
         self.assertIn('Login: joao_multi', whatsapp_data['message_text'])
         # Mensagem para senha já cadastrada:
         self.assertIn('Senha: utilize a senha já cadastrada na sua conta.', whatsapp_data['message_text'])

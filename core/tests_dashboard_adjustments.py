@@ -28,19 +28,19 @@ class DashboardAdjustmentsTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_login_redirects_to_dashboard_for_produtor(self):
-        response = self.client.post(reverse('login', kwargs={'band_slug': self.band.slug}), {
+        response = self.client.post(reverse('central_login'), {
             'username': 'prod', 'password': 'pwd'
         })
         self.assertRedirects(response, reverse('dashboard', kwargs={'band_slug': self.band.slug}))
         
     def test_login_redirects_to_dashboard_for_integrante(self):
-        response = self.client.post(reverse('login', kwargs={'band_slug': self.band.slug}), {
+        response = self.client.post(reverse('central_login'), {
             'username': 'int', 'password': 'pwd'
         })
         self.assertRedirects(response, reverse('dashboard', kwargs={'band_slug': self.band.slug}))
         
     def test_login_redirects_to_admin_panel_for_superuser(self):
-        response = self.client.post(reverse('login', kwargs={'band_slug': self.band.slug}), {
+        response = self.client.post(reverse('central_login'), {
             'username': 'admin', 'password': 'pwd'
         })
         self.assertRedirects(response, reverse('admin_painel:dashboard'))
@@ -124,7 +124,7 @@ class DashboardAdjustmentsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         
         response = self.client.post(reverse('logout', kwargs={'band_slug': self.band.slug}))
-        self.assertRedirects(response, reverse('login', kwargs={'band_slug': self.band.slug}))
+        self.assertRedirects(response, reverse('central_login'))
         
         self.client.force_login(self.admin)
         response = self.client.get(reverse('admin_painel:dashboard'))

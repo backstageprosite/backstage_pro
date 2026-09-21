@@ -23,14 +23,18 @@ class AuthTests(TestCase):
         )
         
     def test_login_unauthenticated_layout(self):
-        # Acesso deslogado
+        # Acesso deslogado na rota por slug redireciona para o login central
         response = self.client.get(reverse('login', kwargs={'band_slug': self.band_a.slug}))
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'core/login.html')
-        self.assertTemplateUsed(response, 'core/base_public.html')
-        self.assertNotContains(response, 'id="sidebarMenu"')
-        self.assertNotContains(response, 'Sair')
-        self.assertContains(response, 'Entrar')
+        self.assertRedirects(response, reverse('central_login'))
+
+        # Acesso direto à entrada central
+        central_resp = self.client.get(reverse('central_login'))
+        self.assertEqual(central_resp.status_code, 200)
+        self.assertTemplateUsed(central_resp, 'core/central_login.html')
+        self.assertTemplateUsed(central_resp, 'core/base_public.html')
+        self.assertNotContains(central_resp, 'id="sidebarMenu"')
+        self.assertNotContains(central_resp, 'Sair')
+        self.assertContains(central_resp, 'Entrar no Backstage Pro')
 
     def test_login_authenticated_redirect(self):
         self.client.login(username="produtor", password="password123")
@@ -40,10 +44,9 @@ class AuthTests(TestCase):
 
     def test_login_isolation_tenant(self):
         self.client.login(username="produtor", password="password123")
-        # Tenta acessar o login de outra banda
+        # Usuário autenticado que tenta acessar login antigo de outra banda é redirecionado seguramente para sua banda ativa
         response = self.client.get(reverse('login', kwargs={'band_slug': self.band_b.slug}))
-        # Deve dar PermissionDenied 403
-        self.assertEqual(response.status_code, 403)
+        self.assertRedirects(response, reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))
         
     def test_logout(self):
         self.client.login(username="produtor", password="password123")
@@ -52,7 +55,7 @@ class AuthTests(TestCase):
         self.assertEqual(response.status_code, 405) # Method Not Allowed
         
         response = self.client.post(reverse('logout', kwargs={'band_slug': self.band_a.slug}))
-        self.assertRedirects(response, reverse('login', kwargs={'band_slug': self.band_a.slug}))
+        self.assertRedirects(response, reverse('central_login'))
         
         # Confirma que deslogou (dashboard exige login)
         response = self.client.get(reverse('dashboard', kwargs={'band_slug': self.band_a.slug}))

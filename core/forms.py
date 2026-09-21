@@ -235,6 +235,22 @@ class MandatoryPasswordChangeForm(forms.Form):
         self.user.save()
         return self.user
 
+class PasswordResetRequestForm(forms.Form):
+    """
+    Formulário público para solicitação de redefinição de senha.
+    Aceita login (username) ou e-mail.
+    """
+    identification = forms.CharField(
+        label="Login ou e-mail",
+        max_length=254,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-lg bg-light',
+            'placeholder': 'Seu login ou e-mail',
+            'autofocus': True,
+        })
+    )
+
 class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact

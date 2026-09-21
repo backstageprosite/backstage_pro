@@ -35,7 +35,7 @@ urlpatterns = [
     path('contatos/<int:pk>/copiar-global/', views.contact_copy_from_global_view, name='contact_copy_from_global'),
     path('contatos/<int:pk>/curtir/', views.contact_toggle_like_view, name='contact_toggle_like'),
 
-    path('login/', views.BandLoginView.as_view(), name='login'),
+    path('login/', views.legacy_band_login_redirect, name='login'),
     path('logout/', views.band_logout, name='logout'),
     path('show/<int:pk>/', views.show_detail, name='show_detail'),
     path('show/<int:pk>/financeiro/', views.show_finance_detail_view, name='show_finance_detail'),

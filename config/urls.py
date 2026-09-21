@@ -19,7 +19,12 @@ urlpatterns = [
     path('termos-de-uso/', termos_de_uso_view, name='termos_de_uso'),
     path('politica-de-privacidade/', politica_de_privacidade_view, name='politica_de_privacidade'),
     
+    # BP-PEND-71: Login Central e Logout Central do Backstage Pro
+    path('entrar/', views.CentralLoginView.as_view(), name='central_login'),
+    path('sair/', views.central_logout, name='central_logout'),
+
     # Rotas de Recuperação de Senha (Globais)
+    path('recuperar-senha/', views.CustomPasswordResetView.as_view(), name='password_reset_alias'),
     path('esqueci-minha-senha/', views.CustomPasswordResetView.as_view(), name='password_reset'),
     path('esqueci-minha-senha/enviado/', views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
     path('redefinir-senha/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),

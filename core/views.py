@@ -342,131 +342,110 @@ def band_root_redirect_view(request, band_slug):
 
 
 
-class BandLoginView(LoginView):
+def get_post_login_redirect_url(user, default_band=None):
+    """
+    BP-PEND-71 / BP-PEND-62: Resolução centralizada e canônica de pós-login:
+    - user.must_change_password -> troca_senha_obrigatoria
+    - user.is_superuser -> admin_painel:dashboard
+    - 2+ memberships ativas -> selecionar_banda
+    - 1 membership ativa -> dashboard ou minha_assinatura da banda
+    - Fallback legado (user.band) -> dashboard ou minha_assinatura
+    - default_band (se fornecida e usuário tem acesso) -> dashboard ou minha_assinatura
+    - Sem banda válida -> selecionar_banda com mensagem amigável
+    """
+    if user.must_change_password:
+        return reverse('troca_senha_obrigatoria')
 
-    template_name = 'core/login.html'
+    if user.is_superuser:
+        return reverse('admin_painel:dashboard')
+
+    active_memberships = user.get_active_memberships()
+    count = active_memberships.count()
+
+    if count >= 2:
+        return reverse('selecionar_banda')
+    elif count == 1:
+        m = active_memberships.first()
+        if not m.band.has_active_subscription:
+            return reverse('minha_assinatura', kwargs={'band_slug': m.band.slug})
+        return reverse('dashboard', kwargs={'band_slug': m.band.slug})
+
+    if user.band:
+        if not user.band.has_active_subscription:
+            return reverse('minha_assinatura', kwargs={'band_slug': user.band.slug})
+        return reverse('dashboard', kwargs={'band_slug': user.band.slug})
+
+    if default_band and user.has_access_to_band(default_band):
+        if not default_band.has_active_subscription:
+            return reverse('minha_assinatura', kwargs={'band_slug': default_band.slug})
+        return reverse('dashboard', kwargs={'band_slug': default_band.slug})
+
+    return reverse('selecionar_banda')
 
 
+class CentralLoginView(LoginView):
+    """
+    BP-PEND-71: Entrada central e canônica (/entrar/) para todos os usuários das bandas.
+    Totalmente neutra e desacoplada de slug de banda.
+    """
+    template_name = 'core/central_login.html'
 
     def dispatch(self, request, *args, **kwargs):
-
         if request.user.is_authenticated:
-
-            if request.user.must_change_password:
-                return redirect('troca_senha_obrigatoria')
-
-            band_slug = self.kwargs.get('band_slug')
-
-            band = get_object_or_404(Band, slug=band_slug)
-
-            if request.user.is_superuser:
-
-                return redirect('admin_painel:dashboard')
-
-            # BP-PEND-62: Verifica acesso via membership ou fallback legado
-            if request.user.has_access_to_band(band):
-                active_memberships = request.user.get_active_memberships()
-                if active_memberships.count() >= 2:
-                    return redirect('selecionar_banda')
-                if not band.has_active_subscription:
-                    return redirect('minha_assinatura', band_slug=band.slug)
-                return redirect('dashboard', band_slug=band.slug)
-            elif request.user.band == band:
-                # Fallback legado: user.band aponta para esta banda mas sem membership
-                if not band.has_active_subscription:
-                    return redirect('minha_assinatura', band_slug=band.slug)
-                return redirect('dashboard', band_slug=band.slug)
-            else:
-                raise PermissionDenied("Você não pertence a esta banda.")
-
+            return redirect(get_post_login_redirect_url(request.user))
         return super().dispatch(request, *args, **kwargs)
 
-
-
-    def get_context_data(self, **kwargs):
-
-        context = super().get_context_data(**kwargs)
-
-        band_slug = self.kwargs.get('band_slug')
-
-        band = get_object_or_404(Band, slug=band_slug)
-
-        context['band'] = band
-
-        return context
-
-
-
     def get_success_url(self):
-
         user = self.request.user
-
-        if user.must_change_password:
-            return reverse('troca_senha_obrigatoria')
-
-        if user.is_superuser:
-
-            return reverse('admin_painel:dashboard')
-
-        # BP-PEND-62: Multi-band redirect
-        active_memberships = user.get_active_memberships()
-        count = active_memberships.count()
-
-        if count >= 2:
-            return reverse('selecionar_banda')
-        elif count == 1:
-            m = active_memberships.first()
-            if not m.band.has_active_subscription:
-                return reverse('minha_assinatura', kwargs={'band_slug': m.band.slug})
-            return reverse('dashboard', kwargs={'band_slug': m.band.slug})
-
-        # Fallback legado: user.band
-        if user.band:
-            if not user.band.has_active_subscription:
-                return reverse('minha_assinatura', kwargs={'band_slug': user.band.slug})
-            return reverse('dashboard', kwargs={'band_slug': user.band.slug})
-
-        band_slug = self.kwargs.get('band_slug')
-        band = get_object_or_404(Band, slug=band_slug)
-        if not band.has_active_subscription:
-            return reverse('minha_assinatura', kwargs={'band_slug': band_slug})
-        return reverse('dashboard', kwargs={'band_slug': band_slug})
+        next_url = self.request.POST.get('next') or self.request.GET.get('next')
+        if next_url and next_url.startswith('/'):
+            return next_url
+        return get_post_login_redirect_url(user)
 
 
+def legacy_band_login_redirect(request, band_slug):
+    """
+    BP-PEND-71: Preserva retrocompatibilidade com links antigos /<band_slug>/login/
+    redirecionando permanentemente/seguramente para a entrada central /entrar/.
+    """
+    next_url = request.GET.get('next')
+    if request.user.is_authenticated:
+        band = Band.objects.filter(slug=band_slug).first()
+        return redirect(get_post_login_redirect_url(request.user, default_band=band))
+
+    central_url = reverse('central_login')
+    if next_url and next_url.startswith('/'):
+        from urllib.parse import quote
+        return redirect(f"{central_url}?next={quote(next_url)}")
+    return redirect(central_url)
 
 
-    def form_valid(self, form):
-
-        user = form.get_user()
-
-        band_slug = self.kwargs.get('band_slug')
-
-        band = get_object_or_404(Band, slug=band_slug)
-
-        if not band.is_active and not user.is_superuser:
-
-            messages.error(self.request, "O acesso desta banda está suspenso. Procure a administração.")
-
-            return self.form_invalid(form)
-
-        # BP-PEND-62: Verifica acesso via membership ou fallback legado
-        if not user.has_access_to_band(band) and user.band != band and not user.is_superuser:
-
-            messages.error(self.request, "Usuário não pertence a esta banda.")
-
-            return self.form_invalid(form)
-
-        return super().form_valid(form)
-
+class BandLoginView(CentralLoginView):
+    """
+    Alias mantido para imports legados ou retrocompatibilidade.
+    """
+    pass
 
 
 @require_POST
-
-def band_logout(request, band_slug):
-
+def central_logout(request):
+    """
+    BP-PEND-71: Logout central de usuários de bandas.
+    Encerra a sessão, limpa contexto de banda ativa e redireciona para /entrar/.
+    """
+    request.session.pop('active_band_id', None)
     logout(request)
+    return redirect('central_login')
 
-    return redirect('login', band_slug=band_slug)
+
+@require_POST
+def band_logout(request, band_slug=None):
+    """
+    BP-PEND-71: Encerra a sessão e redireciona para /entrar/ (nunca para o admin).
+    """
+    request.session.pop('active_band_id', None)
+    logout(request)
+    return redirect('central_login')
 
 
 
@@ -1240,130 +1219,113 @@ def agenda_pdf_view(request, band_slug):
 
 
 class CustomPasswordResetView(auth_views.PasswordResetView):
-
+    """
+    BP-PEND-71: Recuperação automática por e-mail:
+    - Aceita login (username) ou e-mail no mesmo campo.
+    - Segurança contra enumeração de contas: resposta pública idêntica (neutra).
+    - Se username: localiza a conta e, se possuir e-mail válido, envia instruções.
+    - Se e-mail: se houver exatamente 1 usuário, envia; se houver duplicados, não arbitra.
+    - Se não houver e-mail válido ou usuário não existir: resposta permanece neutra.
+    - Utiliza token seguro do Django (PasswordResetTokenGenerator) e uidb64.
+    """
     template_name = 'core/password_reset.html'
-
-    email_template_name = 'core/password_reset_email.html'
-
+    email_template_name = 'emails/password_reset.html'
     subject_template_name = 'core/password_reset_subject.txt'
-
     success_url = '/esqueci-minha-senha/enviado/'
-
-
-
-    def get_context_data(self, **kwargs):
-
-        context = super().get_context_data(**kwargs)
-
-        band_slug = self.request.GET.get('band')
-
-        if band_slug:
-
-            context['band'] = Band.objects.filter(slug=band_slug).first()
-
-        return context
-
-
+    from core.forms import PasswordResetRequestForm
+    form_class = PasswordResetRequestForm
 
     def form_valid(self, form):
+        identification = form.cleaned_data.get('identification', '').strip()
+        user_model = User
 
-        band_slug = self.request.GET.get('band')
+        target_user = None
+        # 1. Tenta identificar primeiro por username exato
+        try:
+            target_user = user_model.objects.get(username=identification)
+        except user_model.DoesNotExist:
+            target_user = None
+        except user_model.MultipleObjectsReturned:
+            target_user = None
 
-        if band_slug:
+        # 2. Se não encontrou por username, busca por e-mail (case-insensitive)
+        if not target_user and '@' in identification:
+            matching_users = list(user_model.objects.filter(email__iexact=identification))
+            if len(matching_users) == 1:
+                target_user = matching_users[0]
+            elif len(matching_users) > 1:
+                logger.warning(
+                    "Recuperação de senha solicitada para e-mail duplicado (%s): %d contas encontradas. "
+                    "Nenhuma conta arbitrária foi selecionada por segurança.",
+                    identification, len(matching_users)
+                )
+                target_user = None
 
-            self.extra_email_context = {'band_slug': band_slug}
+        # 3. Se um usuário válido com e-mail cadastrado foi identificado com precisão:
+        if target_user and target_user.is_active and target_user.email and target_user.email.strip():
+            self._send_password_reset_email(target_user)
+        else:
+            logger.info(
+                "Solicitação de recuperação processada com resposta neutra (user_found=%s, has_email=%s)",
+                bool(target_user), bool(target_user.email if target_user else False)
+            )
 
-        return super().form_valid(form)
+        return redirect(self.get_success_url())
 
+    def _send_password_reset_email(self, user):
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+        from django.contrib.auth.tokens import default_token_generator
+        from core.services.email_service import get_canonical_base_url, enqueue_email, render_and_send_email_delivery
+        from core.models import EmailDelivery
 
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        base_url = get_canonical_base_url()
+        reset_path = reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+        reset_url = f"{base_url}{reset_path}"
 
-    def get_success_url(self):
+        user_name = user.get_full_name() or user.first_name or user.username
+        subject = "Redefinição de senha — Backstage Pro"
+        idempotency_key = f"pwd-reset-{user.id}-{int(datetime.datetime.now().timestamp())}"
 
-        url = super().get_success_url()
+        context_data = {
+            'user_name': user_name,
+            'reset_url': reset_url,
+            'base_url': base_url,
+        }
 
-        band_slug = self.request.GET.get('band')
+        # Enfileira na fila transacional do sistema
+        delivery, created = enqueue_email(
+            email_type='PASSWORD_RESET',
+            recipient_email=user.email.strip(),
+            subject=subject,
+            idempotency_key=idempotency_key,
+            template_name='emails/password_reset',
+            context_data=context_data,
+            related_object_type='User',
+            related_object_id=str(user.id),
+            max_attempts=3
+        )
 
-        if band_slug:
-
-            return f"{url}?band={band_slug}"
-
-        return url
-
+        # Dispara o envio imediato da mensagem
+        try:
+            render_and_send_email_delivery(delivery)
+        except Exception as e:
+            logger.error("Erro ao enviar e-mail de recuperação para delivery %s: %s", delivery.id, str(e))
 
 
 class CustomPasswordResetDoneView(auth_views.PasswordResetDoneView):
-
     template_name = 'core/password_reset_done.html'
 
 
-
-    def get_context_data(self, **kwargs):
-
-        context = super().get_context_data(**kwargs)
-
-        band_slug = self.request.GET.get('band')
-
-        if band_slug:
-
-            context['band'] = Band.objects.filter(slug=band_slug).first()
-
-        return context
-
-
-
 class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
-
     template_name = 'core/password_reset_confirm.html'
-
     success_url = '/redefinir-senha/concluido/'
 
 
-
-    def get_context_data(self, **kwargs):
-
-        context = super().get_context_data(**kwargs)
-
-        band_slug = self.request.GET.get('band')
-
-        if band_slug:
-
-            context['band'] = Band.objects.filter(slug=band_slug).first()
-
-        return context
-
-
-
-    def get_success_url(self):
-
-        url = super().get_success_url()
-
-        band_slug = self.request.GET.get('band')
-
-        if band_slug:
-
-            return f"{url}?band={band_slug}"
-
-        return url
-
-
-
 class CustomPasswordResetCompleteView(auth_views.PasswordResetCompleteView):
-
     template_name = 'core/password_reset_complete.html'
-
-
-
-    def get_context_data(self, **kwargs):
-
-        context = super().get_context_data(**kwargs)
-
-        band_slug = self.request.GET.get('band')
-
-        if band_slug:
-
-            context['band'] = Band.objects.filter(slug=band_slug).first()
-
-        return context
 
 
 
@@ -3316,22 +3278,10 @@ def build_admin_user_whatsapp_access_data(user, raw_password="", is_provisional=
         elif user.band:
             band_names = [user.band.name]
 
-    # Resolução da URL de Login
+    # Resolução da URL de Login central canônica (BP-PEND-71)
     from django.urls import reverse
-    primary_band = None
-    if user:
-        first_memb = user.band_memberships.filter(is_active=True, band__is_active=True).select_related('band').order_by('band__name').first()
-        if first_memb:
-            primary_band = first_memb.band
-        elif user.band:
-            primary_band = user.band
-
-    if primary_band and primary_band.slug:
-        login_path = reverse('login', kwargs={'band_slug': primary_band.slug})
-        login_url = f"https://backstagepro.site{login_path}"
-    else:
-        login_path = reverse('admin_painel:login')
-        login_url = f"https://backstagepro.site{login_path}"
+    login_path = reverse('central_login')
+    login_url = f"https://backstagepro.site{login_path}"
 
     # Emojis Unicode seguros
     w_hand = "\U0001F44B"
