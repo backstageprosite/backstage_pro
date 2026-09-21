@@ -1,9 +1,10 @@
 import logging
+import re
 from decimal import Decimal
 from typing import Dict, Any, Tuple, Optional
 from django.db import transaction
 from django.utils import timezone
-from core.models import Band, BandSubscription, BillingRecord, SignupOrder, PaymentWebhookEvent, AnnualPlanPurchase, GatewayPaymentMethod
+from core.models import Band, BandSubscription, BillingRecord, SignupOrder, PaymentWebhookEvent, AnnualPlanPurchase, GatewayPaymentMethod, User, BandActivationToken
 from core.services.payments.base import generate_unique_band_slug, calculate_next_billing_date, extract_asaas_id
 from core.services.payments.activation import create_band_activation_token
 
@@ -324,16 +325,47 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
         # 5. Criar BandActivationToken e notificação (Apenas para novas bandas)
         # Para bandas já existentes (BP-PEND-60), os usuários já possuem acesso e senha configurada.
         if not is_existing_band:
+            # BP-PEND-68: Identificação de Comprador Recorrente
+            # 1. Prioridade absoluta: buscar por User.cpf == responsible_cpf (11 dígitos limpos)
+            # 2. Fallback legado: se não houver por CPF e order.email corresponder a exatamente 1 User
+            norm_resp_cpf = re.sub(r'\D', '', getattr(order, 'responsible_cpf', None) or '')
+            existing_user = None
+
+            if norm_resp_cpf and len(norm_resp_cpf) == 11:
+                existing_user = User.objects.filter(cpf=norm_resp_cpf).first()
+
+            if not existing_user and order.email:
+                users_by_email = User.objects.filter(email__iexact=order.email.strip())
+                if users_by_email.count() == 1:
+                    candidate = users_by_email.first()
+                    # Fallback controlado: apenas se o usuário legado não tiver CPF preenchido
+                    # ou se o CPF dele for o mesmo informado
+                    if not candidate.cpf or candidate.cpf == norm_resp_cpf:
+                        existing_user = candidate
+                        masked = f"{norm_resp_cpf[:3]}.***.***-{norm_resp_cpf[-2:]}" if norm_resp_cpf else "N/A"
+                        logger.info(
+                            "Comprador recorrente identificado via fallback legado por e-mail: user_id=%s, email=%s, cpf_mascarado=%s",
+                            candidate.id, order.email, masked
+                        )
+
+            is_recurring_buyer = (existing_user is not None)
+            token_type = BandActivationToken.TokenType.LINK_BAND if is_recurring_buyer else BandActivationToken.TokenType.NEW_ACCOUNT
+
+            # Por segurança (Seção 9): se mesmo CPF + e-mail diferente, o link de vinculação deve ir
+            # prioritariamente para o e-mail JÁ CADASTRADO na conta existente
+            token_email = existing_user.email if (is_recurring_buyer and existing_user.email) else order.email
+
             activation, raw_token = create_band_activation_token(
                 band=band,
-                email=order.email,
+                email=token_email,
                 responsible_name=order.responsible_name,
                 signup_order=order,
-                valid_hours=48
+                valid_hours=48,
+                token_type=token_type,
+                target_user=existing_user
             )
 
-            # 5.1 Enfileirar EmailDelivery ACCOUNT_ACTIVATION (desacoplado de SMTP)
-            # Formatação detalhada da forma de pagamento e parcelamento (BP-PEND-40)
+            # 5.1 Formatação detalhada da forma de pagamento e parcelamento (BP-PEND-40)
             payment_info = None
             if pref_method == 'PIX':
                 payment_info = 'PIX — à vista'
@@ -350,26 +382,49 @@ def process_checkout_paid_event(payload: Dict[str, Any], gateway_event_id: str =
 
             try:
                 from core.services.email_service import enqueue_email
-                enqueue_email(
-                    email_type='ACCOUNT_ACTIVATION',
-                    recipient_email=order.email,
-                    subject='Sua conta no Backstage Pro está pronta!',
-                    idempotency_key=f"activation-signup-{order.id}",
-                    template_name='emails/account_activation',
-                    context_data={
-                        'responsible_name': order.responsible_name or band.name,
-                        'band_name': band.name,
-                        'plan_name': plan_display,
-                        'billing_cycle': 'Anual' if is_annual else 'Mensal',
-                        'amount': f"{order.amount:.2f}".replace('.', ','),
-                        'payment_info': payment_info,
-                    },
-                    related_object_type='BandActivationToken',
-                    related_object_id=str(activation.pk)
-                )
+
+                if is_recurring_buyer:
+                    # BP-PEND-68: E-mail específico para comprador recorrente vinculando nova banda à conta existente
+                    enqueue_email(
+                        email_type='BAND_ADDED_TO_EXISTING_ACCOUNT',
+                        recipient_email=token_email,
+                        subject='Sua nova banda está pronta no Backstage Pro',
+                        idempotency_key=f"link-band-signup-{order.id}",
+                        template_name='emails/band_added_to_existing_account',
+                        context_data={
+                            'responsible_name': existing_user.first_name or order.responsible_name or band.name,
+                            'username': existing_user.username,
+                            'band_name': band.name,
+                            'plan_name': plan_display,
+                            'billing_cycle': 'Anual' if is_annual else 'Mensal',
+                            'amount': f"{order.amount:.2f}".replace('.', ','),
+                            'payment_info': payment_info,
+                        },
+                        related_object_type='BandActivationToken',
+                        related_object_id=str(activation.pk)
+                    )
+                else:
+                    # Fluxo de Primeiro Acesso (NEW_ACCOUNT)
+                    enqueue_email(
+                        email_type='ACCOUNT_ACTIVATION',
+                        recipient_email=order.email,
+                        subject='Sua conta no Backstage Pro está pronta!',
+                        idempotency_key=f"activation-signup-{order.id}",
+                        template_name='emails/account_activation',
+                        context_data={
+                            'responsible_name': order.responsible_name or band.name,
+                            'band_name': band.name,
+                            'plan_name': plan_display,
+                            'billing_cycle': 'Anual' if is_annual else 'Mensal',
+                            'amount': f"{order.amount:.2f}".replace('.', ','),
+                            'payment_info': payment_info,
+                        },
+                        related_object_type='BandActivationToken',
+                        related_object_id=str(activation.pk)
+                    )
                 del raw_token  # Limpa token em texto plano da memória
             except Exception as e:
-                logger.warning("Falha ao enfileirar e-mail de ativação para pedido %s: %s", order.external_reference, str(e))
+                logger.warning("Falha ao enfileirar e-mail para pedido %s: %s", order.external_reference, str(e))
 
         # 6. Atualizar SignupOrder
         order.band = band

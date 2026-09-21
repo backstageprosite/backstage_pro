@@ -4,9 +4,30 @@ from core.file_policy import validate_file_size_and_type
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 import hashlib
+import re
 import uuid
 from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
+
+def validate_cpf_digits(value):
+    """
+    Valida se o CPF possui exatamente 11 dígitos e satisfaz o cálculo dos dígitos verificadores.
+    """
+    if not value:
+        return
+    digits = re.sub(r'\D', '', str(value))
+    if len(digits) != 11 or digits == digits[0] * 11:
+        raise ValidationError("CPF inválido. Deve conter exatamente 11 dígitos válidos.")
+    soma = sum(int(digits[i]) * (10 - i) for i in range(9))
+    d1 = 11 - (soma % 11)
+    d1 = 0 if d1 >= 10 else d1
+    if int(digits[9]) != d1:
+        raise ValidationError("CPF inválido. Dígitos verificadores inconsistentes.")
+    soma = sum(int(digits[i]) * (11 - i) for i in range(10))
+    d2 = 11 - (soma % 11)
+    d2 = 0 if d2 >= 10 else d2
+    if int(digits[10]) != d2:
+        raise ValidationError("CPF inválido. Dígitos verificadores inconsistentes.")
 
 def validate_image_size(value):
     filesize = value.size
@@ -131,6 +152,16 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='INTEGRANTE', verbose_name='Perfil')
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='users', null=True, blank=True, verbose_name="Banda")
+    cpf = models.CharField(
+        max_length=11,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+        validators=[validate_cpf_digits],
+        verbose_name='CPF do Responsável',
+        help_text='11 dígitos numéricos do CPF do titular da conta.'
+    )
     email = models.EmailField(unique=False, blank=True, null=True, verbose_name='E-mail')
     phone = models.CharField(max_length=30, blank=True, null=True, verbose_name='Telefone')
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True, verbose_name='Foto de Perfil')
@@ -212,6 +243,22 @@ class User(AbstractUser):
         if band:
             return self.is_produtor_for_band(band)
         return self.role in ['PRODUTOR', 'EMPRESARIO']
+
+    def clean(self):
+        super().clean()
+        if self.cpf:
+            self.cpf = re.sub(r'\D', '', str(self.cpf))
+            if not self.cpf:
+                self.cpf = None
+            else:
+                validate_cpf_digits(self.cpf)
+
+    def save(self, *args, **kwargs):
+        if self.cpf:
+            self.cpf = re.sub(r'\D', '', str(self.cpf))
+            if not self.cpf:
+                self.cpf = None
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Usuário"
@@ -2294,7 +2341,16 @@ class SignupOrder(models.Model):
 
     band_name = models.CharField(max_length=150, verbose_name='Nome da Banda / Artista')
     responsible_name = models.CharField(max_length=200, verbose_name='Nome do Responsável')
-    cpf_cnpj = models.CharField(max_length=30, blank=True, null=True, verbose_name='CPF ou CNPJ')
+    responsible_cpf = models.CharField(
+        max_length=11,
+        blank=True,
+        null=True,
+        db_index=True,
+        validators=[validate_cpf_digits],
+        verbose_name='CPF do Responsável',
+        help_text='CPF da pessoa física titular do acesso.'
+    )
+    cpf_cnpj = models.CharField(max_length=30, blank=True, null=True, verbose_name='CPF ou CNPJ para Cobrança')
     email = models.EmailField(verbose_name='E-mail do Responsável')
     phone = models.CharField(max_length=30, blank=True, null=True, verbose_name='Telefone / WhatsApp')
     postal_code = models.CharField(max_length=15, blank=True, null=True, verbose_name='CEP')
@@ -2366,11 +2422,31 @@ class PaymentWebhookEvent(models.Model):
 
 class BandActivationToken(models.Model):
     """
-    Token criptográfico de uso único para primeiro acesso e criação de conta do comprador da banda.
+    Token criptográfico de uso único para primeiro acesso (NEW_ACCOUNT)
+    ou vinculação de nova banda à conta existente (LINK_BAND).
     O token em texto puro NUNCA é salvo no banco, apenas seu SHA-256 hash.
     """
+    class TokenType(models.TextChoices):
+        NEW_ACCOUNT = 'NEW_ACCOUNT', 'Criação de Nova Conta'
+        LINK_BAND = 'LINK_BAND', 'Vincular à Conta Existente'
+
     band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='activation_tokens', verbose_name='Banda')
     signup_order = models.ForeignKey(SignupOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name='activation_tokens', verbose_name='Pedido de Origem')
+    token_type = models.CharField(
+        max_length=20,
+        choices=TokenType.choices,
+        default=TokenType.NEW_ACCOUNT,
+        db_index=True,
+        verbose_name='Tipo de Token'
+    )
+    target_user = models.ForeignKey(
+        'User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='activation_tokens',
+        verbose_name='Usuário Alvo (Conta Existente)'
+    )
     email = models.EmailField(verbose_name='E-mail do Destinatário')
     responsible_name = models.CharField(max_length=200, blank=True, null=True, verbose_name='Nome do Responsável')
     token_hash = models.CharField(max_length=64, unique=True, db_index=True, verbose_name='Hash SHA-256 do Token')
@@ -2702,6 +2778,7 @@ class EmailDelivery(models.Model):
     class EmailType(models.TextChoices):
         SYSTEM_TEST = 'SYSTEM_TEST', 'Teste de Sistema'
         ACCOUNT_ACTIVATION = 'ACCOUNT_ACTIVATION', 'Ativação de Conta'
+        BAND_ADDED_TO_EXISTING_ACCOUNT = 'BAND_ADDED_TO_EXISTING_ACCOUNT', 'Nova Banda para Conta Existente'
         ANNUAL_RENEWAL_NOTICE = 'ANNUAL_RENEWAL_NOTICE', 'Aviso Pré-Renovação Anual'
         ANNUAL_RENEWAL_SUCCESS = 'ANNUAL_RENEWAL_SUCCESS', 'Renovação Anual Confirmada'
         PAYMENT_OVERDUE = 'PAYMENT_OVERDUE', 'Aviso de Pagamento em Atraso'

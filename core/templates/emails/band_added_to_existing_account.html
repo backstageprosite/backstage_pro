@@ -1,0 +1,29 @@
+{% extends "emails/base_email.html" %}
+{% block content %}
+<h2 class="content-title" style="margin-top: 0; margin-bottom: 16px; color: #0f172a; font-size: 20px; font-weight: 700; line-height: 1.35;">Sua nova banda está pronta no Backstage Pro</h2>
+<p class="lead-text" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; line-height: 1.6; color: #334155;">Olá, <strong>{{ responsible_name|default:"Produtor(a)" }}</strong>!</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 18px; font-size: 14px; line-height: 1.6; color: #475569;">O pagamento da assinatura da <strong>{{ band_name }}</strong> foi confirmado.</p>
+
+<div class="info-card info-card-success" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #6BD443; border-radius: 8px; padding: 18px 20px; margin: 22px 0;">
+  <p class="info-item" style="margin: 0 0 6px 0; font-size: 14px; color: #166534;"><strong>Plano:</strong> {{ plan_name }} ({{ billing_cycle }})</p>
+  <p class="info-item" style="margin: {% if payment_info %}0 0 6px 0{% else %}0{% endif %}; font-size: 14px; color: #166534;"><strong>Valor:</strong> R$ {{ amount }}</p>
+  {% if payment_info %}<p class="info-item" style="margin: 0; font-size: 14px; color: #166534;"><strong>Pagamento:</strong> {{ payment_info }}</p>{% endif %}
+</div>
+
+<p class="support-text" style="margin-top: 0; margin-bottom: 14px; font-size: 14px; line-height: 1.6; color: #475569;">Como você já possui uma conta no Backstage Pro, <strong>não é necessário criar um novo login ou uma nova senha</strong>.</p>
+<p class="support-text" style="margin-top: 0; margin-bottom: 24px; font-size: 14px; line-height: 1.6; color: #475569;">Sua nova banda poderá ser adicionada ao mesmo acesso que você já utiliza:</p>
+
+<div style="text-align: center; margin: 28px 0;">
+  <a href="{{ activation_url }}" class="btn-cta" style="background-color: #6BD443; color: #0f172a !important; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 8px; display: inline-block; text-align: center; letter-spacing: 0.3px; border: 1px solid #5ec437;">ADICIONAR BANDA À MINHA CONTA</a>
+</div>
+
+<div class="info-card" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 20px; margin: 22px 0;">
+  <p class="info-item" style="margin: 0 0 8px 0; font-size: 14px; color: #334155;"><strong>Login de acesso:</strong> <code>{{ username }}</code></p>
+  <p class="info-item" style="margin: 0; font-size: 13px; color: #64748b;">Ao acessar o link, utilize seu login e senha habituais caso seja solicitado. Se não lembrar a senha, utilize <a href="{{ base_url }}/esqueci-minha-senha/" style="color: #0284c7; text-decoration: underline;">Esqueci minha senha</a>.</p>
+</div>
+
+<p class="support-text" style="margin-top: 0; margin-bottom: 20px; font-size: 14px; line-height: 1.6; color: #475569;">Depois da confirmação, você poderá alternar entre suas bandas pelo seletor de bandas do Backstage Pro. Seu acesso continua sendo o mesmo.</p>
+
+<p style="font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 20px 0 24px 0;">* Este link é de uso pessoal e intransferível, válido por 48 horas. Por motivos de segurança, sua senha nunca é enviada por e-mail.</p>
+<p class="support-text" style="margin-top: 24px; margin-bottom: 0; font-size: 14px; line-height: 1.6; color: #475569;">Atenciosamente,<br><strong style="color: #0f172a;">Equipe Backstage Pro</strong></p>
+{% endblock %}

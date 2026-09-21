@@ -23,10 +23,13 @@ def create_band_activation_token(
     email: str,
     responsible_name: str,
     signup_order: SignupOrder = None,
-    valid_hours: int = 48
+    valid_hours: int = 48,
+    token_type: str = BandActivationToken.TokenType.NEW_ACCOUNT,
+    target_user = None
 ) -> Tuple[BandActivationToken, str]:
     """
-    Cria registro de token de ativação com validade (padrão 48h) e retorna a instância e o token em texto puro.
+    Cria registro de token de ativação (NEW_ACCOUNT ou LINK_BAND) com validade (padrão 48h)
+    e retorna a instância e o token em texto puro.
     Persiste o token_hash para validação pública e o encrypted_token (Fernet) para recuperação pelo worker de email.
     """
     raw_token, token_hash = generate_activation_token_pair()
@@ -37,6 +40,8 @@ def create_band_activation_token(
     activation = BandActivationToken.objects.create(
         band=band,
         signup_order=signup_order,
+        token_type=token_type,
+        target_user=target_user,
         email=email,
         responsible_name=responsible_name,
         token_hash=token_hash,

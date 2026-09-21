@@ -90,6 +90,7 @@ class CheckoutView(View):
         cd = form.cleaned_data
         band_name = cd['band_name']
         responsible_name = cd['responsible_name']
+        responsible_cpf = cd.get('responsible_cpf') or ''
         email = cd['email']
         phone = cd.get('phone') or ''
         cpf_cnpj = cd.get('cpf_cnpj') or ''
@@ -116,6 +117,7 @@ class CheckoutView(View):
                     'gateway_provider': 'ASAAS',
                     'band_name': band_name,
                     'responsible_name': responsible_name,
+                    'responsible_cpf': responsible_cpf,
                     'email': email,
                     'phone': phone,
                     'cpf_cnpj': cpf_cnpj,

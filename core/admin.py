@@ -67,13 +67,22 @@ class ShowTeamCostInline(admin.TabularInline):
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     model = User
-    list_display = ['username', 'first_name', 'last_name', 'band', 'role', 'is_staff']
+    list_display = ['username', 'first_name', 'last_name', 'get_masked_cpf', 'band', 'role', 'is_staff']
     list_filter = ('band', 'role', 'is_staff', 'is_active')
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
-        ('Informações Pessoais', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Informações Pessoais', {'fields': ('first_name', 'last_name', 'cpf', 'email', 'phone')}),
         ('Perfil Backstage', {'fields': ('band', 'role', 'is_staff', 'is_active')}),
     )
+
+    def get_masked_cpf(self, obj):
+        if not obj.cpf:
+            return "-"
+        c = str(obj.cpf)
+        if len(c) == 11:
+            return f"{c[:3]}.***.***-{c[-2:]}"
+        return "***"
+    get_masked_cpf.short_description = 'CPF'
 
     def get_list_display(self, request):
         if not request.user.is_superuser:
@@ -543,10 +552,19 @@ from .models import SignupOrder, PaymentWebhookEvent, BandActivationToken, Email
 
 @admin.register(SignupOrder)
 class SignupOrderAdmin(admin.ModelAdmin):
-    list_display = ('external_reference', 'band_name', 'responsible_name', 'email', 'plan_type', 'billing_cycle', 'amount', 'status', 'created_at')
+    list_display = ('external_reference', 'band_name', 'responsible_name', 'get_masked_resp_cpf', 'email', 'plan_type', 'billing_cycle', 'amount', 'status', 'created_at')
     list_filter = ('status', 'plan_type', 'billing_cycle', 'created_at')
     search_fields = ('external_reference', 'band_name', 'responsible_name', 'email', 'gateway_checkout_id')
     readonly_fields = ('created_at', 'updated_at', 'provisioned_at')
+
+    def get_masked_resp_cpf(self, obj):
+        if not obj.responsible_cpf:
+            return "-"
+        c = str(obj.responsible_cpf)
+        if len(c) == 11:
+            return f"{c[:3]}.***.***-{c[-2:]}"
+        return "***"
+    get_masked_resp_cpf.short_description = 'CPF Resp.'
 
 @admin.register(PaymentWebhookEvent)
 class PaymentWebhookEventAdmin(admin.ModelAdmin):
@@ -557,9 +575,9 @@ class PaymentWebhookEventAdmin(admin.ModelAdmin):
 
 @admin.register(BandActivationToken)
 class BandActivationTokenAdmin(admin.ModelAdmin):
-    list_display = ('band', 'email', 'responsible_name', 'expires_at', 'used_at', 'created_at')
-    list_filter = ('used_at', 'created_at')
-    search_fields = ('band__name', 'email', 'responsible_name', 'token_hash')
+    list_display = ('band', 'token_type', 'target_user', 'email', 'responsible_name', 'expires_at', 'used_at', 'created_at')
+    list_filter = ('token_type', 'used_at', 'created_at')
+    search_fields = ('band__name', 'email', 'responsible_name', 'token_hash', 'target_user__username')
     readonly_fields = ('token_hash', 'created_at', 'used_at')
 
 

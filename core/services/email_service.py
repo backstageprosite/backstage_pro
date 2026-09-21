@@ -150,8 +150,8 @@ def render_and_send_email_delivery(delivery: EmailDelivery) -> Tuple[bool, Optio
     base_url = get_canonical_base_url()
     ctx['base_url'] = base_url
 
-    # Resolução dinâmica para ACCOUNT_ACTIVATION (link seguro em memória a partir de encrypted_token)
-    if delivery.email_type == EmailDelivery.EmailType.ACCOUNT_ACTIVATION:
+    # Resolução dinâmica para ACCOUNT_ACTIVATION e BAND_ADDED_TO_EXISTING_ACCOUNT (link seguro em memória a partir de encrypted_token)
+    if delivery.email_type in (EmailDelivery.EmailType.ACCOUNT_ACTIVATION, EmailDelivery.EmailType.BAND_ADDED_TO_EXISTING_ACCOUNT):
         if delivery.related_object_id:
             try:
                 activation = BandActivationToken.objects.get(pk=delivery.related_object_id)

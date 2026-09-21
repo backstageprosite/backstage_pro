@@ -1,0 +1,19 @@
+Sua nova banda está pronta no Backstage Pro
+
+Olá, {{ responsible_name|default:"Produtor(a)" }}!
+
+O pagamento da assinatura da {{ band_name }} foi confirmado.
+
+Como você já possui uma conta no Backstage Pro, não é necessário criar um novo login ou uma nova senha.
+
+Sua nova banda poderá ser adicionada ao mesmo acesso que você já utiliza:
+{{ activation_url }}
+
+Login de acesso: {{ username }}
+
+Ao acessar o link, utilize seu login e senha habituais caso seja solicitado. Se não lembrar a senha, utilize: {{ base_url }}/esqueci-minha-senha/
+
+Depois da confirmação, você poderá alternar entre suas bandas pelo seletor de bandas do Backstage Pro. Seu acesso continua sendo o mesmo.
+
+Atenciosamente,
+Equipe Backstage Pro

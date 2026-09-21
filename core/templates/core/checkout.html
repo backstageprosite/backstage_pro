@@ -174,16 +174,23 @@
                             <div class="form-text small">Será o nome exibido em toda a plataforma.</div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="id_responsible_name" class="form-label fw-semibold small text-dark">Nome do Responsável / Produtor(a) <span class="text-danger">*</span></label>
-                            {{ form.responsible_name }}
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label for="id_responsible_name" class="form-label fw-semibold small text-dark">Nome do Responsável / Produtor(a) <span class="text-danger">*</span></label>
+                                {{ form.responsible_name }}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="id_responsible_cpf" class="form-label fw-semibold small text-dark">CPF do Responsável pelo Acesso <span class="text-danger">*</span></label>
+                                {{ form.responsible_cpf }}
+                                <div class="form-text small">Identifica o titular da conta no Backstage Pro.</div>
+                            </div>
                         </div>
 
                         <div class="row g-3 mb-3">
                             <div class="col-12 col-md-6">
                                 <label for="id_email" class="form-label fw-semibold small text-dark">E-mail para Ativação <span class="text-danger">*</span></label>
                                 {{ form.email }}
-                                <div class="form-text small">O link de primeiro acesso será enviado para cá.</div>
+                                <div class="form-text small">O link de primeiro acesso ou vínculo será enviado para cá.</div>
                             </div>
                             <div class="col-12 col-md-6">
                                 <label for="id_phone" class="form-label fw-semibold small text-dark">Telefone / WhatsApp <span class="text-danger">*</span></label>
@@ -192,9 +199,9 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="id_cpf_cnpj" class="form-label fw-semibold small text-dark">CPF ou CNPJ <span class="text-danger">*</span></label>
+                            <label for="id_cpf_cnpj" class="form-label fw-semibold small text-dark">CPF/CNPJ para Cobrança <span class="text-danger">*</span></label>
                             {{ form.cpf_cnpj }}
-                            <div class="form-text small">Utilizado para emissão da nota e identificação no Asaas.</div>
+                            <div class="form-text small">Documento do pagador (PF ou PJ) para faturamento e nota fiscal no Asaas.</div>
                         </div>
 
                         <hr class="my-4 text-muted">
@@ -318,7 +325,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (phoneInput.value) applyPhoneMask();
     }
 
-    // Máscara para CPF ou CNPJ
+    // Máscara para CPF do Responsável (sempre 11 dígitos: XXX.XXX.XXX-XX)
+    const respCpfInput = document.getElementById('id_responsible_cpf');
+    if (respCpfInput) {
+        const applyRespCpfMask = function() {
+            let v = (respCpfInput.value || '').replace(/\D/g, '').slice(0, 11);
+            if (v.length > 9) {
+                respCpfInput.value = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+            } else if (v.length > 6) {
+                respCpfInput.value = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
+            } else if (v.length > 3) {
+                respCpfInput.value = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
+            } else {
+                respCpfInput.value = v;
+            }
+        };
+        ['input', 'change', 'paste', 'keyup', 'blur'].forEach(function(evt) {
+            respCpfInput.addEventListener(evt, function() {
+                setTimeout(applyRespCpfMask, 0);
+            });
+        });
+        if (respCpfInput.value) applyRespCpfMask();
+    }
+
+    // Máscara para CPF ou CNPJ de Cobrança
     const cpfCnpjInput = document.getElementById('id_cpf_cnpj');
     if (cpfCnpjInput) {
         const applyCpfCnpjMask = function() {
@@ -363,6 +393,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gatilho pós-autofill do navegador (executa verificação após 300ms e 800ms)
     setTimeout(function() {
         if (phoneInput && phoneInput.value) phoneInput.value = formatPhone(phoneInput.value);
+        if (respCpfInput && respCpfInput.value) {
+            let v = respCpfInput.value.replace(/\D/g, '').slice(0, 11);
+            if (v.length > 9) respCpfInput.value = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+        }
         if (cpfCnpjInput && cpfCnpjInput.value) cpfCnpjInput.value = formatCpfCnpj(cpfCnpjInput.value);
         if (cepInput && cepInput.value) cepInput.value = formatCep(cepInput.value);
         if (stateInput && stateInput.value) stateInput.value = (stateInput.value || '').toUpperCase().slice(0, 2);
@@ -370,6 +404,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setTimeout(function() {
         if (phoneInput && phoneInput.value) phoneInput.value = formatPhone(phoneInput.value);
+        if (respCpfInput && respCpfInput.value) {
+            let v = respCpfInput.value.replace(/\D/g, '').slice(0, 11);
+            if (v.length > 9) respCpfInput.value = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+        }
         if (cpfCnpjInput && cpfCnpjInput.value) cpfCnpjInput.value = formatCpfCnpj(cpfCnpjInput.value);
         if (cepInput && cepInput.value) cepInput.value = formatCep(cepInput.value);
         if (stateInput && stateInput.value) stateInput.value = (stateInput.value || '').toUpperCase().slice(0, 2);
