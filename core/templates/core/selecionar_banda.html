@@ -57,6 +57,7 @@
         }
         .band-card-form {
             height: 100%;
+            display: block;
         }
         .band-card {
             background: #ffffff;
@@ -67,9 +68,10 @@
             cursor: pointer;
             width: 100%;
             height: 100%;
-            padding: 14px 14px;
+            padding: 16px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 12px;
             text-align: left;
             position: relative;
@@ -81,16 +83,41 @@
             transform: translateY(-3px);
             background: #ffffff;
         }
+        .band-card-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+        .band-card-info {
+            min-width: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
+        }
+        .band-card-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.25;
+        }
+        .band-card-action {
+            flex-shrink: 0;
+        }
         .band-logo-box {
-            width: 74px;
-            height: 64px;
+            width: 64px;
+            height: 56px;
             border-radius: 12px;
             background-color: #ffffff;
             border: 1px solid #e9ecef;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 5px;
+            padding: 4px;
             flex-shrink: 0;
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0,0,0,0.02);
@@ -102,15 +129,15 @@
             display: block;
         }
         .band-avatar-placeholder {
-            width: 74px;
-            height: 64px;
+            width: 64px;
+            height: 56px;
             border-radius: 12px;
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
             border: 1px solid #bbf7d0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
             color: #166534;
             flex-shrink: 0;
@@ -132,11 +159,12 @@
             font-weight: 700;
             border-radius: 50rem;
             padding: 7px 13px;
-            font-size: 12.5px;
+            font-size: 12px;
             letter-spacing: 0.2px;
             transition: background 0.15s, transform 0.15s;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             white-space: nowrap;
             flex-shrink: 0;
             box-shadow: 0 2px 6px rgba(107, 212, 67, 0.35);
@@ -144,6 +172,26 @@
         .band-card:hover .btn-acessar {
             background-color: var(--bp-green-dark);
             box-shadow: 0 4px 10px rgba(87, 179, 54, 0.45);
+        }
+
+        /* Responsividade para larguras estreitas (mobile ou telas compactas) */
+        @media (max-width: 420px) {
+            .band-card {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .band-card-main {
+                width: 100%;
+            }
+            .band-card-action {
+                width: 100%;
+            }
+            .btn-acessar {
+                width: 100%;
+                padding: 9px 14px;
+                font-size: 13px;
+            }
         }
     </style>
 </head>
@@ -184,47 +232,49 @@
                     {% csrf_token %}
                     <input type="hidden" name="band_id" value="{{ membership.band.id }}">
                     <button type="submit" class="band-card border-0">
-                        <!-- Logo / Avatar da Banda -->
-                        {% if membership.band.logo %}
-                        <div class="band-logo-box">
-                            <img src="{% url 'public_band_logo' membership.band.slug %}"
-                                 alt=""
-                                 class="band-logo-img"
-                                 onerror="this.style.display='none'; if(this.parentElement.nextElementSibling) this.parentElement.nextElementSibling.style.display='flex'; this.parentElement.style.display='none';">
-                        </div>
-                        <div class="band-avatar-placeholder" style="display: none;">
-                            <i class="fa-solid fa-guitar" style="font-size: 22px;"></i>
-                        </div>
-                        {% else %}
-                        <div class="band-avatar-placeholder">
-                            {{ membership.band.name|make_list|first|upper }}
-                        </div>
-                        {% endif %}
-
-                        <!-- Info -->
-                        <div class="flex-grow-1 min-width-0 pe-1">
-                            <div class="fw-bold text-dark mb-1 text-truncate" style="font-size: 15px;" title="{{ membership.band.name }}">
-                                {{ membership.band.name }}
+                        <div class="band-card-main">
+                            <!-- Logo / Avatar da Banda -->
+                            {% if membership.band.logo %}
+                            <div class="band-logo-box">
+                                <img src="{% url 'public_band_logo' membership.band.slug %}"
+                                     alt=""
+                                     class="band-logo-img"
+                                     onerror="this.style.display='none'; if(this.parentElement.nextElementSibling) this.parentElement.nextElementSibling.style.display='flex'; this.parentElement.style.display='none';">
                             </div>
-                            <div>
-                                {% if membership.role == 'EMPRESARIO' %}
-                                <span class="role-badge" style="background-color: rgba(111,66,193,0.12); color: #6f42c1; border: 1px solid rgba(111,66,193,0.25);">
-                                    <i class="fa-solid fa-crown me-1" style="font-size: 10px;"></i>Empresário
-                                </span>
-                                {% elif membership.role == 'PRODUTOR' %}
-                                <span class="role-badge" style="background-color: rgba(13,110,253,0.1); color: #0d6efd; border: 1px solid rgba(13,110,253,0.25);">
-                                    <i class="fa-solid fa-crown me-1" style="font-size: 10px;"></i>Produtor
-                                </span>
-                                {% else %}
-                                <span class="role-badge" style="background-color: rgba(253,126,20,0.12); color: #d65b00; border: 1px solid rgba(253,126,20,0.25);">
-                                    <i class="fa-solid fa-guitar me-1" style="font-size: 10px;"></i>Integrante
-                                </span>
-                                {% endif %}
+                            <div class="band-avatar-placeholder" style="display: none;">
+                                <i class="fa-solid fa-guitar" style="font-size: 20px;"></i>
+                            </div>
+                            {% else %}
+                            <div class="band-avatar-placeholder">
+                                {{ membership.band.name|make_list|first|upper }}
+                            </div>
+                            {% endif %}
+
+                            <!-- Info -->
+                            <div class="band-card-info">
+                                <div class="band-card-name" title="{{ membership.band.name }}">
+                                    {{ membership.band.name }}
+                                </div>
+                                <div>
+                                    {% if membership.role == 'EMPRESARIO' %}
+                                    <span class="role-badge" style="background-color: rgba(111,66,193,0.12); color: #6f42c1; border: 1px solid rgba(111,66,193,0.25);">
+                                        <i class="fa-solid fa-crown me-1" style="font-size: 10px;"></i>Empresário
+                                    </span>
+                                    {% elif membership.role == 'PRODUTOR' %}
+                                    <span class="role-badge" style="background-color: rgba(13,110,253,0.1); color: #0d6efd; border: 1px solid rgba(13,110,253,0.25);">
+                                        <i class="fa-solid fa-crown me-1" style="font-size: 10px;"></i>Produtor
+                                    </span>
+                                    {% else %}
+                                    <span class="role-badge" style="background-color: rgba(253,126,20,0.12); color: #d65b00; border: 1px solid rgba(253,126,20,0.25);">
+                                        <i class="fa-solid fa-guitar me-1" style="font-size: 10px;"></i>Integrante
+                                    </span>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
 
                         <!-- Botão Acessar -->
-                        <div class="flex-shrink-0">
+                        <div class="band-card-action">
                             <span class="btn-acessar">
                                 Acessar <i class="fa-solid fa-arrow-right ms-1" style="font-size: 11px;"></i>
                             </span>
