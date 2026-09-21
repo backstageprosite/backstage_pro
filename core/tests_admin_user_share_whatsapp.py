@@ -124,12 +124,16 @@ class AdminUserWhatsAppShareTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        # Password was updated
+        # Regra de Segurança: Senha antiga PERMANECE VÁLIDA e nenhuma nova senha é aplicada
         self.user_no_phone.refresh_from_db()
-        self.assertTrue(self.user_no_phone.check_password('NoPhonePass@123'))
+        self.assertTrue(self.user_no_phone.check_password('initial_password'))
+        self.assertFalse(self.user_no_phone.check_password('NoPhonePass@123'))
 
-        # Messages should contain warning about no phone
+        # Nenhuma URL WhatsApp gerada em sessão/contexto
+        self.assertIsNone(response.context.get('whatsapp_access_data'))
+
+        # Mensagem de aviso exibida
         messages_list = list(response.context['messages'])
         warning_msg = [m.message for m in messages_list if m.level_tag == 'warning']
         self.assertTrue(len(warning_msg) > 0)
-        self.assertIn('não possui telefone/WhatsApp válido cadastrado', warning_msg[0])
+        self.assertIn('Este usuário não possui telefone/WhatsApp cadastrado', warning_msg[0])

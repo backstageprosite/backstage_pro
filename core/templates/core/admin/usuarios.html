@@ -558,41 +558,61 @@
                     </div>
 
                     <!-- Definição da Senha Provisória -->
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-dark mb-1" style="font-size: 13px;">Senha provisória</label>
-                        <div class="input-group">
-                            <input type="text"
-                                   name="provisional_password"
-                                   id="inputProvisionalPass{{ u.id }}"
-                                   class="form-control"
-                                   placeholder="Digite ou gere uma senha provisória"
-                                   required
-                                   style="font-size: 13px; font-family: monospace;">
-                            <button type="button"
-                                    class="btn btn-outline-secondary d-inline-flex align-items-center"
-                                    onclick="generateProvisionalPass('inputProvisionalPass{{ u.id }}')"
-                                    title="Gerar senha aleatória segura"
-                                    style="font-size: 12.5px;">
-                                <i class="fa-solid fa-dice me-1"></i> Gerar senha
+                    {% if u.phone %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark mb-1" style="font-size: 13px;">Senha provisória</label>
+                            <div class="input-group">
+                                <input type="text"
+                                       name="provisional_password"
+                                       id="inputProvisionalPass{{ u.id }}"
+                                       class="form-control"
+                                       placeholder="Digite ou gere uma senha provisória"
+                                       required
+                                       style="font-size: 13px; font-family: monospace;">
+                                <button type="button"
+                                        class="btn btn-outline-secondary d-inline-flex align-items-center"
+                                        onclick="generateProvisionalPass('inputProvisionalPass{{ u.id }}')"
+                                        title="Gerar senha aleatória segura"
+                                        style="font-size: 12.5px;">
+                                    <i class="fa-solid fa-dice me-1"></i> Gerar senha
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Avisos Informativos -->
+                        <div class="p-2 px-3 rounded-2 bg-warning bg-opacity-10 border border-warning border-opacity-25 text-dark mb-2" style="font-size: 12px;">
+                            <i class="fa-solid fa-circle-info text-warning me-1"></i>
+                            Ao continuar, a senha atual deste usuário será substituída pela senha provisória acima.
+                        </div>
+                        <p class="text-muted small mb-0 ps-1" style="font-size: 12px;">
+                            <i class="fa-solid fa-lock text-muted me-1"></i>
+                            O usuário poderá alterar a senha posteriormente após o primeiro acesso.
+                        </p>
+                    {% else %}
+                        <div class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 mb-2" role="alert" style="font-size: 12.5px; border-radius: 8px;">
+                            <i class="fa-solid fa-triangle-exclamation text-warning mt-1" style="font-size: 14px;"></i>
+                            <div>
+                                <strong>Telefone não cadastrado:</strong> Este usuário não possui telefone/WhatsApp cadastrado. Cadastre um número antes de compartilhar o acesso para que a nova senha possa ser enviada.
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-medium" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#modalEditUser{{ u.id }}" style="font-size: 12px; border-radius: 6px;">
+                                <i class="fa-solid fa-pen-to-square me-1"></i> Cadastrar Telefone Agora
                             </button>
                         </div>
-                    </div>
-
-                    <!-- Avisos Informativos -->
-                    <div class="p-2 px-3 rounded-2 bg-warning bg-opacity-10 border border-warning border-opacity-25 text-dark mb-2" style="font-size: 12px;">
-                        <i class="fa-solid fa-circle-info text-warning me-1"></i>
-                        Ao continuar, a senha atual deste usuário será substituída pela senha provisória acima.
-                    </div>
-                    <p class="text-muted small mb-0 ps-1" style="font-size: 12px;">
-                        <i class="fa-solid fa-lock text-muted me-1"></i>
-                        O usuário poderá alterar a senha posteriormente após o primeiro acesso.
-                    </p>
+                    {% endif %}
                 </div>
                 <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                     <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                    <button type="submit" class="btn fw-bold rounded-pill px-3 text-white shadow-sm d-inline-flex align-items-center" style="background-color: #25D366; border-color: #25D366; height: 34px; font-size: 13px;">
-                        <i class="fa-brands fa-whatsapp me-1" style="font-size: 15px;"></i> Compartilhar pelo WhatsApp
-                    </button>
+                    {% if u.phone %}
+                        <button type="submit" class="btn fw-bold rounded-pill px-3 text-white shadow-sm d-inline-flex align-items-center" style="background-color: #25D366; border-color: #25D366; height: 34px; font-size: 13px;">
+                            <i class="fa-brands fa-whatsapp me-1" style="font-size: 15px;"></i> Compartilhar pelo WhatsApp
+                        </button>
+                    {% else %}
+                        <button type="button" class="btn btn-secondary fw-bold rounded-pill px-3 shadow-none d-inline-flex align-items-center opacity-50" disabled style="height: 34px; font-size: 13px;" title="Cadastre um telefone antes de compartilhar">
+                            <i class="fa-brands fa-whatsapp me-1" style="font-size: 15px;"></i> Compartilhar pelo WhatsApp
+                        </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

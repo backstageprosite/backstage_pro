@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 import uuid
+import re
 from django.core.management import call_command
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import user_passes_test
@@ -1111,37 +1112,46 @@ def admin_user_reset_password(request, pk):
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_user_share_whatsapp(request, pk):
     """
-    BP-PEND-ADMIN: Define a senha provisória informada, atualiza o usuário
-    e prepara os dados para compartilhamento de credenciais via WhatsApp.
+    BP-PEND-ADMIN: Valida obrigatoriamente se o usuário possui telefone/WhatsApp válido
+    ANTES de qualquer alteração de credenciais. Se não houver telefone válido, nenhuma
+    senha é alterada ou salva. Se houver telefone válido, define a senha provisória,
+    atualiza o usuário e prepara o link do WhatsApp para envio.
     """
     if request.method == 'POST':
         user = get_object_or_404(User, pk=pk)
-        provisional_password = request.POST.get('provisional_password', '').strip()
 
+        # 1. Verificar se o usuário possui telefone cadastrado e normalizável
+        phone_raw = (user.phone or '').strip()
+        digits = re.sub(r'\D', '', phone_raw)
+        has_valid_phone = bool(digits and len(digits) >= 10)
+
+        if not has_valid_phone:
+            messages.warning(
+                request,
+                "Este usuário não possui telefone/WhatsApp cadastrado. "
+                "Cadastre um número antes de compartilhar o acesso."
+            )
+            return redirect('admin_painel:usuarios')
+
+        # 2. Validar a senha provisória informada
+        provisional_password = request.POST.get('provisional_password', '').strip()
         if not provisional_password:
             messages.error(request, "A senha provisória não pode ser vazia.")
             return redirect('admin_painel:usuarios')
 
-        # Atualiza a senha do usuário com hash seguro
+        # 3. Atualizar a senha do usuário apenas após validação de telefone
         user.set_password(provisional_password)
         user.save()
 
-        # Monta os dados de compartilhamento WhatsApp
+        # 4. Montar a mensagem e links do WhatsApp
         from core.views import build_admin_user_whatsapp_access_data
         whatsapp_data = build_admin_user_whatsapp_access_data(user, provisional_password)
 
-        if not whatsapp_data.get('has_phone'):
-            messages.warning(
-                request,
-                f"A senha provisória do usuário '{user.username}' foi atualizada com sucesso, "
-                f"mas ele não possui telefone/WhatsApp válido cadastrado para envio automático."
-            )
-        else:
-            request.session['whatsapp_access_data'] = whatsapp_data
-            messages.success(
-                request,
-                f"Senha provisória definida com sucesso para '{user.username}'. Pronto para compartilhar pelo WhatsApp!"
-            )
+        request.session['whatsapp_access_data'] = whatsapp_data
+        messages.success(
+            request,
+            f"Senha provisória definida com sucesso para '{user.username}'. Pronto para compartilhar pelo WhatsApp!"
+        )
 
     return redirect('admin_painel:usuarios')
 
