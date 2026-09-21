@@ -39,8 +39,16 @@ class DashboardAdjustmentsTests(TestCase):
         })
         self.assertRedirects(response, reverse('dashboard', kwargs={'band_slug': self.band.slug}))
         
-    def test_login_redirects_to_admin_panel_for_superuser(self):
+    def test_login_via_central_does_not_redirect_superuser_to_admin_panel(self):
+        # Em /entrar/, superuser sem banda NÃO vai para o admin_painel
         response = self.client.post(reverse('central_login'), {
+            'username': 'admin', 'password': 'pwd'
+        })
+        self.assertRedirects(response, reverse('selecionar_banda'))
+
+    def test_admin_painel_login_redirects_to_admin_dashboard(self):
+        # Admin Geral usa exclusivamente /painel/login/
+        response = self.client.post(reverse('admin_painel:login'), {
             'username': 'admin', 'password': 'pwd'
         })
         self.assertRedirects(response, reverse('admin_painel:dashboard'))

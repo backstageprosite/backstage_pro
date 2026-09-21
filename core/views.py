@@ -344,20 +344,17 @@ def band_root_redirect_view(request, band_slug):
 
 def get_post_login_redirect_url(user, default_band=None):
     """
-    BP-PEND-71 / BP-PEND-62: Resolução centralizada e canônica de pós-login:
+    BP-PEND-71 / BP-PEND-62: Resolução centralizada e canônica de pós-login em /entrar/:
     - user.must_change_password -> troca_senha_obrigatoria
-    - user.is_superuser -> admin_painel:dashboard
     - 2+ memberships ativas -> selecionar_banda
     - 1 membership ativa -> dashboard ou minha_assinatura da banda
     - Fallback legado (user.band) -> dashboard ou minha_assinatura
     - default_band (se fornecida e usuário tem acesso) -> dashboard ou minha_assinatura
-    - Sem banda válida -> selecionar_banda com mensagem amigável
+    - Sem banda válida -> selecionar_banda com mensagem amigável de ausência de acesso
+      (NUNCA redireciona staff/superuser para /painel/; Admin Geral usa /painel/login/)
     """
     if user.must_change_password:
         return reverse('troca_senha_obrigatoria')
-
-    if user.is_superuser:
-        return reverse('admin_painel:dashboard')
 
     active_memberships = user.get_active_memberships()
     count = active_memberships.count()

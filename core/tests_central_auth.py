@@ -194,3 +194,34 @@ class CentralAuthAndRecoveryTests(TestCase):
         data_multi = build_admin_user_whatsapp_access_data(self.user_multi, '')
         self.assertIn('https://backstagepro.site/entrar/', data_multi['message_text'])
         self.assertNotIn('/banda-alfa/login/', data_multi['message_text'])
+
+    def test_superuser_staff_without_band_via_entrar_does_not_redirect_to_painel(self):
+        """12. Superuser/Staff sem banda em /entrar/ NÃO é redirecionado para /painel/, mas para selecionar_banda com tela neutra."""
+        admin_user = User.objects.create_superuser(
+            username='admin_geral_sem_banda',
+            email='admin@backstagepro.site',
+            password='PasswordAdmin123!'
+        )
+        response = self.client.post(reverse('central_login'), {
+            'username': 'admin_geral_sem_banda',
+            'password': 'PasswordAdmin123!',
+        }, follow=True)
+        # Redireciona para /selecionar-banda/ e exibe aviso de ausência de acesso
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'core/selecionar_banda.html')
+        self.assertContains(response, 'Esta conta não possui acesso a nenhuma banda no Backstage Pro.')
+        self.assertNotContains(response, 'Painel Administrativo')
+
+    def test_admin_painel_login_isolated_flow(self):
+        """13. Admin Geral continua utilizando exclusivamente /painel/login/ para acessar /painel/."""
+        admin_user = User.objects.create_superuser(
+            username='admin_geral_oficial',
+            email='adminoficial@backstagepro.site',
+            password='PasswordAdmin123!'
+        )
+        response = self.client.post(reverse('admin_painel:login'), {
+            'username': 'admin_geral_oficial',
+            'password': 'PasswordAdmin123!',
+        })
+        self.assertRedirects(response, reverse('admin_painel:dashboard'))
+
