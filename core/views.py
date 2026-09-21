@@ -3316,6 +3316,23 @@ def build_admin_user_whatsapp_access_data(user, raw_password):
         elif user.band:
             band_names = [user.band.name]
 
+    # Resolução da URL de Login
+    from django.urls import reverse
+    primary_band = None
+    if user:
+        first_memb = user.band_memberships.filter(is_active=True, band__is_active=True).select_related('band').order_by('band__name').first()
+        if first_memb:
+            primary_band = first_memb.band
+        elif user.band:
+            primary_band = user.band
+
+    if primary_band and primary_band.slug:
+        login_path = reverse('login', kwargs={'band_slug': primary_band.slug})
+        login_url = f"https://backstagepro.site{login_path}"
+    else:
+        login_path = reverse('admin_painel:login')
+        login_url = f"https://backstagepro.site{login_path}"
+
     # Emojis Unicode seguros
     w_hand = "\U0001F44B"
     w_music = "\U0001F3B6"
@@ -3344,8 +3361,8 @@ def build_admin_user_whatsapp_access_data(user, raw_password):
         f"Olá, {user_name}! {w_hand}\n\n"
         f"Seja bem-vindo(a) ao Backstage Pro! {w_music}{w_rocket}\n\n"
         f"Seu acesso ao sistema já está disponível:\n\n"
-        f"{w_link} Acesso:\n"
-        f"https://backstagepro.site/\n\n"
+        f"{w_link} Acessar o Backstage Pro:\n"
+        f"{login_url}\n\n"
         f"{w_user} Login: {username}\n"
         f"{w_key} Senha provisória: {raw_password}\n\n"
         f"Por segurança, recomendamos que você altere sua senha após o primeiro acesso.\n\n"
