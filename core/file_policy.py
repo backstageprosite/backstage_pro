@@ -58,7 +58,9 @@ def get_upload_path_for(prefix):
 
 def get_show_files_info(show):
     """
-    Returns (total_count, total_size_bytes) of all attachments linked to the show.
+    BP-PEND-69: Retorna (total_count, total_size_bytes) exclusivamente para
+    os Documentos Operacionais do Show (ContractDocument).
+    Comprovantes financeiros (FinancialReceipt e ShowPayment) são desacoplados desta cota.
     """
     count = 0
     size = 0
@@ -69,33 +71,20 @@ def get_show_files_info(show):
                 size += doc.file.size
             except Exception:
                 pass
-    for rec in show.receipts.all():
-        if rec.file:
-            count += 1
-            try:
-                size += rec.file.size
-            except Exception:
-                pass
-    for pay in show.payments.all():
-        if pay.file:
-            count += 1
-            try:
-                size += pay.file.size
-            except Exception:
-                pass
     return count, size
 
 def check_show_limits(show, new_files_sizes):
     """
-    Checks if adding `new_files_sizes` (list of integers in bytes)
-    will exceed the show limits.
+    BP-PEND-69: Valida se a adição de novos documentos operacionais (lista de tamanhos em bytes)
+    excederá os limites de documentos do show (MAX_SHOW_FILES=7 e MAX_SHOW_STORAGE_MB=35MB).
     """
     count, size = get_show_files_info(show)
     
     if count + len(new_files_sizes) > MAX_SHOW_FILES:
-        raise ValidationError(_(f"Não foi possível enviar os arquivos. Este show já possui {count} de {MAX_SHOW_FILES} anexos e permite apenas mais {MAX_SHOW_FILES - count} arquivos."))
+        raise ValidationError(_(f"Não foi possível enviar os arquivos. Este show já possui {count} de {MAX_SHOW_FILES} documentos e permite apenas mais {MAX_SHOW_FILES - count} documento(s)."))
         
     total_new_size = sum(new_files_sizes)
     if (size + total_new_size) > MAX_SHOW_STORAGE_MB * 1024 * 1024:
-        raise ValidationError(_(f"Os anexos deste show podem ocupar no máximo {MAX_SHOW_STORAGE_MB} MB. (Usado: {size / 1024 / 1024:.2f} MB)"))
+        raise ValidationError(_(f"Os documentos deste show podem ocupar no máximo {MAX_SHOW_STORAGE_MB} MB. (Usado: {size / 1024 / 1024:.2f} MB)"))
+
 

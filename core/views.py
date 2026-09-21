@@ -920,16 +920,6 @@ def show_finance_detail_view(request, band_slug, pk):
 
             if receipt_form.is_valid():
 
-                from core.file_policy import check_show_limits
-                from django.core.exceptions import ValidationError
-                new_files_sizes = [f.size for f in request.FILES.values()]
-                if new_files_sizes:
-                    try:
-                        check_show_limits(show, new_files_sizes)
-                    except ValidationError as e:
-                        messages.error(request, e.message)
-                        return redirect('show_finance_detail', band_slug=band_slug, pk=show.id)
-
                 receipt = receipt_form.save(commit=False)
 
                 receipt.show = show
@@ -945,16 +935,6 @@ def show_finance_detail_view(request, band_slug, pk):
             payment_form = ShowPaymentForm(request.POST, request.FILES)
 
             if payment_form.is_valid():
-
-                from core.file_policy import check_show_limits
-                from django.core.exceptions import ValidationError
-                new_files_sizes = [f.size for f in request.FILES.values()]
-                if new_files_sizes:
-                    try:
-                        check_show_limits(show, new_files_sizes)
-                    except ValidationError as e:
-                        messages.error(request, e.message)
-                        return redirect('show_finance_detail', band_slug=band_slug, pk=show.id)
 
                 payment = payment_form.save(commit=False)
 
@@ -2531,10 +2511,9 @@ def arquivos_view(request, band_slug):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    # Processamento do Modal Global de Upload de Arquivo
+    # Processamento do Modal Global de Upload de Documento (BP-PEND-69: Exclusivo para ContractDocument)
     if request.method == 'POST' and request.POST.get('action') == 'add_file_global':
         show_id = request.POST.get('show_id')
-        category_type = request.POST.get('category_type') # 'documento' ou 'comprovante'
         description = request.POST.get('description', '').strip()
         uploaded_file = request.FILES.get('file')
 
@@ -2545,7 +2524,7 @@ def arquivos_view(request, band_slug):
         show = get_object_or_404(Show, pk=show_id, band=band)
 
         if not description:
-            messages.error(request, "A descrição do arquivo é obrigatória.")
+            messages.error(request, "A descrição do documento é obrigatória.")
             return redirect('arquivos', band_slug=band.slug)
 
         if not uploaded_file:
@@ -2553,65 +2532,129 @@ def arquivos_view(request, band_slug):
             return redirect('arquivos', band_slug=band.slug)
 
         try:
-            from core.file_policy import validate_file_size_and_type, check_show_limits, MAX_SHOW_FILES, MAX_FILE_SIZE_MB, MAX_SHOW_STORAGE_MB
+            from core.file_policy import validate_file_size_and_type, check_show_limits
             from django.core.exceptions import ValidationError
 
             # 1. Valida tamanho individual e tipo/extensão
             validate_file_size_and_type(uploaded_file)
 
-            # 2. Valida quota por show (quantidade e tamanho total em MB)
+            # 2. Valida quota de documentos por show (7 documentos e 35 MB total)
             check_show_limits(show, [uploaded_file.size])
 
-            if category_type == 'comprovante':
-                file_date = request.POST.get('date') or None
-                raw_value = request.POST.get('value', '0').replace('.', '').replace(',', '.').strip()
-                try:
-                    val = Decimal(raw_value) if raw_value else Decimal('0.00')
-                except Exception:
-                    val = Decimal('0.00')
-
-                receipt = FinancialReceipt(
-                    show=show,
-                    description=description,
-                    date=file_date,
-                    category="Comprovante",
-                    value=val,
-                    file=uploaded_file
-                )
-                receipt.full_clean()
-                receipt.save()
-                messages.success(request, f"Comprovante adicionado com sucesso ao show {show.title or 'selecionado'}!")
-            else:
-                doc = ContractDocument(
-                    show=show,
-                    description=description,
-                    file=uploaded_file
-                )
-                doc.full_clean()
-                doc.save()
-                messages.success(request, f"Documento adicionado com sucesso ao show {show.title or 'selecionado'}!")
+            doc = ContractDocument(
+                show=show,
+                description=description,
+                file=uploaded_file
+            )
+            doc.full_clean()
+            doc.save()
+            messages.success(request, f"Documento adicionado com sucesso ao show {show.title or 'selecionado'}!")
         except ValidationError as e:
             messages.error(request, e.message if hasattr(e, 'message') else str(e))
         except Exception as e:
-            messages.error(request, f"Erro ao salvar arquivo: {str(e)}")
+            messages.error(request, f"Erro ao salvar documento: {str(e)}")
 
         return redirect('arquivos', band_slug=band.slug)
 
-    from core.file_policy import get_show_files_info, MAX_SHOW_FILES, MAX_FILE_SIZE_MB, MAX_SHOW_STORAGE_MB
+    from core.file_policy import MAX_SHOW_FILES, MAX_FILE_SIZE_MB, MAX_SHOW_STORAGE_MB
+    from django.db.models import Q
+    from django.utils import timezone
+    from collections import OrderedDict
+    import datetime
 
-    all_band_shows = Show.objects.filter(band=band).order_by('-date', 'title')
-    for s in all_band_shows:
-        f_count, f_size = get_show_files_info(s)
-        s.storage_files_count = f_count
-        s.storage_files_size_mb = round(f_size / (1024 * 1024), 2) if f_size else 0
+    # 1. Shows disponíveis para o modal de novo documento (lista leve sem loops de storage)
+    all_band_shows = Show.objects.filter(band=band).order_by('-date', 'title').only('id', 'title', 'date', 'city')
 
-    shows_with_files = Show.objects.filter(band=band).prefetch_related('documents', 'receipts')
-    shows_list = [show for show in shows_with_files if show.documents.exists() or show.receipts.exists()]
+    # 2. Shows que possuem ao menos 1 arquivo (documentos, comprovantes de despesas ou comprovantes de recebimentos)
+    shows_with_files_qs = Show.objects.filter(
+        band=band
+    ).filter(
+        Q(documents__isnull=False) |
+        Q(receipts__file__isnull=False) |
+        Q(payments__file__isnull=False) & ~Q(payments__file='')
+    ).distinct().prefetch_related(
+        'documents',
+        'receipts',
+        'payments'
+    ).order_by('-date', 'title')
+
+    # 3. Construção da hierarquia: Ano -> Mês -> Lista de Shows
+    # Nomes dos meses em português
+    MONTH_NAMES = {
+        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+        5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+        9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+    }
+
+    now = timezone.localdate()
+    current_year = now.year
+    current_month = now.month
+
+    # Estrutura: years_data = { 2026: { 'months': { 9: { 'name': 'Setembro', 'shows': [...] } } } }
+    years_dict = OrderedDict()
+    all_filtered_shows_list = []
+
+    for s in shows_with_files_qs:
+        # Filtra comprovantes de recebimentos com arquivo em memória (já com prefetch)
+        payment_files = [p for p in s.payments.all() if p.file]
+        receipt_files = [r for r in s.receipts.all() if r.file]
+        doc_files = list(s.documents.all())
+
+        # Se por algum motivo não houver nenhum arquivo real, ignora
+        if not doc_files and not receipt_files and not payment_files:
+            continue
+
+        s.prefetched_doc_files = doc_files
+        s.prefetched_receipt_files = receipt_files
+        s.prefetched_payment_files = payment_files
+        s.total_files_count = len(doc_files) + len(receipt_files) + len(payment_files)
+
+        all_filtered_shows_list.append(s)
+
+        s_date = s.date or datetime.date(2000, 1, 1)
+        s_year = s_date.year
+        s_month = s_date.month
+
+        if s_year not in years_dict:
+            years_dict[s_year] = {
+                'year': s_year,
+                'is_current_year': (s_year == current_year),
+                'total_files': 0,
+                'months': OrderedDict()
+            }
+
+        if s_month not in years_dict[s_year]['months']:
+            years_dict[s_year]['months'][s_month] = {
+                'month_num': s_month,
+                'month_name': MONTH_NAMES.get(s_month, f'Mês {s_month}'),
+                'is_current_month': (s_year == current_year and s_month == current_month),
+                'total_files': 0,
+                'shows': []
+            }
+
+        years_dict[s_year]['months'][s_month]['shows'].append(s)
+        years_dict[s_year]['months'][s_month]['total_files'] += s.total_files_count
+        years_dict[s_year]['total_files'] += s.total_files_count
+
+    # Converte dicionários ordenados em listas para iteração limpa e estável nos templates
+    years_tree = []
+    for y_key, y_val in years_dict.items():
+        months_list = list(y_val['months'].values())
+        # Ordena meses do mais recente para o mais antigo dentro do ano
+        months_list.sort(key=lambda m: m['month_num'], reverse=True)
+        y_val['months_list'] = months_list
+        years_tree.append(y_val)
+
+    # Ordena anos do mais recente para o mais antigo
+    years_tree.sort(key=lambda y: y['year'], reverse=True)
 
     context = {
         'band': band,
-        'shows': shows_list,
+        'years_tree': years_tree,
+        'shows': all_filtered_shows_list,
         'all_band_shows': all_band_shows,
+        'current_year': current_year,
+        'current_month': current_month,
         'max_show_files': MAX_SHOW_FILES,
         'max_file_size_mb': MAX_FILE_SIZE_MB,
         'max_show_storage_mb': MAX_SHOW_STORAGE_MB,

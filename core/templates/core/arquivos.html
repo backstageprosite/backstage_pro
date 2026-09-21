@@ -3,7 +3,7 @@
 
 {% block extra_head %}
 <style>
-    /* BP-COMPACTO-01: Estilos isolados para o Gerenciador de Arquivos */
+    /* BP-PEND-69: Estilos da Central de Arquivos com Hierarquia Ano -> Mês -> Show */
     .bp-files-page .page-title {
         font-size: 20px;
         font-weight: 700;
@@ -18,53 +18,6 @@
         align-items: center;
         border-radius: 50rem;
     }
-    .bp-files-page .search-box {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .bp-files-page .search-input {
-        font-size: 14px;
-        padding: 8px 12px;
-        height: 38px;
-    }
-    .bp-files-page .accordion-button {
-        font-size: 14px;
-        padding: 10px 16px;
-    }
-    .bp-files-page .show-title {
-        font-size: 14px;
-        font-weight: 700;
-    }
-    .bp-files-page .show-meta {
-        font-size: 12px;
-    }
-    .bp-files-page .file-item {
-        padding: 8px 16px;
-    }
-    .bp-files-page .file-icon-box {
-        width: 34px;
-        height: 34px;
-        font-size: 14px;
-    }
-    .bp-files-page .file-name {
-        font-size: 13px;
-        font-weight: 600;
-        line-height: 1.3;
-    }
-    .bp-files-page .file-meta {
-        font-size: 12px;
-    }
-    .bp-files-page .btn-actions {
-        height: 30px;
-        padding: 3px 12px;
-        font-size: 13px;
-    }
-    .bp-files-page .btn-add-attachment {
-        height: 30px;
-        padding: 3px 12px;
-        font-size: 13px;
-    }
-
     .bp-files-page .btn-new-file {
         font-family: Inter, sans-serif;
         font-size: 14px;
@@ -83,14 +36,6 @@
     .bp-files-page .btn-new-file:hover {
         background-color: #5ec437;
         color: #111;
-    }
-    .bp-files-page .btn-back {
-        height: 35px;
-        font-size: 14px;
-        padding: 5px 14px;
-        line-height: 1.25;
-        display: inline-flex;
-        align-items: center;
     }
     .bp-files-page .filter-row {
         display: flex;
@@ -114,6 +59,114 @@
         flex: 0 0 auto;
         display: flex;
         gap: 8px;
+    }
+
+    /* Accordion de Anos e Meses */
+    .year-accordion-item {
+        border-radius: 12px !important;
+        overflow: hidden;
+        border: 1px solid #e2e8f0 !important;
+        margin-bottom: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .year-accordion-btn {
+        background-color: #ffffff !important;
+        font-size: 16px;
+        font-weight: 700;
+        color: #1e293b !important;
+        padding: 12px 18px;
+    }
+    .year-accordion-btn:not(.collapsed) {
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .month-card {
+        border-radius: 10px;
+        border: 1px solid #edf2f7;
+        margin-bottom: 10px;
+        overflow: hidden;
+        background: #ffffff;
+    }
+    .month-header-btn {
+        background-color: #f8fafc;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        padding: 10px 16px;
+        width: 100%;
+        text-align: left;
+        border: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background-color 0.15s ease;
+    }
+    .month-header-btn:hover {
+        background-color: #f1f5f9;
+    }
+    .month-header-btn:not(.collapsed) {
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    /* Show Accordion */
+    .show-accordion-item {
+        border-radius: 8px !important;
+        border: 1px solid #e2e8f0 !important;
+        margin-bottom: 8px;
+        overflow: hidden;
+    }
+    .show-accordion-btn {
+        background-color: #ffffff !important;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .show-accordion-btn:not(.collapsed) {
+        background-color: #f8fafc !important;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .file-item {
+        padding: 8px 14px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .file-item:last-child {
+        border-bottom: none;
+    }
+    .file-icon-box {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+    .file-name {
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+    .file-meta {
+        font-size: 12px;
+    }
+    .btn-actions {
+        height: 28px;
+        padding: 2px 10px;
+        font-size: 12px;
+    }
+    .btn-add-attachment {
+        height: 28px;
+        padding: 2px 10px;
+        font-size: 12px;
+    }
+    .sub-section-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 6px 14px;
+        background-color: #f8fafc;
+        border-bottom: 1px solid #edf2f7;
+        margin: 0;
     }
 
     @media (max-width: 767.98px) {
@@ -146,7 +199,7 @@
         .bp-files-page .filter-control,
         .bp-files-page input.form-control,
         .bp-files-page select.form-select {
-            font-size: 16px !important; /* Evita zoom no Safari/iOS */
+            font-size: 16px !important;
             min-height: 36px;
             height: 36px;
         }
@@ -162,19 +215,20 @@
 
 {% block content %}
 <div class="bp-files-page">
+    <!-- Topo: Título e Ações -->
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h4 class="page-title mb-0"><i class="fa-solid fa-folder-open text-primary me-2"></i>Gerenciador de Arquivos</h4>
+        <h4 class="page-title mb-0"><i class="fa-solid fa-folder-open text-primary me-2"></i>Arquivos</h4>
         <div class="d-flex gap-2 align-items-center ms-auto">
             <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-back fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
             </a>
-            <button type="button" class="btn btn-new-file shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoArquivoGlobal">
-                <i class="fa-solid fa-plus me-1" style="font-size: 13px; color: #212529;"></i> Novo Arquivo
+            <button type="button" class="btn btn-new-file shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoDocumentoGlobal">
+                <i class="fa-solid fa-plus me-1" style="font-size: 13px; color: #212529;"></i> Novo Documento
             </button>
         </div>
     </div>
 
-    <!-- Filtros Compactos BP-COMPACTO-01 em Linha Única -->
+    <!-- Filtros em Linha Única -->
     <div class="card shadow-sm border-0 mb-3" style="border-radius: 10px; background-color: #f8f9fa;">
         <div class="card-body" style="padding: 10px 14px;">
             <form id="filterForm" onsubmit="return false;" class="filter-row">
@@ -196,14 +250,15 @@
                     <select id="filterType" class="form-select" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
                         <option value="">Todos</option>
                         <option value="documento">Documentos do Show</option>
-                        <option value="comprovante">Comprovantes Financeiros</option>
+                        <option value="comprovante_despesa">Comprovantes de Despesas</option>
+                        <option value="comprovante_recebimento">Comprovantes de Recebimentos</option>
                     </select>
                 </div>
                 <div class="filter-actions-col">
-                    <a href="{% url 'arquivos' band.slug %}" id="btnLimpar" class="btn btn-sm btn-outline-secondary" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 14px; border-radius: 4px; border: 1px solid #6C757D; color: #6C757D; background-color: transparent; display: inline-flex; align-items: center; white-space: nowrap;" onmouseover="this.style.backgroundColor='#6C757D'; this.style.color='#FFFFFF';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6C757D';">
+                    <a href="{% url 'arquivos' band.slug %}" id="btnLimpar" class="btn btn-sm btn-outline-secondary" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 14px; border-radius: 4px; border: 1px solid #6C757D; color: #6C757D; background-color: transparent; display: inline-flex; align-items: center; white-space: nowrap;">
                         <i class="fa-solid fa-eraser me-1" style="font-size: 14px;"></i> Limpar
                     </a>
-                    <button type="button" id="btnFiltrar" class="btn btn-sm btn-dark" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 20px; border-radius: 4px; background-color: #212529; border: 1px solid #212529; color: #FFFFFF; display: inline-flex; align-items: center; white-space: nowrap;" onmouseover="this.style.backgroundColor='#1C1F23'; this.style.borderColor='#1A1E21';" onmouseout="this.style.backgroundColor='#212529'; this.style.borderColor='#212529';">
+                    <button type="button" id="btnFiltrar" class="btn btn-sm btn-dark" style="height: 30px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 400; padding: 4px 20px; border-radius: 4px; background-color: #212529; border: 1px solid #212529; color: #FFFFFF; display: inline-flex; align-items: center; white-space: nowrap;">
                         <i class="fa-solid fa-filter me-1" style="font-size: 14px;"></i> Filtrar
                     </button>
                 </div>
@@ -211,84 +266,181 @@
         </div>
     </div>
 
+    <!-- Hierarquia de Arquivos: ANO -> MÊS -> SHOW -> ARQUIVOS -->
     <div class="row">
         <div class="col-12">
-            {% if shows %}
-                <div class="accordion" id="accordionArquivos">
-                {% for show in shows %}
-                    <div class="accordion-item shadow-sm border-0 mb-2 file-item-container" data-show-id="{{ show.id }}" style="border-radius: 10px;">
-                        <h2 class="accordion-header" id="heading{{ show.id }}">
-                            <button class="accordion-button collapsed bg-white fw-bold d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ show.id }}" aria-expanded="false" aria-controls="collapse{{ show.id }}">
-                                <div class="mb-1 mb-md-0">
-                                    <span class="show-title">{{ show.title|default:"Show sem título" }}</span>
-                                    <small class="text-muted ms-md-3 d-block d-md-inline fw-normal show-meta"><i class="fa-regular fa-calendar me-1"></i> {{ show.date|date:"d/m/Y" }} &nbsp;|&nbsp; <i class="fa-solid fa-location-dot me-1"></i> {{ show.city|default:"Cidade não informada" }}</small>
+            {% if years_tree %}
+                <div class="accordion" id="accordionYears">
+                {% for year_item in years_tree %}
+                    <div class="accordion-item year-accordion-item year-group-container" data-year="{{ year_item.year }}">
+                        <h2 class="accordion-header" id="headingYear{{ year_item.year }}">
+                            <button class="accordion-button year-accordion-btn {% if not year_item.is_current_year %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseYear{{ year_item.year }}" aria-expanded="{% if year_item.is_current_year %}true{% else %}false{% endif %}" aria-controls="collapseYear{{ year_item.year }}">
+                                <div class="d-flex align-items-center justify-content-between w-100 me-3">
+                                    <span><i class="fa-regular fa-calendar-days text-primary me-2"></i><strong>{{ year_item.year }}</strong></span>
+                                    <span class="badge bg-light text-secondary border rounded-pill fw-normal" style="font-size: 12px;">{{ year_item.total_files }} arquivo(s)</span>
                                 </div>
                             </button>
                         </h2>
-
-                        <div id="collapse{{ show.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ show.id }}" data-bs-parent="#accordionArquivos">
-                            <div class="accordion-body p-0">
-                                <div class="d-flex justify-content-end p-2 bg-light border-bottom">
-                                    <a href="{% url 'shows_edit' band.slug show.id %}#anexos" class="btn btn-outline-secondary rounded-pill fw-bold btn-add-attachment">
-                                        <i class="fa-solid fa-plus me-1"></i> Adicionar Anexo
-                                    </a>
-                                </div>
-                                <ul class="list-group list-group-flush">
-                                <!-- Contratos e Documentos -->
-                                {% for doc in show.documents.all %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center file-item file-record" data-file-type="documento" data-file-name="{{ doc.description|default:'' }}">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-light text-primary rounded d-flex justify-content-center align-items-center me-3 file-icon-box">
-                                            <i class="fa-solid fa-file-contract"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-0 file-name">{{ doc.description }}</h6>
-                                            <small class="text-muted file-meta">Documento do Show</small>
-                                        </div>
-                                    </div>
-                                    <div class="dropdown">
-                                        <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                        <div id="collapseYear{{ year_item.year }}" class="accordion-collapse collapse {% if year_item.is_current_year %}show{% endif %}" aria-labelledby="headingYear{{ year_item.year }}" data-bs-parent="#accordionYears">
+                            <div class="accordion-body p-3 bg-light">
+                                {% for month_item in year_item.months_list %}
+                                    <div class="month-card month-group-container" data-month="{{ month_item.month_num }}" data-year-month="{{ year_item.year }}-{{ month_item.month_num }}">
+                                        <button class="month-header-btn {% if not month_item.is_current_month %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMonth{{ year_item.year }}_{{ month_item.month_num }}" aria-expanded="{% if month_item.is_current_month %}true{% else %}false{% endif %}">
+                                            <span>
+                                                <i class="fa-solid fa-folder-tree text-warning me-2"></i>{{ month_item.month_name }}
+                                            </span>
+                                            <span class="badge bg-white text-muted border rounded-pill fw-normal" style="font-size: 11px;">
+                                                {{ month_item.shows|length }} show(s) &bull; {{ month_item.total_files }} arquivo(s)
+                                            </span>
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
-                                            <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-download-url="{% url 'download_contract' band.slug doc.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-filename="{{ doc.file.name|default:'documento' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
-                                            <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
-                                            <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'document_delete' band.slug doc.id %}?next=arquivos" data-item-type="o documento" data-item-name="{{ doc.description }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
-                                        </ul>
-                                    </div>
-                                </li>
-                                {% endfor %}
+                                        <div id="collapseMonth{{ year_item.year }}_{{ month_item.month_num }}" class="collapse {% if month_item.is_current_month %}show{% endif %} p-2">
+                                            <!-- Shows do Mês -->
+                                            <div class="accordion" id="accordionShows{{ year_item.year }}_{{ month_item.month_num }}">
+                                                {% for show in month_item.shows %}
+                                                <div class="accordion-item show-accordion-item file-item-container" data-show-id="{{ show.id }}">
+                                                    <h2 class="accordion-header" id="headingShow{{ show.id }}">
+                                                        <button class="accordion-button show-accordion-btn collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseShow{{ show.id }}" aria-expanded="false">
+                                                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center w-100 me-2">
+                                                                <div>
+                                                                    <span>{{ show.title|default:"Show sem título" }}</span>
+                                                                    <small class="text-muted ms-md-2 fw-normal"><i class="fa-regular fa-calendar me-1"></i>{{ show.date|date:"d/m/Y" }} {% if show.city %}&bull; <i class="fa-solid fa-location-dot me-1"></i>{{ show.city }}{% endif %}</small>
+                                                                </div>
+                                                                <span class="badge bg-light text-dark border rounded-pill mt-1 mt-md-0 fw-normal" style="font-size: 11px;">{{ show.total_files_count }} arquivo(s)</span>
+                                                            </div>
+                                                        </button>
+                                                    </h2>
+                                                    <div id="collapseShow{{ show.id }}" class="accordion-collapse collapse" aria-labelledby="headingShow{{ show.id }}">
+                                                        <div class="accordion-body p-0">
+                                                            <!-- Barra de Ação do Show: Adicionar Documento -->
+                                                            <div class="d-flex justify-content-end align-items-center p-2 bg-light border-bottom gap-2">
+                                                                <a href="{% url 'show_finance_detail' band.slug show.id %}" class="btn btn-outline-success rounded-pill fw-medium btn-add-attachment" title="Gerenciar comprovantes no financeiro">
+                                                                    <i class="fa-solid fa-receipt me-1"></i> Acessar Financeiro
+                                                                </a>
+                                                                <a href="{% url 'shows_edit' band.slug show.id %}#anexos" class="btn btn-outline-secondary rounded-pill fw-bold btn-add-attachment">
+                                                                    <i class="fa-solid fa-plus me-1"></i> Adicionar Documento
+                                                                </a>
+                                                            </div>
 
-                                <!-- Comprovantes Financeiros -->
-                                {% for receipt in show.receipts.all %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center file-item file-record" data-file-type="comprovante" data-file-name="{{ receipt.description|default:'' }}">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-light text-success rounded d-flex justify-content-center align-items-center me-3 file-icon-box">
-                                            <i class="fa-solid fa-file-invoice-dollar"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-0 file-name">{{ receipt.description }}</h6>
-                                            <small class="text-muted file-meta">Comprovante Financeiro &bull; <strong class="text-dark">R$ {{ receipt.value|floatformat:"2g" }}</strong></small>
+                                                            <!-- SUBSEÇÃO 1: DOCUMENTOS DO SHOW -->
+                                                            {% if show.prefetched_doc_files %}
+                                                            <div class="sub-section-title text-primary">
+                                                                <i class="fa-solid fa-file-contract me-1"></i> Documentos do Show
+                                                            </div>
+                                                            <ul class="list-group list-group-flush mb-0">
+                                                                {% for doc in show.prefetched_doc_files %}
+                                                                <li class="list-group-item d-flex justify-content-between align-items-center file-item file-record" data-file-type="documento" data-file-name="{{ doc.description|default:'' }}">
+                                                                    <div class="d-flex align-items-center me-2">
+                                                                        <div class="bg-light text-primary rounded d-flex justify-content-center align-items-center me-3 file-icon-box">
+                                                                            <i class="fa-solid fa-file-contract"></i>
+                                                                        </div>
+                                                                        <div>
+                                                                            <h6 class="mb-0 file-name">{{ doc.description }}</h6>
+                                                                            <small class="text-muted file-meta">Documento do Show</small>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="dropdown">
+                                                                        <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                            <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                                                        </button>
+                                                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
+                                                                            <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-download-url="{% url 'download_contract' band.slug doc.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'contract' doc.pk %}" data-filename="{{ doc.file.name|default:'documento' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
+                                                                            <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
+                                                                            <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'document_delete' band.slug doc.id %}?next=arquivos" data-item-type="o documento" data-item-name="{{ doc.description }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                </li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                            {% endif %}
+
+                                                            <!-- SUBSEÇÃO 2: COMPROVANTES FINANCEIROS (SOMENTE CONSULTA) -->
+                                                            {% if show.prefetched_receipt_files or show.prefetched_payment_files %}
+                                                            <div class="sub-section-title text-success d-flex justify-content-between align-items-center">
+                                                                <span><i class="fa-solid fa-receipt me-1"></i> Comprovantes Financeiros</span>
+                                                                <span class="badge bg-light text-muted fw-normal" style="font-size: 10px; text-transform: none;"><i class="fa-solid fa-lock me-1"></i>Gerenciado pelo Financeiro</span>
+                                                            </div>
+                                                            <ul class="list-group list-group-flush mb-0">
+                                                                <!-- Despesas (FinancialReceipt) -->
+                                                                {% for receipt in show.prefetched_receipt_files %}
+                                                                <li class="list-group-item d-flex justify-content-between align-items-center file-item file-record" data-file-type="comprovante_despesa" data-file-name="{{ receipt.description|default:'' }}">
+                                                                    <div class="d-flex align-items-center me-2">
+                                                                        <div class="bg-light text-danger rounded d-flex justify-content-center align-items-center me-3 file-icon-box">
+                                                                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                                                                        </div>
+                                                                        <div>
+                                                                            <h6 class="mb-0 file-name">{{ receipt.description }}</h6>
+                                                                            <small class="text-muted file-meta">
+                                                                                Despesa &bull; <strong class="text-dark">R$ {{ receipt.value|floatformat:"2g" }}</strong>
+                                                                                {% if receipt.category %}&bull; {{ receipt.category }}{% endif %}
+                                                                                {% if receipt.date %}&bull; {{ receipt.date|date:"d/m/Y" }}{% endif %}
+                                                                            </small>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="dropdown">
+                                                                        <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                            <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                                                        </button>
+                                                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
+                                                                            <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-download-url="{% url 'download_receipt' band.slug receipt.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-filename="{{ receipt.file.name|default:'comprovante' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
+                                                                            <li><a class="dropdown-item py-2 fw-medium text-secondary" href="{% url 'show_finance_detail' band.slug show.id %}"><i class="fa-solid fa-arrow-up-right-from-square me-2 text-muted"></i> Ver no Financeiro</a></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                </li>
+                                                                {% endfor %}
+
+                                                                <!-- Recebimentos (ShowPayment) -->
+                                                                {% for payment in show.prefetched_payment_files %}
+                                                                <li class="list-group-item d-flex justify-content-between align-items-center file-item file-record" data-file-type="comprovante_recebimento" data-file-name="{{ payment.description|default:'' }}">
+                                                                    <div class="d-flex align-items-center me-2">
+                                                                        <div class="bg-light text-success rounded d-flex justify-content-center align-items-center me-3 file-icon-box">
+                                                                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                                                                        </div>
+                                                                        <div>
+                                                                            <h6 class="mb-0 file-name">{{ payment.description }}</h6>
+                                                                            <small class="text-muted file-meta">
+                                                                                Receita &bull; <strong class="text-dark">R$ {{ payment.value|floatformat:"2g" }}</strong>
+                                                                                {% if payment.receipt_date %}&bull; {{ payment.receipt_date|date:"d/m/Y" }}{% endif %}
+                                                                            </small>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="dropdown">
+                                                                        <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                            <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                                                        </button>
+                                                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
+                                                                            <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'payment' payment.pk %}" data-download-url="{% url 'download_payment' band.slug payment.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'payment' payment.pk %}" data-filename="{{ payment.file.name|default:'comprovante_receita' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
+                                                                            <li><a class="dropdown-item py-2 fw-medium text-secondary" href="{% url 'show_finance_detail' band.slug show.id %}"><i class="fa-solid fa-arrow-up-right-from-square me-2 text-muted"></i> Ver no Financeiro</a></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                </li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                            {% endif %}
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="dropdown">
-                                        <button class="btn btn-light border rounded-pill shadow-sm dropdown-toggle btn-actions" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
-                                            <li><a class="dropdown-item py-2 fw-medium js-pwa-file-action" href="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-download-url="{% url 'download_receipt' band.slug receipt.pk %}" data-viewer-url="{% url 'file_viewer' band.slug 'receipt' receipt.pk %}" data-filename="{{ receipt.file.name|default:'comprovante' }}"><i class="fa-solid fa-download text-success me-2"></i> Baixar</a></li>
-                                            <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#editReceiptModal{{ receipt.id }}"><i class="fa-solid fa-pen text-primary me-2"></i> Editar</button></li>
-                                            <li><button type="button" class="dropdown-item py-2 fw-medium text-danger" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteUniversal" data-delete-url="{% url 'receipt_delete' band.slug receipt.id %}?next=arquivos" data-item-type="o comprovante" data-item-name="{{ receipt.description }}"><i class="fa-solid fa-trash text-danger me-2"></i> Excluir</button></li>
-                                        </ul>
-                                    </div>
-                                </li>
                                 {% endfor %}
-                            </ul>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="card shadow-sm border-0" style="border-radius: 12px;">
+                    <div class="card-body text-center py-5">
+                        <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
+                            <i class="fa-solid fa-folder-open text-muted mb-3" style="font-size: 3rem;"></i>
+                            <h5 class="fw-bold text-dark mb-1 fs-6">Nenhum arquivo encontrado</h5>
+                            <p class="text-muted small mb-0">Ainda não existem contratos ou comprovantes anexados aos shows da banda.</p>
                         </div>
                     </div>
                 </div>
-            {% endfor %}
-            </div>
+            {% endif %}
 
             <!-- Mensagem quando a filtragem não encontrar resultados -->
             <div id="noResultsFiltered" class="card shadow-sm border-0 d-none" style="border-radius: 10px;">
@@ -298,30 +450,20 @@
                     <p class="text-muted small mb-0">Tente ajustar ou limpar os filtros de busca.</p>
                 </div>
             </div>
-        {% else %}
-            <div class="card shadow-sm border-0" style="border-radius: 12px;">
-                <div class="card-body text-center py-5">
-                    <div class="d-flex flex-column align-items-center justify-content-center opacity-75">
-                        <i class="fa-solid fa-folder-open text-muted mb-3" style="font-size: 3rem;"></i>
-                        <h5 class="fw-bold text-dark mb-1 fs-6">Nenhum arquivo encontrado</h5>
-                        <p class="text-muted small mb-0">Ainda não existem contratos ou comprovantes anexados aos shows da banda.</p>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 
-<!-- Modal Adicionar Novo Arquivo Global -->
-<div class="modal fade text-start" id="modalNovoArquivoGlobal" tabindex="-1" aria-labelledby="modalNovoArquivoGlobalLabel" aria-hidden="true">
+<!-- Modal Adicionar Novo Documento Global (BP-PEND-69: Exclusivo para Documentos Operacionais) -->
+<div class="modal fade text-start" id="modalNovoDocumentoGlobal" tabindex="-1" aria-labelledby="modalNovoDocumentoGlobalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <form action="{% url 'arquivos' band.slug %}" method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="add_file_global">
                 <div class="modal-header bg-light border-0 py-3 px-4">
-                    <h5 class="modal-title fw-bold" id="modalNovoArquivoGlobalLabel" style="font-size: 16px; color: #198754;">
-                        <i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Adicionar Arquivo
+                    <h5 class="modal-title fw-bold" id="modalNovoDocumentoGlobalLabel" style="font-size: 16px; color: #198754;">
+                        <i class="fa-solid fa-plus me-2" style="color: #198754;"></i>Adicionar Documento
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -337,40 +479,18 @@
                             <select name="show_id" id="modalShowSelect" class="form-select" required style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
                                 <option value="">-- Selecione o Show --</option>
                                 {% for s in all_band_shows %}
-                                    <option value="{{ s.id }}" data-show-date="{{ s.date|date:'Y-m'|default:'' }}" data-files-count="{{ s.storage_files_count }}" data-files-size="{{ s.storage_files_size_mb }}">{{ s.title|default:"Sem título" }} &bull; {{ s.date|date:"d/m/Y"|default:"Sem data" }}{% if s.city %} &bull; {{ s.city }}{% endif %}</option>
+                                    <option value="{{ s.id }}" data-show-date="{{ s.date|date:'Y-m'|default:'' }}">{{ s.title|default:"Sem título" }} &bull; {{ s.date|date:"d/m/Y"|default:"Sem data" }}{% if s.city %} &bull; {{ s.city }}{% endif %}</option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text" style="font-size: 12px;">Selecione o evento ao qual este arquivo será anexado.</div>
-                        </div>
-                    </div>
-
-                    <!-- Categoria e Dados -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-6">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Categoria *</label>
-                            <select name="category_type" id="modalCategorySelect" class="form-select" required style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
-                                <option value="documento" selected>Documentos do Show</option>
-                                <option value="comprovante">Comprovantes Financeiros</option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6" id="modalFieldDateContainer">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Data</label>
-                            <input type="date" name="date" class="form-control" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
-                        </div>
-                        <div class="col-12 d-none" id="modalFieldValueContainer">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Valor (R$)</label>
-                            <div class="input-group">
-                                <span class="input-group-text" style="font-size: 13px; height: 34px; padding: 5px 10px;">R$</span>
-                                <input type="text" name="value" id="modalInputValue" class="form-control money-mask" placeholder="0,00" style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 0 6px 6px 0;">
-                            </div>
+                            <div class="form-text" style="font-size: 12px;">Selecione o evento ao qual este documento será anexado.</div>
                         </div>
                     </div>
 
                     <!-- Descrição e Upload do Arquivo -->
                     <div class="row g-3 mb-3">
                         <div class="col-12">
-                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Descrição *</label>
-                            <input type="text" name="description" class="form-control" required placeholder="Ex: Contrato assinado, Comprovante de Transferência..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
+                            <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Descrição do Documento *</label>
+                            <input type="text" name="description" class="form-control" required placeholder="Ex: Contrato assinado, Alvará de funcionamento, Autorização..." style="font-size: 14px; height: 34px; padding: 5px 10px; border-radius: 6px;">
                         </div>
                         <div class="col-12">
                             <label class="form-label mb-1" style="font-size: 13px; font-weight: 600; color: #6c757d;">Arquivo *</label>
@@ -382,33 +502,27 @@
                     <!-- Bloco Informativo de Armazenamento -->
                     <div class="p-3 bg-light rounded-3 border">
                         <h6 class="fw-bold text-dark mb-2 d-flex align-items-center" style="font-size: 13px;">
-                            <i class="fa-solid fa-hard-drive me-2 text-secondary"></i> Uso de Armazenamento do Show
+                            <i class="fa-solid fa-hard-drive me-2 text-secondary"></i> Armazenamento de Documentos do Show
                         </h6>
-                        <div class="small text-muted mb-1" id="modalStoragePlaceholderText" style="padding-left: 1.5rem;">
-                            Selecione um show para visualizar o uso de armazenamento.
-                        </div>
-                        <ul class="mb-0 small text-dark d-none" id="modalStorageMetricsList" style="list-style-type: none; padding-left: 1.5rem; line-height: 1.5;">
-                            <li>Arquivos: <strong id="modalStorageFilesCount">0</strong> de {{ max_show_files|default:"7" }}</li>
-                            <li>Espaço utilizado: <strong id="modalStorageFilesSize">0</strong> de {{ max_show_storage_mb|default:"35" }} MB</li>
+                        <ul class="mb-0 small text-dark" style="list-style-type: none; padding-left: 1.5rem; line-height: 1.5;">
+                            <li>Capacidade por show: <strong>{{ max_show_files|default:"7" }} documentos</strong> (até {{ max_show_storage_mb|default:"35" }} MB)</li>
+                            <li>Máximo por arquivo: <strong>{{ max_file_size_mb|default:"10" }} MB</strong></li>
+                            <li class="text-muted mt-1" style="font-size: 11px;"><i class="fa-solid fa-circle-info me-1"></i> Comprovantes financeiros de despesas e receitas são gerenciados diretamente pelo módulo Financeiro e não consomem esta cota.</li>
                         </ul>
-                        <div style="padding-left: 1.5rem; font-size: 12px; color: #495057;">
-                            Máximo por arquivo: <strong>{{ max_file_size_mb|default:"10" }} MB</strong>
-                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0 justify-content-end gap-2 py-2 px-4">
                     <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Adicionar Arquivo</button>
+                    <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Adicionar Documento</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modals for Document/Receipt Deletion and Edition -->
+<!-- Modals de Edição de Documentos -->
 {% for show in shows %}
-    {% for doc in show.documents.all %}
-    <!-- Modal Editar Documento -->
+    {% for doc in show.prefetched_doc_files %}
     <div class="modal fade text-start" id="editDocModal{{ doc.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -426,52 +540,6 @@
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-bold small">Substituir Arquivo (PDF, Imagem)</label>
-                                <input type="file" name="file" class="form-control">
-                                <div class="form-text">Deixe em branco para manter o arquivo atual.</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer bg-light border-0 justify-content-end gap-2">
-                        <button type="button" class="btn btn-light border fw-bold px-3 rounded-pill" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                        <button type="submit" class="btn btn-success fw-bold px-4 rounded-pill shadow-sm" style="height: 34px; font-size: 13px;">Salvar Alterações</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-
-    {% for receipt in show.receipts.all %}
-    <!-- Modal Editar Comprovante -->
-    <div class="modal fade text-start" id="editReceiptModal{{ receipt.id }}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <form action="{% url 'receipt_edit' band.slug receipt.id %}?next=arquivos" method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="modal-header bg-light border-0">
-                        <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-pen me-2"></i>Editar Comprovante</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body p-4 text-wrap" style="white-space: normal;">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label fw-bold small">Descrição</label>
-                                <input type="text" name="description" class="form-control" value="{{ receipt.description }}" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold small">Data</label>
-                                <input type="date" name="date" class="form-control" value="{{ receipt.date|date:'Y-m-d' }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold small">Categoria</label>
-                                <input type="text" name="category" class="form-control" value="{{ receipt.category }}" required>
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label fw-bold small">Valor (R$)</label>
-                                <input type="text" name="value" class="form-control money-mask" value="{{ receipt.value }}" required>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold small">Arquivo (PDF, Imagem)</label>
                                 <input type="file" name="file" class="form-control">
                                 <div class="form-text">Deixe em branco para manter o arquivo atual.</div>
                             </div>
@@ -533,35 +601,9 @@
 {% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // Lógica do Modal de Novo Arquivo Global
+    // Filtro de Show por Mês no Modal
     const modalShowMonthFilter = document.getElementById("modalShowMonthFilter");
     const modalShowSelect = document.getElementById("modalShowSelect");
-    const modalCategorySelect = document.getElementById("modalCategorySelect");
-    const modalFieldValueContainer = document.getElementById("modalFieldValueContainer");
-    const modalStorageInitialPrompt = document.getElementById("modalStorageInitialPrompt");
-    const modalStorageMetricsList = document.getElementById("modalStorageMetricsList");
-    const modalStorageFilesCount = document.getElementById("modalStorageFilesCount");
-    const modalStorageFilesSize = document.getElementById("modalStorageFilesSize");
-
-    function updateModalStorageInfo() {
-        if (!modalShowSelect) return;
-        const selectedOpt = modalShowSelect.options[modalShowSelect.selectedIndex];
-        if (selectedOpt && selectedOpt.value) {
-            const count = selectedOpt.getAttribute("data-files-count") || "0";
-            const size = selectedOpt.getAttribute("data-files-size") || "0";
-            if (modalStorageFilesCount) modalStorageFilesCount.textContent = count;
-            if (modalStorageFilesSize) modalStorageFilesSize.textContent = size;
-            if (modalStorageInitialPrompt) modalStorageInitialPrompt.classList.add("d-none");
-            if (modalStorageMetricsList) modalStorageMetricsList.classList.remove("d-none");
-        } else {
-            if (modalStorageInitialPrompt) modalStorageInitialPrompt.classList.remove("d-none");
-            if (modalStorageMetricsList) modalStorageMetricsList.classList.add("d-none");
-        }
-    }
-
-    if (modalShowSelect) {
-        modalShowSelect.addEventListener("change", updateModalStorageInfo);
-    }
 
     if (modalShowMonthFilter && modalShowSelect) {
         modalShowMonthFilter.addEventListener("change", function() {
@@ -578,24 +620,14 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             });
 
-            // Reseta a seleção se a opção atual ficou oculta
             const currentSelected = modalShowSelect.options[modalShowSelect.selectedIndex];
             if (currentSelected && currentSelected.style.display === "none") {
                 modalShowSelect.value = "";
-                updateModalStorageInfo();
             }
         });
     }
 
-    if (modalCategorySelect && modalFieldValueContainer) {
-        modalCategorySelect.addEventListener("change", function() {
-            if (this.value === "comprovante") {
-                modalFieldValueContainer.classList.remove("d-none");
-            } else {
-                modalFieldValueContainer.classList.add("d-none");
-            }
-        });
-    }
+    // Filtros de Busca e Tipos
     const filterSearch = document.getElementById("filterSearch");
     const filterShow = document.getElementById("filterShow");
     const filterType = document.getElementById("filterType");
@@ -609,7 +641,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const selectedType = filterType ? filterType.value.trim().toLowerCase() : "";
 
         const showContainers = document.querySelectorAll(".file-item-container");
-        let totalVisibleFiles = 0;
         let totalVisibleContainers = 0;
 
         showContainers.forEach(function(container) {
@@ -644,19 +675,49 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (matchType && matchText) {
                     record.style.display = "";
                     visibleFilesInThisShow++;
-                    totalVisibleFiles++;
                 } else {
                     record.style.display = "none";
                 }
             });
 
-            // Se o show não possuir arquivos compatíveis, oculta o container do show
             if (visibleFilesInThisShow > 0) {
                 container.style.display = "";
                 totalVisibleContainers++;
+
+                // Se houver busca ativa ou filtro de show, auto-expande os pais (Show, Mês e Ano)
+                if (query || selectedShow || selectedType) {
+                    const showCollapse = container.querySelector(".accordion-collapse");
+                    if (showCollapse && !showCollapse.classList.contains("show")) {
+                        const bsShowCollapse = bootstrap.Collapse.getOrCreateInstance(showCollapse, { toggle: false });
+                        bsShowCollapse.show();
+                    }
+
+                    const monthCollapse = container.closest(".month-group-container")?.querySelector(".collapse");
+                    if (monthCollapse && !monthCollapse.classList.contains("show")) {
+                        const bsMonthCollapse = bootstrap.Collapse.getOrCreateInstance(monthCollapse, { toggle: false });
+                        bsMonthCollapse.show();
+                    }
+
+                    const yearCollapse = container.closest(".year-group-container")?.querySelector(".accordion-collapse");
+                    if (yearCollapse && !yearCollapse.classList.contains("show")) {
+                        const bsYearCollapse = bootstrap.Collapse.getOrCreateInstance(yearCollapse, { toggle: false });
+                        bsYearCollapse.show();
+                    }
+                }
             } else {
                 container.style.display = "none";
             }
+        });
+
+        // Oculta blocos de meses e anos vazios após a filtragem
+        document.querySelectorAll(".month-group-container").forEach(monthCard => {
+            const hasVisibleShows = Array.from(monthCard.querySelectorAll(".file-item-container")).some(el => el.style.display !== "none");
+            monthCard.style.display = hasVisibleShows ? "" : "none";
+        });
+
+        document.querySelectorAll(".year-group-container").forEach(yearGroup => {
+            const hasVisibleMonths = Array.from(yearGroup.querySelectorAll(".month-group-container")).some(el => el.style.display !== "none");
+            yearGroup.style.display = hasVisibleMonths ? "" : "none";
         });
 
         if (noResultsFiltered) {
@@ -688,9 +749,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Inicializa aplicando filtros caso venha preenchido
-    applyFilters();
-
     // PWA iOS File Fix
     const isIOSDevice =
         /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -705,7 +763,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     if (isIOSDevice && isStandalone) {
         const actionModal = new bootstrap.Modal(document.getElementById('pwaFileActionModal'));
-
         const btnPreview = document.getElementById('btnPwaPreview');
         const btnShare = document.getElementById('btnPwaShare');
         const actionsDiv = document.getElementById('pwaFileActions');
@@ -715,7 +772,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let currentFile = null;
 
-        // Intercepta botões de download
         document.querySelectorAll('.js-pwa-file-action').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -723,20 +779,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 const originalUrl = this.getAttribute('data-download-url');
                 const viewerUrl = this.getAttribute('data-viewer-url');
                 let filename = this.getAttribute('data-filename');
-                if(filename.includes('/')) {
+                if(filename && filename.includes('/')) {
                     filename = filename.split('/').pop();
                 }
 
                 currentFile = { downloadUrl: originalUrl, viewerUrl: viewerUrl, filename: filename };
-
                 document.getElementById('pwaFileName').textContent = filename;
 
-                // Set icon and handle PDF specifically for iOS
                 iconEl.className = 'fa-solid text-primary';
-                const lowerName = filename.toLowerCase();
+                const lowerName = (filename || '').toLowerCase();
 
                 btnPreview.classList.remove('d-none');
-
                 if (lowerName.endsWith('.pdf')) {
                     iconEl.classList.add('fa-file-pdf', 'text-danger');
                 } else if (lowerName.match(/\.(jpg|jpeg|png|webp|gif)$/)) {
@@ -746,7 +799,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     btnPreview.classList.add('d-none');
                 }
 
-                // Reset modal state
                 actionsDiv.classList.remove('d-none');
                 loadingDiv.classList.add('d-none');
                 errorDiv.classList.add('d-none');
@@ -755,20 +807,12 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         });
 
-        // Funções de PDF removidas
-
-        // Ação: Visualizar
-        btnPreview.addEventListener('click', async function() {
+        btnPreview.addEventListener('click', function() {
             if (!currentFile || !currentFile.viewerUrl) return;
-
-            // Fecha o modal de ação antes de navegar para não deixar lixo no histórico
             actionModal.hide();
-
-            // Navega para a página interna HTML do visualizador
             window.location.href = currentFile.viewerUrl;
         });
 
-        // Ação: Salvar / Compartilhar
         btnShare.addEventListener('click', async function() {
             if (!currentFile) return;
 
@@ -805,19 +849,14 @@ document.addEventListener("DOMContentLoaded", function() {
                         });
                         actionModal.hide();
                     } catch (shareErr) {
-                        if (shareErr.name === 'AbortError') {
-                            // Usuário cancelou, apenas restaurar botões
-                        } else {
-                            throw shareErr;
-                        }
+                        // Abort silently
                     }
                 } else {
                     throw new Error("O compartilhamento não é suportado neste dispositivo.");
                 }
             } catch (err) {
-                console.error(err);
                 if (err.name !== 'AbortError') {
-                    errorDiv.textContent = err.message || "Não foi possível preparar este arquivo. Tente novamente.";
+                    errorDiv.textContent = err.message || "Não foi possível preparar este arquivo.";
                     errorDiv.classList.remove('d-none');
                 }
             } finally {
@@ -829,3 +868,4 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 {% endblock %}
+

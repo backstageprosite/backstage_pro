@@ -834,10 +834,10 @@
                     {% if is_edit %}
                     <div class="alert alert-info mb-3 py-2 shadow-sm" style="border-radius: 8px; font-size: 13px;">
                         <div class="d-flex align-items-center mb-1">
-                            <i class="fa-solid fa-hard-drive me-2"></i> <strong>Uso de Armazenamento</strong>
+                            <i class="fa-solid fa-hard-drive me-2"></i> <strong>Uso de Armazenamento de Documentos</strong>
                         </div>
                         <ul class="mb-0 small text-dark" style="list-style-type: none; padding-left: 1.5rem;">
-                            <li>Arquivos: <strong>{{ files_count|default:"0" }}</strong> de 7</li>
+                            <li>Documentos: <strong>{{ files_count|default:"0" }}</strong> de 7</li>
                             <li>Espaço utilizado: <strong>{{ files_size_mb|default:"0" }} MB</strong> de 35 MB</li>
                             <li>Máximo por arquivo: <strong>10 MB</strong></li>
                         </ul>
@@ -848,7 +848,7 @@
                         <div class="text-center py-4">
                             <i class="fa-solid fa-cloud-arrow-up fa-3x text-muted mb-2"></i>
                             <h5 class="fw-bold fs-6">Salve o show para adicionar anexos</h5>
-                            <p class="text-muted small mb-0">Após salvar o show, você poderá enviar documentos e comprovantes.</p>
+                            <p class="text-muted small mb-0">Após salvar o show, você poderá adicionar documentos.</p>
                         </div>
                     {% else %}
                         <div class="row g-3 align-items-stretch">
