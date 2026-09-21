@@ -79,11 +79,12 @@ class AdminUserWhatsAppShareTests(TestCase):
         content = response.content.decode('utf-8')
 
         # Usuário com senha (joao_multi):
-        # - Deve exibir "••••••••" e "Senha cadastrada"
+        # - Deve exibir "********" e "Senha cadastrada"
         # - Deve exibir "Este usuário já possui uma senha cadastrada"
         # - NÃO deve exibir input de senha provisória nem botão gerar senha
         self.assertIn(f'id="modalShareUser{self.user_multi.id}"', content)
         self.assertIn('Este usuário já possui uma senha cadastrada.', content)
+        self.assertIn('********', content)
         self.assertNotIn(f'id="inputProvisionalPass{self.user_multi.id}"', content)
 
         # Usuário sem senha utilizável (carlos_no_pwd):
