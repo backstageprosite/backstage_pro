@@ -3283,7 +3283,7 @@ def build_whatsapp_charge_data(responsible_name, band_name, plan_type, billing_c
     }
 
 
-def build_admin_user_whatsapp_access_data(user, raw_password):
+def build_admin_user_whatsapp_access_data(user, raw_password="", is_provisional=False):
     """
     BP-PEND-ADMIN: Prepara a mensagem amigável e profissional e links do WhatsApp
     para compartilhamento de credenciais provisórias pelo Admin Geral.
@@ -3357,6 +3357,21 @@ def build_admin_user_whatsapp_access_data(user, raw_password):
             "e alternar entre elas pelo seletor de bandas do Backstage Pro.\n\n"
         )
 
+    # Se explicitamente marcado como provisória ou se o usuário não possui senha utilizável
+    use_provisional = bool(is_provisional or (user and not user.has_usable_password()))
+
+    # Formatação do bloco de credenciais de senha
+    if not use_provisional:
+        senha_bloco = (
+            f"{w_key} Senha: utilize a senha já cadastrada na sua conta.\n\n"
+            f"Caso não se lembre da senha, utilize a opção “Esqueci minha senha” na tela de login.\n\n"
+        )
+    else:
+        senha_bloco = (
+            f"{w_key} Senha provisória: {raw_password}\n\n"
+            f"Por segurança, recomendamos que você altere sua senha após o primeiro acesso.\n\n"
+        )
+
     message_text = (
         f"Olá, {user_name}! {w_hand}\n\n"
         f"Seja bem-vindo(a) ao Backstage Pro! {w_music}{w_rocket}\n\n"
@@ -3364,8 +3379,7 @@ def build_admin_user_whatsapp_access_data(user, raw_password):
         f"{w_link} Acessar o Backstage Pro:\n"
         f"{login_url}\n\n"
         f"{w_user} Login: {username}\n"
-        f"{w_key} Senha provisória: {raw_password}\n\n"
-        f"Por segurança, recomendamos que você altere sua senha após o primeiro acesso.\n\n"
+        f"{senha_bloco}"
         f"{bandas_bloco}"
         f"{multilogin_bloco}"
         f"Qualquer dúvida, estamos à disposição.\n\n"
@@ -3384,6 +3398,12 @@ def build_admin_user_whatsapp_access_data(user, raw_password):
         whatsapp_web_url = f"https://web.whatsapp.com/send?phone={phone_normalized}&text={encoded_text}"
         whatsapp_url = whatsapp_mobile_url
 
+    modal_heading = f"Acesso pronto para envio ({username})"
+    if not use_provisional:
+        modal_subheading = "Os dados de acesso e orientações de login estão prontos para compartilhamento."
+    else:
+        modal_subheading = "A senha provisória foi definida e os dados de acesso estão prontos para compartilhamento."
+
     return {
         'has_phone': bool(phone_normalized),
         'phone_normalized': phone_normalized,
@@ -3394,8 +3414,9 @@ def build_admin_user_whatsapp_access_data(user, raw_password):
         'whatsapp_web_url': whatsapp_web_url,
         'is_share': True,
         'modal_title': 'Compartilhar Acesso',
-        'modal_heading': f'Acesso pronto para envio ({username})',
-        'modal_subheading': 'A senha provisória foi definida e os dados de acesso estão prontos para compartilhamento.',
+        'modal_heading': modal_heading,
+        'modal_subheading': modal_subheading,
+        'has_usable_password': not use_provisional,
     }
 
 

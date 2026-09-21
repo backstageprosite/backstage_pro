@@ -1133,25 +1133,39 @@ def admin_user_share_whatsapp(request, pk):
             )
             return redirect('admin_painel:usuarios')
 
-        # 2. Validar a senha provisória informada
-        provisional_password = request.POST.get('provisional_password', '').strip()
-        if not provisional_password:
-            messages.error(request, "A senha provisória não pode ser vazia.")
-            return redirect('admin_painel:usuarios')
-
-        # 3. Atualizar a senha do usuário apenas após validação de telefone
-        user.set_password(provisional_password)
-        user.save()
-
-        # 4. Montar a mensagem e links do WhatsApp
+        # 2. Verificar se o usuário já possui senha utilizável
         from core.views import build_admin_user_whatsapp_access_data
-        whatsapp_data = build_admin_user_whatsapp_access_data(user, provisional_password)
+        has_usable_pwd = user.has_usable_password()
 
-        request.session['whatsapp_access_data'] = whatsapp_data
-        messages.success(
-            request,
-            f"Senha provisória definida com sucesso para '{user.username}'. Pronto para compartilhar pelo WhatsApp!"
-        )
+        if has_usable_pwd:
+            # Usuário já possui senha utilizável:
+            # - NÃO exigir provisional_password
+            # - NÃO executar set_password()
+            # - NÃO alterar/salvar credenciais
+            whatsapp_data = build_admin_user_whatsapp_access_data(user, raw_password="")
+            request.session['whatsapp_access_data'] = whatsapp_data
+            messages.success(
+                request,
+                f"Dados de acesso prontos para compartilhar com '{user.username}' pelo WhatsApp!"
+            )
+        else:
+            # Usuário sem senha utilizável:
+            # - Exigir provisional_password
+            # - Executar set_password() e salvar
+            provisional_password = request.POST.get('provisional_password', '').strip()
+            if not provisional_password:
+                messages.error(request, "A senha provisória não pode ser vazia.")
+                return redirect('admin_painel:usuarios')
+
+            user.set_password(provisional_password)
+            user.save()
+
+            whatsapp_data = build_admin_user_whatsapp_access_data(user, provisional_password, is_provisional=True)
+            request.session['whatsapp_access_data'] = whatsapp_data
+            messages.success(
+                request,
+                f"Senha provisória definida com sucesso para '{user.username}'. Pronto para compartilhar pelo WhatsApp!"
+            )
 
     return redirect('admin_painel:usuarios')
 

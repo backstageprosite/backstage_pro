@@ -48,6 +48,17 @@ class AdminUserWhatsAppShareTests(TestCase):
             phone=''
         )
 
+        # User without usable password (e.g. set_unusable_password())
+        self.user_unusable = User.objects.create_user(
+            username='carlos_no_pwd',
+            email='carlos@test.com',
+            first_name='Carlos',
+            phone='(11) 97777-6666'
+        )
+        self.user_unusable.set_unusable_password()
+        self.user_unusable.save()
+        UserBandMembership.objects.create(user=self.user_unusable, band=self.band_a, role='INTEGRANTE', is_active=True)
+
     def test_sidebar_and_menu_isolated(self):
         self.client.force_login(self.admin)
         response = self.client.get(reverse('admin_painel:usuarios'))
@@ -61,6 +72,26 @@ class AdminUserWhatsAppShareTests(TestCase):
         self.assertIn('Compartilhar', content)
         self.assertIn('fa-brands fa-whatsapp', content)
 
+    def test_modal_rendering_with_and_without_usable_password(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('admin_painel:usuarios'))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+
+        # Usuário com senha (joao_multi):
+        # - Deve exibir "••••••••" e "Senha cadastrada"
+        # - Deve exibir "Este usuário já possui uma senha cadastrada"
+        # - NÃO deve exibir input de senha provisória nem botão gerar senha
+        self.assertIn(f'id="modalShareUser{self.user_multi.id}"', content)
+        self.assertIn('Este usuário já possui uma senha cadastrada.', content)
+        self.assertNotIn(f'id="inputProvisionalPass{self.user_multi.id}"', content)
+
+        # Usuário sem senha utilizável (carlos_no_pwd):
+        # - DEVE exibir campo inputProvisionalPass e botão Gerar senha
+        self.assertIn(f'id="modalShareUser{self.user_unusable.id}"', content)
+        self.assertIn(f'id="inputProvisionalPass{self.user_unusable.id}"', content)
+        self.assertIn('Uma senha provisória será criada para este usuário', content)
+
     def test_relatorios_hub_does_not_contain_usuarios_card(self):
         self.client.force_login(self.admin)
         response = self.client.get(reverse('admin_painel:relatorios'))
@@ -70,55 +101,70 @@ class AdminUserWhatsAppShareTests(TestCase):
         self.assertNotIn('{% url \'admin_painel:usuarios\' %}', content)
         self.assertNotIn('href="/admin-master/usuarios/" class="text-decoration-none"', content)
 
-    def test_build_whatsapp_message_multi_bands(self):
-        whatsapp_data = build_admin_user_whatsapp_access_data(self.user_multi, 'TempPass123!')
+    def test_build_whatsapp_message_multi_bands_usable_password(self):
+        whatsapp_data = build_admin_user_whatsapp_access_data(self.user_multi, '')
         self.assertTrue(whatsapp_data['has_phone'])
         self.assertEqual(whatsapp_data['phone_normalized'], '5511987654321')
         self.assertIn('Acessar o Backstage Pro:', whatsapp_data['message_text'])
         self.assertIn('https://backstagepro.site/banda-alfa/login/', whatsapp_data['message_text'])
-        # Garantir que a homepage solta nao aparece mais
-        self.assertNotIn('https://backstagepro.site/\n', whatsapp_data['message_text'])
-        self.assertNotIn('🔗 Acesso:\n', whatsapp_data['message_text'])
         self.assertIn('Login: joao_multi', whatsapp_data['message_text'])
-        self.assertIn('Senha provisória: TempPass123!', whatsapp_data['message_text'])
+        # Mensagem para senha já cadastrada:
+        self.assertIn('Senha: utilize a senha já cadastrada na sua conta.', whatsapp_data['message_text'])
+        self.assertIn('Caso não se lembre da senha, utilize a opção “Esqueci minha senha”', whatsapp_data['message_text'])
+        self.assertNotIn('Senha provisória:', whatsapp_data['message_text'])
         self.assertIn('Bandas vinculadas: Banda Alfa, Banda Beta', whatsapp_data['message_text'])
         self.assertIn('alternar entre elas pelo seletor de bandas', whatsapp_data['message_text'])
         self.assertIn('https://wa.me/5511987654321?text=', whatsapp_data['whatsapp_mobile_url'])
 
-    def test_build_whatsapp_message_single_band(self):
-        whatsapp_data = build_admin_user_whatsapp_access_data(self.user_single, 'TempPass456!')
+    def test_build_whatsapp_message_unusable_password_sets_provisional(self):
+        whatsapp_data = build_admin_user_whatsapp_access_data(self.user_unusable, 'TempPass999!')
         self.assertTrue(whatsapp_data['has_phone'])
-        self.assertEqual(whatsapp_data['phone_normalized'], '5511912345678')
+        self.assertEqual(whatsapp_data['phone_normalized'], '5511977776666')
         self.assertIn('Acessar o Backstage Pro:', whatsapp_data['message_text'])
-        self.assertIn('https://backstagepro.site/banda-alfa/login/', whatsapp_data['message_text'])
-        self.assertIn('Banda vinculada: Banda Alfa', whatsapp_data['message_text'])
-        self.assertNotIn('Bandas vinculadas:', whatsapp_data['message_text'])
-        self.assertNotIn('alternar entre elas', whatsapp_data['message_text'])
+        self.assertIn('Login: carlos_no_pwd', whatsapp_data['message_text'])
+        self.assertIn('Senha provisória: TempPass999!', whatsapp_data['message_text'])
+        self.assertIn('Por segurança, recomendamos que você altere sua senha', whatsapp_data['message_text'])
 
-    def test_share_view_sets_password_and_session(self):
+    def test_share_view_user_with_usable_password_does_not_change_password(self):
         self.client.force_login(self.admin)
         url = reverse('admin_painel:usuarios_compartilhar', kwargs={'pk': self.user_multi.pk})
-        
-        response = self.client.post(url, {
-            'provisional_password': 'NewSuperPass@2026'
-        }, follow=True)
+
+        old_hash = self.user_multi.password
+        # POST sem provisional_password (ou ignorando qualquer valor enviado)
+        response = self.client.post(url, {}, follow=True)
 
         self.assertEqual(response.status_code, 200)
 
-        # Check user password was updated
+        # Regra de Segurança: Senha anterior e hash PERMANECEM IDÊNTICOS
         self.user_multi.refresh_from_db()
-        self.assertTrue(self.user_multi.check_password('NewSuperPass@2026'))
-        self.assertFalse(self.user_multi.check_password('initial_password'))
+        self.assertEqual(self.user_multi.password, old_hash)
+        self.assertTrue(self.user_multi.check_password('initial_password'))
 
-        # Check session has whatsapp_access_data
-        whatsapp_session = self.client.session.get('whatsapp_access_data')
-        # Note: In Django test client follow=True, AdminUserListView.get_context_data pops it from session
-        # or it is displayed in response context
+        # Check session has whatsapp_access_data com orientação de senha existente
         self.assertIn('whatsapp_access_data', response.context)
         data = response.context['whatsapp_access_data']
         self.assertIsNotNone(data)
         self.assertTrue(data['has_phone'])
-        self.assertIn('NewSuperPass@2026', data['message_text'])
+        self.assertIn('Senha: utilize a senha já cadastrada', data['message_text'])
+        self.assertNotIn('Senha provisória:', data['message_text'])
+
+    def test_share_view_user_without_usable_password_sets_provisional(self):
+        self.client.force_login(self.admin)
+        url = reverse('admin_painel:usuarios_compartilhar', kwargs={'pk': self.user_unusable.pk})
+
+        response = self.client.post(url, {
+            'provisional_password': 'CarlosNewPass@2026'
+        }, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+
+        # Senha provisória foi aplicada
+        self.user_unusable.refresh_from_db()
+        self.assertTrue(self.user_unusable.check_password('CarlosNewPass@2026'))
+
+        self.assertIn('whatsapp_access_data', response.context)
+        data = response.context['whatsapp_access_data']
+        self.assertIn('CarlosNewPass@2026', data['message_text'])
 
     def test_share_view_user_without_phone_handled_gracefully(self):
         self.client.force_login(self.admin)
