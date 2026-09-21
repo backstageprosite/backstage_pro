@@ -1109,6 +1109,43 @@ def admin_user_reset_password(request, pk):
     return redirect('admin_painel:usuarios')
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_user_share_whatsapp(request, pk):
+    """
+    BP-PEND-ADMIN: Define a senha provisória informada, atualiza o usuário
+    e prepara os dados para compartilhamento de credenciais via WhatsApp.
+    """
+    if request.method == 'POST':
+        user = get_object_or_404(User, pk=pk)
+        provisional_password = request.POST.get('provisional_password', '').strip()
+
+        if not provisional_password:
+            messages.error(request, "A senha provisória não pode ser vazia.")
+            return redirect('admin_painel:usuarios')
+
+        # Atualiza a senha do usuário com hash seguro
+        user.set_password(provisional_password)
+        user.save()
+
+        # Monta os dados de compartilhamento WhatsApp
+        from core.views import build_admin_user_whatsapp_access_data
+        whatsapp_data = build_admin_user_whatsapp_access_data(user, provisional_password)
+
+        if not whatsapp_data.get('has_phone'):
+            messages.warning(
+                request,
+                f"A senha provisória do usuário '{user.username}' foi atualizada com sucesso, "
+                f"mas ele não possui telefone/WhatsApp válido cadastrado para envio automático."
+            )
+        else:
+            request.session['whatsapp_access_data'] = whatsapp_data
+            messages.success(
+                request,
+                f"Senha provisória definida com sucesso para '{user.username}'. Pronto para compartilhar pelo WhatsApp!"
+            )
+
+    return redirect('admin_painel:usuarios')
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_assinatura_create(request):
     if request.method == 'POST':
         form = AdminSubscriptionForm(request.POST)

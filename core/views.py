@@ -3283,6 +3283,105 @@ def build_whatsapp_charge_data(responsible_name, band_name, plan_type, billing_c
     }
 
 
+def build_admin_user_whatsapp_access_data(user, raw_password):
+    """
+    BP-PEND-ADMIN: Prepara a mensagem amigável e profissional e links do WhatsApp
+    para compartilhamento de credenciais provisórias pelo Admin Geral.
+    Adapta para zero, uma ou múltiplas bandas vinculadas e explica o multilogin.
+    """
+    import re
+    from urllib.parse import quote
+
+    phone_raw = (user.phone or '').strip() if user else ''
+    digits = re.sub(r'\D', '', phone_raw)
+    phone_normalized = ''
+
+    if digits:
+        if len(digits) in (10, 11):
+            phone_normalized = '55' + digits
+        elif len(digits) in (12, 13) and digits.startswith('55'):
+            phone_normalized = digits
+        else:
+            phone_normalized = digits
+
+    user_name = (user.first_name if user else '') or (user.username if user else '')
+    username = user.username if user else ''
+
+    # Bandas vinculadas
+    band_names = []
+    if user:
+        membs = list(user.band_memberships.filter(is_active=True, band__is_active=True).select_related('band').order_by('band__name'))
+        if membs:
+            band_names = [m.band.name for m in membs]
+        elif user.band:
+            band_names = [user.band.name]
+
+    # Emojis Unicode seguros
+    w_hand = "\U0001F44B"
+    w_music = "\U0001F3B6"
+    w_rocket = "\U0001F680"
+    w_link = "\U0001F517"
+    w_user = "\U0001F464"
+    w_key = "\U0001F510"
+    w_mic = "\U0001F3A4"
+
+    # Bloco de bandas
+    if len(band_names) == 0:
+        bandas_bloco = ""
+        multilogin_bloco = ""
+    elif len(band_names) == 1:
+        bandas_bloco = f"{w_mic} Banda vinculada: {band_names[0]}\n\n"
+        multilogin_bloco = "Com esse mesmo login e senha, você poderá acessar o sistema Backstage Pro.\n\n"
+    else:
+        bandas_str = ", ".join(band_names)
+        bandas_bloco = f"{w_mic} Bandas vinculadas: {bandas_str}\n\n"
+        multilogin_bloco = (
+            "Com esse mesmo login e senha, você poderá acessar todas as bandas vinculadas à sua conta "
+            "e alternar entre elas pelo seletor de bandas do Backstage Pro.\n\n"
+        )
+
+    message_text = (
+        f"Olá, {user_name}! {w_hand}\n\n"
+        f"Seja bem-vindo(a) ao Backstage Pro! {w_music}{w_rocket}\n\n"
+        f"Seu acesso ao sistema já está disponível:\n\n"
+        f"{w_link} Acesso:\n"
+        f"https://backstagepro.site/\n\n"
+        f"{w_user} Login: {username}\n"
+        f"{w_key} Senha provisória: {raw_password}\n\n"
+        f"Por segurança, recomendamos que você altere sua senha após o primeiro acesso.\n\n"
+        f"{bandas_bloco}"
+        f"{multilogin_bloco}"
+        f"Qualquer dúvida, estamos à disposição.\n\n"
+        f"Backstage Pro"
+    )
+
+    whatsapp_url = ""
+    whatsapp_mobile_url = ""
+    whatsapp_app_url = ""
+    whatsapp_web_url = ""
+
+    if phone_normalized:
+        encoded_text = quote(message_text, safe='')
+        whatsapp_mobile_url = f"https://wa.me/{phone_normalized}?text={encoded_text}"
+        whatsapp_app_url = f"whatsapp://send?phone={phone_normalized}&text={encoded_text}"
+        whatsapp_web_url = f"https://web.whatsapp.com/send?phone={phone_normalized}&text={encoded_text}"
+        whatsapp_url = whatsapp_mobile_url
+
+    return {
+        'has_phone': bool(phone_normalized),
+        'phone_normalized': phone_normalized,
+        'message_text': message_text,
+        'whatsapp_url': whatsapp_url,
+        'whatsapp_mobile_url': whatsapp_mobile_url,
+        'whatsapp_app_url': whatsapp_app_url,
+        'whatsapp_web_url': whatsapp_web_url,
+        'is_share': True,
+        'modal_title': 'Compartilhar Acesso',
+        'modal_heading': f'Acesso pronto para envio ({username})',
+        'modal_subheading': 'A senha provisória foi definida e os dados de acesso estão prontos para compartilhamento.',
+    }
+
+
 @login_required
 @band_required
 def usuarios_list_view(request, band_slug):

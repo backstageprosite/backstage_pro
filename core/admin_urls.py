@@ -22,6 +22,7 @@ urlpatterns = [
     path('usuarios/<int:pk>/editar/', admin_views.admin_user_edit, name='usuarios_editar'),
     path('usuarios/<int:pk>/desativar/', admin_views.admin_user_toggle_active, name='usuarios_desativar'),
     path('usuarios/<int:pk>/resetar-senha/', admin_views.admin_user_reset_password, name='usuarios_resetar_senha'),
+    path('usuarios/<int:pk>/compartilhar/', admin_views.admin_user_share_whatsapp, name='usuarios_compartilhar'),
     
     path('avisos/', admin_views.AdminAvisosView.as_view(), name='avisos'),
     path('avisos/novo/', admin_views.admin_aviso_create, name='avisos_novo'),

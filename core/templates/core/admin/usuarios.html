@@ -123,14 +123,9 @@
 <div class="bp-admin-users-page">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="page-title"><i class="fa-solid fa-users me-2 text-primary"></i>Usuários</h4>
-        <div class="d-flex gap-2">
-            <a href="{% url 'admin_painel:relatorios' %}" class="btn btn-outline-dark btn-header-action fw-bold shadow-sm">
-                <i class="fa-solid fa-arrow-left me-1"></i> Voltar
-            </a>
-            <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalCreateUser">
-                <i class="fa-solid fa-plus me-1"></i> Novo Usuário
-            </button>
-        </div>
+        <button type="button" class="btn btn-header-action fw-bold shadow-sm text-dark" style="background-color: #6BD443; border-color: #6BD443;" data-bs-toggle="modal" data-bs-target="#modalCreateUser">
+            <i class="fa-solid fa-plus me-1"></i> Novo Usuário
+        </button>
     </div>
 
     <!-- Filtros -->
@@ -233,6 +228,7 @@
                                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px; font-size: 13px; background-color: #ffffff;">
                                         <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalEditUser{{ u.id }}"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i> Editar</button></li>
                                         <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalResetPass{{ u.id }}"><i class="fa-solid fa-key me-2 text-warning"></i> Senha</button></li>
+                                        <li><button type="button" class="dropdown-item py-2 fw-medium" data-bs-toggle="modal" data-bs-target="#modalShareUser{{ u.id }}"><i class="fa-brands fa-whatsapp me-2" style="color: #25D366; font-size: 14px;"></i> Compartilhar</button></li>
                                         <li><button type="button" class="dropdown-item py-2 fw-medium {% if u.is_active %}text-danger{% else %}text-success{% endif %}" data-bs-toggle="modal" data-bs-target="#modalToggleUser{{ u.id }}"><i class="fa-solid {% if u.is_active %}fa-trash{% else %}fa-rotate-left{% endif %} me-2"></i> {% if u.is_active %}Excluir{% else %}Reativar{% endif %}</button></li>
                                     </ul>
                                 </div>
@@ -488,27 +484,153 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Compartilhar Acesso WhatsApp -->
+<div class="modal fade text-start" id="modalShareUser{{ u.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;">
+                    <i class="fa-brands fa-whatsapp text-success me-2" style="font-size: 18px;"></i>Compartilhar Acesso
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'admin_painel:usuarios_compartilhar' u.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-3 p-md-4 text-start">
+                    <!-- Resumo do Usuário -->
+                    <div class="bg-light p-3 rounded-3 border mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="bg-white text-primary rounded-circle d-flex justify-content-center align-items-center me-2 fw-bold shadow-sm" style="width: 38px; height: 38px; font-size: 14px;">
+                                {{ u.first_name|default:u.username|make_list|first|upper }}
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark" style="font-size: 14px;">{{ u.first_name }} {{ u.last_name }}</div>
+                                <div class="text-muted small" style="font-size: 12px;">@{{ u.username }}</div>
+                            </div>
+                        </div>
+                        <div class="row g-2 pt-1 border-top" style="font-size: 12.5px;">
+                            <div class="col-sm-6">
+                                <span class="text-muted">Telefone / WhatsApp:</span><br>
+                                {% if u.phone %}
+                                    <strong class="text-dark"><i class="fa-brands fa-whatsapp text-success me-1"></i>{{ u.phone }}</strong>
+                                {% else %}
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 mt-1">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>Não cadastrado
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-muted">Perfil:</span><br>
+                                {% if u.is_superuser %}
+                                    <span class="badge role-pill role-pill-admin mt-1">Admin Geral</span>
+                                {% elif u.role == 'EMPRESARIO' %}
+                                    <span class="badge role-pill role-pill-empresario mt-1">Empresário</span>
+                                {% elif u.is_produtor or u.role == 'PRODUTOR' %}
+                                    <span class="badge role-pill role-pill-produtor mt-1">Produtor</span>
+                                {% else %}
+                                    <span class="badge role-pill role-pill-integrante mt-1">Integrante</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 mt-2">
+                                <span class="text-muted">Banda(s) vinculada(s):</span>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    {% with membs=u.band_memberships.all %}
+                                        {% if membs %}
+                                            {% for m in membs %}
+                                                <span class="badge {{ m.band.name|band_color }} rounded-pill px-2 py-1" style="font-size: 11px;">
+                                                    {{ m.band.name }}
+                                                </span>
+                                            {% endfor %}
+                                        {% elif u.band %}
+                                            <span class="badge {{ u.band.name|band_color }} rounded-pill px-2 py-1" style="font-size: 11px;">
+                                                {{ u.band.name }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary bg-opacity-10 text-dark border border-secondary border-opacity-25 rounded-pill px-2 py-1" style="font-size: 11px;">
+                                                Sem banda vinculada
+                                            </span>
+                                        {% endif %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Definição da Senha Provisória -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark mb-1" style="font-size: 13px;">Senha provisória</label>
+                        <div class="input-group">
+                            <input type="text"
+                                   name="provisional_password"
+                                   id="inputProvisionalPass{{ u.id }}"
+                                   class="form-control"
+                                   placeholder="Digite ou gere uma senha provisória"
+                                   required
+                                   style="font-size: 13px; font-family: monospace;">
+                            <button type="button"
+                                    class="btn btn-outline-secondary d-inline-flex align-items-center"
+                                    onclick="generateProvisionalPass('inputProvisionalPass{{ u.id }}')"
+                                    title="Gerar senha aleatória segura"
+                                    style="font-size: 12.5px;">
+                                <i class="fa-solid fa-dice me-1"></i> Gerar senha
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Avisos Informativos -->
+                    <div class="p-2 px-3 rounded-2 bg-warning bg-opacity-10 border border-warning border-opacity-25 text-dark mb-2" style="font-size: 12px;">
+                        <i class="fa-solid fa-circle-info text-warning me-1"></i>
+                        Ao continuar, a senha atual deste usuário será substituída pela senha provisória acima.
+                    </div>
+                    <p class="text-muted small mb-0 ps-1" style="font-size: 12px;">
+                        <i class="fa-solid fa-lock text-muted me-1"></i>
+                        O usuário poderá alterar a senha posteriormente após o primeiro acesso.
+                    </p>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn fw-bold rounded-pill px-3 text-white shadow-sm d-inline-flex align-items-center" style="background-color: #25D366; border-color: #25D366; height: 34px; font-size: 13px;">
+                        <i class="fa-brands fa-whatsapp me-1" style="font-size: 15px;"></i> Compartilhar pelo WhatsApp
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endfor %}
 
 {% if whatsapp_access_data %}
-<!-- Modal Sucesso Cadastro Usuário / Enviar WhatsApp -->
+<!-- Modal Sucesso Cadastro Usuário / Enviar WhatsApp / Compartilhar Acesso -->
 <div class="modal fade text-start" id="modalWhatsappSuccess" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold text-success" style="font-size: 16px;">
-                    <i class="fa-solid fa-circle-check me-2"></i>Cadastro Realizado
+                    {% if whatsapp_access_data.is_share %}
+                        <i class="fa-brands fa-whatsapp text-success me-2"></i>{{ whatsapp_access_data.modal_title|default:"Compartilhar Acesso" }}
+                    {% else %}
+                        <i class="fa-solid fa-circle-check me-2"></i>Cadastro Realizado
+                    {% endif %}
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-3 p-md-4 text-center">
                 <div class="mb-3">
                     <span class="rounded-circle d-inline-flex justify-content-center align-items-center bg-success bg-opacity-10 text-success" style="width: 56px; height: 56px; font-size: 24px;">
-                        <i class="fa-solid fa-user-check"></i>
+                        {% if whatsapp_access_data.is_share %}
+                            <i class="fa-brands fa-whatsapp"></i>
+                        {% else %}
+                            <i class="fa-solid fa-user-check"></i>
+                        {% endif %}
                     </span>
                 </div>
-                <h6 class="fw-bold text-dark mb-1" style="font-size: 15px;">Usuário cadastrado com sucesso!</h6>
-                <p class="text-muted small mb-0" style="font-size: 13px;">Os dados de acesso foram criados.</p>
+                <h6 class="fw-bold text-dark mb-1" style="font-size: 15px;">
+                    {{ whatsapp_access_data.modal_heading|default:"Usuário cadastrado com sucesso!" }}
+                </h6>
+                <p class="text-muted small mb-0" style="font-size: 13px;">
+                    {{ whatsapp_access_data.modal_subheading|default:"Os dados de acesso foram criados." }}
+                </p>
             </div>
             <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                 {% if whatsapp_access_data.has_phone and whatsapp_access_data.whatsapp_url %}
@@ -744,6 +866,33 @@
             }
         }
     };
+
+    function generateProvisionalPass(inputId) {
+        const lower = 'abcdefghijkmnpqrstuvwxyz';
+        const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const digits = '23456789';
+        const symbols = '!@#$%';
+        const allChars = lower + upper + digits + symbols;
+        
+        let pass = '';
+        pass += upper.charAt(Math.floor(Math.random() * upper.length));
+        pass += lower.charAt(Math.floor(Math.random() * lower.length));
+        pass += digits.charAt(Math.floor(Math.random() * digits.length));
+        pass += symbols.charAt(Math.floor(Math.random() * symbols.length));
+        
+        for (let i = 4; i < 10; i++) {
+            pass += allChars.charAt(Math.floor(Math.random() * allChars.length));
+        }
+        
+        // Embaralha os caracteres
+        pass = pass.split('').sort(() => 0.5 - Math.random()).join('');
+        
+        const el = document.getElementById(inputId);
+        if (el) {
+            el.value = pass;
+            el.focus();
+        }
+    }
 
     document.addEventListener("DOMContentLoaded", function() {
         const phoneInputs = document.querySelectorAll(".phone-mask");

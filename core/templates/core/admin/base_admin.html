@@ -317,10 +317,16 @@
                             <i class="fa-solid fa-file-invoice-dollar fa-fw me-2 {% if request.resolver_match.url_name != 'cobrancas' %}opacity-75{% endif %}"></i> Faturas
                         </a>
                     </li>
+
+                    <li class="nav-item">
+                        <a href="{% url 'admin_painel:usuarios' %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'usuarios' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
+                            <i class="fa-solid fa-users fa-fw me-2 {% if request.resolver_match.url_name != 'usuarios' %}opacity-75{% endif %}"></i> Usuários
+                        </a>
+                    </li>
                     
                     <li class="nav-item">
-                        <a href="{% url 'admin_painel:relatorios' %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios' or request.resolver_match.url_name == 'shows' or request.resolver_match.url_name == 'usuarios' or request.resolver_match.url_name == 'avisos' or request.resolver_match.url_name == 'relatorio_financeiro' or request.resolver_match.url_name == 'parceiros' or request.resolver_match.url_name == 'support_list' or request.resolver_match.url_name == 'site_logos' or request.resolver_match.url_name == 'admin_web_push_dashboard' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
-                            <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios' and request.resolver_match.url_name != 'shows' and request.resolver_match.url_name != 'usuarios' and request.resolver_match.url_name != 'avisos' and request.resolver_match.url_name != 'relatorio_financeiro' and request.resolver_match.url_name != 'parceiros' and request.resolver_match.url_name != 'support_list' and request.resolver_match.url_name != 'site_logos' and request.resolver_match.url_name != 'admin_web_push_dashboard' %}opacity-75{% endif %}"></i> Relatórios
+                        <a href="{% url 'admin_painel:relatorios' %}" class="nav-link text-dark py-2 px-3 fw-medium {% if request.resolver_match.url_name == 'relatorios' or request.resolver_match.url_name == 'shows' or request.resolver_match.url_name == 'avisos' or request.resolver_match.url_name == 'relatorio_financeiro' or request.resolver_match.url_name == 'parceiros' or request.resolver_match.url_name == 'support_list' or request.resolver_match.url_name == 'site_logos' or request.resolver_match.url_name == 'admin_web_push_dashboard' %}active text-white fw-bold shadow-sm{% endif %}" style="border-radius: 8px; font-size: 14px;">
+                            <i class="fa-solid fa-chart-line fa-fw me-2 {% if request.resolver_match.url_name != 'relatorios' and request.resolver_match.url_name != 'shows' and request.resolver_match.url_name != 'avisos' and request.resolver_match.url_name != 'relatorio_financeiro' and request.resolver_match.url_name != 'parceiros' and request.resolver_match.url_name != 'support_list' and request.resolver_match.url_name != 'site_logos' and request.resolver_match.url_name != 'admin_web_push_dashboard' %}opacity-75{% endif %}"></i> Relatórios
                         </a>
                     </li>
                     {% endif %}
