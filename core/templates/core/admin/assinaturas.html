@@ -639,7 +639,7 @@
 
 <!-- Modal Gerar Cobrança (BP-PEND-60 + BP-PEND-61) -->
 <div class="modal fade text-start" id="modalChargeBand" tabindex="-1" aria-labelledby="modalChargeBandLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow" style="border-radius: 12px;">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold text-dark" id="modalChargeBandLabel" style="font-size: 16px;">
@@ -666,7 +666,7 @@
 
                     <!-- Seleção de Banda -->
                     <div class="mb-3">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Banda</label>
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Banda <span class="text-danger">*</span></label>
                         <select name="band_id" id="chargeSelectBand" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                             <option value="" disabled selected>Selecione uma banda...</option>
                             {% for b in all_bands_for_charge %}
@@ -676,29 +676,28 @@
                     </div>
 
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Plano</label>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Plano <span class="text-danger">*</span></label>
                             <select name="plan_type" id="chargeSelectPlan" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                                 <option value="AVANCADO" selected>Avançado</option>
                                 <option value="BASICO">Básico</option>
                             </select>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Ciclo</label>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Ciclo <span class="text-danger">*</span></label>
                             <select name="billing_cycle" id="chargeSelectCycle" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                                 <option value="MENSAL" selected>Mensal</option>
                                 <option value="ANUAL">Anual</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Forma de Pagamento (Asaas)</label>
-                        <select name="payment_method" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
-                            <option value="">Todas (Cartão e PIX)</option>
-                            <option value="CREDIT_CARD">Cartão de Crédito</option>
-                            <option value="PIX">PIX</option>
-                        </select>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Forma de Pagamento (Asaas)</label>
+                            <select name="payment_method" class="form-select" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                                <option value="">Todas (Cartão e PIX)</option>
+                                <option value="CREDIT_CARD">Cartão de Crédito</option>
+                                <option value="PIX">PIX</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Valor Canônico -->
@@ -710,25 +709,76 @@
                     </div>
 
                     <!-- Dados do Responsável / Pagador -->
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome do Responsável / Pagador</label>
-                        <input type="text" name="responsible_name" id="chargeInputResponsible" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                    <div class="mb-2">
+                        <h6 class="fw-bold text-dark border-bottom pb-1" style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <i class="fa-solid fa-user me-1 text-primary"></i> Dados do Responsável / Pagador
+                        </h6>
                     </div>
 
                     <div class="row g-2 mb-3">
-                        <div class="col-7">
-                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">E-mail do Responsável</label>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Nome do Responsável / Pagador <span class="text-danger">*</span></label>
+                            <input type="text" name="responsible_name" id="chargeInputResponsible" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">CPF ou CNPJ <span class="text-danger">*</span></label>
+                            <input type="text" name="cpf_cnpj" id="chargeInputCpfCnpj" class="form-control" placeholder="000.000.000-00 ou 00.000.000/0000-00" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">E-mail do Responsável <span class="text-danger">*</span></label>
                             <input type="email" name="email" id="chargeInputEmail" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
-                        <div class="col-5">
+                        <div class="col-md-5">
                             <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Telefone / WhatsApp</label>
                             <input type="text" name="phone" id="chargeInputPhone" class="form-control whatsapp-mask" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
                         </div>
                     </div>
 
-                    <div class="mb-2">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">CPF ou CNPJ (Opcional)</label>
-                        <input type="text" name="cpf_cnpj" id="chargeInputCpfCnpj" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                    <!-- Endereço de Cobrança (Exigido pelo Asaas) -->
+                    <div class="mb-2 mt-3">
+                        <h6 class="fw-bold text-dark border-bottom pb-1" style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <i class="fa-solid fa-location-dot me-1 text-primary"></i> Endereço de Cobrança (Obrigatório Asaas)
+                        </h6>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">CEP <span class="text-danger">*</span></label>
+                            <input type="text" name="postal_code" id="chargeInputPostalCode" class="form-control" placeholder="00000-000" maxlength="9" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Endereço / Logradouro <span class="text-danger">*</span></label>
+                            <input type="text" name="address" id="chargeInputAddress" class="form-control" placeholder="Rua, Avenida, etc." required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Número <span class="text-danger">*</span></label>
+                            <input type="text" name="address_number" id="chargeInputAddressNumber" class="form-control" placeholder="Nº ou S/N" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Complemento</label>
+                            <input type="text" name="complement" id="chargeInputComplement" class="form-control" placeholder="Apto, Sala, etc." style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Bairro <span class="text-danger">*</span></label>
+                            <input type="text" name="province" id="chargeInputProvince" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-8">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Cidade <span class="text-danger">*</span></label>
+                            <input type="text" name="city" id="chargeInputCity" class="form-control" required style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">UF / Estado</label>
+                            <input type="text" name="state" id="chargeInputState" class="form-control text-uppercase" placeholder="UF" maxlength="2" style="font-size: 14px; min-height: 34px; padding: 5px 10px;">
+                        </div>
                     </div>
 
                     <!-- Área de Sucesso / Checkout Link e WhatsApp (oculta por padrão) -->
@@ -967,8 +1017,17 @@ document.addEventListener("DOMContentLoaded", function() {
         const selectCycle = document.getElementById('chargeSelectCycle');
         const displayPrice = document.getElementById('chargePriceDisplay');
         const inputResp = document.getElementById('chargeInputResponsible');
+        const inputCpfCnpj = document.getElementById('chargeInputCpfCnpj');
         const inputEmail = document.getElementById('chargeInputEmail');
         const inputPhone = document.getElementById('chargeInputPhone');
+        const inputPostalCode = document.getElementById('chargeInputPostalCode');
+        const inputAddress = document.getElementById('chargeInputAddress');
+        const inputAddressNumber = document.getElementById('chargeInputAddressNumber');
+        const inputComplement = document.getElementById('chargeInputComplement');
+        const inputProvince = document.getElementById('chargeInputProvince');
+        const inputCity = document.getElementById('chargeInputCity');
+        const inputState = document.getElementById('chargeInputState');
+
         const alertActive = document.getElementById('chargeActiveSubAlert');
         const checkOverride = document.getElementById('chargeConfirmOverride');
         const resultBox = document.getElementById('chargeResultBox');
@@ -980,6 +1039,55 @@ document.addEventListener("DOMContentLoaded", function() {
         const btnSubmit = document.getElementById('chargeBtnSubmit');
 
         let currentWhatsappData = null;
+
+        function formatCpfCnpj(val) {
+            if (!val) return '';
+            let v = val.toString().replace(/\D/g, '');
+            if (v.length > 14) v = v.slice(0, 14);
+            if (v.length > 11) {
+                return v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})$/, '$1.$2.$3/$4-$5')
+                        .replace(/^(\d{2})(\d{3})(\d{3})(\d{1,4})$/, '$1.$2.$3/$4')
+                        .replace(/^(\d{2})(\d{3})(\d{1,3})$/, '$1.$2.$3')
+                        .replace(/^(\d{2})(\d{1,3})$/, '$1.$2');
+            } else if (v.length > 9) {
+                return v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+            } else if (v.length > 6) {
+                return v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
+            } else if (v.length > 3) {
+                return v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
+            }
+            return v;
+        }
+
+        function formatCep(val) {
+            if (!val) return '';
+            let v = val.toString().replace(/\D/g, '');
+            if (v.length > 8) v = v.slice(0, 8);
+            if (v.length > 5) {
+                return v.slice(0, 5) + '-' + v.slice(5);
+            }
+            return v;
+        }
+
+        if (inputCpfCnpj) {
+            const handleCpfCnpj = function() {
+                inputCpfCnpj.value = formatCpfCnpj(inputCpfCnpj.value);
+            };
+            ['input', 'change', 'paste', 'blur'].forEach(evt => inputCpfCnpj.addEventListener(evt, handleCpfCnpj));
+        }
+
+        if (inputPostalCode) {
+            const handleCep = function() {
+                inputPostalCode.value = formatCep(inputPostalCode.value);
+            };
+            ['input', 'change', 'paste', 'blur'].forEach(evt => inputPostalCode.addEventListener(evt, handleCep));
+        }
+
+        if (inputState) {
+            inputState.addEventListener('input', function() {
+                inputState.value = (inputState.value || '').toUpperCase().slice(0, 2);
+            });
+        }
 
         function updatePrice() {
             const plan = selectPlan.value;
@@ -1004,6 +1112,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 updatePrice();
 
                 if (inputResp) inputResp.value = info.responsible_name || '';
+                if (inputCpfCnpj) {
+                    inputCpfCnpj.value = formatCpfCnpj(info.cpf_cnpj || '');
+                }
                 if (inputEmail) inputEmail.value = info.email || '';
                 if (inputPhone) {
                     inputPhone.value = info.phone || '';
@@ -1011,6 +1122,14 @@ document.addEventListener("DOMContentLoaded", function() {
                         $(inputPhone).trigger('input');
                     }
                 }
+
+                if (inputPostalCode) inputPostalCode.value = formatCep(info.postal_code || '');
+                if (inputAddress) inputAddress.value = info.address || '';
+                if (inputAddressNumber) inputAddressNumber.value = info.address_number || '';
+                if (inputComplement) inputComplement.value = info.complement || '';
+                if (inputProvince) inputProvince.value = info.province || '';
+                if (inputCity) inputCity.value = info.city || '';
+                if (inputState) inputState.value = (info.state || '').toUpperCase().slice(0, 2);
 
                 if (info.has_active) {
                     alertActive.classList.remove('d-none');

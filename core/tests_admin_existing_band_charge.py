@@ -44,7 +44,32 @@ class AdminExistingBandChargeTests(TestCase):
             role='PRODUTOR',
             phone='71988887777',
             first_name='Carlos',
-            last_name='Silva'
+            last_name='Silva',
+            cpf='11144477735'
+        )
+
+        # Cadastro de pedido anterior com endereço para preenchimento automático
+        SignupOrder.objects.create(
+            band=self.band,
+            external_reference=f"bp-adm-{self.band.id}-init",
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_rock_001',
+            band_name=self.band.name,
+            responsible_name='Carlos Silva',
+            email='produtor@rockstar.com',
+            phone='71988887777',
+            cpf_cnpj='11144477735',
+            postal_code='01310-100',
+            address='Av. Paulista',
+            address_number='1000',
+            complement='Apto 101',
+            province='Bela Vista',
+            city='São Paulo',
+            state='SP',
+            plan_type='BASICO',
+            billing_cycle='MENSAL',
+            amount=Decimal('19.90'),
+            status='PAGO'
         )
 
     def test_01_non_admin_cannot_access_create_charge(self):

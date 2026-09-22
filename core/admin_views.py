@@ -405,6 +405,21 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
                 phone = last_sub.billing_phone
 
             has_active = b.has_contracted_active_subscription
+            last_order = b.signup_orders.order_by('-created_at').first()
+
+            cpf_cnpj = ''
+            if last_order and last_order.cpf_cnpj:
+                cpf_cnpj = last_order.cpf_cnpj
+            elif prod_user and prod_user.cpf:
+                cpf_cnpj = prod_user.cpf
+
+            postal_code = (last_order and last_order.postal_code) or ''
+            address = (last_order and last_order.address) or ''
+            address_number = (last_order and last_order.address_number) or ''
+            complement = (last_order and last_order.complement) or ''
+            province = (last_order and last_order.province) or ''
+            city = (last_order and last_order.city) or ''
+            state = (last_order and last_order.state) or ''
 
             bands_charge_dict[str(b.id)] = {
                 'id': b.id,
@@ -413,6 +428,14 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
                 'responsible_name': resp_name,
                 'email': email,
                 'phone': phone,
+                'cpf_cnpj': cpf_cnpj,
+                'postal_code': postal_code,
+                'address': address,
+                'address_number': address_number,
+                'complement': complement,
+                'province': province,
+                'city': city,
+                'state': state,
                 'has_active': has_active
             }
 
@@ -798,49 +821,69 @@ def admin_band_create_charge(request, pk=None):
     if payment_method not in ('PIX', 'CREDIT_CARD'):
         payment_method = None  # Aberto/Ambos
 
-    # Obter ou auto-preencher dados de contato e responsável
+    # Obter ou auto-preencher dados de contato, responsável, documento fiscal e endereço
     responsible_name = request.POST.get('responsible_name', '').strip()
     email = request.POST.get('email', '').strip()
     phone = request.POST.get('phone', '').strip()
     cpf_cnpj = request.POST.get('cpf_cnpj', '').strip()
 
-    # Fallbacks inteligentes a partir dos usuários ou assinaturas da banda
-    if not responsible_name or not email or not phone:
-        # Tentar via produtor ou empresário da banda
-        prod_user = User.objects.filter(band=band, role__in=['PRODUTOR', 'EMPRESARIO']).order_by('-id').first()
-        if not prod_user:
-            prod_user = User.objects.filter(band=band).order_by('-id').first()
+    postal_code = request.POST.get('postal_code', '').strip()
+    address = request.POST.get('address', '').strip()
+    address_number = request.POST.get('address_number', '').strip()
+    complement = request.POST.get('complement', '').strip()
+    province = request.POST.get('province', '').strip()
+    city = request.POST.get('city', '').strip()
+    state = request.POST.get('state', '').strip().upper()
 
-        last_sub = band.subscriptions.filter(is_deleted=False).order_by('-created_at').first()
+    # Fallbacks inteligentes a partir dos usuários ou ordens/assinaturas da banda
+    last_order = band.signup_orders.order_by('-created_at').first()
+    prod_user = User.objects.filter(band=band, role__in=['PRODUTOR', 'EMPRESARIO']).order_by('-id').first()
+    if not prod_user:
+        prod_user = User.objects.filter(band=band).order_by('-id').first()
+    last_sub = band.subscriptions.filter(is_deleted=False).order_by('-created_at').first()
 
-        if not responsible_name:
-            if prod_user and prod_user.get_full_name():
-                responsible_name = prod_user.get_full_name()
-            elif last_sub and last_sub.financial_responsible_name:
-                responsible_name = last_sub.financial_responsible_name
-            elif prod_user:
-                responsible_name = prod_user.username
-            else:
-                responsible_name = band.name
-
-        if not email:
-            if prod_user and prod_user.email:
-                email = prod_user.email
-            elif last_sub and last_sub.billing_email:
-                email = last_sub.billing_email
-
-        if not phone:
-            if prod_user and prod_user.phone:
-                phone = prod_user.phone
-            elif last_sub and last_sub.billing_phone:
-                phone = last_sub.billing_phone
+    if not responsible_name:
+        if prod_user and prod_user.get_full_name():
+            responsible_name = prod_user.get_full_name()
+        elif last_sub and last_sub.financial_responsible_name:
+            responsible_name = last_sub.financial_responsible_name
+        elif prod_user:
+            responsible_name = prod_user.username
+        else:
+            responsible_name = band.name
 
     if not email:
-        err = "É obrigatório informar o e-mail do responsável para gerar a cobrança."
-        if is_ajax:
-            return JsonResponse({'ok': False, 'error': err}, status=400)
-        messages.error(request, err)
-        return redirect('admin_painel:assinaturas')
+        if prod_user and prod_user.email:
+            email = prod_user.email
+        elif last_sub and last_sub.billing_email:
+            email = last_sub.billing_email
+
+    if not phone:
+        if prod_user and prod_user.phone:
+            phone = prod_user.phone
+        elif last_sub and last_sub.billing_phone:
+            phone = last_sub.billing_phone
+
+    if not cpf_cnpj:
+        if last_order and last_order.cpf_cnpj:
+            cpf_cnpj = last_order.cpf_cnpj
+        elif prod_user and prod_user.cpf:
+            cpf_cnpj = prod_user.cpf
+
+    if not postal_code and last_order and last_order.postal_code:
+        postal_code = last_order.postal_code
+    if not address and last_order and last_order.address:
+        address = last_order.address
+    if not address_number and last_order and last_order.address_number:
+        address_number = last_order.address_number
+    if not complement and last_order and last_order.complement:
+        complement = last_order.complement
+    if not province and last_order and last_order.province:
+        province = last_order.province
+    if not city and last_order and last_order.city:
+        city = last_order.city
+    if not state and last_order and last_order.state:
+        state = last_order.state.upper()
 
     # Validação de assinatura ativa existente (aviso/bloqueio suave se não houver confirmação)
     has_active = band.has_contracted_active_subscription
@@ -852,8 +895,72 @@ def admin_band_create_charge(request, pk=None):
         messages.warning(request, err)
         return redirect('admin_painel:assinaturas')
 
+    # Validações obrigatórias exigidas pelo Asaas para Checkout / Cobrança
+    missing_fields = []
+    if not responsible_name:
+        missing_fields.append("Nome do Responsável")
+    if not email:
+        missing_fields.append("E-mail")
+    if not cpf_cnpj:
+        missing_fields.append("CPF ou CNPJ")
+    if not postal_code:
+        missing_fields.append("CEP")
+    if not address:
+        missing_fields.append("Endereço / Logradouro")
+    if not address_number:
+        missing_fields.append("Número")
+    if not province:
+        missing_fields.append("Bairro")
+    if not city:
+        missing_fields.append("Cidade")
+
+    if missing_fields:
+        err = f"Os seguintes campos obrigatórios não foram preenchidos: {', '.join(missing_fields)}."
+        if is_ajax:
+            return JsonResponse({'ok': False, 'error': err}, status=400)
+        messages.error(request, err)
+        return redirect('admin_painel:assinaturas')
+
+    # Validação rigorosa de dígitos de CPF/CNPJ
+    from core.forms_checkout import SignupOrderForm
+    clean_digits = re.sub(r'\D', '', cpf_cnpj)
+    if len(clean_digits) == 11:
+        if not SignupOrderForm._validate_cpf(clean_digits):
+            err = "CPF informado é inválido. Verifique os dígitos."
+            if is_ajax:
+                return JsonResponse({'ok': False, 'error': err}, status=400)
+            messages.error(request, err)
+            return redirect('admin_painel:assinaturas')
+    elif len(clean_digits) == 14:
+        if not SignupOrderForm._validate_cnpj(clean_digits):
+            err = "CNPJ informado é inválido. Verifique os dígitos."
+            if is_ajax:
+                return JsonResponse({'ok': False, 'error': err}, status=400)
+            messages.error(request, err)
+            return redirect('admin_painel:assinaturas')
+    else:
+        err = "Documento fiscal inválido. Informe um CPF válido (11 dígitos) ou CNPJ (14 dígitos)."
+        if is_ajax:
+            return JsonResponse({'ok': False, 'error': err}, status=400)
+        messages.error(request, err)
+        return redirect('admin_painel:assinaturas')
+
     # Preço canônico centralizado
     canonical_price = SystemSettings.get_canonical_plan_price(plan_type, billing_cycle)
+
+    # Identificar se já existe um Customer Asaas prévio para esta banda (evitar duplicação em retentativas)
+    existing_customer_id = None
+    existing_sub_with_customer = band.subscriptions.filter(
+        gateway_customer_id__isnull=False
+    ).exclude(gateway_customer_id='').first()
+    if existing_sub_with_customer and existing_sub_with_customer.gateway_customer_id:
+        existing_customer_id = existing_sub_with_customer.gateway_customer_id
+    else:
+        existing_order_with_customer = band.signup_orders.filter(
+            gateway_customer_id__isnull=False
+        ).exclude(gateway_customer_id='').order_by('-id').first()
+        if existing_order_with_customer and existing_order_with_customer.gateway_customer_id:
+            existing_customer_id = existing_order_with_customer.gateway_customer_id
 
     # Criação do SignupOrder vinculado à Band existente
     from core.models import SignupOrder
@@ -866,11 +973,19 @@ def admin_band_create_charge(request, pk=None):
         band=band,
         external_reference=ext_ref,
         gateway_provider='ASAAS',
+        gateway_customer_id=existing_customer_id or None,
         band_name=band.name,
         responsible_name=responsible_name,
         email=email,
         phone=phone or '',
-        cpf_cnpj=cpf_cnpj or '',
+        cpf_cnpj=clean_digits,
+        postal_code=postal_code,
+        address=address,
+        address_number=address_number,
+        complement=complement or '',
+        province=province,
+        city=city,
+        state=state[:2] if state else '',
         plan_type=plan_type,
         billing_cycle=billing_cycle,
         amount=canonical_price,
@@ -885,10 +1000,23 @@ def admin_band_create_charge(request, pk=None):
     if not success or not checkout_url:
         signup_order.status = 'FALHOU'
         signup_order.save(update_fields=['status', 'updated_at'])
-        err = err_msg or "Falha ao gerar cobrança no Asaas. Verifique a configuração do gateway."
+
+        # Montar mensagem de erro amigável a partir da resposta do Asaas
+        friendly_err = "Falha ao gerar cobrança no Asaas."
+        if res_data and isinstance(res_data, dict):
+            errors = res_data.get('errors')
+            if isinstance(errors, list) and errors:
+                desc_list = [e.get('description') for e in errors if isinstance(e, dict) and e.get('description')]
+                if desc_list:
+                    friendly_err = f"Asaas: {'; '.join(desc_list)}"
+            elif res_data.get('message'):
+                friendly_err = f"Asaas: {res_data.get('message')}"
+        elif err_msg:
+            friendly_err = f"Asaas: {err_msg}"
+
         if is_ajax:
-            return JsonResponse({'ok': False, 'error': err}, status=500)
-        messages.error(request, f"Erro ao gerar cobrança: {err}")
+            return JsonResponse({'ok': False, 'error': friendly_err}, status=400)
+        messages.error(request, f"Erro ao gerar cobrança: {friendly_err}")
         return redirect('admin_painel:assinaturas')
 
     amount_formatted = f"{canonical_price:.2f}".replace('.', ',')
