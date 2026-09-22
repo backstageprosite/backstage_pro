@@ -511,7 +511,11 @@ def dashboard_view(request, band_slug):
 
     band = get_object_or_404(Band, slug=band_slug)
 
-    shows_proximos = Show.objects.filter(band=band, date__gte=datetime.date.today()).order_by('date', 'show_time')[:6]
+    shows_proximos = (
+        Show.objects.filter(band=band, date__gte=datetime.date.today())
+        .exclude(status=Show.STATUS_CANCELADO)
+        .order_by('date', 'show_time')[:6]
+    )
 
     total_shows = Show.objects.filter(band=band).count()
 

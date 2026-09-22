@@ -65,16 +65,17 @@ class DashboardLimitsValidationTests(TestCase):
 
     def test_cenario_f_estados(self):
         Show.objects.create(band=self.band_a, title="Show Confirmado", date=self.tomorrow, status="CONFIRMADO", show_time=datetime.time(20,0))
-        Show.objects.create(band=self.band_a, title="Show Reserva", date=self.tomorrow, status="RESERVA", show_time=datetime.time(20,0))
+        Show.objects.create(band=self.band_a, title="Show Reserva", date=self.tomorrow, status="PRE_RESERVADO", show_time=datetime.time(20,0))
         Show.objects.create(band=self.band_a, title="Show Cancelado", date=self.tomorrow, status="CANCELADO", show_time=datetime.time(20,0))
         Show.objects.create(band=self.band_a, title="Show Passado", date=self.yesterday, status="CONFIRMADO", show_time=datetime.time(20,0))
 
         self.client.login(username="prodA", password="123")
         response = self.client.get(reverse('dashboard', args=[self.band_a.slug]))
         shows = response.context['shows_proximos']
-        self.assertEqual(len(shows), 3)
+        # BP-PEND-73: Show Cancelado não deve aparecer em Próximos Shows
+        self.assertEqual(len(shows), 2)
         titles = [s.title for s in shows]
         self.assertIn("Show Confirmado", titles)
         self.assertIn("Show Reserva", titles)
-        self.assertIn("Show Cancelado", titles)
+        self.assertNotIn("Show Cancelado", titles)
         self.assertNotIn("Show Passado", titles)
