@@ -167,6 +167,7 @@
                             <th class="ps-4">Nome do Usuário</th>
                             <th>Banda Vinculada</th>
                             <th class="text-center">Perfil</th>
+                            <th class="text-center">Últ. acesso</th>
                             <th class="text-end pe-4">Ações</th>
                         </tr>
                     </thead>
@@ -220,6 +221,13 @@
                                     </span>
                                 {% endif %}
                             </td>
+                            <td class="text-center text-muted" style="font-size: 12px; white-space: nowrap;">
+                                {% if u.last_login %}
+                                    {{ u.last_login|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    Nunca acessou
+                                {% endif %}
+                            </td>
                             <td class="text-end pe-4">
                                 <div class="dropdown d-inline-block">
                                     <button class="btn btn-sm btn-light border btn-actions shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -237,7 +245,7 @@
                         
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">
+                            <td colspan="5" class="text-center py-4 text-muted">
                                 <i class="fa-solid fa-users-slash fa-2x mb-2 text-secondary opacity-50"></i>
                                 <h6 class="fw-bold mb-1">Nenhum usuário encontrado</h6>
                                 <p class="mb-0 small">Ajuste os filtros de busca.</p>
