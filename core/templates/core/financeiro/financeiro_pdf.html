@@ -178,7 +178,7 @@
             </div>
             <div class="col-4 col-sm-2">
                 <div class="kpi-mini-card">
-                    <div class="kpi-mini-title">Custos Shows</div>
+                    <div class="kpi-mini-title">Custos Totais</div>
                     <div class="kpi-mini-value text-secondary">R$ {{ total_custos_geral|default_if_none:0|floatformat:"2g" }}</div>
                 </div>
             </div>
@@ -404,6 +404,10 @@
                             <td>(-) Custos de Equipe Cadastrados:</td>
                             <td class="text-end text-danger">R$ {{ total_custos_equipe|floatformat:"2g" }}</td>
                         </tr>
+                        <tr>
+                            <td>(-) Despesas Gerais da Banda:</td>
+                            <td class="text-end text-danger">R$ {{ total_despesas_gerais|floatformat:"2g" }}</td>
+                        </tr>
                         <tr class="border-top">
                             <td><strong>(=) Resultado Operacional Previsto:</strong></td>
                             <td class="text-end fw-bold {% if resultado_previsto >= 0 %}text-success{% else %}text-danger{% endif %}">
@@ -422,8 +426,12 @@
                             <td class="text-end fw-bold text-success">R$ {{ total_recebido|floatformat:"2g" }}</td>
                         </tr>
                         <tr>
-                            <td>(-) Custos Gerais de Shows:</td>
-                            <td class="text-end text-danger">R$ {{ total_custos_geral|floatformat:"2g" }}</td>
+                            <td>(-) Custos Operacionais de Shows:</td>
+                            <td class="text-end text-danger">R$ {{ total_custos_shows|floatformat:"2g" }}</td>
+                        </tr>
+                        <tr>
+                            <td>(-) Despesas Gerais da Banda:</td>
+                            <td class="text-end text-danger">R$ {{ total_despesas_gerais|floatformat:"2g" }}</td>
                         </tr>
                         <tr>
                             <td>(&bull;) Saldo a Receber Pendente:</td>

@@ -49,9 +49,15 @@ urlpatterns = [
     path('parceiros/', views.partners_list_view, name='parceiros'),
     path('relatorios/assinatura/', views.minha_assinatura_view, name='minha_assinatura'),
     path('relatorios/relatorio-financeiro/', views.relatorios_view, name='relatorio_financeiro'),
+    path('relatorios/relatorio-financeiro/despesas/nova/', views.general_expense_create_view, name='general_expense_create'),
+    path('relatorios/relatorio-financeiro/despesas/<int:pk>/editar/', views.general_expense_edit_view, name='general_expense_edit'),
+    path('relatorios/relatorio-financeiro/despesas/<int:pk>/excluir/', views.general_expense_delete_view, name='general_expense_delete'),
+    path('relatorios/relatorio-financeiro/despesas/<int:pk>/download/', file_views.download_general_expense, name='download_general_expense'),
+    path('relatorios/relatorio-financeiro/despesas/<int:pk>/preview/', file_views.preview_general_expense, name='preview_general_expense'),
     path('relatorios/relatorio-financeiro/graficos/', views.relatorio_financeiro_graficos_view, name='relatorio_financeiro_graficos'),
     path('relatorios/relatorio-financeiro/graficos/exportar/', views.relatorio_financeiro_graficos_export_view, name='relatorio_financeiro_graficos_export'),
     path('relatorios/relatorio-financeiro/pdf/', views.relatorio_financeiro_pdf_view, name='relatorio_financeiro_pdf'),
+
 
     # Comercial
     path('relatorios/comercial/', views.commercial_index_view, name='commercial_index'),

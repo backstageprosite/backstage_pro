@@ -618,6 +618,32 @@ class ShowTeamCost(models.Model):
     def __str__(self):
         return f"{self.name} - R$ {self.value}"
 
+
+def general_expense_upload_path(instance, filename):
+    return f'bands/{instance.band.id}/despesas_gerais/{filename}'
+
+
+class BandGeneralExpense(models.Model):
+    band = models.ForeignKey(Band, on_delete=models.CASCADE, related_name='general_expenses', verbose_name='Banda')
+    description = models.CharField(max_length=200, verbose_name='Descrição')
+    category = models.CharField(max_length=100, blank=True, null=True, verbose_name='Categoria')
+    date = models.DateField(verbose_name='Data')
+    value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor (R$)')
+    observations = models.TextField(blank=True, null=True, verbose_name='Observações')
+    file = models.FileField(validators=[validate_file_size_and_type], upload_to=general_expense_upload_path, blank=True, null=True, verbose_name='Comprovante / Arquivo')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_general_expenses', verbose_name='Criado por')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Despesa Geral da Banda'
+        verbose_name_plural = 'Despesas Gerais da Banda'
+        ordering = ['-date', '-created_at']
+
+    def __str__(self):
+        return f"{self.description} - R$ {self.value}"
+
+
 class Contact(models.Model):
     CONTACT_TYPE_CHOICES = (
         ('HOSPEDAGEM', 'Hotel'),

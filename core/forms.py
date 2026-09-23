@@ -1,6 +1,46 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import FinancialReceipt, User, Contact, Show, ContractDocument, ShowPayment, ShowTeamCost, RiderDocument
+from .models import FinancialReceipt, User, Contact, Show, ContractDocument, ShowPayment, ShowTeamCost, RiderDocument, BandGeneralExpense
+
+class BandGeneralExpenseForm(forms.ModelForm):
+    value = forms.CharField(
+        widget=forms.TextInput(attrs={'class': 'form-control money-mask', 'placeholder': '0,00'}),
+        label='Valor (R$)'
+    )
+
+    class Meta:
+        model = BandGeneralExpense
+        fields = ['description', 'category', 'date', 'value', 'observations', 'file']
+        widgets = {
+            'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Anúncios Instagram, Contador, Manutenção Van'}),
+            'category': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Marketing, Administrativo, Equipamentos'}),
+            'date': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'observations': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Observações adicionais (opcional)'}),
+            'file': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_value(self):
+        val = self.cleaned_data.get('value')
+        from decimal import Decimal
+        import re
+        if not val:
+            raise forms.ValidationError('Informe o valor.')
+        if isinstance(val, str):
+            clean_str = re.sub(r'[^\d,.-]', '', val).strip()
+            if ',' in clean_str:
+                clean_str = clean_str.replace('.', '').replace(',', '.')
+            try:
+                decimal_val = Decimal(clean_str)
+            except Exception:
+                raise forms.ValidationError('Informe um valor numérico válido.')
+        else:
+            decimal_val = Decimal(val)
+
+        if decimal_val < 0:
+            raise forms.ValidationError('O valor não pode ser negativo.')
+        return decimal_val
+
+
 
 class FinancialReceiptForm(forms.ModelForm):
     class Meta:
@@ -18,6 +58,7 @@ class FinancialReceiptForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
             self.fields['file'].required = False
+
 
 class ShowPaymentForm(forms.ModelForm):
     class Meta:

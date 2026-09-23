@@ -145,6 +145,9 @@
             <a href="{% url 'relatorios_index' band.slug %}" class="btn btn-outline-dark btn-back fw-bold">
                 <i class="fa-solid fa-arrow-left me-1"></i> Voltar
             </a>
+            <button type="button" class="btn btn-danger btn-header-action shadow-sm fw-bold transition-hover text-nowrap" style="background-color: #dc3545; border-color: #dc3545; color: #ffffff !important;" data-bs-toggle="modal" data-bs-target="#modalAdicionarDespesaGeral">
+                <i class="fa-solid fa-receipt me-1"></i> Despesa
+            </button>
             <a href="{% url 'relatorio_financeiro_graficos' band.slug %}" class="btn btn-primary btn-header-action shadow-sm fw-bold transition-hover text-nowrap" style="background-color: #0d6efd; border-color: #0d6efd; color: #ffffff !important;">
                 <i class="fa-solid fa-chart-pie me-1"></i> Gráficos
             </a>
@@ -219,7 +222,8 @@
             <div class="card shadow-sm border-0 border-start border-4 border-danger h-100 kpi-card">
                 <div class="card-body">
                     <p class="text-muted text-uppercase fw-bold kpi-label">Custos Cadastrados</p>
-                    <h4 class="kpi-value mb-0 text-danger">R$ {{ total_custos|default_if_none:0|floatformat:"2g" }}</h4>
+                    <h4 class="kpi-value mb-1 text-danger">R$ {{ total_custos|default_if_none:0|floatformat:"2g" }}</h4>
+                    <span class="text-muted" style="font-size: 11px;">Shows: R$ {{ total_custos_shows|default_if_none:0|floatformat:"2g" }} | Gerais: R$ {{ total_despesas_gerais|default_if_none:0|floatformat:"2g" }}</span>
                 </div>
             </div>
         </div>
@@ -244,48 +248,53 @@
     <p class="text-muted summary-text"><i class="fa-solid fa-list-check me-2"></i>Mostrando <strong>{{ qtd_shows }}</strong> shows no período selecionado.</p>
 
     <!-- Tabela de Shows -->
-    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0">
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 15px;"><i class="fa-solid fa-microphone-lines text-primary me-2"></i>Demonstrativo por Show</h5>
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-uppercase text-muted">
+                    <thead class="table-light text-muted small text-uppercase">
                         <tr>
-                            <th class="ps-4" style="width: 90px;">Data</th>
-                            <th>Show</th>
-                            <th>Cachê</th>
-                            <th>Recebido</th>
-                            <th>Pendente</th>
-                            <th>Custos</th>
-                            <th>Equipe</th>
-                            <th>Lucro</th>
-                            <th class="text-center">Status</th>
-                            <th class="pe-4 text-end">Ações</th>
+                            <th class="ps-4" style="min-width: 140px;">Data</th>
+                            <th style="min-width: 200px;">Show / Evento</th>
+                            <th style="min-width: 120px;">Cidade / UF</th>
+                            <th style="min-width: 110px;">Cachê</th>
+                            <th style="min-width: 110px;">Logística</th>
+                            <th style="min-width: 110px;">Equipe</th>
+                            <th style="min-width: 110px;">Recebido</th>
+                            <th style="min-width: 110px;">Caixa Real.</th>
+                            <th class="text-center" style="min-width: 100px;">Status</th>
+                            <th class="pe-4 text-end" style="min-width: 80px;">Ações</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="small">
                         {% for show in shows %}
                         <tr>
-                            <td class="ps-4 text-nowrap fw-medium" style="width: 90px;">{{ show.date|date:"d/m/y" }}</td>
+                            <td class="ps-4 fw-bold">
+                                {{ show.date|date:"d/m/Y"|default:"-" }}
+                            </td>
                             <td>
-                                <a href="{% url 'show_detail' band.slug show.id %}" class="text-decoration-none text-dark show-title">
-                                    {{ show.title|default:"Sem Título" }}
-                                </a><br>
-                                <small class="text-muted show-subtitle">{{ show.city|default:"-" }} &bull; {{ show.contract_type|default:"-" }}</small>
+                                <div class="show-title text-dark">{{ show.event_name|default:show.title }}</div>
+                                {% if show.event_name and show.title and show.event_name != show.title %}
+                                    <div class="show-subtitle text-muted">{{ show.title }}</div>
+                                {% endif %}
                             </td>
-                            <td class="fw-bold text-primary">
-                                {% if show.fee %}R$ {{ show.fee|floatformat:"2g" }}{% else %}-{% endif %}
+                            <td class="text-muted">
+                                {{ show.city|default:"-" }}{% if show.state %}/{{ show.state }}{% endif %}
                             </td>
-                            <td class="text-success fw-medium">
-                                {% if show.total_recebido %}R$ {{ show.total_recebido|floatformat:"2g" }}{% else %}-{% endif %}
+                            <td class="fw-bold text-dark">
+                                R$ {{ show.fee|default_if_none:0|floatformat:"2g" }}
                             </td>
-                            <td class="text-warning fw-medium">
-                                {% if show.fee %}R$ {{ show.total_pendente|floatformat:"2g" }}{% else %}-{% endif %}
+                            <td class="text-muted">
+                                R$ {{ show.total_logistica|floatformat:"2g" }}
                             </td>
-                            <td class="text-danger fw-medium">
-                                {% if show.total_logistica %}R$ {{ show.total_logistica|floatformat:"2g" }}{% else %}-{% endif %}
+                            <td class="text-muted">
+                                R$ {{ show.total_equipe|floatformat:"2g" }}
                             </td>
-                            <td class="text-danger fw-medium">
-                                {% if show.total_equipe %}R$ {{ show.total_equipe|floatformat:"2g" }}{% else %}-{% endif %}
+                            <td class="text-dark">
+                                R$ {{ show.total_recebido|floatformat:"2g" }}
                             </td>
                             <td class="text-success fw-bold">
                                 R$ {{ show.caixa_realizado|floatformat:"2g" }}
@@ -320,6 +329,209 @@
             </div>
         </div>
     </div>
+
+    <!-- BP-PEND-77: Seção de Despesas Gerais da Banda -->
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark" style="font-size: 15px;">
+                    <i class="fa-solid fa-receipt text-danger me-2"></i>Despesas Gerais da Banda
+                </h5>
+                <span class="text-muted small">Despesas operacionais sem vínculo direto com shows (marketing, manutenção, ferramentas, equipe fixa, etc.)</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger rounded-pill fw-bold px-3" data-bs-toggle="modal" data-bs-target="#modalAdicionarDespesaGeral">
+                <i class="fa-solid fa-plus me-1"></i> Nova Despesa Geral
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-4" style="min-width: 110px;">Data</th>
+                            <th style="min-width: 200px;">Descrição</th>
+                            <th style="min-width: 140px;">Categoria</th>
+                            <th style="min-width: 120px;">Valor</th>
+                            <th style="min-width: 100px;">Comprovante</th>
+                            <th class="pe-4 text-end" style="min-width: 100px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        {% for expense in general_expenses %}
+                        <tr>
+                            <td class="ps-4 fw-bold">
+                                {{ expense.date|date:"d/m/Y"|default:"-" }}
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">{{ expense.description }}</div>
+                                {% if expense.observations %}
+                                    <div class="text-muted" style="font-size: 11px;">{{ expense.observations|truncatechars:60 }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2 py-1">{{ expense.category|default:"Geral" }}</span>
+                            </td>
+                            <td class="text-danger fw-bold">
+                                R$ {{ expense.value|floatformat:"2g" }}
+                            </td>
+                            <td>
+                                {% if expense.file %}
+                                    <a href="{% url 'file_viewer' band.slug 'general_expense' expense.id %}" target="_blank" class="btn btn-xs btn-outline-secondary py-0 px-2 rounded-pill" style="font-size: 11px;" title="Ver comprovante">
+                                        <i class="fa-solid fa-paperclip me-1"></i> Ver
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted" style="font-size: 11px;">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 text-end text-nowrap">
+                                <button type="button" class="btn btn-outline-primary btn-action-icon rounded-circle me-1" title="Editar" data-bs-toggle="modal" data-bs-target="#modalEditarDespesaGeral{{ expense.id }}">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-action-icon rounded-circle" title="Excluir" data-bs-toggle="modal" data-bs-target="#modalExcluirDespesaGeral{{ expense.id }}">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Modal Editar Despesa Geral -->
+                        <div class="modal fade" id="modalEditarDespesaGeral{{ expense.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow">
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold" style="font-size: 16px;">
+                                            <i class="fa-solid fa-pen-to-square me-2 text-primary"></i>Editar Despesa Geral
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form action="{% url 'general_expense_edit' band.slug expense.id %}" method="POST" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        <div class="modal-body py-3">
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted mb-1">Descrição *</label>
+                                                <input type="text" name="description" class="form-control" value="{{ expense.description }}" required>
+                                            </div>
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-bold text-muted mb-1">Data *</label>
+                                                    <input type="date" name="date" class="form-control" value="{{ expense.date|date:'Y-m-d' }}" required>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small fw-bold text-muted mb-1">Valor (R$) *</label>
+                                                    <input type="text" name="value" class="form-control money-mask" value="{{ expense.value|stringformat:'.2f' }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted mb-1">Categoria</label>
+                                                <input type="text" name="category" class="form-control" value="{{ expense.category|default:'' }}" placeholder="Ex: Marketing, Contador, Equipamentos">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted mb-1">Observações</label>
+                                                <textarea name="observations" rows="2" class="form-control" placeholder="Observações adicionais (opcional)">{{ expense.observations|default:'' }}</textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted mb-1">Comprovante / Anexo (Máx. 10MB)</label>
+                                                {% if expense.file %}
+                                                    <div class="small mb-1 text-muted">Arquivo atual: <a href="{% url 'preview_general_expense' band.slug expense.id %}" target="_blank">{{ expense.file.name }}</a></div>
+                                                {% endif %}
+                                                <input type="file" name="file" class="form-control">
+                                                <div class="form-text" style="font-size: 11px;">Formatos permitidos: PDF, JPG, PNG, WEBP. Deixe em branco para manter o comprovante atual.</div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 pt-0">
+                                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Salvar Alterações</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal Excluir Despesa Geral -->
+                        <div class="modal fade" id="modalExcluirDespesaGeral{{ expense.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-sm">
+                                <div class="modal-content border-0 shadow">
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold text-danger" style="font-size: 16px;">
+                                            <i class="fa-solid fa-triangle-exclamation me-2"></i>Excluir Despesa
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body py-3">
+                                        <p class="small text-muted mb-0">Tem certeza que deseja excluir a despesa <strong>"{{ expense.description }}"</strong> (R$ {{ expense.value|floatformat:"2g" }})?</p>
+                                    </div>
+                                    <div class="modal-footer border-top-0 pt-0">
+                                        <button type="button" class="btn btn-light btn-sm rounded-pill px-3" data-bs-dismiss="modal">Cancelar</button>
+                                        <form action="{% url 'general_expense_delete' band.slug expense.id %}" method="POST" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger btn-sm rounded-pill px-3 fw-bold">Excluir</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="fa-solid fa-receipt me-2"></i>Nenhuma despesa geral registrada no período.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar Despesa Geral -->
+<div class="modal fade" id="modalAdicionarDespesaGeral" tabindex="-1" aria-labelledby="modalAdicionarDespesaGeralLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold text-danger" id="modalAdicionarDespesaGeralLabel" style="font-size: 16px;">
+            <i class="fa-solid fa-receipt me-2"></i>Nova Despesa Geral da Banda
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{% url 'general_expense_create' band.slug %}" method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="modal-body py-3">
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted mb-1">Descrição *</label>
+                {{ general_expense_form.description }}
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="form-label small fw-bold text-muted mb-1">Data *</label>
+                    {{ general_expense_form.date }}
+                </div>
+                <div class="col-6">
+                    <label class="form-label small fw-bold text-muted mb-1">Valor (R$) *</label>
+                    {{ general_expense_form.value }}
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted mb-1">Categoria</label>
+                {{ general_expense_form.category }}
+                <div class="form-text" style="font-size: 11px;">Ex: Marketing, Anúncios, Equipamentos, Manutenção, Softwares, Contador</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted mb-1">Observações</label>
+                {{ general_expense_form.observations }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold text-muted mb-1">Comprovante / Anexo (Opcional - Máx. 10MB)</label>
+                {{ general_expense_form.file }}
+                <div class="form-text" style="font-size: 11px;">Formatos permitidos: PDF, JPG, PNG, WEBP.</div>
+            </div>
+          </div>
+          <div class="modal-footer border-top-0 pt-0">
+            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Salvar Despesa</button>
+          </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- Modal Gerar Relatórios Financeiros em PDF -->

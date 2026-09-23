@@ -8,7 +8,7 @@ from django.utils.text import get_valid_filename
 from django.contrib.auth.decorators import login_required
 from functools import wraps
 
-from core.models import Band, ContractDocument, FinancialReceipt, ShowPayment, BillingRecord, SupportTicketAttachment, RiderDocument
+from core.models import Band, ContractDocument, FinancialReceipt, ShowPayment, BillingRecord, SupportTicketAttachment, RiderDocument, BandGeneralExpense
 
 def is_admin_geral(user):
     """Identifica o Admin Geral nativo do Django."""
@@ -235,6 +235,20 @@ def preview_commercial_document(request, band_slug, pk):
     return serve_private_file(doc.file, as_attachment=False)
 
 @private_download_required
+@advanced_plan_required
+def download_general_expense(request, band_slug, pk):
+    """Download protegido de BandGeneralExpense (BP-PEND-77)"""
+    doc = get_object_or_404(BandGeneralExpense, pk=pk, band=request.band)
+    return serve_private_file(doc.file, as_attachment=True)
+
+@private_download_required
+@advanced_plan_required
+def preview_general_expense(request, band_slug, pk):
+    """Preview protegido de BandGeneralExpense (BP-PEND-77)"""
+    doc = get_object_or_404(BandGeneralExpense, pk=pk, band=request.band)
+    return serve_private_file(doc.file, as_attachment=False)
+
+@private_download_required
 def internal_file_viewer(request, band_slug, file_type, pk):
     """
     Página HTML interna do visualizador PWA controlada pelo Django.
@@ -242,8 +256,8 @@ def internal_file_viewer(request, band_slug, file_type, pk):
     from django.urls import reverse
     band = request.band
 
-    # receipt, payment, rider are Advanced-only modules. Deny at the object level.
-    _advanced_only_types = {'receipt', 'payment', 'rider'}
+    # receipt, payment, rider, general_expense are Advanced-only modules. Deny at the object level.
+    _advanced_only_types = {'receipt', 'payment', 'rider', 'general_expense'}
     if file_type in _advanced_only_types and not band.is_advanced:
         raise PermissionDenied("Este recurso está disponível apenas no plano Avançado.")
 
@@ -263,6 +277,11 @@ def internal_file_viewer(request, band_slug, file_type, pk):
         doc = get_object_or_404(ShowPayment, pk=pk, show__band=band)
         preview_url = reverse('preview_payment', args=[band.slug, pk])
         download_url = reverse('download_payment', args=[band.slug, pk])
+        filename = doc.file.name
+    elif file_type == 'general_expense':
+        doc = get_object_or_404(BandGeneralExpense, pk=pk, band=band)
+        preview_url = reverse('preview_general_expense', args=[band.slug, pk])
+        download_url = reverse('download_general_expense', args=[band.slug, pk])
         filename = doc.file.name
     elif file_type == 'billing':
         doc = get_object_or_404(BillingRecord, pk=pk, band=band)

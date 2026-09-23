@@ -45,9 +45,9 @@ from django.http import HttpResponseForbidden, HttpResponseNotAllowed, JsonRespo
 
 from django.contrib.auth import update_session_auth_hash
 
-from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem, AdministrativeBandNotice, RiderDocument, UserBandMembership
+from .models import Show, FinancialReceipt, Band, User, Contact, ContractDocument, ShowPayment, ShowTeamCost, BandDashboardPendingItem, AdministrativeBandNotice, RiderDocument, UserBandMembership, BandGeneralExpense
 
-from .forms import FinancialReceiptForm, UserForm, UserEditForm, ContactForm, ShowForm, ContractDocumentFormSet, FinancialReceiptFormSet, ShowPaymentForm, ShowTeamCostForm, ContractDocumentForm, RiderDocumentForm, ProfileForm, ProfilePasswordChangeForm, MandatoryPasswordChangeForm
+from .forms import FinancialReceiptForm, UserForm, UserEditForm, ContactForm, ShowForm, ContractDocumentFormSet, FinancialReceiptFormSet, ShowPaymentForm, ShowTeamCostForm, ContractDocumentForm, RiderDocumentForm, ProfileForm, ProfilePasswordChangeForm, MandatoryPasswordChangeForm, BandGeneralExpenseForm
 
 from decimal import Decimal
 
@@ -1647,14 +1647,12 @@ def minha_assinatura_view(request, band_slug):
 
 @band_required
 
+@login_required
+@band_required
 @advanced_plan_required
 def relatorios_view(request, band_slug):
-
     if not request.user.is_produtor():
-
         return HttpResponseForbidden("Apenas produtores têm acesso aos relatórios.")
-
-
 
     band = get_object_or_404(Band, slug=band_slug)
 
@@ -1663,147 +1661,191 @@ def relatorios_view(request, band_slug):
         status__in=Show.STATUS_FINANCIALLY_ELIGIBLE
     ).prefetch_related('payments', 'team_costs').annotate(total_receipts=Sum('receipts__value')).order_by('date')
 
-
+    general_expenses = BandGeneralExpense.objects.filter(band=band)
 
     # Filtros
-
     date_start = request.GET.get('date_start')
-
     date_end = request.GET.get('date_end')
-
     contract_type = request.GET.get('contract_type')
-
     payment_status = request.GET.get('payment_status')
 
-
-
     if date_start:
-
         shows = shows.filter(date__gte=date_start)
+        general_expenses = general_expenses.filter(date__gte=date_start)
 
     if date_end:
-
         shows = shows.filter(date__lte=date_end)
+        general_expenses = general_expenses.filter(date__lte=date_end)
 
     if contract_type:
-
         shows = shows.filter(contract_type__icontains=contract_type)
 
     if payment_status:
-
         shows = shows.filter(payment_status=payment_status)
 
-
-
     total_receita = Decimal('0')
-
-    total_custos = Decimal('0')
-
+    total_custos_shows = Decimal('0')
     total_recebido_geral = Decimal('0')
 
-
-
     # Processar cada show para a tabela
-
     for show in shows:
-
         show_receita = show.fee or Decimal('0')
-
         show_custos_logistica = show.total_receipts or Decimal('0')
-
         show_custos_equipe = sum((t.value for t in show.team_costs.all()), Decimal('0'))
-
         show_custos = show_custos_logistica + show_custos_equipe
-
-
 
         show_recebido = sum((p.value for p in show.payments.all() if p.status == 'RECEBIDO'), Decimal('0'))
 
-
-
         show.total_equipe = show_custos_equipe
-
         show.total_logistica = show_custos_logistica
-
         show.total_costs = show_custos
-
         show.resultado_previsto = show_receita - show_custos
-
         show.total_recebido = show_recebido
-
         show.total_pendente = show_receita - show_recebido
-
         show.caixa_realizado = show_recebido - show_custos
 
-
-
         if show_receita > 0:
-
             show.margem_prevista = (show.resultado_previsto / show_receita) * Decimal('100')
-
         else:
-
             show.margem_prevista = Decimal('0')
 
-
-
         total_receita += show_receita
-
-        total_custos += show_custos
-
+        total_custos_shows += show_custos
         total_recebido_geral += show_recebido
 
-
+    # Total de Despesas Gerais da Banda
+    total_despesas_gerais = sum((g.value for g in general_expenses if g.value), Decimal('0'))
+    total_custos = total_custos_shows + total_despesas_gerais
 
     resultado_previsto_total = total_receita - total_custos
-
     caixa_realizado_geral = total_recebido_geral - total_custos
-
     total_pendente_geral = total_receita - total_recebido_geral
 
-
-
     margem_prevista_geral = 0
-
     if total_receita > 0:
-
         margem_prevista_geral = (resultado_previsto_total / total_receita) * Decimal('100')
 
-
+    general_expense_form = BandGeneralExpenseForm(initial={'date': datetime.date.today()})
 
     context = {
-
         'band': band,
-
         'shows': shows,
-
         'qtd_shows': shows.count(),
-
+        'general_expenses': general_expenses,
+        'qtd_general_expenses': general_expenses.count(),
+        'total_despesas_gerais': total_despesas_gerais,
+        'total_custos_shows': total_custos_shows,
         'total_receita': total_receita,
-
         'total_custos': total_custos,
-
         'total_recebido_geral': total_recebido_geral,
-
         'total_pendente_geral': total_pendente_geral,
-
         'caixa_realizado_geral': caixa_realizado_geral,
-
         'resultado_previsto_total': resultado_previsto_total,
-
         'margem_prevista_geral': margem_prevista_geral,
-
-        'qtd_shows': shows.count(),
-
+        'general_expense_form': general_expense_form,
     }
 
     return render(request, 'core/relatorios.html', context)
 
 
+@login_required
+@band_required
+@advanced_plan_required
+def general_expense_create_view(request, band_slug):
+    """
+    BP-PEND-77: Criação de Despesa Geral da Banda sem vínculo com Show.
+    """
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem cadastrar despesas gerais.")
+
+    band = get_object_or_404(Band, slug=band_slug)
+
+    if request.method == 'POST':
+        form = BandGeneralExpenseForm(request.POST, request.FILES)
+        if form.is_valid():
+            expense = form.save(commit=False)
+            expense.band = band
+            expense.created_by = request.user
+            expense.save()
+            messages.success(request, f"Despesa geral '{expense.description}' cadastrada com sucesso!")
+        else:
+            messages.error(request, f"Erro ao cadastrar despesa geral: {form.errors.as_text()}")
+
+    # Redireciona preservando parâmetros GET de filtro caso existam
+    redirect_url = reverse('relatorio_financeiro', args=[band.slug])
+    query_string = request.META.get('QUERY_STRING')
+    if query_string:
+        redirect_url = f"{redirect_url}?{query_string}"
+    return redirect(redirect_url)
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def general_expense_edit_view(request, band_slug, pk):
+    """
+    BP-PEND-77: Edição de Despesa Geral da Banda.
+    """
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem editar despesas gerais.")
+
+    band = get_object_or_404(Band, slug=band_slug)
+    expense = get_object_or_404(BandGeneralExpense, pk=pk, band=band)
+
+    if request.method == 'POST':
+        form = BandGeneralExpenseForm(request.POST, request.FILES, instance=expense)
+        if form.is_valid():
+            # Se não enviou novo arquivo, manter o existente
+            if not request.FILES.get('file') and expense.file:
+                form.instance.file = expense.file
+            form.save()
+            messages.success(request, f"Despesa geral '{expense.description}' atualizada com sucesso!")
+        else:
+            messages.error(request, f"Erro ao atualizar despesa geral: {form.errors.as_text()}")
+
+    redirect_url = reverse('relatorio_financeiro', args=[band.slug])
+    query_string = request.META.get('QUERY_STRING')
+    if query_string:
+        redirect_url = f"{redirect_url}?{query_string}"
+    return redirect(redirect_url)
+
+
+@login_required
+@band_required
+@advanced_plan_required
+def general_expense_delete_view(request, band_slug, pk):
+    """
+    BP-PEND-77: Exclusão de Despesa Geral da Banda.
+    """
+    if not request.user.is_produtor():
+        return HttpResponseForbidden("Apenas produtores podem excluir despesas gerais.")
+
+    band = get_object_or_404(Band, slug=band_slug)
+    expense = get_object_or_404(BandGeneralExpense, pk=pk, band=band)
+
+    if request.method == 'POST':
+        desc = expense.description
+        if expense.file:
+            try:
+                if os.path.isfile(expense.file.path):
+                    os.remove(expense.file.path)
+            except Exception:
+                pass
+        expense.delete()
+        messages.success(request, f"Despesa geral '{desc}' excluída com sucesso!")
+
+    redirect_url = reverse('relatorio_financeiro', args=[band.slug])
+    query_string = request.META.get('QUERY_STRING')
+    if query_string:
+        redirect_url = f"{redirect_url}?{query_string}"
+    return redirect(redirect_url)
+
+
 def _compute_financial_aggregates(band, date_start=None, date_end=None, payment_status=None):
     """
     Função utilitária compartilhada para consolidar indicadores e séries mensais
-    respeitando as regras operacionais e de elegibilidade do sistema (Show.STATUS_FINANCIALLY_ELIGIBLE).
+    respeitando as regras operacionais e de elegibilidade do sistema (Show.STATUS_FINANCIALLY_ELIGIBLE)
+    e incluindo Despesas Gerais da Banda (BP-PEND-77).
     """
     from decimal import Decimal
     from collections import defaultdict
@@ -1814,10 +1856,13 @@ def _compute_financial_aggregates(band, date_start=None, date_end=None, payment_
         status__in=Show.STATUS_FINANCIALLY_ELIGIBLE
     ).prefetch_related('payments', 'team_costs', 'receipts').order_by('date')
 
+    general_expenses_qs = BandGeneralExpense.objects.filter(band=band).order_by('date')
+
     if date_start:
         try:
             d_start = datetime.datetime.strptime(date_start, '%Y-%m-%d').date()
             shows_qs = shows_qs.filter(date__gte=d_start)
+            general_expenses_qs = general_expenses_qs.filter(date__gte=d_start)
         except ValueError:
             pass
 
@@ -1825,6 +1870,7 @@ def _compute_financial_aggregates(band, date_start=None, date_end=None, payment_
         try:
             d_end = datetime.datetime.strptime(date_end, '%Y-%m-%d').date()
             shows_qs = shows_qs.filter(date__lte=d_end)
+            general_expenses_qs = general_expenses_qs.filter(date__lte=d_end)
         except ValueError:
             pass
 
@@ -1900,7 +1946,17 @@ def _compute_financial_aggregates(band, date_start=None, date_end=None, payment_
         s.computed_caixa_realizado = rec - custos_show
         processed_shows.append(s)
 
-    total_custos_geral = total_custos_logistica + total_custos_equipe
+    # Processar despesas gerais da banda nos agrupamentos mensais e custos totais
+    total_despesas_gerais = Decimal('0')
+    for g in general_expenses_qs:
+        g_val = g.value or Decimal('0')
+        total_despesas_gerais += g_val
+        if g.date:
+            m_key = g.date.strftime('%Y-%m')
+            monthly_data[m_key]['custos'] += g_val
+
+    total_custos_shows = total_custos_logistica + total_custos_equipe
+    total_custos_geral = total_custos_shows + total_despesas_gerais
     total_a_receber = total_faturamento - total_recebido
     if total_a_receber < Decimal('0'):
         total_a_receber = Decimal('0')
@@ -1937,6 +1993,7 @@ def _compute_financial_aggregates(band, date_start=None, date_end=None, payment_
 
     return {
         'shows_qs': shows_qs,
+        'general_expenses_qs': general_expenses_qs,
         'processed_shows': processed_shows,
         'total_faturamento': total_faturamento,
         'total_recebido': total_recebido,
@@ -1944,6 +2001,8 @@ def _compute_financial_aggregates(band, date_start=None, date_end=None, payment_
         'total_em_atraso': total_em_atraso,
         'total_custos_logistica': total_custos_logistica,
         'total_custos_equipe': total_custos_equipe,
+        'total_custos_shows': total_custos_shows,
+        'total_despesas_gerais': total_despesas_gerais,
         'total_custos_geral': total_custos_geral,
         'resultado_previsto': resultado_previsto,
         'caixa_realizado': caixa_realizado,
@@ -1956,6 +2015,7 @@ def _compute_financial_aggregates(band, date_start=None, date_end=None, payment_
         'chart_top_shows_labels': chart_top_shows_labels,
         'chart_top_shows_data': chart_top_shows_data,
     }
+
 
 
 @login_required
