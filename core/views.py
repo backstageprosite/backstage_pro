@@ -5372,6 +5372,14 @@ def room_list_room_edit(request, band_slug, pk, room_id):
                 return redirect('room_list_manage', band_slug=band_slug, pk=room_list.id)
             except Exception as e:
                 messages.error(request, str(e))
+                return redirect('room_list_manage', band_slug=band_slug, pk=room_list.id)
+        else:
+            errors = []
+            for field, errs in form.errors.items():
+                label = form.fields[field].label if field in form.fields else field
+                errors.append(f"{label}: {', '.join(errs)}")
+            messages.error(request, "Erro ao atualizar quarto: " + "; ".join(errors))
+            return redirect('room_list_manage', band_slug=band_slug, pk=room_list.id)
     else:
         form = RoomForm(instance=room)
 
