@@ -13,16 +13,24 @@ class ResponsibleCpfCheckoutBpPend81Tests(TestCase):
         self.valid_cpf_1 = '03220864503'
         self.valid_cpf_1_formatted = '032.208.645-03'
 
-    def test_01_checkout_page_renders_responsible_cpf_with_maxlength_14_and_numeric_inputmode(self):
-        """1. Campo CPF do Responsável deve renderizar maxlength=14 e inputmode=numeric no HTML."""
-        url = reverse('checkout') + '?plano=avancado&ciclo=mensal'
-        resp = self.client.get(url)
-        self.assertEqual(resp.status_code, 200)
-        content = resp.content.decode('utf-8')
-        self.assertIn('name="responsible_cpf"', content)
-        self.assertIn('maxlength="14"', content)
-        self.assertIn('inputmode="numeric"', content)
-        self.assertIn('formatCpf', content)
+    def test_01_all_four_checkout_links_render_responsible_cpf_correctly(self):
+        """1. Os quatro links de checkout devem renderizar responsible_cpf com maxlength=14, inputmode=numeric e formatCpf."""
+        four_links = [
+            reverse('checkout') + '?plano=basico&ciclo=mensal',
+            reverse('checkout') + '?plano=basico&ciclo=anual',
+            reverse('checkout') + '?plano=avancado&ciclo=mensal',
+            reverse('checkout') + '?plano=avancado&ciclo=anual',
+        ]
+        for url in four_links:
+            with self.subTest(url=url):
+                resp = self.client.get(url)
+                self.assertEqual(resp.status_code, 200)
+                content = resp.content.decode('utf-8')
+                self.assertIn('name="responsible_cpf"', content)
+                self.assertIn('maxlength="14"', content)
+                self.assertIn('inputmode="numeric"', content)
+                self.assertIn('formatCpf', content)
+                self.assertIn('id_responsible_cpf', content)
 
     def test_02_backend_accepts_and_normalizes_11_digits_formatted_cpf(self):
         """2. Backend recebe CPF formatado com 11 dígitos (032.208.645-03) e normaliza para 11 dígitos limpos."""
