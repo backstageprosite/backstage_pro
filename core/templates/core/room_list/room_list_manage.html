@@ -60,56 +60,9 @@
                     <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px; background-color: #198754; border-color: #198754;">Adicionar</button>
                 </div>
             </form>
-<!-- Modal Editar Quarto -->
-<div class="modal fade text-start" id="modalEditarQuarto" tabindex="-1" aria-labelledby="modalEditarQuartoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
-            <form id="formEditQuartoModal" method="post" action="">
-                {% csrf_token %}
-                <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold" id="modalEditarQuartoLabel" style="font-size: 16px; color: #0d6efd;">
-                        <i class="fa-solid fa-pen-to-square me-2" style="color: #0d6efd;"></i>Editar Quarto
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-3 p-md-4 text-start">
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Número do quarto</label>
-                        <input type="text" name="number_or_name" id="edit_room_number" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Tipo</label>
-                        <select name="type" id="edit_room_type" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
-                            <option value="INDIVIDUAL">Individual (1 pessoa)</option>
-                            <option value="CASAL">Casal (2 pessoas)</option>
-                            <option value="DUPLO">Duplo (2 pessoas)</option>
-                            <option value="TRIPLO">Triplo (3 pessoas)</option>
-                            <option value="QUADRUPLO">Quádruplo (4 pessoas)</option>
-                            <option value="PERSONALIZADO">Personalizado</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Capacidade</label>
-                        <input type="number" name="capacity" id="edit_room_capacity" class="form-control" value="1" min="1" required style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Configuração das camas (opcional)</label>
-                        <input type="text" name="beds_config" id="edit_room_beds" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" name="has_ac" id="edit_room_has_ac">
-                        <label class="form-check-label" for="edit_room_has_ac" style="font-size: 13px; font-weight: 600; color: #6c757d;">Possui ar-condicionado</label>
-                    </div>
-                </div>
-                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
-                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar</button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
-
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <h4 class="fw-bold m-0 text-start" style="line-height: 1.3; max-width: 100%;">Gerenciar Hospedagem: <span class="text-primary">{{ room_list.show.title|default:room_list.show.city }}</span></h4>
@@ -656,6 +609,56 @@ function toggleAllIntegrantes(source) {
                 <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
                     <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
                     <button type="submit" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px; background-color: #198754; border-color: #198754;">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Quarto -->
+<div class="modal fade text-start" id="modalEditarQuarto" tabindex="-1" aria-labelledby="modalEditarQuartoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+            <form id="formEditQuartoModal" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="modalEditarQuartoLabel" style="font-size: 16px; color: #0d6efd;">
+                        <i class="fa-solid fa-pen-to-square me-2" style="color: #0d6efd;"></i>Editar Quarto
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 p-md-4 text-start">
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Número do quarto</label>
+                        <input type="text" name="number_or_name" id="edit_room_number" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Tipo</label>
+                        <select name="type" id="edit_room_type" class="form-select" required style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                            <option value="INDIVIDUAL">Individual (1 pessoa)</option>
+                            <option value="CASAL">Casal (2 pessoas)</option>
+                            <option value="DUPLO">Duplo (2 pessoas)</option>
+                            <option value="TRIPLO">Triplo (3 pessoas)</option>
+                            <option value="QUADRUPLO">Quádruplo (4 pessoas)</option>
+                            <option value="PERSONALIZADO">Personalizado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Capacidade</label>
+                        <input type="number" name="capacity" id="edit_room_capacity" class="form-control" value="1" min="1" required style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600; color: #6c757d; margin-bottom: 4px;">Configuração das camas (opcional)</label>
+                        <input type="text" name="beds_config" id="edit_room_beds" class="form-control" style="font-size: 14px; min-height: 34px; padding: 5px 10px; border-radius: 6px;">
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="has_ac" id="edit_room_has_ac">
+                        <label class="form-check-label" for="edit_room_has_ac" style="font-size: 13px; font-weight: 600; color: #6c757d;">Possui ar-condicionado</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0 justify-content-end gap-2">
+                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="height: 34px; font-size: 13px;">Salvar</button>
                 </div>
             </form>
         </div>
