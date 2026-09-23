@@ -2320,4 +2320,125 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         self.assertEqual(record.payment_method, 'PIX')
         self.assertEqual(record.gateway_payment_id, 'pay_pix_annual_39')
 
+    @override_settings(PAYMENTS_LIVE_ENABLED=True, ASAAS_API_KEY='test_api_key', ASAAS_ENVIRONMENT='sandbox')
+    @patch.object(AsaasClient, 'create_checkout')
+    def test_54_checkout_payload_includes_band_name_in_item_and_subscription_description(self, mock_create_chk):
+        """
+        54. Identificar banda nas assinaturas e cobranças do Asaas:
+        O payload de checkout para cartão recorrente deve incluir o nome da banda e plano
+        na descrição da assinatura e do item, mantendo externalReference único intacto.
+        """
+        mock_create_chk.return_value = (True, {
+            'id': 'chk_band_desc_123',
+            'status': 'ACTIVE',
+            'paymentLink': 'https://sandbox.asaas.com/c/band123'
+        })
+
+        order = SignupOrder.objects.create(
+            external_reference='bp-ord-multi-band-1',
+            gateway_provider='ASAAS',
+            gateway_customer_id='cus_same_owner_123',
+            band_name='Banda Fulana Acústico',
+            responsible_name='Carla Empresaria',
+            email='carla@empresaria.com',
+            plan_type='AVANCADO',
+            billing_cycle='MENSAL',
+            amount=Decimal('49.90'),
+            status='PENDENTE',
+        )
+
+        ok, link, data, err = create_asaas_checkout_for_signup_order(order, payment_method='CREDIT_CARD')
+        self.assertTrue(ok)
+
+        sent_payload = mock_create_chk.call_args[0][0]
+        # externalReference intacto
+        self.assertEqual(sent_payload['externalReference'], 'bp-ord-multi-band-1')
+        # Item com nome e descrição contendo a banda
+        self.assertEqual(sent_payload['items'][0]['name'], 'Backstage Pro — Banda Fulana Acústico')
+        self.assertEqual(sent_payload['items'][0]['description'], 'Backstage Pro — Banda Fulana Acústico — Avançado Mensal')
+        # Subscription com descrição legível
+        self.assertEqual(sent_payload['subscription']['description'], 'Backstage Pro — Banda Fulana Acústico — Avançado Mensal')
+
+    @patch('core.services.payments.asaas.client.AsaasClient.cancel_subscription')
+    @patch('core.services.payments.asaas.client.AsaasClient.get_subscription')
+    def test_55_cancel_subscription_selects_strictly_band_linked_subscription(self, mock_get_sub, mock_cancel_sub):
+        """
+        55. Cancelamento por banda seleciona a assinatura da banda ativa, mesmo quando a mesma
+        empresária possui múltiplas bandas com o mesmo valor contratado.
+        """
+        from django.contrib.auth import get_user_model
+        from datetime import date
+        from core.models import UserBandMembership
+        User = get_user_model()
+
+        owner = User.objects.create_user(
+            username='empresaria_multi',
+            email='multi@empresaria.com',
+            password='testpass123_password'
+        )
+
+        band_a = Band.objects.create(name='Banda Alfa Show', slug='banda-alfa-show')
+        band_b = Band.objects.create(name='Banda Beta Show', slug='banda-beta-show')
+
+        UserBandMembership.objects.create(user=owner, band=band_a, role='EMPRESARIO', is_active=True)
+        UserBandMembership.objects.create(user=owner, band=band_b, role='EMPRESARIO', is_active=True)
+
+        sub_a = BandSubscription.objects.create(
+            band=band_a,
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            next_due_date=date(2026, 11, 8),
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_subscription_id='sub_alfa_111',
+            gateway_customer_id='cus_shared_owner',
+            auto_renew=True,
+            cancel_at_period_end=False
+        )
+
+        sub_b = BandSubscription.objects.create(
+            band=band_b,
+            plan_name='Básico',
+            billing_cycle='MENSAL',
+            contracted_value=Decimal('19.90'),
+            next_due_date=date(2026, 11, 8),
+            status='ATIVO',
+            gateway_provider='ASAAS',
+            gateway_subscription_id='sub_beta_222',
+            gateway_customer_id='cus_shared_owner',
+            auto_renew=True,
+            cancel_at_period_end=False
+        )
+
+        # Simula cancelamento da Banda Alfa
+        mock_get_sub.return_value = {
+            'id': 'sub_alfa_111',
+            'customer': 'cus_shared_owner',
+            'status': 'ACTIVE',
+            'deleted': False
+        }
+        mock_cancel_sub.return_value = (True, {'deleted': True})
+
+        client = Client()
+        client.force_login(owner)
+
+        resp = client.post(f'/{band_a.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+
+        # Confirma que cancelou APENAS sub_alfa_111
+        mock_cancel_sub.assert_called_once_with('sub_alfa_111')
+
+        sub_a.refresh_from_db()
+        sub_b.refresh_from_db()
+
+        # Banda Alfa teve cancelamento agendado
+        self.assertTrue(sub_a.cancel_at_period_end)
+        self.assertFalse(sub_a.auto_renew)
+
+        # Banda Beta PERMANECE 100% INTACTA
+        self.assertFalse(sub_b.cancel_at_period_end)
+        self.assertTrue(sub_b.auto_renew)
+
+
 

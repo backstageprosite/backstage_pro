@@ -49,10 +49,17 @@ def build_checkout_payload(
         'expiredUrl': f"{base_site_url}/"
     }
 
-    item_name = f"Backstage Pro {plan_label}"
+    # Identificação legível da banda e plano para o painel Asaas e fatura
+    band_name_display = (signup_order.band_name or "").strip()
+    if band_name_display:
+        item_name = f"Backstage Pro — {band_name_display}"
+        cycle_label = "Anual" if is_annual else "Mensal"
+        item_desc = f"Backstage Pro — {band_name_display} — {plan_label} {cycle_label}"
+    else:
+        item_name = f"Backstage Pro {plan_label}"
+        item_desc = f"Assinatura {'anual' if is_annual else 'mensal'} Backstage Pro"
 
     if is_annual:
-        item_desc = "Assinatura anual Backstage Pro (vigência de 12 meses)"
         if method == 'PIX':
             # BP-PEND-28: Anual + PIX é exclusivamente à vista (DETACHED sem installment)
             payload: Dict[str, Any] = {
@@ -94,7 +101,6 @@ def build_checkout_payload(
     else:
         # Mensal
         if method == 'PIX':
-            item_desc = "Assinatura mensal Backstage Pro (Ciclo inicial via PIX)"
             payload = {
                 'billingTypes': ['PIX'],
                 'chargeTypes': ['DETACHED'],
@@ -111,9 +117,9 @@ def build_checkout_payload(
                 'callback': callback_urls
             }
         else:
-            item_desc = "Assinatura mensal Backstage Pro"
             now_dt = timezone.localtime(timezone.now())
             next_due_str = now_dt.strftime('%Y-%m-%d %H:%M:%S')
+            sub_desc = f"Backstage Pro — {band_name_display} — {plan_label} Mensal" if band_name_display else f"Backstage Pro — {plan_label} Mensal"
             payload = {
                 'billingTypes': ['CREDIT_CARD'],
                 'chargeTypes': ['RECURRENT'],
@@ -129,7 +135,8 @@ def build_checkout_payload(
                 ],
                 'subscription': {
                     'cycle': 'MONTHLY',
-                    'nextDueDate': next_due_str
+                    'nextDueDate': next_due_str,
+                    'description': sub_desc
                 },
                 'callback': callback_urls
             }

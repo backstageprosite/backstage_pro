@@ -439,15 +439,17 @@ class ShowPaymentAdmin(admin.ModelAdmin):
 
 @admin.register(BandSubscription)
 class BandSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('band', 'plan_name', 'billing_cycle', 'contracted_value', 'next_due_date', 'status', 'billing_phone', 'billing_email', 'updated_at')
-    list_filter = ('status', 'billing_cycle', 'plan_name')
-    search_fields = ('band__name', 'financial_responsible_name', 'billing_phone', 'billing_email')
+    list_display = ('band', 'plan_name', 'billing_cycle', 'contracted_value', 'next_due_date', 'status', 'gateway_subscription_id', 'gateway_customer_id', 'billing_phone', 'billing_email', 'updated_at')
+    list_filter = ('status', 'billing_cycle', 'plan_name', 'gateway_provider')
+    search_fields = ('band__name', 'financial_responsible_name', 'billing_phone', 'billing_email', 'gateway_subscription_id', 'gateway_customer_id', 'gateway_external_reference')
+    readonly_fields = ('created_at', 'updated_at')
 
 @admin.register(BillingRecord)
 class BillingRecordAdmin(admin.ModelAdmin):
-    list_display = ('band', 'reference_period', 'amount', 'due_date', 'paid_date', 'status', 'payment_method', 'installment_number', 'updated_at')
-    list_filter = ('status', 'payment_method', 'due_date')
-    search_fields = ('band__name', 'reference_period', 'subscription__band__name')
+    list_display = ('band', 'reference_period', 'amount', 'due_date', 'paid_date', 'status', 'payment_method', 'gateway_payment_id', 'installment_number', 'updated_at')
+    list_filter = ('status', 'payment_method', 'due_date', 'gateway_provider')
+    search_fields = ('band__name', 'reference_period', 'subscription__band__name', 'gateway_payment_id', 'gateway_external_reference')
+    readonly_fields = ('created_at', 'updated_at')
 
 
 @admin.register(GatewayPaymentMethod)
