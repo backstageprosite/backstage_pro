@@ -1582,7 +1582,8 @@ document.addEventListener("DOMContentLoaded", function() {
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
 
-        const url = `/admin-master/assinaturas/${subId}/cobrancas-asaas/`;
+        const baseUrlTemplate = "{% url 'admin_painel:assinaturas_ver_cobrancas_asaas' 0 %}";
+        const url = baseUrlTemplate.replace('0', subId);
 
         fetch(url, {
             method: 'GET',
