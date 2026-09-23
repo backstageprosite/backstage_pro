@@ -18,6 +18,19 @@ class SignupOrderForm(forms.ModelForm):
         initial='CREDIT_CARD',
         required=False,
     )
+    responsible_cpf = forms.CharField(
+        max_length=14,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-lg',
+            'required': True,
+            'maxlength': '14',
+            'inputmode': 'numeric',
+        }),
+        error_messages={
+            'required': 'Informe o CPF do responsável pelo acesso.',
+        }
+    )
 
     class Meta:
         model = SignupOrder
@@ -48,11 +61,6 @@ class SignupOrderForm(forms.ModelForm):
                 'class': 'form-control form-control-lg',
                 'required': True,
                 'maxlength': '200',
-            }),
-            'responsible_cpf': forms.TextInput(attrs={
-                'class': 'form-control form-control-lg',
-                'required': True,
-                'maxlength': '18',
             }),
             'cpf_cnpj': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',

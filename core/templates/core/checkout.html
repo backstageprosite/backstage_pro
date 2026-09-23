@@ -280,6 +280,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return '';
     }
 
+    function formatCpf(val) {
+        if (!val) return '';
+        let v = val.toString().replace(/\D/g, '');
+        if (v.length > 11) v = v.slice(0, 11);
+        if (v.length > 9) {
+            return v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+        } else if (v.length > 6) {
+            return v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
+        } else if (v.length > 3) {
+            return v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
+        }
+        return v;
+    }
+
     function formatCpfCnpj(val) {
         if (!val) return '';
         let v = val.toString().replace(/\D/g, '');
@@ -329,16 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const respCpfInput = document.getElementById('id_responsible_cpf');
     if (respCpfInput) {
         const applyRespCpfMask = function() {
-            let v = (respCpfInput.value || '').replace(/\D/g, '').slice(0, 11);
-            if (v.length > 9) {
-                respCpfInput.value = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
-            } else if (v.length > 6) {
-                respCpfInput.value = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
-            } else if (v.length > 3) {
-                respCpfInput.value = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
-            } else {
-                respCpfInput.value = v;
-            }
+            respCpfInput.value = formatCpf(respCpfInput.value);
         };
         ['input', 'change', 'paste', 'keyup', 'blur'].forEach(function(evt) {
             respCpfInput.addEventListener(evt, function() {
@@ -393,10 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gatilho pós-autofill do navegador (executa verificação após 300ms e 800ms)
     setTimeout(function() {
         if (phoneInput && phoneInput.value) phoneInput.value = formatPhone(phoneInput.value);
-        if (respCpfInput && respCpfInput.value) {
-            let v = respCpfInput.value.replace(/\D/g, '').slice(0, 11);
-            if (v.length > 9) respCpfInput.value = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
-        }
+        if (respCpfInput && respCpfInput.value) respCpfInput.value = formatCpf(respCpfInput.value);
         if (cpfCnpjInput && cpfCnpjInput.value) cpfCnpjInput.value = formatCpfCnpj(cpfCnpjInput.value);
         if (cepInput && cepInput.value) cepInput.value = formatCep(cepInput.value);
         if (stateInput && stateInput.value) stateInput.value = (stateInput.value || '').toUpperCase().slice(0, 2);
@@ -404,10 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setTimeout(function() {
         if (phoneInput && phoneInput.value) phoneInput.value = formatPhone(phoneInput.value);
-        if (respCpfInput && respCpfInput.value) {
-            let v = respCpfInput.value.replace(/\D/g, '').slice(0, 11);
-            if (v.length > 9) respCpfInput.value = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
-        }
+        if (respCpfInput && respCpfInput.value) respCpfInput.value = formatCpf(respCpfInput.value);
         if (cpfCnpjInput && cpfCnpjInput.value) cpfCnpjInput.value = formatCpfCnpj(cpfCnpjInput.value);
         if (cepInput && cepInput.value) cepInput.value = formatCep(cepInput.value);
         if (stateInput && stateInput.value) stateInput.value = (stateInput.value || '').toUpperCase().slice(0, 2);
