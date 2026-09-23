@@ -31,12 +31,13 @@ class ShowPdfMapLinkTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8')
 
-        # Verificar que o link está na linha do Local
-        self.assertIn('<strong>Local:</strong> Shopping da Bahia - <a href="https://maps.google.com/?q=ShoppingDaBahia"', content)
+        # Verificar que o link está na linha de Cidade / Local
+        self.assertIn('<strong>Cidade / Local:</strong> - · Shopping da Bahia · <a href="https://maps.google.com/?q=ShoppingDaBahia"', content)
         # Verificar que a linha de Endereço contém apenas o texto sem link
         self.assertIn('<strong>Endereço:</strong> Av. Tancredo Neves, 148 - Caminho das Árvores', content)
         # Garantir que o link não aparece dentro do bloco Endereço
         endereco_block = content.split('<strong>Endereço:</strong>')[1].split('</li>')[0]
+        self.assertNotIn('Abrir no mapa', endereco_block)
         self.assertNotIn('Abrir no Mapa', endereco_block)
         self.assertNotIn('href=', endereco_block)
 
@@ -55,7 +56,7 @@ class ShowPdfMapLinkTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8')
 
-        self.assertIn('<strong>Local:</strong> <a href="https://maps.google.com/?q=RuaDasFlores"', content)
+        self.assertIn('<strong>Cidade / Local:</strong> - · <a href="https://maps.google.com/?q=RuaDasFlores"', content)
         self.assertIn('<strong>Endereço:</strong> Rua das Flores, 100', content)
 
     def test_show_without_venue_and_without_link(self):

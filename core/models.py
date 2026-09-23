@@ -531,6 +531,36 @@ class Show(models.Model):
         else:
             return "Banda"
 
+    @property
+    def transport_contact_whatsapp_digits(self):
+        """Retorna apenas dígitos com DDI 55 para link do WhatsApp do transporte principal."""
+        if not self.transport_contact:
+            return ''
+        import re
+        digits = re.sub(r'\D', '', str(self.transport_contact))
+        if not digits:
+            return ''
+        if digits.startswith('55') and len(digits) >= 12:
+            return digits
+        return f'55{digits}'
+
+    @property
+    def has_separate_logistics(self):
+        """Indica se a técnica ou o artista possuem logística separada da principal."""
+        return bool(self.has_specific_tech_logistics or self.has_specific_artist_logistics)
+
+    @property
+    def duration_formatted(self):
+        """Retorna a duração formatada do show (ex: '1:30' ou o valor cadastrado)."""
+        if not self.duration:
+            return ''
+        dur = str(self.duration).strip()
+        # Normalizar casos como '01:30' -> '1:30', ou manter '1:30h', '1:30', '2h'
+        if dur.startswith('0') and len(dur) == 5 and dur[2] == ':':
+            return dur[1:]
+        return dur
+
+
     def save(self, *args, **kwargs):
         # BP-PEND-57: Garantir que updated_at reflita alterações reais.
         # Se update_fields for especificado explicitamente pelo chamador, respeitar kwargs.
