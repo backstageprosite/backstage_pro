@@ -203,16 +203,16 @@
                                 {% endif %}
                             </div>
 
-                            <div class="card-body drop-zone p-2 p-md-3" data-room-id="{{ room.id }}" style="min-height: 80px; background-color: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 0 0 10px 10px;">
+                            <div class="card-body p-2 p-md-3" style="background-color: #f8f9fa; border-radius: 0 0 10px 10px;">
                                 <p class="mb-2 text-muted" style="font-size: 12px;"><small>Tipo: <strong>{{ room.get_type_display }}</strong> ({{ room.participants.count }}/{{ room.capacity }})</small></p>
 
-                                <div class="d-flex flex-wrap gap-1">
+                                <div class="d-flex flex-wrap gap-1 drop-zone p-2" data-room-id="{{ room.id }}" style="min-height: 52px; border: 2px dashed #dee2e6; border-radius: 8px;">
                                 {% for p in room.participants.all %}
                                     <div class="badge bg-primary draggable-participant p-1 px-2 text-start d-inline-flex align-items-center justify-content-between"
                                          data-participant-id="{{ p.id }}"
                                          data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
                                          data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
-                                         style="cursor: move; min-height: 30px; font-size: 12px; border-radius: 6px; font-weight: 500; max-width: 100%;">
+                                         style="cursor: grab; min-height: 30px; font-size: 12px; border-radius: 6px; font-weight: 500; max-width: 100%;">
                                          <div class="d-flex align-items-center text-truncate">
                                               {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-1 px-1 py-1" style="cursor: grab; touch-action: none; opacity: 0.8; font-size: 0.95rem;"></i>{% endif %}
                                               <span class="text-truncate">{{ p.snapshot_name }}</span>
@@ -237,16 +237,16 @@
 
         <div class="col-5 col-md-4 col-xl-3">
             <h4 class="fw-bold mb-3" style="font-size: 1.15rem;">Não Alocados</h4>
-            <div class="card shadow-sm p-2 p-md-3 drop-zone sticky-top" data-room-id="" style="min-height: 180px; background-color: #fff3cd; border: 2px dashed #ffe69c; border-radius: 10px; top: 75px; max-height: calc(100vh - 90px); overflow-y: auto;">
+            <div class="card shadow-sm p-2 p-md-3 sticky-top" style="background-color: #fff3cd; border-radius: 10px; top: 75px; max-height: calc(100vh - 90px); overflow-y: auto;">
+                <div class="d-flex flex-column gap-1 drop-zone p-2" data-room-id="" style="min-height: 140px; border: 2px dashed #ffe69c; border-radius: 8px;">
                 {% if participants %}
-                    <div class="d-flex flex-column gap-1">
                     {% for p in participants %}
                         {% if not p.room %}
                             <div class="badge bg-warning text-dark draggable-participant p-1 px-2 text-start d-flex align-items-center justify-content-between"
                                  data-participant-id="{{ p.id }}"
                                  data-allocate-url="{% url 'room_list_allocate' request.band.slug room_list.id p.id %}"
                                  data-unassign-url="{% url 'room_list_unassign' request.band.slug room_list.id p.id %}"
-                                 style="cursor: move; min-height: 30px; font-size: 12px; border-radius: 6px; font-weight: 500;">
+                                 style="cursor: grab; min-height: 30px; font-size: 12px; border-radius: 6px; font-weight: 500;">
                                   <div class="d-flex align-items-center text-truncate">
                                       {% if room_list.status == "RASCUNHO" %}<i class="fa-solid fa-grip-lines drag-handle me-1 px-1 py-1" style="cursor: grab; touch-action: none; opacity: 0.8; font-size: 0.95rem;"></i>{% endif %}
                                       <span class="text-truncate">{{ p.snapshot_name }}</span>
@@ -259,10 +259,10 @@
                             </div>
                         {% endif %}
                     {% endfor %}
-                    </div>
                 {% else %}
                     <p class="text-muted mb-0 small">Nenhum integrante sincronizado.</p>
                 {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -278,6 +278,17 @@
     .draggable-participant.dragging { opacity: 0.5; }
 
     .drop-zone.drag-over { background-color: #e2e3e5 !important; }
+
+    .dragging-ghost {
+        opacity: 0.4;
+        background-color: #6c757d !important;
+        border: 1px dashed #333 !important;
+    }
+
+    .dragging-chosen {
+        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        cursor: grabbing !important;
+    }
 
     .status-pill {
         width: 95px;
@@ -295,12 +306,9 @@
 
 </style>
 
-
-
-
-
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-<script src="{% static 'core/js/room_list.js' %}?v=20260827_3"></script>
+<script src="{% static 'core/js/room_list.js' %}?v=20260923_1"></script>
+
 
 
 

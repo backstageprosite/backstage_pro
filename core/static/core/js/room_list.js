@@ -1,6 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     const isMobile = window.innerWidth < 768;
 
+    function getCsrfToken() {
+        const input = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (input && input.value) return input.value;
+        const cookieMatch = document.cookie.match(/csrftoken=([^;]+)/);
+        return cookieMatch ? cookieMatch[1] : '';
+    }
+
     // Desktop/Tablet drag-and-drop
     if (typeof Sortable !== 'undefined' && !isMobile) {
         const dropZones = document.querySelectorAll('.drop-zone');
@@ -9,12 +16,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 group: 'shared',
                 animation: 150,
                 delay: 0,
+                draggable: '.draggable-participant',
+                handle: '.drag-handle, .draggable-participant',
+                filter: 'button, a, input, select, textarea',
+                preventOnFilter: false,
+                ghostClass: 'dragging-ghost',
+                chosenClass: 'dragging-chosen',
                 fallbackOnBody: true,
                 scroll: true,
                 scrollSensitivity: 80,
                 scrollSpeed: 15,
-                handle: '.drag-handle',
-                filter: '[draggable="false"]',
                 onEnd: function (evt) {
                     const draggable = evt.item;
                     const newZone = evt.to;
@@ -25,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const participantId = draggable.dataset.participantId;
                     const roomId = newZone.dataset.roomId;
 
-                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    const csrfToken = getCsrfToken();
                     let url = roomId ? draggable.dataset.allocateUrl : draggable.dataset.unassignUrl;
 
                     let formData = new URLSearchParams();
@@ -44,13 +55,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.location.reload();
                     })
                     .catch(err => {
-                        console.error(err);
+                        console.error('Erro ao mover participante:', err);
                         window.location.reload();
                     });
                 }
             });
         });
     }
+
 
     // Mobile Touch / Tap allocation
     const touchModalEl = document.getElementById('modalAlocarTouch');

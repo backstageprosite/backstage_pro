@@ -83,7 +83,9 @@ class RoomListPdfAndHotelTests(TestCase):
         response = self.client.get(reverse('room_list_pdf', args=[self.band.slug, self.room_list.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
-        self.assertEqual(response['Content-Disposition'], 'inline; filename="room_list.pdf"')
+        from core.services.room_list_services import get_room_list_pdf_filename
+        expected_filename = get_room_list_pdf_filename(self.room_list)
+        self.assertEqual(response['Content-Disposition'], f'inline; filename="{expected_filename}"')
         self.assertTrue(response.content.startswith(b'%PDF'))
 
     def test_pdf_comum_outra_banda_bloqueado(self):
@@ -100,9 +102,12 @@ class RoomListPdfAndHotelTests(TestCase):
         response = self.client.get(reverse('room_list_hotel_pdf', args=[self.band.slug, self.room_list.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
-        self.assertEqual(response['Content-Disposition'], 'inline; filename="room_list.pdf"')
+        from core.services.room_list_services import get_room_list_pdf_filename
+        expected_filename = get_room_list_pdf_filename(self.room_list)
+        self.assertEqual(response['Content-Disposition'], f'inline; filename="{expected_filename}"')
         self.assertTrue(response.content.startswith(b'%PDF'))
         self.assertEqual(response['Cache-Control'], 'private, no-store')
+
         self.assertEqual(response['X-Robots-Tag'], 'noindex, nofollow, noarchive')
 
     def test_pdf_hotel_integrante_bloqueado(self):

@@ -91,18 +91,27 @@
 
 <table class="header-table">
     <tr>
-        <td style="width: 140px; text-align: left; vertical-align: middle;">
-            {% if room_list.band.logo %}
-                {% if pdf_logo_base64 %}<img src="{{ pdf_logo_base64 }}" class="logo-img">{% endif %}
-            {% else %}
-                <div style="font-weight:900; font-size:15px; color:#000;">LOGO DA<br>BANDA</div>
-            {% endif %}
+        <td style="vertical-align: middle;">
+            <table style="border: none; border-collapse: collapse;">
+                <tr>
+                    {% if room_list.band.logo %}
+                        {% if pdf_logo_base64 %}
+                            <td style="width: 140px; vertical-align: middle; padding-right: 12px;">
+                                <img src="{{ pdf_logo_base64 }}" class="logo-img">
+                            </td>
+                        {% endif %}
+                    {% else %}
+                        <td style="width: 100px; vertical-align: middle; padding-right: 12px;">
+                            <div style="font-weight:900; font-size:13px; color:#000;">LOGO DA<br>BANDA</div>
+                        </td>
+                    {% endif %}
+                    <td style="vertical-align: middle; text-align: left;">
+                        <div style="font-size: 13px; font-weight: bold; text-transform: uppercase; line-height: 1.2;">ROOM LIST &mdash; HOSPEDAGEM</div>
+                        <div style="font-size: 9.5px; color: #555; text-transform: uppercase; margin-top: 2px;">{{ room_list.band.name }}</div>
+                    </td>
+                </tr>
+            </table>
         </td>
-        <td style="text-align: center; vertical-align: middle;">
-            <div style="font-size: 14px; font-weight: bold; margin-bottom: 2px;">Room List: {{ room_list.show.title }}</div>
-            <div style="font-size: 10.5px; color: #555;">{{ room_list.show.event_name|default:room_list.show.title }} - {{ room_list.show.city }} ({{ room_list.show.date|date:"d/m/Y" }})</div>
-        </td>
-        <td style="width: 140px;"></td>
     </tr>
 </table>
 

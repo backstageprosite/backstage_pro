@@ -1366,3 +1366,76 @@ def delete_lodging_template(band_id, user):
         return True
     except LodgingTemplate.DoesNotExist:
         return False
+
+
+def get_room_list_pdf_filename(room_list, extension=".pdf"):
+    """
+    BP-PEND-79: Gera o nome padronizado para o PDF de Room List:
+    [CIDADE-UF DD-MM-AAAA] - ROOM LIST NOME DA BANDA.pdf
+
+    Exemplo:
+    [ITAITÉ-BA 24-09-2026] - ROOM LIST DANNIEL VIEIRA.pdf
+    """
+    import re
+    import unicodedata
+
+    show = getattr(room_list, 'show', None)
+    band = getattr(room_list, 'band', None)
+
+    # 1. Cidade e UF
+    city_uf_parts = []
+    if show and show.city:
+        city_raw = show.city.strip()
+        # Normalizar barras para hífen caso venha 'Itaité / BA' ou 'Itaité/BA'
+        city_raw = re.sub(r'\s*/\s*', '-', city_raw)
+        # Substituir múltiplos espaços ou hífens redundantes
+        city_raw = re.sub(r'\s*-\s*', '-', city_raw)
+        if city_raw:
+            city_uf_parts.append(city_raw)
+    elif getattr(room_list, 'city', None):
+        city_raw = room_list.city.strip()
+        city_raw = re.sub(r'\s*/\s*', '-', city_raw)
+        city_raw = re.sub(r'\s*-\s*', '-', city_raw)
+        if city_raw:
+            city_uf_parts.append(city_raw)
+    else:
+        city_uf_parts.append('SHOW')
+
+    # Se houver campo state no show e não estiver já incluído na cidade
+    if show and getattr(show, 'state', None) and show.state.strip():
+        state_clean = show.state.strip().upper()
+        current_loc = "-".join(city_uf_parts).upper()
+        if not current_loc.endswith(f"-{state_clean}") and not current_loc.endswith(f"/{state_clean}"):
+            city_uf_parts.append(state_clean)
+
+    loc_str = "-".join(city_uf_parts).strip().upper()
+
+    # 2. Data
+    date_str = ""
+    if show and show.date:
+        date_str = show.date.strftime('%d-%m-%Y')
+    elif getattr(room_list, 'check_in', None):
+        date_str = room_list.check_in.strftime('%d-%m-%Y')
+
+    bracket_content = f"{loc_str} {date_str}".strip() if date_str else loc_str
+
+    # 3. Nome da banda
+    band_name = ""
+    if band and band.name:
+        band_name = band.name.strip().upper()
+    elif show and show.band and show.band.name:
+        band_name = show.band.name.strip().upper()
+
+    base_name = f"[{bracket_content}] - ROOM LIST {band_name}".strip()
+    # Limpar caracteres proibidos em sistemas de arquivos (<>:"/\|?*)
+    safe_base = re.sub(r'[<>:"/\\|?*]', '-', base_name)
+    # Remover hífens ou espaços múltiplos
+    safe_base = re.sub(r' +', ' ', safe_base)
+    safe_base = re.sub(r'-+', '-', safe_base).strip()
+
+    if extension:
+        if not extension.startswith('.'):
+            extension = f".{extension}"
+        return f"{safe_base}{extension}"
+    return safe_base
+

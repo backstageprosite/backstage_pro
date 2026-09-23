@@ -434,8 +434,11 @@ def public_room_list_download(request, band_slug, token):
     pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
     
     if not pdf.err:
+        from core.services.room_list_services import get_room_list_pdf_filename
+        filename = get_room_list_pdf_filename(room_list)
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
         response['Cache-Control'] = 'public, max-age=3600'
         return response
     return HttpResponse("Erro ao gerar o PDF.", status=500)
+

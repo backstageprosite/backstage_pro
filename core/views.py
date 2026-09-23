@@ -5704,6 +5704,7 @@ def integrantes_pdf_view(request, band_slug):
 def room_list_preview_view(request, band_slug, pk):
     from core.models import RoomList
     from django.core.exceptions import PermissionDenied
+    from core.services.room_list_services import get_room_list_pdf_filename
 
     try:
         room_list = RoomList.objects.select_related('show', 'band').prefetch_related(
@@ -5716,6 +5717,8 @@ def room_list_preview_view(request, band_slug, pk):
     if not is_produtor and room_list.status == RoomList.StatusChoices.RASCUNHO:
         raise PermissionDenied("Acesso restrito. Room List em rascunho.")
 
+    page_title = get_room_list_pdf_filename(room_list, extension="")
+
     context = {
         'band': request.band,
         'pdf_logo_base64': get_image_base64(request.band.logo),
@@ -5725,6 +5728,7 @@ def room_list_preview_view(request, band_slug, pk):
         'rooms': room_list.rooms.all(),
         'participants': room_list.participants.filter(room__isnull=False),
         'unallocated': room_list.participants.filter(room__isnull=True),
+        'page_title': page_title,
     }
     return render(request, 'core/room_list/room_list_preview.html', context)
 
@@ -5739,6 +5743,7 @@ def room_list_pdf_view(request, band_slug, pk):
     from django.template.loader import render_to_string
     from xhtml2pdf import pisa
     import io
+    from core.services.room_list_services import get_room_list_pdf_filename
 
     try:
         room_list = RoomList.objects.select_related('show', 'band').prefetch_related(
@@ -5765,8 +5770,9 @@ def room_list_pdf_view(request, band_slug, pk):
     result = io.BytesIO()
     pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
     if not pdf.err:
+        filename = get_room_list_pdf_filename(room_list)
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
         response['Cache-Control'] = 'private, no-store'
         return response
     return HttpResponse('Erro ao gerar PDF', status=500)
@@ -5782,6 +5788,7 @@ def room_list_hotel_pdf_view(request, band_slug, pk):
     from django.template.loader import render_to_string
     from xhtml2pdf import pisa
     import io
+    from core.services.room_list_services import get_room_list_pdf_filename
 
     is_produtor = request.user.is_produtor()
     if not is_produtor:
@@ -5811,12 +5818,14 @@ def room_list_hotel_pdf_view(request, band_slug, pk):
     result = io.BytesIO()
     pdf = pisa.pisaDocument(io.BytesIO(html_string.encode("UTF-8")), result)
     if not pdf.err:
+        filename = get_room_list_pdf_filename(room_list)
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        response['Content-Disposition'] = 'inline; filename="room_list.pdf"'
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
         response['Cache-Control'] = 'private, no-store'
         response['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
         return response
     return HttpResponse('Erro ao gerar PDF', status=500)
+
 
 
 @login_required
