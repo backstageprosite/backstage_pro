@@ -76,3 +76,45 @@ class ShowPdfMapLinkTestCase(TestCase):
         self.assertNotIn('<strong>Local:</strong>', content)
         self.assertIn('<strong>Endereço:</strong> Praça Central, S/N', content)
         self.assertNotIn('Abrir no Mapa', content)
+
+    def test_show_detail_with_venue_and_address(self):
+        """Teste 4: Ver Detalhes do Show - Link no Local e não no Endereço"""
+        show = Show.objects.create(
+            band=self.band,
+            title='Show Detalhes Arena',
+            date=datetime.date.today(),
+            venue='Shopping da Bahia',
+            address='Av. Tancredo Neves, 148 - Caminho das Árvores',
+            address_link='https://maps.google.com/?q=ShoppingDaBahia'
+        )
+        url = reverse('show_detail', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+
+        # Link no Local
+        self.assertIn('<strong>Local:</strong> Shopping da Bahia - <a href="https://maps.google.com/?q=ShoppingDaBahia"', content)
+        # Endereço como texto simples
+        self.assertIn('<strong>Endereço:</strong> Av. Tancredo Neves, 148 - Caminho das Árvores', content)
+        endereco_block = content.split('<strong>Endereço:</strong>')[1].split('</li>')[0]
+        self.assertNotIn('Abrir no Mapa', endereco_block)
+        self.assertNotIn('href=', endereco_block)
+
+    def test_show_detail_without_venue_but_with_address_and_link(self):
+        """Teste 5: Ver Detalhes do Show sem Local mas com Link de Mapa"""
+        show = Show.objects.create(
+            band=self.band,
+            title='Show Detalhes Sem Local',
+            date=datetime.date.today(),
+            venue='',
+            address='Rua das Flores, 100',
+            address_link='https://maps.google.com/?q=RuaDasFlores'
+        )
+        url = reverse('show_detail', kwargs={'band_slug': self.band.slug, 'pk': show.id})
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+
+        self.assertIn('<strong>Local:</strong> <a href="https://maps.google.com/?q=RuaDasFlores"', content)
+        self.assertIn('<strong>Endereço:</strong> Rua das Flores, 100', content)
+

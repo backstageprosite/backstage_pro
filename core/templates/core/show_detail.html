@@ -123,20 +123,14 @@
                         <li class="list-group-item bg-transparent text-light border-secondary">
                             <strong>Cidade:</strong> {{ show.city }}
                         </li>
-                        {% if show.venue %}
+                        {% if show.venue or show.address_link %}
                         <li class="list-group-item bg-transparent text-light border-secondary">
-                            <strong>Local:</strong> {{ show.venue }}
+                            {% if show.venue %}<strong>Local:</strong> {{ show.venue }}{% if show.address_link %} - <a href="{{ show.address_link }}" target="_blank" class="text-primary text-decoration-none fw-bold"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa</a>{% endif %}{% else %}<strong>Local:</strong> <a href="{{ show.address_link }}" target="_blank" class="text-primary text-decoration-none fw-bold"><i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa</a>{% endif %}
                         </li>
                         {% endif %}
-                        {% if show.address or show.address_link %}
+                        {% if show.address %}
                         <li class="list-group-item bg-transparent text-light border-secondary">
-                            {% if show.address %}<strong>Endereço:</strong> {{ show.address }}{% endif %}
-                            {% if show.address and show.address_link %} - {% endif %}
-                            {% if show.address_link %}
-                            <a href="{{ show.address_link }}" target="_blank" class="text-primary text-decoration-none fw-bold">
-                                <i class="fa-solid fa-map-location-dot me-1"></i> Abrir no Mapa
-                            </a>
-                            {% endif %}
+                            <strong>Endereço:</strong> {{ show.address }}
                         </li>
                         {% endif %}
                     </ul>
