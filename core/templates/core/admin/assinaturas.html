@@ -167,6 +167,9 @@
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h4 class="page-title"><i class="fa-solid fa-file-contract me-2 text-primary"></i>Assinaturas</h4>
         <div class="d-flex gap-2">
+            <button class="btn btn-outline-dark btn-header-action fw-bold shadow-sm bg-white" data-bs-toggle="modal" data-bs-target="#modalIdentifyCharge">
+                <i class="fa-solid fa-magnifying-glass-dollar me-1 text-primary"></i> Identificar Cobrança Asaas
+            </button>
             <button class="btn btn-primary btn-header-action fw-bold shadow-sm text-white" data-bs-toggle="modal" data-bs-target="#modalChargeBand">
                 <i class="fa-solid fa-file-invoice-dollar me-1"></i> Gerar Cobrança
             </button>
@@ -181,8 +184,8 @@
         <div class="card-body p-3">
             <form method="GET" class="row g-2 align-items-end">
                 <div class="col-6 col-md-3">
-                    <label class="form-label">Buscar Banda</label>
-                    <input type="text" name="q" class="form-control" placeholder="Nome da banda..." value="{{ q|default:'' }}">
+                    <label class="form-label">Buscar Assinatura</label>
+                    <input type="text" name="q" class="form-control" placeholder="Banda, responsável ou ID Asaas..." value="{{ q|default:'' }}">
                 </div>
                 <div class="col-6 col-md-2">
                     <label class="form-label">Condição</label>
@@ -254,6 +257,16 @@
                             <td class="ps-4">
                                 <div class="fw-bold text-dark" style="font-size: 13px;">{{ sub.band.name }}</div>
                                 <div class="small text-muted" style="font-size: 11px;">Início: {{ sub.start_date|date:"d/m/Y"|default:"-" }}</div>
+                                {% if sub.gateway_subscription_id %}
+                                    <div class="mt-1 d-flex align-items-center gap-1">
+                                        <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px; font-weight: normal;" title="ID Assinatura Asaas">
+                                            <i class="fa-solid fa-link me-1 text-primary"></i>{{ sub.gateway_subscription_id }}
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-link text-muted p-0 text-decoration-none" onclick="copyToClipboard('{{ sub.gateway_subscription_id }}', this)" title="Copiar ID Asaas" style="font-size: 11px;">
+                                            <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                    </div>
+                                {% endif %}
                             </td>
                             <td>
                                 <div class="text-muted" style="font-size: 13px;"><i class="fa-solid fa-user-tie me-1"></i>{{ sub.financial_responsible_name|default:"Não informado" }}</div>
@@ -388,7 +401,7 @@
                                                     <span class="text-muted small fw-bold d-block">Condição Comercial</span>
                                                     {% if sub.is_partnership %}
                                                         <span class="badge" style="background-color: #E0CFFC; color: #3D0A91; border: 1px solid #C5A3F8; font-size: 12px;">
-                                                            <i class="fa-solid fa-handshake me-1"></i>Parceria
+                                                             <i class="fa-solid fa-handshake me-1"></i>Parceria
                                                         </span>
                                                     {% else %}
                                                         <span class="badge" style="background-color: #E2E3E5; color: #41464B; border: 1px solid #D3D6D8; font-size: 12px;">
@@ -399,6 +412,33 @@
                                                 <small class="text-muted fst-italic">
                                                     <i class="fa-solid fa-lock me-1"></i>A alteração da condição comercial exige um procedimento específico.
                                                 </small>
+                                            </div>
+
+                                            <!-- Integração Asaas / Rastreabilidade (somente leitura) -->
+                                            <div class="mb-3 p-2 p-md-3 rounded border" style="background-color: #f1f5f9; border-color: #cbd5e1 !important;">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <span class="fw-bold text-dark" style="font-size: 12px;">
+                                                        <i class="fa-solid fa-link me-1 text-primary"></i> Identificação no Gateway Asaas
+                                                    </span>
+                                                    <span class="badge bg-secondary" style="font-size: 10px;">Somente Leitura</span>
+                                                </div>
+                                                <div class="row g-2">
+                                                    <div class="col-12 col-md-7">
+                                                        <label class="form-label text-muted mb-1" style="font-size: 11px;">ID da Assinatura Asaas</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <input type="text" class="form-control font-monospace bg-white" readonly value="{{ sub.gateway_subscription_id|default:'Não integrado' }}" id="subAsaasId_{{ sub.id }}" style="font-size: 12px; font-weight: 600; color: #1e293b;">
+                                                            {% if sub.gateway_subscription_id %}
+                                                            <button class="btn btn-outline-secondary copy-btn" type="button" onclick="copyToClipboard('{{ sub.gateway_subscription_id }}', this)" title="Copiar ID da assinatura">
+                                                                <i class="fa-regular fa-copy"></i>
+                                                            </button>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12 col-md-5">
+                                                        <label class="form-label text-muted mb-1" style="font-size: 11px;">Referência Externa</label>
+                                                        <input type="text" class="form-control form-control-sm font-monospace bg-white" readonly value="{{ sub.gateway_external_reference|default:'-' }}" style="font-size: 12px; color: #475569;">
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <div class="row g-3 mb-3">
@@ -846,6 +886,100 @@
     </div>
 </div>
 
+<!-- Modal Identificar Cobrança Asaas (Somente Leitura) -->
+<div class="modal fade text-start" id="modalIdentifyCharge" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 550px;">
+        <div class="modal-content border-0 shadow" style="border-radius: 14px;">
+            <div class="modal-header border-bottom pb-3">
+                <h5 class="modal-title fw-bold text-dark" style="font-size: 16px;">
+                    <i class="fa-solid fa-magnifying-glass-dollar text-primary me-2"></i>Identificar Cobrança Asaas
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 p-md-4">
+                <p class="text-muted small mb-3">
+                    Informe o ID de uma cobrança gerada no Asaas (<code>pay_...</code>). O sistema consultará a API do gateway, obterá o ID da assinatura de origem e verificará o vínculo único e comprovado no Backstage Pro.
+                </p>
+
+                <form id="formIdentifyCharge" onsubmit="handleIdentifyCharge(event)">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary" style="font-size: 13px;">ID da Cobrança Asaas</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted font-monospace" style="font-size: 13px;">ID</span>
+                            <input type="text" id="inputIdentifyPaymentId" name="payment_id" class="form-control font-monospace" placeholder="pay_0884849202492..." required autocomplete="off" style="font-size: 14px;">
+                            <button type="submit" id="btnSubmitIdentifyCharge" class="btn btn-primary fw-bold px-3">
+                                <i class="fa-solid fa-search me-1"></i> Consultar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Feedback / Spinner -->
+                <div id="identifyLoading" class="text-center py-3 d-none">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    <span class="text-muted small">Consultando gateway Asaas...</span>
+                </div>
+
+                <!-- Resultado Sucesso / Comprovado -->
+                <div id="identifyResultSuccess" class="card border-success mt-3 d-none" style="background-color: #f0fdf4; border-radius: 10px;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-success" style="font-size: 11px;">
+                                <i class="fa-solid fa-circle-check me-1"></i>Vínculo Comprovado
+                            </span>
+                            <span class="text-muted font-monospace" id="resIdentifyPaymentId" style="font-size: 11px;"></span>
+                        </div>
+                        <div class="row g-2 pt-1">
+                            <div class="col-12">
+                                <span class="text-muted small d-block">Banda Vinculada</span>
+                                <h6 class="fw-bold text-dark mb-0" id="resIdentifyBandName" style="font-size: 16px;"></h6>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Plano / Ciclo</span>
+                                <span class="fw-semibold text-dark" id="resIdentifyPlan" style="font-size: 13px;"></span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Status Assinatura</span>
+                                <span class="badge bg-light text-dark border" id="resIdentifyStatus" style="font-size: 12px;"></span>
+                            </div>
+                            <div class="col-12 mt-2 pt-2 border-top">
+                                <span class="text-muted small d-block mb-1">ID da Assinatura Asaas (Origem)</span>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control font-monospace bg-white" readonly id="resIdentifySubId" style="font-size: 12px; font-weight: 600;">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(document.getElementById('resIdentifySubId').value, this)" title="Copiar ID da assinatura">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultado Não Identificado / Erro -->
+                <div id="identifyResultWarning" class="alert alert-warning mt-3 d-none mb-0" style="border-radius: 10px;">
+                    <div class="d-flex align-items-start">
+                        <i class="fa-solid fa-triangle-exclamation text-warning me-2 mt-1 fs-5"></i>
+                        <div>
+                            <div class="fw-bold" style="font-size: 14px;" id="resWarningTitle">Vínculo não identificado</div>
+                            <p class="mb-0 small text-dark mt-1" id="resWarningMessage"></p>
+                            <div id="resWarningSubIdBlock" class="mt-2 pt-2 border-top border-warning-subtle d-none">
+                                <span class="small text-muted d-block mb-1">Assinatura no gateway:</span>
+                                <code class="font-monospace text-dark" id="resWarningSubId"></code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer border-top-0 pt-0 justify-content-end">
+                <button type="button" class="btn btn-light border fw-bold rounded-pill px-4" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     // Dynamic Partnership / Paid toggle in Create Modal
@@ -1233,6 +1367,123 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         }
     });
+
+    // Funcao global para copiar texto para a area de transferencia
+    function copyToClipboard(text, btnElement) {
+        if (!text || text === 'Não integrado' || text === '-') return;
+
+        function updateBtnIcon() {
+            if (btnElement) {
+                const origHtml = btnElement.innerHTML;
+                btnElement.innerHTML = '<i class="fa-solid fa-check text-success"></i>';
+                btnElement.classList.add('text-success');
+                setTimeout(() => {
+                    btnElement.innerHTML = origHtml;
+                    btnElement.classList.remove('text-success');
+                }, 1800);
+            }
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                updateBtnIcon();
+            }).catch(() => {
+                fallbackCopySimple(text);
+                updateBtnIcon();
+            });
+        } else {
+            fallbackCopySimple(text);
+            updateBtnIcon();
+        }
+    }
+
+    function fallbackCopySimple(text) {
+        const temp = document.createElement('input');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+            document.execCommand('copy');
+        } catch (e) {}
+        document.body.removeChild(temp);
+    }
+
+    // Consulta somente de leitura: Identificar Cobranca Asaas
+    function handleIdentifyCharge(event) {
+        event.preventDefault();
+
+        const inputId = document.getElementById('inputIdentifyPaymentId');
+        const paymentId = (inputId.value || '').trim();
+        const btnSubmit = document.getElementById('btnSubmitIdentifyCharge');
+        const loadingBox = document.getElementById('identifyLoading');
+        const successBox = document.getElementById('identifyResultSuccess');
+        const warningBox = document.getElementById('identifyResultWarning');
+        const warningTitle = document.getElementById('resWarningTitle');
+        const warningMsg = document.getElementById('resWarningMessage');
+        const warningSubBlock = document.getElementById('resWarningSubIdBlock');
+        const warningSubId = document.getElementById('resWarningSubId');
+
+        // Reset
+        successBox.classList.add('d-none');
+        warningBox.classList.add('d-none');
+        warningSubBlock.classList.add('d-none');
+
+        if (!paymentId) return;
+
+        const origHtml = btnSubmit.innerHTML;
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        loadingBox.classList.remove('d-none');
+
+        const csrfToken = document.querySelector('#formIdentifyCharge [name=csrfmiddlewaretoken]').value;
+
+        const formData = new FormData();
+        formData.append('payment_id', paymentId);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        fetch("{% url 'admin_painel:assinaturas_identificar_cobranca' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(async resp => {
+            const data = await resp.json().catch(() => ({}));
+            return { status: resp.status, data: data };
+        })
+        .then(({ status, data }) => {
+            loadingBox.classList.add('d-none');
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = origHtml;
+
+            if (data.ok && data.status === 'Comprovado') {
+                document.getElementById('resIdentifyPaymentId').textContent = data.payment_id;
+                document.getElementById('resIdentifyBandName').textContent = data.band.name;
+                document.getElementById('resIdentifyPlan').textContent = `${data.subscription.plan_name} (${data.subscription.billing_cycle}) - R$ ${data.subscription.contracted_value}`;
+                document.getElementById('resIdentifyStatus').textContent = data.subscription.status === 'ATIVO' ? 'Ativa' : 'Suspensa';
+                document.getElementById('resIdentifySubId').value = data.subscription_id;
+                successBox.classList.remove('d-none');
+            } else {
+                warningTitle.textContent = data.status || 'Vínculo não identificado';
+                warningMsg.textContent = data.error || data.message || 'Não foi possível comprovar o vínculo desta cobrança com uma banda local.';
+                if (data.subscription_id) {
+                    warningSubId.textContent = data.subscription_id;
+                    warningSubBlock.classList.remove('d-none');
+                }
+                warningBox.classList.remove('d-none');
+            }
+        })
+        .catch(err => {
+            loadingBox.classList.add('d-none');
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = origHtml;
+
+            warningTitle.textContent = 'Erro na consulta';
+            warningMsg.textContent = err.message || 'Erro ao conectar com o servidor.';
+            warningBox.classList.remove('d-none');
+        });
+    }
     </script>
 
 {% endblock %}
