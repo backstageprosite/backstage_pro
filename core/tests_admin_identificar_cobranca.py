@@ -226,3 +226,100 @@ class IdentificarCobrancaAsaasAdminTests(TestCase):
         subs3 = list(resp3.context['assinaturas'])
         self.assertEqual(len(subs3), 1)
         self.assertEqual(subs3[0].band.name, 'Ruan Vitor Vaqueirinho')
+
+    @patch('core.services.payments.asaas.client.AsaasClient.get_payments_by_subscription')
+    def test_05_identifica_cobranca_por_numero_da_fatura_exato(self, mock_get_sub_payments):
+        """
+        Ao informar o número da fatura (ex: '91758949' ou '917589949'), o endpoint consulta
+        as cobranças de cada uma das assinaturas Asaas, compara invoiceNumber exatamente e
+        identifica a banda única comprovada.
+        """
+        self.client.force_login(self.admin)
+        url = reverse('admin_painel:assinaturas_identificar_cobranca')
+
+        # Mock das 3 assinaturas retornando cobranças distintas com invoiceNumber
+        def side_effect(sub_id, limit=50, fetch_all=True):
+            if sub_id == 'sub_luisinho_111':
+                return [{
+                    'id': 'pay_luisinho_991',
+                    'subscription': 'sub_luisinho_111',
+                    'invoiceNumber': '917589949',
+                    'status': 'CONFIRMED',
+                    'value': 49.90
+                }]
+            elif sub_id == 'sub_ph10_222':
+                return [{
+                    'id': 'pay_ph10_992',
+                    'subscription': 'sub_ph10_222',
+                    'invoiceNumber': '917582370',
+                    'status': 'CONFIRMED',
+                    'value': 49.90
+                }]
+            elif sub_id == 'sub_ruan_333':
+                return [{
+                    'id': 'pay_ruan_993',
+                    'subscription': 'sub_ruan_333',
+                    'invoiceNumber': '917578101',
+                    'status': 'CONFIRMED',
+                    'value': 49.90
+                }]
+            return []
+
+        mock_get_sub_payments.side_effect = side_effect
+
+        # Consulta pela fatura do Luisinho
+        resp = self.client.post(url, {'payment_id': '917589949'})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['ok'])
+        self.assertEqual(data['status'], 'Comprovado')
+        self.assertEqual(data['band']['name'], 'Luisinho Vaqueiro')
+        self.assertEqual(data['payment_id'], 'pay_luisinho_991')
+        self.assertEqual(data['subscription_id'], 'sub_luisinho_111')
+        self.assertEqual(data['invoice_number'], '917589949')
+
+        # Consulta pela fatura da Ph10
+        resp_ph = self.client.post(url, {'payment_id': '917582370'})
+        self.assertEqual(resp_ph.status_code, 200)
+        data_ph = resp_ph.json()
+        self.assertTrue(data_ph['ok'])
+        self.assertEqual(data_ph['status'], 'Comprovado')
+        self.assertEqual(data_ph['band']['name'], 'Ph10')
+        self.assertEqual(data_ph['payment_id'], 'pay_ph10_992')
+        self.assertEqual(data_ph['subscription_id'], 'sub_ph10_222')
+
+        # Consulta por fatura inexistente
+        resp_none = self.client.post(url, {'payment_id': '999999999'})
+        self.assertEqual(resp_none.status_code, 200)
+        data_none = resp_none.json()
+        self.assertFalse(data_none['ok'])
+        self.assertEqual(data_none['status'], 'Vínculo não identificado')
+
+    @patch('core.services.payments.asaas.client.AsaasClient.get_payments_by_subscription')
+    def test_06_ver_cobrancas_banda_asaas(self, mock_get_sub_payments):
+        """
+        Endpoint 'Ver cobranças Asaas' retorna a lista de cobranças com ID e número da fatura.
+        """
+        self.client.force_login(self.admin)
+        url = reverse('admin_painel:assinaturas_ver_cobrancas_asaas', kwargs={'subscription_id': self.sub_luisinho.id})
+
+        mock_get_sub_payments.return_value = [
+            {
+                'id': 'pay_luisinho_991',
+                'subscription': 'sub_luisinho_111',
+                'invoiceNumber': '917589949',
+                'value': 49.90,
+                'status': 'CONFIRMED',
+                'dueDate': '2026-09-23',
+                'invoiceUrl': 'https://www.asaas.com/i/pay_luisinho_991'
+            }
+        ]
+
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['ok'])
+        self.assertEqual(data['band_name'], 'Luisinho Vaqueiro')
+        self.assertEqual(data['total_payments'], 1)
+        self.assertEqual(data['payments'][0]['invoice_number'], '917589949')
+        self.assertEqual(data['payments'][0]['id'], 'pay_luisinho_991')

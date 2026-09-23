@@ -1390,29 +1390,22 @@ def admin_assinatura_cancel(request, pk):
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')
 def admin_identificar_cobranca_asaas(request):
     """
-    Consulta somente de leitura para identificar uma cobranca Asaas (pay_...)
-    e localizar de forma comprovada e unica a Banda e Assinatura correspondente.
-    Nao altera dados locais e nao faz mutacoes na API Asaas.
+    Consulta somente de leitura para identificar uma cobrança Asaas por ID (pay_...)
+    ou pelo número da fatura (invoiceNumber) e localizar de forma comprovada e única
+    a Banda e Assinatura correspondente.
+    Não altera dados locais e não faz mutações na API Asaas.
     """
     if request.method not in ('GET', 'POST'):
         return JsonResponse({'ok': False, 'error': 'Método não permitido.'}, status=405)
 
-    payment_id = request.POST.get('payment_id') or request.GET.get('payment_id') or ''
-    payment_id = payment_id.strip()
+    raw_query = request.POST.get('payment_id') or request.GET.get('payment_id') or ''
+    query_str = raw_query.strip()
 
-    if not payment_id:
+    if not query_str:
         return JsonResponse({
             'ok': False,
             'status': 'Vínculo não identificado',
-            'error': 'Informe o ID da cobrança (ex: pay_...).'
-        }, status=400)
-
-    # Validar formato basico do ID de cobranca Asaas
-    if not (payment_id.startswith('pay_') or payment_id.startswith('PAY_')):
-        return JsonResponse({
-            'ok': False,
-            'status': 'Vínculo não identificado',
-            'error': 'ID de cobrança inválido. Cobranças Asaas iniciam com "pay_".'
+            'error': 'Informe o ID da cobrança (pay_...) ou o número da fatura.'
         }, status=400)
 
     from core.services.payments.asaas.client import AsaasClient
@@ -1425,77 +1418,247 @@ def admin_identificar_cobranca_asaas(request):
             'error': 'Integração Asaas não configurada neste ambiente.'
         }, status=400)
 
-    payment_info = client.get_payment(payment_id)
-    if not payment_info or not isinstance(payment_info, dict):
-        return JsonResponse({
-            'ok': False,
-            'status': 'Vínculo não identificado',
-            'payment_id': payment_id,
-            'subscription_id': None,
-            'message': 'Cobrança não encontrada no gateway Asaas para o ambiente configurado.'
-        })
+    # Caso 1: ID direto de cobrança Asaas (inicia com pay_ ou PAY_)
+    if query_str.startswith('pay_') or query_str.startswith('PAY_'):
+        payment_info = client.get_payment(query_str)
+        if not payment_info or not isinstance(payment_info, dict):
+            return JsonResponse({
+                'ok': False,
+                'status': 'Vínculo não identificado',
+                'payment_id': query_str,
+                'subscription_id': None,
+                'invoice_number': None,
+                'message': 'Cobrança não encontrada no gateway Asaas para o ambiente configurado.'
+            })
 
-    sub_id = payment_info.get('subscription')
-    customer_id = payment_info.get('customer')
-    ext_ref = payment_info.get('externalReference')
+        sub_id = payment_info.get('subscription')
+        customer_id = payment_info.get('customer')
+        payment_id = payment_info.get('id', query_str)
+        invoice_number = payment_info.get('invoiceNumber')
+        payment_status = payment_info.get('status')
 
-    if not sub_id:
-        return JsonResponse({
-            'ok': False,
-            'status': 'Vínculo não identificado',
-            'payment_id': payment_id,
-            'subscription_id': None,
-            'customer_id': customer_id,
-            'external_reference': ext_ref,
-            'message': 'Esta cobrança existe no Asaas, porém não possui assinatura de origem (cobrança avulsa ou parcelamento).'
-        })
+        if not sub_id:
+            return JsonResponse({
+                'ok': False,
+                'status': 'Vínculo não identificado',
+                'payment_id': payment_id,
+                'subscription_id': None,
+                'invoice_number': invoice_number,
+                'customer_id': customer_id,
+                'message': 'Esta cobrança existe no Asaas, porém não possui assinatura de origem (cobrança avulsa ou parcelamento).'
+            })
 
-    # Buscar BandSubscription unica comprovada pelo gateway_subscription_id
-    matching_subs = BandSubscription.objects.filter(
-        is_deleted=False,
-        gateway_subscription_id=sub_id
-    ).select_related('band')
+        matching_subs = BandSubscription.objects.filter(
+            is_deleted=False,
+            gateway_subscription_id=sub_id
+        ).select_related('band')
 
-    if matching_subs.count() == 1:
-        subscription = matching_subs.first()
-        band = subscription.band
+        if matching_subs.count() == 1:
+            subscription = matching_subs.first()
+            # Validar consistência do customer se cadastrado na assinatura local
+            if subscription.gateway_customer_id and customer_id and subscription.gateway_customer_id != customer_id:
+                return JsonResponse({
+                    'ok': False,
+                    'status': 'Ambíguo',
+                    'payment_id': payment_id,
+                    'subscription_id': sub_id,
+                    'invoice_number': invoice_number,
+                    'message': 'O ID do cliente (customer) no Asaas diverge do cliente registrado na assinatura local.'
+                })
+
+            band = subscription.band
+            return JsonResponse({
+                'ok': True,
+                'status': 'Comprovado',
+                'payment_id': payment_id,
+                'subscription_id': sub_id,
+                'invoice_number': invoice_number,
+                'payment_status': payment_status,
+                'band': {
+                    'id': band.id,
+                    'name': band.name,
+                    'slug': getattr(band, 'slug', '')
+                },
+                'subscription': {
+                    'id': subscription.id,
+                    'plan_name': subscription.plan_name or subscription.get_billing_cycle_display(),
+                    'billing_cycle': subscription.billing_cycle,
+                    'status': subscription.status,
+                    'contracted_value': str(subscription.contracted_value),
+                    'next_due_date': subscription.next_due_date.strftime('%d/%m/%Y') if subscription.next_due_date else None,
+                    'external_reference': subscription.gateway_external_reference or ''
+                }
+            })
+        elif matching_subs.count() > 1:
+            return JsonResponse({
+                'ok': False,
+                'status': 'Ambíguo',
+                'payment_id': payment_id,
+                'subscription_id': sub_id,
+                'invoice_number': invoice_number,
+                'message': 'Mais de uma assinatura no sistema possui o mesmo ID de assinatura Asaas. Não foi possível garantir vínculo único.'
+            })
+        else:
+            return JsonResponse({
+                'ok': False,
+                'status': 'Vínculo não identificado',
+                'payment_id': payment_id,
+                'subscription_id': sub_id,
+                'invoice_number': invoice_number,
+                'message': f'A cobrança pertence à assinatura Asaas {sub_id}, mas nenhuma banda local está vinculada a este ID.'
+            })
+
+    # Caso 2: Número de fatura (invoiceNumber)
+    # Busca sob demanda e somente por GET /v3/subscriptions/{gateway_subscription_id}/payments
+    # em todas as assinaturas locais ativas com gateway_subscription_id configurado.
+    active_subs = list(
+        BandSubscription.objects.filter(
+            is_deleted=False
+        ).exclude(
+            gateway_subscription_id__isnull=True
+        ).exclude(
+            gateway_subscription_id=''
+        ).select_related('band')
+    )
+
+    matches = []
+
+    for sub in active_subs:
+        sub_id = sub.gateway_subscription_id
+        # Consulta pagamentos da assinatura considerando paginação completa
+        payments = client.get_payments_by_subscription(sub_id, limit=50, fetch_all=True)
+        for p in payments:
+            p_invoice = str(p.get('invoiceNumber') or '').strip()
+            # Se invoiceNumber não veio na listagem da assinatura, recupera a cobrança individual
+            if not p_invoice and p.get('id'):
+                individual_p = client.get_payment(p['id'])
+                if individual_p and isinstance(individual_p, dict):
+                    p_invoice = str(individual_p.get('invoiceNumber') or '').strip()
+                    p = individual_p
+
+            if p_invoice == query_str:
+                p_customer = p.get('customer')
+                p_sub = p.get('subscription')
+                # Confirmar correspondência exata de subscription
+                if p_sub != sub_id:
+                    continue
+                # Se houver customer registrado na assinatura local, confirmar correspondência exata
+                if sub.gateway_customer_id and p_customer and sub.gateway_customer_id != p_customer:
+                    continue
+
+                matches.append({
+                    'payment': p,
+                    'subscription': sub,
+                    'band': sub.band
+                })
+
+    if len(matches) == 1:
+        match = matches[0]
+        matched_payment = match['payment']
+        matched_sub = match['subscription']
+        matched_band = match['band']
         return JsonResponse({
             'ok': True,
             'status': 'Comprovado',
-            'payment_id': payment_id,
-            'subscription_id': sub_id,
+            'payment_id': matched_payment.get('id'),
+            'subscription_id': matched_sub.gateway_subscription_id,
+            'invoice_number': matched_payment.get('invoiceNumber') or query_str,
+            'payment_status': matched_payment.get('status'),
             'band': {
-                'id': band.id,
-                'name': band.name,
-                'slug': getattr(band, 'slug', '')
+                'id': matched_band.id,
+                'name': matched_band.name,
+                'slug': getattr(matched_band, 'slug', '')
             },
             'subscription': {
-                'id': subscription.id,
-                'plan_name': subscription.plan_name or subscription.get_billing_cycle_display(),
-                'billing_cycle': subscription.billing_cycle,
-                'status': subscription.status,
-                'contracted_value': str(subscription.contracted_value),
-                'next_due_date': subscription.next_due_date.strftime('%d/%m/%Y') if subscription.next_due_date else None,
-                'external_reference': subscription.gateway_external_reference or ''
+                'id': matched_sub.id,
+                'plan_name': matched_sub.plan_name or matched_sub.get_billing_cycle_display(),
+                'billing_cycle': matched_sub.billing_cycle,
+                'status': matched_sub.status,
+                'contracted_value': str(matched_sub.contracted_value),
+                'next_due_date': matched_sub.next_due_date.strftime('%d/%m/%Y') if matched_sub.next_due_date else None,
+                'external_reference': matched_sub.gateway_external_reference or ''
             }
         })
-    elif matching_subs.count() > 1:
-        # Ambiguidade - nunca supor vinculo
+    elif len(matches) > 1:
         return JsonResponse({
             'ok': False,
-            'status': 'Vínculo não identificado',
-            'payment_id': payment_id,
-            'subscription_id': sub_id,
-            'message': 'Mais de uma assinatura no sistema possui o mesmo ID de assinatura Asaas. Não foi possível garantir vínculo único.'
+            'status': 'Ambíguo',
+            'invoice_number': query_str,
+            'matches_count': len(matches),
+            'message': f'A fatura {query_str} foi encontrada em múltiplas assinaturas. Não foi possível garantir vínculo único.'
         })
     else:
         return JsonResponse({
             'ok': False,
             'status': 'Vínculo não identificado',
-            'payment_id': payment_id,
-            'subscription_id': sub_id,
-            'message': f'A cobrança pertence à assinatura Asaas {sub_id}, mas nenhuma banda local está vinculada a este ID.'
+            'invoice_number': query_str,
+            'message': f'Fatura {query_str} não encontrada em nenhuma assinatura ativa consultada no Asaas.'
         })
+
+
+@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+def admin_ver_cobrancas_banda_asaas(request, subscription_id):
+    """
+    Consulta sob demanda e somente por GET as cobranças da assinatura Asaas de uma banda.
+    Retorna a lista de cobranças com payment_id, invoiceNumber, valor, vencimento e status.
+    Não altera nem cancela cobranças ou assinaturas.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'ok': False, 'error': 'Método não permitido.'}, status=405)
+
+    subscription = get_object_or_404(
+        BandSubscription.objects.select_related('band'),
+        id=subscription_id,
+        is_deleted=False
+    )
+
+    gateway_sub_id = subscription.gateway_subscription_id
+    if not gateway_sub_id:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Esta banda não possui ID de assinatura no Asaas cadastrado.'
+        }, status=400)
+
+    from core.services.payments.asaas.client import AsaasClient
+    client = AsaasClient()
+
+    if not client.config.api_key:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Integração Asaas não configurada neste ambiente.'
+        }, status=400)
+
+    payments = client.get_payments_by_subscription(gateway_sub_id, limit=50, fetch_all=True)
+
+    items = []
+    for p in payments:
+        inv_num = p.get('invoiceNumber')
+        p_id = p.get('id')
+        if not inv_num and p_id:
+            ind_p = client.get_payment(p_id)
+            if ind_p and isinstance(ind_p, dict):
+                inv_num = ind_p.get('invoiceNumber')
+                p = ind_p
+
+        items.append({
+            'id': p.get('id'),
+            'invoice_number': inv_num or '-',
+            'value': str(p.get('value', '')),
+            'status': p.get('status', '-'),
+            'due_date': p.get('dueDate', '-'),
+            'payment_date': p.get('paymentDate') or p.get('clientPaymentDate') or '-',
+            'billing_type': p.get('billingType', '-'),
+            'invoice_url': p.get('invoiceUrl') or ''
+        })
+
+    return JsonResponse({
+        'ok': True,
+        'band_name': subscription.band.name,
+        'gateway_subscription_id': gateway_sub_id,
+        'gateway_customer_id': subscription.gateway_customer_id,
+        'total_payments': len(items),
+        'payments': items
+    })
 
 
 @user_passes_test(is_admin_geral, login_url='/admin-master/login/')

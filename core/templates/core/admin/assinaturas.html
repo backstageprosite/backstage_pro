@@ -258,12 +258,15 @@
                                 <div class="fw-bold text-dark" style="font-size: 13px;">{{ sub.band.name }}</div>
                                 <div class="small text-muted" style="font-size: 11px;">Início: {{ sub.start_date|date:"d/m/Y"|default:"-" }}</div>
                                 {% if sub.gateway_subscription_id %}
-                                    <div class="mt-1 d-flex align-items-center gap-1">
+                                    <div class="mt-1 d-flex align-items-center gap-1 flex-wrap">
                                         <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px; font-weight: normal;" title="ID Assinatura Asaas">
                                             <i class="fa-solid fa-link me-1 text-primary"></i>{{ sub.gateway_subscription_id }}
                                         </span>
                                         <button type="button" class="btn btn-sm btn-link text-muted p-0 text-decoration-none" onclick="copyToClipboard('{{ sub.gateway_subscription_id }}', this)" title="Copiar ID Asaas" style="font-size: 11px;">
                                             <i class="fa-regular fa-copy"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold text-decoration-none ms-1" onclick="abrirVerCobrancasAsaas({{ sub.id }}, '{{ sub.band.name|escapejs }}', '{{ sub.gateway_subscription_id }}')" style="font-size: 10px; border-radius: 4px; height: 20px; line-height: 18px;" title="Ver cobranças no Asaas">
+                                            <i class="fa-solid fa-receipt me-1"></i>Ver cobranças Asaas
                                         </button>
                                     </div>
                                 {% endif %}
@@ -341,6 +344,13 @@
                                                 <i class="fa-solid fa-{% if sub.status == 'ATIVO' %}ban{% else %}check{% endif %} me-2"></i> {% if sub.status == 'ATIVO' %}Desativar{% else %}Ativar{% endif %}
                                             </button>
                                         </li>
+                                        {% if sub.gateway_subscription_id %}
+                                        <li>
+                                            <button class="dropdown-item py-2 fw-medium text-primary" type="button" onclick="abrirVerCobrancasAsaas({{ sub.id }}, '{{ sub.band.name|escapejs }}', '{{ sub.gateway_subscription_id }}')">
+                                                <i class="fa-solid fa-receipt text-primary me-2"></i>Ver cobranças Asaas
+                                            </button>
+                                        </li>
+                                        {% endif %}
                                         <li>
                                             <button class="dropdown-item py-2 fw-medium" type="button" data-bs-toggle="modal" data-bs-target="#modalEditSub{{ sub.id }}">
                                                 <i class="fa-solid fa-pen-to-square text-primary me-2"></i>Editar
@@ -898,16 +908,16 @@
             </div>
             <div class="modal-body p-3 p-md-4">
                 <p class="text-muted small mb-3">
-                    Informe o ID de uma cobrança gerada no Asaas (<code>pay_...</code>). O sistema consultará a API do gateway, obterá o ID da assinatura de origem e verificará o vínculo único e comprovado no Backstage Pro.
+                    Informe o <strong>ID da cobrança</strong> (<code>pay_...</code>) ou o <strong>número da fatura</strong> (ex: <code>91758949</code>). O sistema consultará a API do gateway de forma somente leitura, verificará o vínculo único e comprovado no Backstage Pro e confirmará a correspondência exata de assinatura e cliente.
                 </p>
 
                 <form id="formIdentifyCharge" onsubmit="handleIdentifyCharge(event)">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label class="form-label fw-semibold text-secondary" style="font-size: 13px;">ID da Cobrança Asaas</label>
+                        <label class="form-label fw-semibold text-secondary" style="font-size: 13px;">ID da Cobrança ou Número da Fatura</label>
                         <div class="input-group">
-                            <span class="input-group-text bg-light text-muted font-monospace" style="font-size: 13px;">ID</span>
-                            <input type="text" id="inputIdentifyPaymentId" name="payment_id" class="form-control font-monospace" placeholder="pay_0884849202492..." required autocomplete="off" style="font-size: 14px;">
+                            <span class="input-group-text bg-light text-muted font-monospace" style="font-size: 13px;"><i class="fa-solid fa-barcode"></i></span>
+                            <input type="text" id="inputIdentifyPaymentId" name="payment_id" class="form-control font-monospace" placeholder="pay_... ou número da fatura" required autocomplete="off" style="font-size: 14px;">
                             <button type="submit" id="btnSubmitIdentifyCharge" class="btn btn-primary fw-bold px-3">
                                 <i class="fa-solid fa-search me-1"></i> Consultar
                             </button>
@@ -934,6 +944,14 @@
                             <div class="col-12">
                                 <span class="text-muted small d-block">Banda Vinculada</span>
                                 <h6 class="fw-bold text-dark mb-0" id="resIdentifyBandName" style="font-size: 16px;"></h6>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Número da Fatura</span>
+                                <span class="fw-bold font-monospace text-primary" id="resIdentifyInvoiceNumber" style="font-size: 13px;"></span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Status Cobrança</span>
+                                <span class="badge bg-secondary" id="resIdentifyPaymentStatus" style="font-size: 11px;"></span>
                             </div>
                             <div class="col-6">
                                 <span class="text-muted small d-block">Plano / Ciclo</span>
@@ -971,6 +989,61 @@
                     </div>
                 </div>
 
+            </div>
+            <div class="modal-footer border-top-0 pt-0 justify-content-end">
+                <button type="button" class="btn btn-light border fw-bold rounded-pill px-4" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ver Cobranças Asaas da Banda (Somente Leitura) -->
+<div class="modal fade text-start" id="modalVerCobrancasAsaas" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 750px;">
+        <div class="modal-content border-0 shadow" style="border-radius: 14px;">
+            <div class="modal-header border-bottom pb-3">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark mb-0" style="font-size: 16px;">
+                        <i class="fa-solid fa-receipt text-primary me-2"></i>Cobranças Asaas — <span id="verCobrancasBandName"></span>
+                    </h5>
+                    <div class="small text-muted font-monospace mt-1" id="verCobrancasSubInfo"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 p-md-4">
+                <!-- Spinner -->
+                <div id="verCobrancasLoading" class="text-center py-4">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                    <span class="text-muted small">Consultando cobranças da assinatura no Asaas...</span>
+                </div>
+
+                <!-- Tabela de Cobranças -->
+                <div id="verCobrancasContent" class="d-none">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12.5px;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nº da Fatura</th>
+                                    <th>ID Cobrança (pay_)</th>
+                                    <th>Valor</th>
+                                    <th>Vencimento</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Fatura Asaas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="verCobrancasTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="verCobrancasVazio" class="text-center py-4 text-muted small d-none">
+                        Nenhuma cobrança retornada pelo Asaas para esta assinatura.
+                    </div>
+                </div>
+
+                <!-- Mensagem de Erro -->
+                <div id="verCobrancasError" class="alert alert-danger d-none mb-0 mt-2">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i> <span id="verCobrancasErrorMsg"></span>
+                </div>
             </div>
             <div class="modal-footer border-top-0 pt-0 justify-content-end">
                 <button type="button" class="btn btn-light border fw-bold rounded-pill px-4" data-bs-dismiss="modal" style="height: 34px; font-size: 13px;">Fechar</button>
@@ -1458,8 +1531,10 @@ document.addEventListener("DOMContentLoaded", function() {
             btnSubmit.innerHTML = origHtml;
 
             if (data.ok && data.status === 'Comprovado') {
-                document.getElementById('resIdentifyPaymentId').textContent = data.payment_id;
+                document.getElementById('resIdentifyPaymentId').textContent = data.payment_id || '-';
                 document.getElementById('resIdentifyBandName').textContent = data.band.name;
+                document.getElementById('resIdentifyInvoiceNumber').textContent = data.invoice_number ? '#' + data.invoice_number : '-';
+                document.getElementById('resIdentifyPaymentStatus').textContent = data.payment_status || '-';
                 document.getElementById('resIdentifyPlan').textContent = `${data.subscription.plan_name} (${data.subscription.billing_cycle}) - R$ ${data.subscription.contracted_value}`;
                 document.getElementById('resIdentifyStatus').textContent = data.subscription.status === 'ATIVO' ? 'Ativa' : 'Suspensa';
                 document.getElementById('resIdentifySubId').value = data.subscription_id;
@@ -1482,6 +1557,83 @@ document.addEventListener("DOMContentLoaded", function() {
             warningTitle.textContent = 'Erro na consulta';
             warningMsg.textContent = err.message || 'Erro ao conectar com o servidor.';
             warningBox.classList.remove('d-none');
+        });
+    }
+
+    // Consulta somente de leitura: Ver Cobranças Asaas da Banda
+    function abrirVerCobrancasAsaas(subId, bandName, gatewaySubId) {
+        document.getElementById('verCobrancasBandName').textContent = bandName;
+        document.getElementById('verCobrancasSubInfo').textContent = `Assinatura Asaas: ${gatewaySubId}`;
+        
+        const loadingBox = document.getElementById('verCobrancasLoading');
+        const contentBox = document.getElementById('verCobrancasContent');
+        const tableBody = document.getElementById('verCobrancasTableBody');
+        const vazioBox = document.getElementById('verCobrancasVazio');
+        const errorBox = document.getElementById('verCobrancasError');
+        const errorMsg = document.getElementById('verCobrancasErrorMsg');
+
+        loadingBox.classList.remove('d-none');
+        contentBox.classList.add('d-none');
+        errorBox.classList.add('d-none');
+        vazioBox.classList.add('d-none');
+        tableBody.innerHTML = '';
+
+        const modalEl = document.getElementById('modalVerCobrancasAsaas');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+
+        const url = `/admin-master/assinaturas/${subId}/cobrancas-asaas/`;
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(async resp => {
+            const data = await resp.json().catch(() => ({}));
+            return { status: resp.status, data: data };
+        })
+        .then(({ status, data }) => {
+            loadingBox.classList.add('d-none');
+
+            if (data.ok) {
+                contentBox.classList.remove('d-none');
+                const payments = data.payments || [];
+                if (payments.length === 0) {
+                    vazioBox.classList.remove('d-none');
+                } else {
+                    tableBody.innerHTML = payments.map(p => `
+                        <tr>
+                            <td class="font-monospace fw-bold text-primary">${p.invoice_number}</td>
+                            <td class="font-monospace text-dark">
+                                ${p.id}
+                                <button type="button" class="btn btn-link text-muted p-0 ms-1" onclick="copyToClipboard('${p.id}', this)" title="Copiar ID">
+                                    <i class="fa-regular fa-copy" style="font-size: 11px;"></i>
+                                </button>
+                            </td>
+                            <td class="fw-semibold">R$ ${p.value}</td>
+                            <td>${p.due_date}</td>
+                            <td>
+                                <span class="badge ${p.status === 'CONFIRMED' || p.status === 'RECEIVED' ? 'bg-success' : (p.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary')}" style="font-size: 10px;">
+                                    ${p.status}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                ${p.invoice_url ? `<a href="${p.invoice_url}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 11px;"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Abrir</a>` : '-'}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } else {
+                errorMsg.textContent = data.error || 'Erro ao carregar cobranças do Asaas.';
+                errorBox.classList.remove('d-none');
+            }
+        })
+        .catch(err => {
+            loadingBox.classList.add('d-none');
+            errorMsg.textContent = err.message || 'Erro na comunicação com o servidor.';
+            errorBox.classList.remove('d-none');
         });
     }
     </script>

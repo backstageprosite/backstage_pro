@@ -149,23 +149,35 @@ class AsaasClient:
             logger.warning("Falha na consulta de assinatura %s no Asaas: %s", subscription_id, str(e))
             return None
 
-    def get_payments_by_subscription(self, subscription_id: str) -> List[Dict[str, Any]]:
+    def get_payments_by_subscription(self, subscription_id: str, limit: int = 50, fetch_all: bool = True) -> List[Dict[str, Any]]:
         """
-        Consulta pagamentos vinculados a uma assinatura no Asaas.
+        Consulta pagamentos vinculados a uma assinatura no Asaas via GET /v3/subscriptions/{id}/payments.
+        Suporta paginação (offset e limit) e permite buscar todas as páginas quando fetch_all=True.
         """
         if not subscription_id or not self.config.api_key:
             return []
 
         encoded_id = urllib.parse.quote(str(subscription_id))
-        url = f"{self.base_url}/subscriptions/{encoded_id}/payments"
-        req = urllib.request.Request(url, headers=self.get_headers())
-        try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                data = json.loads(resp.read().decode('utf-8'))
-                return data.get('data', [])
-        except Exception as e:
-            logger.warning("Falha na consulta de pagamentos da assinatura %s no Asaas: %s", subscription_id, str(e))
-            return []
+        all_payments: List[Dict[str, Any]] = []
+        offset = 0
+
+        while True:
+            url = f"{self.base_url}/subscriptions/{encoded_id}/payments?offset={offset}&limit={limit}"
+            req = urllib.request.Request(url, headers=self.get_headers())
+            try:
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = json.loads(resp.read().decode('utf-8'))
+                    items = data.get('data', [])
+                    all_payments.extend(items)
+                    has_more = data.get('hasMore', False)
+                    if not fetch_all or not has_more or not items:
+                        break
+                    offset += limit
+            except Exception as e:
+                logger.warning("Falha na consulta de pagamentos da assinatura %s no Asaas: %s", subscription_id, str(e))
+                break
+
+        return all_payments
 
     def cancel_subscription(self, subscription_id: str) -> Tuple[bool, Dict[str, Any]]:
         """
