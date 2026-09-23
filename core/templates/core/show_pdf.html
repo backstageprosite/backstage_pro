@@ -234,14 +234,14 @@
                             </li>
                             <!-- Linha 4: Passagem de Som -->
                             <li class="list-group-item pdf-top-row">
-                                <div>
+                                <div class="text-schedule-soundcheck" style="color: #b58100 !important; font-weight: 600; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                                     <strong>Passagem de Som:</strong> Início: {{ show.soundcheck_time|time:"H:i"|default:"-" }} | Final: {{ show.soundcheck_end_time|time:"H:i"|default:"-" }}
                                 </div>
                             </li>
                             <!-- Linha 5: Show -->
                             <li class="list-group-item pdf-top-row">
-                                <div>
-                                    <strong>Show:</strong> Início: {{ show.show_time|time:"H:i"|default:"-" }} | Final: {{ show.show_end_time|time:"H:i"|default:"-" }} | Tempo: {{ show.duration_formatted|default:show.duration|default:"-" }}
+                                <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    <span class="text-schedule-show-start" style="color: #198754 !important; font-weight: 600;"><strong>Show:</strong> Início: {{ show.show_time|time:"H:i"|default:"-" }}</span> | <span class="text-schedule-show-end" style="color: #dc3545 !important; font-weight: 600;">Final: {{ show.show_end_time|time:"H:i"|default:"-" }}</span> | <span>Tempo: {{ show.duration_formatted|default:show.duration|default:"-" }}</span>
                                 </div>
                             </li>
                         </ul>

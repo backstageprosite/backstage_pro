@@ -86,12 +86,19 @@ class ShowPdfLayoutCronogramaLogisticaTests(TestCase):
         self.assertIn('<strong>Cidade / Local:</strong> Itaíté/BA · Praça Pública · <a href="https://maps.google.com/?q=PracaPublicaItaite"', content)
         self.assertIn('<strong>Endereço:</strong> Praça Pública', content)
 
-        # 2. Cronograma (5 linhas com redação exata)
+        # 2. Cronograma (5 linhas com redação exata e cores)
         self.assertIn('<strong>Saída:</strong> 10:30 · Pituba Ville · <a href="https://maps.google.com/?q=PitubaVille"', content)
         self.assertIn('<strong>Distância:</strong> 390km | <strong>Tempo de Desloc.:</strong> 7:30h', content)
         self.assertIn('<strong>Chegada prevista:</strong> 18:00 · Itaíté/BA', content)
+        # Linha 4: Passagem de Som (amarelo)
+        self.assertIn('class="text-schedule-soundcheck"', content)
         self.assertIn('<strong>Passagem de Som:</strong> Início: 20:00 | Final: 22:00', content)
-        self.assertIn('<strong>Show:</strong> Início: 22:00 | Final: 23:30 | Tempo: 1:30', content)
+        # Linha 5: Show (Início verde, Final vermelho)
+        self.assertIn('class="text-schedule-show-start"', content)
+        self.assertIn('<strong>Show:</strong> Início: 22:00', content)
+        self.assertIn('class="text-schedule-show-end"', content)
+        self.assertIn('Final: 23:30', content)
+        self.assertIn('Tempo: 1:30', content)
 
         # 3. Links de mapa distintos
         self.assertIn('href="https://maps.google.com/?q=PitubaVille"', content)
