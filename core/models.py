@@ -138,6 +138,18 @@ class Band(models.Model):
         """Retorna o pedido de contratação mais recente associado à banda."""
         return self.signup_orders.order_by('-created_at').first()
 
+    def get_active_empresarios(self):
+        """
+        BP-PEND-82: Retorna QuerySet de usuários que são empresários ativos desta banda,
+        seja via UserBandMembership ativo com role='EMPRESARIO' e user ativo,
+        seja via fallback legado (user.band=self, user.role='EMPRESARIO', is_active=True).
+        """
+        from django.db.models import Q
+        return User.objects.filter(
+            Q(band_memberships__band=self, band_memberships__is_active=True, band_memberships__role='EMPRESARIO', is_active=True) |
+            Q(band=self, role='EMPRESARIO', is_active=True)
+        ).distinct()
+
     def __str__(self):
         return self.name
 
@@ -243,6 +255,28 @@ class User(AbstractUser):
         if band:
             return self.is_produtor_for_band(band)
         return self.role in ['PRODUTOR', 'EMPRESARIO']
+
+    def is_empresario_for_band(self, band=None):
+        """
+        BP-PEND-82: Verifica se o usuário possui perfil de EMPRESARIO para a banda fornecida.
+        Superusuários possuem acesso total como empresário.
+        """
+        if self.is_superuser:
+            return True
+        role = self.get_role_for_band(band) if band else self.role
+        return role == 'EMPRESARIO'
+
+    def is_empresario(self, band=None):
+        """
+        BP-PEND-82: Atalho para verificar se o usuário é EMPRESARIO.
+        Se band for informada, verifica no contexto da banda.
+        Caso contrário, avalia se possui role global EMPRESARIO ou é superuser.
+        """
+        if self.is_superuser:
+            return True
+        if band:
+            return self.is_empresario_for_band(band)
+        return self.role == 'EMPRESARIO'
 
     def clean(self):
         super().clean()
@@ -547,6 +581,7 @@ class FinancialReceipt(models.Model):
     category = models.CharField(max_length=100, blank=True, null=True, verbose_name='Categoria')
     value = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor (R$)')
     file = models.FileField(validators=[validate_file_size_and_type], upload_to=receipt_upload_path, verbose_name='Arquivo / Comprovante')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_receipts', verbose_name='Criado por')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

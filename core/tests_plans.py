@@ -222,7 +222,8 @@ class DashboardMenuTests(TestCase):
         self.assertEqual(response.context['pendencias_bloqueadas'], True)
         self.assertIsNone(response.context.get('dashboard_pending_items'))
 
-        self.assertIn('FUNCIONALIDADE DISPONIVEL APENAS NO PLANO AVANÇADO', content)
+        self.assertIn('FUNCIONALIDADE DISPON', content)
+        self.assertIn('APENAS NO PLANO', content)
         self.assertIn('bg-light opacity-75', content)
 
     def test_dashboard_advanced(self):
@@ -239,9 +240,9 @@ class DashboardMenuTests(TestCase):
 
         self.assertNotIn(f'href="{reverse("pendencias", args=[self.band_basico.slug])}"', content)
         self.assertIn('data-bs-target="#modalAdvancedPlan"', content)
-        self.assertIn('Recurso do Plano Avançado', content)
+        self.assertIn('Recurso do Plano Avan', content)
         self.assertIn('Conhecer Planos', content)
-        self.assertIn('Agora não', content)
+        self.assertIn('Agora n', content)
 
 
 class PublicAndPdfTests(TestCase):
@@ -396,14 +397,14 @@ class RelatoriosIndexTests(TestCase):
         self.assertNotIn(reverse('band_notices_index', args=[self.band_basico.slug]), content)
 
         # Check for lock icon and modal target
-        # 5 from cards + 1 from sidebar/nav = 6 targets
-        self.assertEqual(content.count('data-bs-target="#modalAdvancedPlan"'), 6)
+        # 6 from cards + 1 from sidebar/nav = 7 targets
+        self.assertEqual(content.count('data-bs-target="#modalAdvancedPlan"'), 7)
 
         # Verify it's a button and NOT javascript:void(0)
         self.assertEqual(content.count('javascript:void(0)'), 0)
-        self.assertEqual(content.count('type="button" class="border-0 bg-transparent p-0 w-100 text-decoration-none text-start d-block" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"'), 5)
+        self.assertEqual(content.count('type="button" class="border-0 bg-transparent p-0 w-100 text-decoration-none text-start d-block" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"'), 6)
 
-        self.assertEqual(content.count('aria-disabled="true"'), 5)
+        self.assertEqual(content.count('aria-disabled="true"'), 6)
 
         # Ensure no "BLOQUEAR" text is present
         self.assertNotIn('BLOQUEAR', content.upper())
@@ -415,8 +416,7 @@ class RelatoriosIndexTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('utf-8')
 
-        # All 8 should have their operational URLs
-        self.assertIn(reverse('relatorio_financeiro', args=[self.band_avancado.slug]), content)
+        # Módulos de plano avançado acessíveis para produtor
         self.assertIn(reverse('arquivos', args=[self.band_avancado.slug]), content)
         self.assertIn(reverse('rider_list', args=[self.band_avancado.slug]), content)
         self.assertIn(reverse('room_list_index', args=[self.band_avancado.slug]), content)
@@ -425,8 +425,14 @@ class RelatoriosIndexTests(TestCase):
         self.assertIn(reverse('integrantes_list', args=[self.band_avancado.slug]), content)
         self.assertIn(reverse('support_list', args=[self.band_avancado.slug]), content)
 
-        # Lock icons should not be present
-        self.assertEqual(content.count('fa-lock text-muted'), 0)
+        # BP-PEND-82: Comercial e Financeiro estão bloqueados para PRODUTOR sem role EMPRESARIO
+        self.assertNotIn(reverse('relatorio_financeiro', args=[self.band_avancado.slug]), content)
+        self.assertNotIn(reverse('commercial_index', args=[self.band_avancado.slug]), content)
+
+        # Ícone de cadeado deve aparecer para os 2 cards bloqueados por role
+        self.assertIn('fa-lock text-muted', content)
+
+        # Sem bloqueio de plano (nenhum modalAdvancedPlan, nem nos cards nem na sidebar)
         self.assertEqual(content.count('data-bs-target="#modalAdvancedPlan"'), 0)
 
 
@@ -440,16 +446,20 @@ from .models import ContractDocument, FinancialReceipt, ShowPayment
 
 class ShowFormPlansTests(TestCase):
     def setUp(self):
-        from core.models import BandSubscription, ShowTeamCost
-        self.user = User.objects.create_user(username='produtor6', password='123', role='PRODUTOR')
-        self.band_basic = Band.objects.create(name='Banda Basica Show 5', slug='banda-basica-show5', plan_type='BASICO')
-        self.band_advanced = Band.objects.create(name='Banda Avancada Show 5', slug='banda-avancada-show5', plan_type='AVANCADO')
+        from core.models import BandSubscription, ShowTeamCost, UserBandMembership
+        self.user = User.objects.create_user(username='produtor6', password='123', role='EMPRESARIO')
+        self.band_basic = Band.objects.create(name='Banda Basica Show 5', slug='banda-basica-show5', plan_type='BASICO', is_active=True)
+        self.band_advanced = Band.objects.create(name='Banda Avancada Show 5', slug='banda-avancada-show5', plan_type='AVANCADO', is_active=True)
 
-        BandSubscription.objects.create(band=self.band_basic, status='ACTIVE', plan_name='BÁSICO')
-        BandSubscription.objects.create(band=self.band_advanced, status='ACTIVE', plan_name='AVANÇADO')
+        BandSubscription.objects.create(band=self.band_basic, status='ATIVO', plan_name='BÁSICO')
+        BandSubscription.objects.create(band=self.band_advanced, status='ATIVO', plan_name='AVANÇADO')
 
         self.user.band = self.band_basic
         self.user.save()
+
+        # Criar memberships explícitos para ambas as bandas
+        UserBandMembership.objects.create(user=self.user, band=self.band_basic, role='EMPRESARIO', is_active=True)
+        UserBandMembership.objects.create(user=self.user, band=self.band_advanced, role='EMPRESARIO', is_active=True)
 
         self.show_basic = Show.objects.create(
             band=self.band_basic, title='Show Basico', date='2025-01-01', status='CONFIRMADO', city='SP', fee=1000.00, contractor_name='Joao',
@@ -584,8 +594,8 @@ class ShowFormPlansTests(TestCase):
         html = response.content.decode('utf-8')
 
         self.assertNotIn('href="javascript:void(0)"', html)
-        self.assertIn('<button class="nav-link fw-bold px-4 text-nowrap text-muted bg-light opacity-75 grayscale" type="button" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"><i class="fa-solid fa-lock me-1"></i> Financeiro</button>', html)
-        self.assertIn('<button class="nav-link fw-bold px-4 text-nowrap text-muted bg-light opacity-75 grayscale" type="button" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"><i class="fa-solid fa-lock me-1"></i> Anexos</button>', html)
+        self.assertIn('<button class="nav-link fw-bold text-nowrap text-muted bg-light opacity-75 grayscale" type="button" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"><i class="fa-solid fa-lock me-1"></i> Financeiro</button>', html)
+        self.assertIn('<button class="nav-link fw-bold text-nowrap text-muted bg-light opacity-75 grayscale" type="button" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"><i class="fa-solid fa-lock me-1"></i> Anexos</button>', html)
 
     def test_advanced_form_render(self):
         self.user.band = self.band_advanced

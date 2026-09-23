@@ -117,28 +117,30 @@
                 Excluir
             </button>
             {% endif %}
-            {% if is_edit %}
-                {% if band.is_advanced %}
-                    {% if is_linked_commercial %}
-                    <button type="button" class="btn btn-primary btn-header-action fw-bold shadow-sm" id="btnComercialLink" disabled style="cursor: default;">
-                        <i class="fa-solid fa-check me-1"></i> Comercial
-                    </button>
-                    {% else %}
-                    <button type="button" class="btn btn-outline-primary btn-header-action fw-bold shadow-sm" id="btnComercialLink" data-link-url="{% url 'show_link_commercial' band.slug form.instance.id %}">
-                        Comercial
-                    </button>
+            {% if is_empresario %}
+                {% if is_edit %}
+                    {% if band.is_advanced %}
+                        {% if is_linked_commercial %}
+                        <button type="button" class="btn btn-primary btn-header-action fw-bold shadow-sm" id="btnComercialLink" disabled style="cursor: default;">
+                            <i class="fa-solid fa-check me-1"></i> Comercial
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-outline-primary btn-header-action fw-bold shadow-sm" id="btnComercialLink" data-link-url="{% url 'show_link_commercial' band.slug form.instance.id %}">
+                            Comercial
+                        </button>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-            {% else %}
-                {% if band.is_advanced %}
-                    {% if link_commercial %}
-                    <button type="button" class="btn btn-primary btn-header-action fw-bold shadow-sm" id="btnComercialToggle">
-                        <i class="fa-solid fa-check me-1"></i> Comercial
-                    </button>
-                    {% else %}
-                    <button type="button" class="btn btn-outline-primary btn-header-action fw-bold shadow-sm" id="btnComercialToggle">
-                        Comercial
-                    </button>
+                {% else %}
+                    {% if band.is_advanced %}
+                        {% if link_commercial %}
+                        <button type="button" class="btn btn-primary btn-header-action fw-bold shadow-sm" id="btnComercialToggle">
+                            <i class="fa-solid fa-check me-1"></i> Comercial
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-outline-primary btn-header-action fw-bold shadow-sm" id="btnComercialToggle">
+                            Comercial
+                        </button>
+                        {% endif %}
                     {% endif %}
                 {% endif %}
             {% endif %}
@@ -163,6 +165,7 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link fw-bold text-nowrap" id="tecnica-tab" data-bs-toggle="tab" data-bs-target="#tecnica" type="button" role="tab" aria-controls="tecnica" aria-selected="false">Técnica</button>
             </li>
+            {% if is_empresario %}
             <li class="nav-item" role="presentation">
                 {% if band.is_advanced %}
                     <button class="nav-link fw-bold text-nowrap" id="financeiro-tab" data-bs-toggle="tab" data-bs-target="#financeiro" type="button" role="tab" aria-controls="financeiro" aria-selected="false">Financeiro</button>
@@ -170,6 +173,7 @@
                     <button class="nav-link fw-bold text-nowrap text-muted bg-light opacity-75 grayscale" type="button" data-bs-toggle="modal" data-bs-target="#modalAdvancedPlan" aria-disabled="true"><i class="fa-solid fa-lock me-1"></i> Financeiro</button>
                     {% endif %}
             </li>
+            {% endif %}
             <li class="nav-item" role="presentation">
                 {% if band.is_advanced %}
                     <button class="nav-link fw-bold text-nowrap" id="anexos-tab" data-bs-toggle="tab" data-bs-target="#anexos" type="button" role="tab" aria-controls="anexos" aria-selected="false">Anexos</button>
@@ -787,11 +791,11 @@
                     </div>
                 </div>
                 
-                {% if band.is_advanced %}
+                {% if is_empresario and band.is_advanced %}
                 <!-- ABA FINANCEIRO -->
                 <div class="tab-pane fade" id="financeiro" role="tabpanel" aria-labelledby="financeiro-tab">
                     <div class="alert alert-warning mb-3 py-2" style="border-radius: 8px; font-size: 13px;">
-                        <i class="fa-solid fa-lock me-2"></i> Apenas produtores possuem acesso a essas informações
+                        <i class="fa-solid fa-lock me-2"></i> Apenas empresários possuem acesso a essas informações
                     </div>
                     <div class="row g-2">
                         <!-- Linha 1: Contratante e Contato -->

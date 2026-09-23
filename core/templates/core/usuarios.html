@@ -361,7 +361,9 @@
                             <select name="role" class="form-select">
                                 <option value="INTEGRANTE" {% if add_user_form.role.value == 'INTEGRANTE' or not add_user_form.role.value %}selected{% endif %}>Integrante</option>
                                 <option value="PRODUTOR" {% if add_user_form.role.value == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
+                                {% if is_empresario %}
                                 <option value="EMPRESARIO" {% if add_user_form.role.value == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
+                                {% endif %}
                             </select>
                         </div>
                         <div class="col-12 mt-2">
@@ -445,7 +447,9 @@
                             <select name="role" class="form-select">
                                 <option value="INTEGRANTE" {% if usuario.role == 'INTEGRANTE' %}selected{% endif %}>Integrante</option>
                                 <option value="PRODUTOR" {% if usuario.role == 'PRODUTOR' %}selected{% endif %}>Produtor</option>
+                                {% if is_empresario %}
                                 <option value="EMPRESARIO" {% if usuario.role == 'EMPRESARIO' %}selected{% endif %}>Empresário</option>
+                                {% endif %}
                             </select>
                         </div>
                         <div class="col-6 d-flex align-items-end">

@@ -406,6 +406,7 @@
                 </div>
                 <div class="card-body text-break" style="overflow-wrap: anywhere; word-break: break-word;">
                     <div class="row g-3">
+                        {% if is_empresario %}
                         <div class="col-md-6">
                             <h6 class="card-section-title text-danger"><i class="fa-solid fa-file-contract me-1"></i> Dados do Contrato</h6>
                             <ul class="list-unstyled mb-0">
@@ -426,6 +427,7 @@
                                 <li><strong>Status do Pagamento:</strong> {{ show.get_payment_status_display }}</li>
                             </ul>
                         </div>
+                        {% endif %}
                         {% if show.internal_notes %}
                         <div class="col-12 mt-1">
                             <h6 class="card-section-title text-danger"><i class="fa-solid fa-note-sticky me-1"></i> Notas Internas</h6>

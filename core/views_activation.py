@@ -167,15 +167,21 @@ class ActivateAccountView(View):
                         'band': band,
                     })
 
-                # 1. Cria ou ativa UserBandMembership
-                membership, _ = UserBandMembership.objects.get_or_create(
+                # 1. Cria ou ativa UserBandMembership como EMPRESARIO (titular da nova assinatura/banda)
+                membership, created = UserBandMembership.objects.get_or_create(
                     user=authenticated_user,
                     band=band,
-                    defaults={'role': 'PRODUTOR', 'is_active': True}
+                    defaults={'role': 'EMPRESARIO', 'is_active': True}
                 )
+                fields_to_update = []
                 if not membership.is_active:
                     membership.is_active = True
-                    membership.save(update_fields=['is_active'])
+                    fields_to_update.append('is_active')
+                if membership.role != 'EMPRESARIO':
+                    membership.role = 'EMPRESARIO'
+                    fields_to_update.append('role')
+                if fields_to_update:
+                    membership.save(update_fields=fields_to_update)
 
                 # 2. Se o usuário legado estiver com CPF em branco, preenche com responsible_cpf do pedido
                 signup_order = act.signup_order
@@ -297,14 +303,14 @@ class ActivateAccountView(View):
                 if len(raw_cpf) == 11:
                     user_cpf = raw_cpf
 
-            # Criar User como PRODUTOR vinculado à Band
+            # Criar User como EMPRESARIO (titular da assinatura) vinculado à Band
             user = User.objects.create_user(
                 username=username,
                 email=act.email,
                 password=password,
                 band=band,
                 cpf=user_cpf,
-                role='PRODUTOR',
+                role='EMPRESARIO',
                 first_name=act.responsible_name or ''
             )
 
@@ -312,7 +318,7 @@ class ActivateAccountView(View):
             UserBandMembership.objects.get_or_create(
                 user=user,
                 band=band,
-                defaults={'role': 'PRODUTOR', 'is_active': True}
+                defaults={'role': 'EMPRESARIO', 'is_active': True}
             )
 
             # Vincular usuário inicial ao SignupOrder

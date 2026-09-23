@@ -365,7 +365,9 @@
                         {% render_notifications_bell %}
                         <span class="text-dark me-2 me-md-3 fw-medium text-truncate" style="max-width: 150px;">
                             <i class="fa-regular fa-circle-user text-primary me-1"></i> <span class="d-none d-md-inline">Olá, </span>{{ user.first_name|default:user.username }}
-                            {% if user.is_produtor %}
+                            {% if user.is_empresario %}
+                                <span class="badge bg-success ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-briefcase"></i><span class="d-none d-md-inline ms-1">Empresário</span></span>
+                            {% elif user.is_produtor %}
                                 <span class="badge bg-primary ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-crown"></i><span class="d-none d-md-inline ms-1">Produtor</span></span>
                             {% else %}
                                 <span class="badge bg-secondary ms-1" style="font-size: 0.75rem;"><i class="fa-solid fa-guitar"></i><span class="d-none d-md-inline ms-1">Integrante</span></span>
@@ -526,12 +528,12 @@ document.addEventListener("DOMContentLoaded", function() {
             
             if (input.value && !input.value.includes('R$')) {
                 // Parse correctly depending on what's already there
-                // If it already has dots as thousand separators, it might be tricky, but assuming it comes from backend as 50000.00
+                // If it already has dots as thousand separators, it might be tricky, but assuming it comes from backend as a decimal string
                 let raw_val = input.value;
                 if(raw_val.includes(',') && !raw_val.includes('.')) {
                     raw_val = raw_val.replace(',', '.');
                 }
-                // If it has both dot and comma (e.g. 50.000,00) it's already formatted
+                // If it already has both dot and comma (e.g. standard formatted currency) it's already formatted
                 if (!input.value.includes(',') || input.value.split(',')[1].length !== 2) {
                     let val = parseFloat(raw_val);
                     if (!isNaN(val)) {

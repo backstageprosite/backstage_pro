@@ -28,7 +28,7 @@ def get_static_image_base64(relative_path):
         pass
     return ""
 
-from .decorators import advanced_plan_required
+from .decorators import advanced_plan_required, empresario_required
 from django.shortcuts import render, get_object_or_404, redirect
 
 from django.db import transaction, models
@@ -764,62 +764,37 @@ def show_detail(request, band_slug, pk):
 
 
 
-    if request.user.is_produtor():
+    is_emp = request.user.is_superuser or request.user.is_empresario(request.band)
 
+    if is_emp:
         from django.db.models import Sum
 
-
-
         total_custos_logistica = show.receipts.aggregate(total=Sum('value'))['total'] or Decimal('0')
-
         total_custos_equipe = show.team_costs.aggregate(total=Sum('value'))['total'] or Decimal('0')
-
         total_custos = total_custos_logistica + total_custos_equipe
 
-
-
         receita = show.fee or Decimal('0')
-
         resultado_previsto = receita - total_custos
-
         if receita > 0:
-
             margem_prevista = (resultado_previsto / receita) * Decimal('100')
 
-
-
         total_recebido = sum((p.value for p in show.payments.all() if p.status == 'RECEBIDO'), Decimal('0'))
-
         total_pendente = receita - total_recebido
-
         percentual_recebido = (total_recebido / receita) * Decimal('100') if receita > 0 else Decimal('0')
-
         caixa_realizado = total_recebido - total_custos
 
-
-
     context = {
-
         'show': show,
-
         'form': form,
-
         'band': request.band,
-
+        'is_empresario': is_emp,
         'total_custos': total_custos,
-
         'resultado_previsto': resultado_previsto,
-
         'margem_prevista': margem_prevista,
-
-        'total_recebido': total_recebido if request.user.is_produtor() else 0,
-
-        'total_pendente': total_pendente if request.user.is_produtor() else 0,
-
-        'percentual_recebido': percentual_recebido if request.user.is_produtor() else 0,
-
-        'caixa_realizado': caixa_realizado if request.user.is_produtor() else 0,
-
+        'total_recebido': total_recebido if is_emp else 0,
+        'total_pendente': total_pendente if is_emp else 0,
+        'percentual_recebido': percentual_recebido if is_emp else 0,
+        'caixa_realizado': caixa_realizado if is_emp else 0,
     }
 
     return render(request, 'core/show_detail.html', context)
@@ -830,17 +805,19 @@ def show_detail(request, band_slug, pk):
 
 @login_required
 
+@empresario_required
+
 def show_finance_detail_view(request, band_slug, pk):
 
     """
 
-    Detalhes exclusivamente financeiros de um show especfico.
+    Detalhes exclusivamente financeiros de um show específico.
 
     """
 
-    if not request.user.is_produtor():
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
 
-        return HttpResponseForbidden("Apenas produtores tm acesso ao financeiro do show.")
+        return HttpResponseForbidden("Apenas empresários têm acesso ao financeiro do show.")
 
 
 
@@ -927,6 +904,8 @@ def show_finance_detail_view(request, band_slug, pk):
                 receipt = receipt_form.save(commit=False)
 
                 receipt.show = show
+
+                receipt.created_by = request.user
 
                 receipt.save()
 
@@ -1326,15 +1305,21 @@ def relatorios_index_view(request, band_slug):
         '-created_at'
     ).first()
 
-    context = {'band': band, 'subscription': subscription}
+    is_emp = request.user.is_superuser or request.user.is_empresario(band)
+    context = {
+        'band': band,
+        'subscription': subscription,
+        'is_empresario': is_emp,
+    }
     return render(request, 'core/relatorios_index.html', context)
 
 
 @login_required
 @band_required
+@empresario_required
 def minha_assinatura_view(request, band_slug):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores têm acesso aos relatórios.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários têm acesso à gestão da assinatura.")
 
     band = get_object_or_404(Band, slug=band_slug)
 
@@ -1650,9 +1635,10 @@ def minha_assinatura_view(request, band_slug):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def relatorios_view(request, band_slug):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores têm acesso aos relatórios.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários têm acesso ao relatório financeiro.")
 
     band = get_object_or_404(Band, slug=band_slug)
 
@@ -1751,12 +1737,13 @@ def relatorios_view(request, band_slug):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def general_expense_create_view(request, band_slug):
     """
     BP-PEND-77: Criação de Despesa Geral da Banda sem vínculo com Show.
     """
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores podem cadastrar despesas gerais.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários podem cadastrar despesas gerais da banda.")
 
     band = get_object_or_404(Band, slug=band_slug)
 
@@ -1782,12 +1769,13 @@ def general_expense_create_view(request, band_slug):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def general_expense_edit_view(request, band_slug, pk):
     """
     BP-PEND-77: Edição de Despesa Geral da Banda.
     """
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores podem editar despesas gerais.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários podem editar despesas gerais da banda.")
 
     band = get_object_or_404(Band, slug=band_slug)
     expense = get_object_or_404(BandGeneralExpense, pk=pk, band=band)
@@ -1813,12 +1801,13 @@ def general_expense_edit_view(request, band_slug, pk):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def general_expense_delete_view(request, band_slug, pk):
     """
     BP-PEND-77: Exclusão de Despesa Geral da Banda.
     """
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores podem excluir despesas gerais.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários podem excluir despesas gerais da banda.")
 
     band = get_object_or_404(Band, slug=band_slug)
     expense = get_object_or_404(BandGeneralExpense, pk=pk, band=band)
@@ -2021,13 +2010,14 @@ def _compute_financial_aggregates(band, date_start=None, date_end=None, payment_
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def relatorio_financeiro_graficos_view(request, band_slug):
     """
     BP-PEND-64: Nova página analítica com cards consolidados e gráficos visuais (Chart.js)
     isolada da tabela operacional do Financeiro.
     """
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores têm acesso aos gráficos financeiros.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários têm acesso aos gráficos financeiros.")
 
     band = get_object_or_404(Band, slug=band_slug)
     date_start = request.GET.get('date_start', '')
@@ -2049,13 +2039,14 @@ def relatorio_financeiro_graficos_view(request, band_slug):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def relatorio_financeiro_graficos_export_view(request, band_slug):
     """
     BP-PEND-64: Página otimizada para impressão/PDF da visão de Gráficos e Indicadores,
     com cabeçalho da banda, data/hora de geração, botões de ação e rodapé padrão.
     """
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores têm acesso à exportação dos gráficos.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários têm acesso à exportação dos gráficos.")
 
     band = get_object_or_404(Band, slug=band_slug)
     date_start = request.GET.get('date_start', '')
@@ -2080,6 +2071,7 @@ def relatorio_financeiro_graficos_export_view(request, band_slug):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def relatorio_financeiro_pdf_view(request, band_slug):
     """
     BP-PEND-64: Geração sob demanda de 5 tipos de relatórios financeiros diagramados em PDF:
@@ -2089,8 +2081,8 @@ def relatorio_financeiro_pdf_view(request, band_slug):
     4. Resultado por Show
     5. Fechamento do Período
     """
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores têm acesso aos relatórios em PDF.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários têm acesso aos relatórios em PDF.")
 
     band = get_object_or_404(Band, slug=band_slug)
     date_start = request.GET.get('date_start', '')
@@ -2189,9 +2181,10 @@ def relatorio_financeiro_pdf_view(request, band_slug):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def commercial_index_view(request, band_slug):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores têm acesso ao módulo Comercial.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários têm acesso ao módulo Comercial.")
 
     band = request.band
     from core.models import CommercialProposal, CommercialProposalDocument
@@ -2253,9 +2246,10 @@ def commercial_index_view(request, band_slug):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def commercial_save_view(request, band_slug, pk=None):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores podem cadastrar ou editar orçamentos.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários podem cadastrar ou editar orçamentos.")
 
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
@@ -2334,9 +2328,10 @@ def commercial_save_view(request, band_slug, pk=None):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def commercial_pdf_view(request, band_slug):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores podem exportar a agenda comercial.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários podem exportar a agenda comercial.")
 
     band = request.band
     from core.models import CommercialProposal
@@ -2447,9 +2442,10 @@ def commercial_pdf_view(request, band_slug):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def commercial_delete_view(request, band_slug, pk):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores podem excluir solicitações.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários podem excluir solicitações.")
 
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
@@ -2485,9 +2481,10 @@ def commercial_delete_view(request, band_slug, pk):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def commercial_delete_document_view(request, band_slug, pk, doc_pk):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores podem excluir anexos.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Apenas empresários podem excluir anexos.")
 
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
@@ -2510,9 +2507,10 @@ def commercial_delete_document_view(request, band_slug, pk, doc_pk):
 @login_required
 @band_required
 @advanced_plan_required
+@empresario_required
 def commercial_check_conflict_view(request, band_slug):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Acesso restrito.")
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
+        return HttpResponseForbidden("Acesso restrito ao perfil de Empresário.")
 
     band = request.band
     date_str = request.GET.get('date', '').strip()
@@ -2871,15 +2869,17 @@ def show_create_view(request, band_slug):
 
 
 
+    is_emp = request.user.is_superuser or request.user.is_empresario(band)
+
     if request.method == 'POST':
 
         form = ShowForm(request.POST, request.FILES)
 
-        if not band.is_advanced:
+        if (not band.is_advanced) or (not is_emp):
             for f in ['contractor_name', 'contractor_phone', 'contract_type', 'fee', 'payment_status']:
                 form.fields.pop(f, None)
 
-        link_commercial = request.POST.get('link_commercial') == '1'
+        link_commercial = request.POST.get('link_commercial') == '1' and is_emp
 
         if form.is_valid():
 
@@ -2931,7 +2931,7 @@ def show_create_view(request, band_slug):
                 pass
 
         form = ShowForm(initial=initial_data)
-        if not band.is_advanced:
+        if (not band.is_advanced) or (not is_emp):
             for f in ['contractor_name', 'contractor_phone', 'contract_type', 'fee', 'payment_status']:
                 form.fields.pop(f, None)
     context = {
@@ -2943,6 +2943,8 @@ def show_create_view(request, band_slug):
         'is_edit': False,
 
         'link_commercial': link_commercial,
+
+        'is_empresario': is_emp,
 
     }
 
@@ -2966,7 +2968,7 @@ def show_edit_view(request, band_slug, pk):
 
     show_to_edit = get_object_or_404(Show, pk=pk, band=band)
 
-
+    is_emp = request.user.is_superuser or request.user.is_empresario(band)
 
     if request.method == 'POST':
 
@@ -2986,10 +2988,15 @@ def show_edit_view(request, band_slug, pk):
 
             old_status = show_to_edit.status
 
-
+            # Se não for empresário, preserva os dados comerciais existentes
+            preserved_contractor_name = show_to_edit.contractor_name
+            preserved_contractor_phone = show_to_edit.contractor_phone
+            preserved_contract_type = show_to_edit.contract_type
+            preserved_fee = show_to_edit.fee
+            preserved_payment_status = show_to_edit.payment_status
 
             form = ShowForm(request.POST, request.FILES, instance=show_to_edit)
-            if not band.is_advanced:
+            if (not band.is_advanced) or (not is_emp):
                 for f in ['contractor_name', 'contractor_phone', 'contract_type', 'fee', 'payment_status']:
                     form.fields.pop(f, None)
                 doc_formset = None
@@ -3017,7 +3024,8 @@ def show_edit_view(request, band_slug, pk):
                             'show_to_edit': show_to_edit,
                             'doc_formset': doc_formset,
                             'files_count': files_count,
-                            'files_size_mb': round(files_size / 1024 / 1024, 2) if files_size else 0
+                            'files_size_mb': round(files_size / 1024 / 1024, 2) if files_size else 0,
+                            'is_empresario': is_emp,
                         }
                         return render(request, 'core/show_form.html', context)
 
@@ -3044,7 +3052,16 @@ def show_edit_view(request, band_slug, pk):
 
 
 
-                form.save()
+                saved_show = form.save(commit=False)
+                if not is_emp:
+                    saved_show.contractor_name = preserved_contractor_name
+                    saved_show.contractor_phone = preserved_contractor_phone
+                    saved_show.contract_type = preserved_contract_type
+                    saved_show.fee = preserved_fee
+                    saved_show.payment_status = preserved_payment_status
+                saved_show.save()
+                form.save_m2m()
+
                 if doc_formset:
                     doc_formset.save()
 
@@ -3088,10 +3105,10 @@ def show_edit_view(request, band_slug, pk):
     else:
 
         form = ShowForm(instance=show_to_edit)
-        if not band.is_advanced:
+        if (not band.is_advanced) or (not is_emp):
             for f in ['contractor_name', 'contractor_phone', 'contract_type', 'fee', 'payment_status']:
                 form.fields.pop(f, None)
-        if not band.is_advanced:
+        if (not band.is_advanced) or (not is_emp):
             doc_formset = None
         else:
             doc_formset = ContractDocumentFormSet(instance=show_to_edit)
@@ -3113,6 +3130,7 @@ def show_edit_view(request, band_slug, pk):
         'files_count': files_count,
         'files_size_mb': round(files_size / 1024 / 1024, 2) if files_size else 0,
         'is_linked_commercial': is_linked_commercial,
+        'is_empresario': is_emp,
     }
 
     return render(request, 'core/show_form.html', context)
@@ -3483,11 +3501,13 @@ def usuarios_list_view(request, band_slug):
     band = get_object_or_404(Band, slug=band_slug)
     usuarios = User.objects.filter(band=band).order_by('first_name', 'username')
     whatsapp_access_data = request.session.pop('whatsapp_access_data', None)
+    is_emp = request.user.is_superuser or request.user.is_empresario(band)
 
     context = {
         'band': band,
         'usuarios': usuarios,
         'whatsapp_access_data': whatsapp_access_data,
+        'is_empresario': is_emp,
     }
     return render(request, 'core/usuarios.html', context)
 
@@ -3499,14 +3519,29 @@ def usuario_create_view(request, band_slug):
         return HttpResponseForbidden("Apenas produtores podem adicionar usuários.")
 
     band = get_object_or_404(Band, slug=band_slug)
+    is_emp = request.user.is_superuser or request.user.is_empresario(band)
 
     if request.method == 'POST':
+        # BP-PEND-82: Apenas Empresário ou superusuário pode atribuir o perfil EMPRESARIO
+        requested_role = request.POST.get('role')
+        if requested_role == 'EMPRESARIO' and not is_emp:
+            messages.error(request, "Apenas empresários ou administradores podem atribuir o perfil de Empresário.")
+            return redirect('usuarios_list', band_slug=band.slug)
+
         form = UserForm(request.POST)
         if form.is_valid():
             raw_password = form.cleaned_data.get('password')
             user = form.save(commit=False)
             user.band = band
             user.save()
+
+            # BP-PEND-82: Sincroniza UserBandMembership
+            from core.models import UserBandMembership
+            UserBandMembership.objects.update_or_create(
+                user=user,
+                band=band,
+                defaults={'role': user.role, 'is_active': user.is_active}
+            )
 
             if user.role == 'INTEGRANTE':
                 request.session['whatsapp_access_data'] = build_whatsapp_access_data(
@@ -3526,6 +3561,7 @@ def usuario_create_view(request, band_slug):
                     'add_user_form': form,
                     'open_add_modal': True,
                     'whatsapp_access_data': None,
+                    'is_empresario': is_emp,
                 }
                 return render(request, 'core/usuarios.html', context)
 
@@ -3541,7 +3577,9 @@ def usuario_create_view(request, band_slug):
 
         'form': form,
 
-        'is_edit': False
+        'is_edit': False,
+
+        'is_empresario': is_emp,
 
     }
 
@@ -3565,15 +3603,42 @@ def usuario_edit_view(request, band_slug, pk):
 
     user_to_edit = get_object_or_404(User, pk=pk, band=band)
 
+    is_emp = request.user.is_superuser or request.user.is_empresario(band)
+
 
 
     if request.method == 'POST':
+
+        new_role = request.POST.get('role')
+        new_is_active = bool(request.POST.get('is_active'))
+
+        # BP-PEND-82: Apenas Empresário ou superusuário pode atribuir o perfil EMPRESARIO
+        if new_role == 'EMPRESARIO' and not is_emp:
+            messages.error(request, "Apenas empresários ou administradores podem atribuir o perfil de Empresário.")
+            return redirect('usuarios_list', band_slug=band.slug)
+
+        # BP-PEND-82: Trava do último empresário ativo
+        was_emp = user_to_edit.is_empresario_for_band(band)
+        is_still_emp = (new_role == 'EMPRESARIO' and new_is_active)
+        if was_emp and not is_still_emp:
+            active_emp_count = band.get_active_empresarios().exclude(pk=user_to_edit.pk).count()
+            if active_emp_count == 0:
+                messages.error(request, "A banda não pode ficar sem nenhum Empresário ativo.")
+                return redirect('usuarios_list', band_slug=band.slug)
 
         form = UserEditForm(request.POST, instance=user_to_edit)
 
         if form.is_valid():
 
-            form.save()
+            updated_user = form.save()
+
+            # BP-PEND-82: Sincroniza UserBandMembership
+            from core.models import UserBandMembership
+            UserBandMembership.objects.update_or_create(
+                user=updated_user,
+                band=band,
+                defaults={'role': updated_user.role, 'is_active': updated_user.is_active}
+            )
 
             messages.success(request, "Usuário atualizado com sucesso!")
 
@@ -3593,7 +3658,9 @@ def usuario_edit_view(request, band_slug, pk):
 
         'is_edit': True,
 
-        'user_to_edit': user_to_edit
+        'user_to_edit': user_to_edit,
+
+        'is_empresario': is_emp,
 
     }
 
@@ -3620,6 +3687,13 @@ def usuario_delete_view(request, band_slug, pk):
 
 
     if request.method == 'POST':
+
+        # BP-PEND-82: Trava do último empresário ativo ao excluir
+        if user_to_delete.is_empresario_for_band(band):
+            active_emp_count = band.get_active_empresarios().exclude(pk=user_to_delete.pk).count()
+            if active_emp_count == 0:
+                messages.error(request, "A banda não pode ficar sem nenhum Empresário ativo.")
+                return redirect('usuarios_list', band_slug=band.slug)
 
         user_to_delete.delete()
 
@@ -4044,11 +4118,13 @@ def contato_delete_view(request, band_slug, pk):
 
 @band_required
 
+@empresario_required
+
 def payment_create_view(request, band_slug, show_id):
 
-    if not request.user.is_produtor():
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
 
-        return HttpResponseForbidden("Apenas produtores podem adicionar recebimentos.")
+        return HttpResponseForbidden("Apenas empresários podem adicionar recebimentos.")
 
 
 
@@ -4106,19 +4182,18 @@ def payment_create_view(request, band_slug, show_id):
 
 def receipt_edit_view(request, band_slug, pk):
 
-    if not request.user.is_produtor():
-
-        return HttpResponseForbidden("Apenas produtores podem editar comprovantes.")
-
-
-
     band = get_object_or_404(Band, slug=band_slug)
 
     receipt = get_object_or_404(FinancialReceipt, pk=pk, show__band=band)
 
+    is_emp = request.user.is_superuser or request.user.is_empresario(band)
+
+    # PRODUTOR só pode editar se foi ele quem criou o comprovante
+    if not is_emp:
+        if not request.user.is_produtor(band) or receipt.created_by_id != request.user.id:
+            return HttpResponseForbidden("Você não tem permissão para editar este comprovante.")
+
     show = receipt.show
-
-
 
     if request.method == 'POST':
 
@@ -4133,8 +4208,9 @@ def receipt_edit_view(request, band_slug, pk):
             next_url = request.GET.get('next')
 
             if next_url in ['financeiro', 'show_finance_detail']:
-
-                return redirect('show_finance_detail', band_slug=band.slug, pk=show.id)
+                if is_emp:
+                    return redirect('show_finance_detail', band_slug=band.slug, pk=show.id)
+                return redirect('show_detail', band_slug=band.slug, pk=show.id)
 
             elif next_url == 'arquivos':
 
@@ -4277,11 +4353,13 @@ def document_delete_view(request, band_slug, pk):
 
 @band_required
 
+@empresario_required
+
 def payment_edit_view(request, band_slug, pk):
 
-    if not request.user.is_produtor():
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
 
-        return HttpResponseForbidden("Apenas produtores podem editar recebimentos.")
+        return HttpResponseForbidden("Apenas empresários podem editar recebimentos.")
 
 
 
@@ -4337,11 +4415,13 @@ def payment_edit_view(request, band_slug, pk):
 
 @band_required
 
+@empresario_required
+
 def payment_delete_view(request, band_slug, pk):
 
-    if not request.user.is_produtor():
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
 
-        return HttpResponseForbidden("Apenas produtores podem excluir recebimentos.")
+        return HttpResponseForbidden("Apenas empresários podem excluir recebimentos.")
 
 
 
@@ -4446,13 +4526,11 @@ def manage_team_costs_view(request, band_slug, show_id):
 
 @band_required
 
+@login_required
+
+@band_required
+
 def teamcost_delete_view(request, band_slug, pk):
-
-    if not request.user.is_produtor():
-
-        return HttpResponseForbidden("Apenas produtores podem excluir custos com equipe.")
-
-
 
     band = get_object_or_404(Band, slug=band_slug)
 
@@ -4461,9 +4539,14 @@ def teamcost_delete_view(request, band_slug, pk):
 
     team_cost = get_object_or_404(ShowTeamCost, pk=pk, show__band=band)
 
+    is_emp = request.user.is_superuser or request.user.is_empresario(band)
+
+    # PRODUTOR só pode excluir custos que ele próprio criou
+    if not is_emp:
+        if not request.user.is_produtor(band) or team_cost.created_by_id != request.user.id:
+            return HttpResponseForbidden("Você não tem permissão para excluir este custo de equipe.")
+
     show_id = team_cost.show.id
-
-
 
     if request.method == 'POST':
 
@@ -4472,12 +4555,11 @@ def teamcost_delete_view(request, band_slug, pk):
         messages.success(request, "Custo com equipe removido com sucesso!")
 
         if request.GET.get('next') in ['financeiro', 'show_finance_detail']:
-
-            return redirect('show_finance_detail', band_slug=band.slug, pk=show_id)
+            if is_emp:
+                return redirect('show_finance_detail', band_slug=band.slug, pk=show_id)
+            return redirect('manage_team_costs', band_slug=band.slug, show_id=show_id)
 
         return redirect('manage_team_costs', band_slug=band.slug, show_id=show_id)
-
-
 
     context = {
 
@@ -4490,26 +4572,24 @@ def teamcost_delete_view(request, band_slug, pk):
     return render(request, 'core/teamcost_confirm_delete.html', context)
 
 
-
-
-
 @login_required
 
+@band_required
+
 def teamcost_edit_view(request, band_slug, pk):
-
-    if not request.user.is_produtor():
-
-        return HttpResponseForbidden("Apenas produtores podem editar custos com equipe.")
-
-
 
     band = get_object_or_404(Band, slug=band_slug)
 
     team_cost = get_object_or_404(ShowTeamCost, pk=pk, show__band=band)
 
+    is_emp = request.user.is_superuser or request.user.is_empresario(band)
+
+    # PRODUTOR só pode editar custos que ele próprio criou
+    if not is_emp:
+        if not request.user.is_produtor(band) or team_cost.created_by_id != request.user.id:
+            return HttpResponseForbidden("Você não tem permissão para editar este custo de equipe.")
+
     show = team_cost.show
-
-
 
     if request.method == 'POST':
 
@@ -4524,27 +4604,23 @@ def teamcost_edit_view(request, band_slug, pk):
             next_url = request.GET.get('next')
 
             if next_url in ['financeiro', 'show_finance_detail']:
-
-                return redirect('show_finance_detail', band_slug=band.slug, pk=show.id)
+                if is_emp:
+                    return redirect('show_finance_detail', band_slug=band.slug, pk=show.id)
+                return redirect('manage_team_costs', band_slug=band.slug, show_id=show.id)
 
             return redirect('manage_team_costs', band_slug=band.slug, show_id=show.id)
 
-    return redirect('show_finance_detail', band_slug=band.slug, pk=show.id)
+    if is_emp:
+        return redirect('show_finance_detail', band_slug=band.slug, pk=show.id)
+    return redirect('manage_team_costs', band_slug=band.slug, show_id=show.id)
 
 
 
 
 
 @login_required
-
+@band_required
 def receipt_delete_view(request, band_slug, pk):
-
-    if not request.user.is_produtor():
-
-        return HttpResponseForbidden("Apenas produtores podem excluir comprovantes.")
-
-
-
     band = get_object_or_404(Band, slug=band_slug)
 
     if not band.is_advanced:
@@ -4552,24 +4628,27 @@ def receipt_delete_view(request, band_slug, pk):
 
     receipt = get_object_or_404(FinancialReceipt, pk=pk, show__band=band)
 
+    is_emp = request.user.is_superuser or request.user.is_empresario(band)
+
+    # PRODUTOR só pode excluir comprovante que ele mesmo criou
+    if not is_emp:
+        if not request.user.is_produtor(band) or receipt.created_by_id != request.user.id:
+            return HttpResponseForbidden("Você não tem permissão para excluir este comprovante.")
+
     show_id = receipt.show.id
 
-
-
     if request.method == 'POST':
-
         receipt.delete()
-
         messages.success(request, "Comprovante excluído com sucesso!")
 
         next_url = request.GET.get('next')
 
         if next_url in ['financeiro', 'show_finance_detail']:
-
-            return redirect('show_finance_detail', band_slug=band.slug, pk=show_id)
+            if is_emp:
+                return redirect('show_finance_detail', band_slug=band.slug, pk=show_id)
+            return redirect('show_detail', band_slug=band.slug, pk=show_id)
 
         elif next_url == 'arquivos':
-
             return redirect('arquivos', band_slug=band.slug)
 
         return redirect('shows_edit', band_slug=band.slug, pk=show_id)
