@@ -1598,6 +1598,23 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(({ status, data }) => {
             loadingBox.classList.add('d-none');
 
+            function formatCurrencyBRL(val) {
+                if (val === null || val === undefined || val === '') return '-';
+                const num = parseFloat(String(val).replace(',', '.'));
+                if (isNaN(num)) return `R$ ${val}`;
+                return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            }
+
+            function formatDateBRL(dateStr) {
+                if (!dateStr || dateStr === '-') return '-';
+                const parts = String(dateStr).split('-');
+                if (parts.length === 3 && parts[0].length === 4) {
+                    const [year, month, day] = parts;
+                    return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+                }
+                return dateStr;
+            }
+
             if (data.ok) {
                 contentBox.classList.remove('d-none');
                 const payments = data.payments || [];
@@ -1613,8 +1630,8 @@ document.addEventListener("DOMContentLoaded", function() {
                                     <i class="fa-regular fa-copy" style="font-size: 11px;"></i>
                                 </button>
                             </td>
-                            <td class="fw-semibold">R$ ${p.value}</td>
-                            <td>${p.due_date}</td>
+                            <td class="fw-semibold">${formatCurrencyBRL(p.value)}</td>
+                            <td>${formatDateBRL(p.due_date)}</td>
                             <td>
                                 <span class="badge ${p.status === 'CONFIRMED' || p.status === 'RECEIVED' ? 'bg-success' : (p.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary')}" style="font-size: 10px;">
                                     ${p.status}
