@@ -49,6 +49,8 @@ urlpatterns = [
     
     path('relatorios/', admin_views.AdminRelatoriosView.as_view(), name='relatorios'),
     path('relatorios/financeiro/', admin_views.AdminRelatorioFinanceiroView.as_view(), name='relatorio_financeiro'),
+    path('relatorios/financeiro/bandas/<int:band_id>/cobrancas/', admin_views.admin_band_cobrancas_periodo, name='relatorio_financeiro_banda_cobrancas'),
+    path('relatorios/financeiro/cobrancas/<int:pk>/ajustar-liquido/', admin_views.admin_billing_adjust_net_amount, name='relatorio_financeiro_ajustar_liquido'),
     path('relatorios/financeiro/despesas/nova/', admin_views_expenses.admin_expense_create, name='expense_create'),
     path('relatorios/financeiro/despesas/<int:pk>/editar/', admin_views_expenses.admin_expense_edit, name='expense_edit'),
     path('relatorios/financeiro/despesas/<int:pk>/paga/', admin_views_expenses.admin_expense_mark_paid, name='expense_mark_paid'),

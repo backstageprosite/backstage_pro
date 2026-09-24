@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
+from decimal import Decimal
 import uuid
 import re
 from django.core.management import call_command
@@ -553,6 +554,8 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         from .models import Expense
         expenses = Expense.objects.all()
 
+        from django.db.models.functions import Coalesce
+
         # Applying Filters
         if band_id:
             billings = billings.filter(band_id=band_id)
@@ -566,12 +569,21 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             subs = subs.filter(billing_cycle=cycle)
             billings = billings.filter(subscription__billing_cycle=cycle)
 
-        # Receitas recebidas (Cobranças pagas pela data de pagamento)
+        # Despesas do período filtrado
+        expenses_period = expenses.filter(
+            Q(paid_date__gte=start_date, paid_date__lte=end_date) |
+            Q(paid_date__isnull=True, due_date__gte=start_date, due_date__lte=end_date) |
+            Q(competence_date__gte=start_date, competence_date__lte=end_date)
+        ).distinct()
+
+        # Receitas recebidas (Cobranças pagas pela data de pagamento, considerando valor líquido quando informado)
         recebido = billings.filter(
             status='PAGO',
             paid_date__gte=start_date,
             paid_date__lte=end_date
-        ).aggregate(total=Sum('amount'))['total'] or 0
+        ).aggregate(
+            total=Sum(Coalesce('net_amount', 'amount'))
+        )['total'] or 0
 
         # Despesas pagas
         despesa_paga = expenses.filter(
@@ -580,7 +592,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             paid_date__lte=end_date
         ).aggregate(total=Sum('amount'))['total'] or 0
 
-        # Saldo realizado
+        # Resultado do Período (receitas recebidas líquidas menos despesas pagas)
         saldo_realizado = recebido - despesa_paga
 
         # Valores a receber (Cobranças pendentes ou vencidas no período baseado em due_date)
@@ -588,7 +600,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             Q(status='PENDENTE', due_date__lt=timezone.localdate()) | Q(status='PENDENTE', due_date__gte=start_date, due_date__lte=end_date),
             due_date__gte=start_date,
             due_date__lte=end_date
-        ).aggregate(total=Sum('amount'))['total'] or 0
+        ).aggregate(total=Sum(Coalesce('net_amount', 'amount')))['total'] or 0
 
         # Valores a pagar (Despesas pendentes ou vencidas no período baseado em due_date)
         a_pagar = expenses.filter(
@@ -601,7 +613,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         cobrancas_vencidas = billings.filter(
             status='PENDENTE',
             due_date__lt=today
-        ).aggregate(total=Sum('amount'))['total'] or 0
+        ).aggregate(total=Sum(Coalesce('net_amount', 'amount')))['total'] or 0
 
         # Despesas vencidas
         despesas_vencidas = expenses.filter(
@@ -642,7 +654,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         }
 
         # Gráfico 4: Top Bandas
-        top_bandas = billings.filter(status='PAGO', paid_date__gte=start_date, paid_date__lte=end_date).values('band__name').annotate(total=Sum('amount')).order_by('-total')[:5]
+        top_bandas = billings.filter(status='PAGO', paid_date__gte=start_date, paid_date__lte=end_date).values('band__name').annotate(total=Sum(Coalesce('net_amount', 'amount'))).order_by('-total')[:5]
         top_bandas_labels = []
         top_bandas_data = []
         for tb in top_bandas:
@@ -667,10 +679,10 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
         for band in all_bands:
             band_billings = billings.filter(band=band)
-            rec = band_billings.filter(status='PAGO', paid_date__gte=start_date, paid_date__lte=end_date).aggregate(total=Sum('amount'))['total'] or 0
-            pend = band_billings.filter(status='PENDENTE', due_date__gte=today, due_date__lte=end_date).aggregate(total=Sum('amount'))['total'] or 0
-            fut = band_billings.filter(status='PENDENTE', due_date__gt=today).aggregate(total=Sum('amount'))['total'] or 0
-            atr = band_billings.filter(Q(status='ATRASADO') | Q(status='PENDENTE', due_date__lt=today)).aggregate(total=Sum('amount'))['total'] or 0
+            rec = band_billings.filter(status='PAGO', paid_date__gte=start_date, paid_date__lte=end_date).aggregate(total=Sum(Coalesce('net_amount', 'amount')))['total'] or 0
+            pend = band_billings.filter(status='PENDENTE', due_date__gte=today, due_date__lte=end_date).aggregate(total=Sum(Coalesce('net_amount', 'amount')))['total'] or 0
+            fut = band_billings.filter(status='PENDENTE', due_date__gt=today).aggregate(total=Sum(Coalesce('net_amount', 'amount')))['total'] or 0
+            atr = band_billings.filter(Q(status='ATRASADO') | Q(status='PENDENTE', due_date__lt=today)).aggregate(total=Sum(Coalesce('net_amount', 'amount')))['total'] or 0
 
             band_summaries.append({
                 'band': band,
@@ -688,8 +700,8 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
 
         # Compute KPIs for the template
         kpi_recebido = recebido
-        kpi_pendente = billings.filter(status='PENDENTE', due_date__gte=today, due_date__lte=end_date).aggregate(total=Sum('amount'))['total'] or 0
-        kpi_futuro = billings.filter(status='PENDENTE', due_date__gt=end_date).aggregate(total=Sum('amount'))['total'] or 0
+        kpi_pendente = billings.filter(status='PENDENTE', due_date__gte=today, due_date__lte=end_date).aggregate(total=Sum(Coalesce('net_amount', 'amount')))['total'] or 0
+        kpi_futuro = billings.filter(status='PENDENTE', due_date__gt=end_date).aggregate(total=Sum(Coalesce('net_amount', 'amount')))['total'] or 0
         kpi_atrasado = cobrancas_vencidas
 
         # Context Update
@@ -698,8 +710,8 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'kpi_pendente': kpi_pendente,
             'kpi_futuro': kpi_futuro,
             'kpi_atrasado': kpi_atrasado,
-            'kpi_receita_prevista': despesa_paga, # using this for Despesas
-            'kpi_total_bandas': saldo_realizado, # using this for Valor em Caixa
+            'kpi_receita_prevista': despesa_paga, # Despesas pagas no período
+            'kpi_total_bandas': saldo_realizado, # Resultado do Período (Receitas Líquidas - Despesas Pagas)
 
             'start_date': start_date.strftime('%Y-%m-%d') if isinstance(start_date, datetime.date) else start_date,
             'end_date': end_date.strftime('%Y-%m-%d') if isinstance(end_date, datetime.date) else end_date,
@@ -725,7 +737,9 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'band_summaries': band_summaries,
             'all_bands': Band.objects.filter(subscriptions__is_deleted=False).distinct().order_by('name'),
             'available_plans': BandSubscription.objects.filter(is_deleted=False).values_list('plan_name', flat=True).distinct().order_by('plan_name'),
-            'expenses': expenses.order_by('-due_date'),
+            'billings': billings.select_related('band', 'subscription').order_by('-paid_date', '-due_date', '-created_at'),
+            'expenses': expenses.select_related('created_by', 'updated_by').order_by('-due_date'),
+            'expenses_period': expenses_period.select_related('created_by', 'updated_by').order_by('-due_date', '-created_at'),
         })
 
         from core.admin_views_expenses import ExpenseForm
@@ -1661,7 +1675,129 @@ def admin_ver_cobrancas_banda_asaas(request, subscription_id):
     })
 
 
-@user_passes_test(is_admin_geral, login_url='/admin-master/login/')
+@user_passes_test(is_admin_geral, login_url='/painel/login/')
+def admin_band_cobrancas_periodo(request, band_id):
+    """
+    Retorna a lista de cobranças (BillingRecord) de uma banda específica para o modal
+    'Editar recebido' no relatório financeiro, com cálculo de diferença e auditoria.
+    """
+    if request.method != 'GET':
+        return JsonResponse({'ok': False, 'error': 'Método não permitido.'}, status=405)
+
+    band = get_object_or_404(Band, pk=band_id)
+    records = BillingRecord.objects.filter(
+        band=band,
+        subscription__is_deleted=False
+    ).select_related('subscription', 'net_amount_updated_by').order_by('-due_date')
+
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    if start_date_str and end_date_str:
+        try:
+            s_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            e_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            records = records.filter(
+                Q(paid_date__gte=s_date, paid_date__lte=e_date) |
+                Q(paid_date__isnull=True, due_date__gte=s_date, due_date__lte=e_date)
+            )
+        except ValueError:
+            pass
+
+    cobrancas_data = []
+    for r in records:
+        net_val = r.net_amount if r.net_amount is not None else r.amount
+        diff = r.amount - net_val
+        cobrancas_data.append({
+            'id': r.id,
+            'reference_period': r.reference_period,
+            'amount': str(r.amount),
+            'net_amount': str(r.net_amount) if r.net_amount is not None else '',
+            'difference': str(diff),
+            'status': r.status,
+            'status_display': r.get_status_display(),
+            'due_date': r.due_date.strftime('%d/%m/%Y') if r.due_date else '-',
+            'paid_date': r.paid_date.strftime('%d/%m/%Y') if r.paid_date else '-',
+            'gateway_payment_id': r.gateway_payment_id or '-',
+            'gateway_invoice_url': r.gateway_invoice_url or '',
+            'net_amount_manual': r.net_amount_manual,
+            'net_amount_reason': r.net_amount_reason or '',
+            'net_amount_updated_at': r.net_amount_updated_at.strftime('%d/%m/%Y %H:%M') if r.net_amount_updated_at else '',
+            'net_amount_updated_by': r.net_amount_updated_by.get_full_name() or r.net_amount_updated_by.username if r.net_amount_updated_by else '',
+        })
+
+    return JsonResponse({
+        'ok': True,
+        'band_name': band.name,
+        'band_id': band.id,
+        'cobrancas': cobrancas_data
+    })
+
+
+@user_passes_test(is_admin_geral, login_url='/painel/login/')
+def admin_billing_adjust_net_amount(request, pk):
+    """
+    Permite informar ou atualizar o valor líquido de uma cobrança individualmente,
+    com motivo e histórico da correção. Não altera nem cancela dados no Asaas.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'Método não permitido.'}, status=405)
+
+    record = get_object_or_404(BillingRecord, pk=pk)
+
+    raw_net = request.POST.get('net_amount')
+    reason = request.POST.get('reason', '').strip()
+
+    if raw_net is None or raw_net.strip() == '':
+        # Remover correção manual e restaurar o valor bruto original
+        record.net_amount = None
+        record.net_amount_manual = False
+        record.net_amount_reason = reason or 'Correção manual removida.'
+        record.net_amount_updated_at = timezone.now()
+        record.net_amount_updated_by = request.user if request.user.is_authenticated else None
+        record.save()
+        return JsonResponse({
+            'ok': True,
+            'message': 'Valor líquido restaurado ao valor bruto original.',
+            'amount': str(record.amount),
+            'net_amount': str(record.amount),
+            'difference': '0.00'
+        })
+
+    try:
+        clean_net = raw_net.strip().replace('R$', '').replace(' ', '').replace(',', '.')
+        net_decimal = Decimal(clean_net)
+        if net_decimal < 0:
+            return JsonResponse({'ok': False, 'error': 'O valor líquido não pode ser negativo.'}, status=400)
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'Formato de valor inválido.'}, status=400)
+
+    if not reason:
+        return JsonResponse({'ok': False, 'error': 'Por favor, informe o motivo da correção.'}, status=400)
+
+    record.net_amount = net_decimal
+    record.net_amount_manual = True
+    record.net_amount_reason = reason
+    record.net_amount_updated_at = timezone.now()
+    if request.user.is_authenticated:
+        record.net_amount_updated_by = request.user
+    record.save()
+
+    diff = record.amount - record.net_amount
+
+    return JsonResponse({
+        'ok': True,
+        'message': 'Valor líquido atualizado com sucesso!',
+        'amount': str(record.amount),
+        'net_amount': str(record.net_amount),
+        'difference': str(diff),
+        'reason': record.net_amount_reason,
+        'updated_at': record.net_amount_updated_at.strftime('%d/%m/%Y %H:%M'),
+        'updated_by': record.net_amount_updated_by.get_full_name() or record.net_amount_updated_by.username if record.net_amount_updated_by else ''
+    })
+
+
+@user_passes_test(is_admin_geral, login_url='/painel/login/')
 def admin_cobranca_create(request):
     if request.method == 'POST':
         form = AdminBillingRecordForm(request.POST, request.FILES)

@@ -259,6 +259,8 @@ def reconcile_and_update_billing_record(payload: Dict[str, Any], event_type: str
                 pass
         if inst_num_chk and record.installment_number != inst_num_chk:
             record.installment_number = inst_num_chk
+        # PROTEÇÃO DE INTEGRIDADE: ajustes manuais de valor líquido (net_amount_manual) NUNCA devem ser sobrescritos por webhooks
+        # Os campos net_amount, net_amount_manual, net_amount_reason, net_amount_updated_at, net_amount_updated_by são preservados.
 
     sub = None
     if not record:

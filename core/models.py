@@ -1231,6 +1231,20 @@ class BillingRecord(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_billings', verbose_name='Criado por')
 
+    # Correção manual do valor líquido recebido
+    net_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Valor Líquido Recebido')
+    net_amount_manual = models.BooleanField(default=False, verbose_name='Líquido Ajustado Manualmente?')
+    net_amount_reason = models.TextField(blank=True, null=True, verbose_name='Motivo da Correção do Líquido')
+    net_amount_updated_at = models.DateTimeField(null=True, blank=True, verbose_name='Data/Hora da Correção')
+    net_amount_updated_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='adjusted_billings', verbose_name='Corrigido por')
+
+    @property
+    def effective_amount(self):
+        """Retorna o valor líquido manual se definido, caso contrário o valor bruto cobrado."""
+        if self.net_amount is not None:
+            return self.net_amount
+        return self.amount
+
     class Meta:
         verbose_name = 'Fatura SaaS'
         verbose_name_plural = 'Faturas SaaS'
@@ -2393,6 +2407,8 @@ class Expense(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_expenses', verbose_name='Criado por')
+    updated_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_expenses', verbose_name='Atualizado por')
 
     class Meta:
         verbose_name = 'Despesa Administrativa'
