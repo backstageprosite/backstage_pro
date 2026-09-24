@@ -195,3 +195,134 @@ class FinancialReportImprovementsTest(TestCase):
 
         resp2 = self.client.get(f'/painel/relatorios/financeiro/bandas/{self.band.id}/cobrancas/')
         self.assertEqual(resp2.status_code, 302)
+
+        resp3 = self.client.get('/painel/relatorios/financeiro/despesas/1/comprovante/')
+        self.assertEqual(resp3.status_code, 403)
+
+    def test_quick_period_buttons_calculation_and_year_transition(self):
+        """Valida que os botões rápidos aplicam o período e atualizam start_date e end_date em uma ação"""
+        from unittest.mock import patch
+
+        # Testa com a data fixa de 24/09/2026 exigida
+        fixed_date = datetime.date(2026, 9, 24)
+        with patch('django.utils.timezone.localdate', return_value=fixed_date):
+            # Este mês: 01/09/2026 a 30/09/2026
+            resp = self.client.get('/painel/relatorios/financeiro/?period=this_month')
+            self.assertEqual(resp.context['start_date'], '2026-09-01')
+            self.assertEqual(resp.context['end_date'], '2026-09-30')
+
+            # Mês passado: 01/08/2026 a 31/08/2026
+            resp = self.client.get('/painel/relatorios/financeiro/?period=last_month')
+            self.assertEqual(resp.context['start_date'], '2026-08-01')
+            self.assertEqual(resp.context['end_date'], '2026-08-31')
+
+            # Próx. 30 dias: 24/09/2026 a 23/10/2026 (30 dias incluindo hoje)
+            resp = self.client.get('/painel/relatorios/financeiro/?period=next_30')
+            self.assertEqual(resp.context['start_date'], '2026-09-24')
+            self.assertEqual(resp.context['end_date'], '2026-10-23')
+
+            # Este ano: 01/01/2026 a 31/12/2026
+            resp = self.client.get('/painel/relatorios/financeiro/?period=this_year')
+            self.assertEqual(resp.context['start_date'], '2026-01-01')
+            self.assertEqual(resp.context['end_date'], '2026-12-31')
+
+            # Preservação de outros filtros ao clicar no período rápido mesmo se inputs antigos vierem preenchidos
+            resp = self.client.get('/painel/relatorios/financeiro/?period=last_month&start_date=2026-09-01&end_date=2026-09-30&status=PAGO&cycle=MENSAL')
+            self.assertEqual(resp.context['start_date'], '2026-08-01')
+            self.assertEqual(resp.context['end_date'], '2026-08-31')
+            self.assertEqual(resp.context['status'], 'PAGO')
+            self.assertEqual(resp.context['cycle'], 'MENSAL')
+
+        # Testa virada de ano em 15/01/2027: mês passado deve ser 01/12/2026 a 31/12/2026
+        jan_date = datetime.date(2027, 1, 15)
+        with patch('django.utils.timezone.localdate', return_value=jan_date):
+            resp = self.client.get('/painel/relatorios/financeiro/?period=last_month')
+            self.assertEqual(resp.context['start_date'], '2026-12-01')
+            self.assertEqual(resp.context['end_date'], '2026-12-31')
+
+    def test_billings_period_filtering_coherence(self):
+        """Valida que Faturas Detalhadas e Gráfico de Status contêm apenas faturas do período filtrado"""
+        sep_date = datetime.date(2026, 9, 23)
+        oct_date = datetime.date(2026, 10, 23)
+
+        # 3 bandas com 1 fatura de Setembro (paga) e 1 de Outubro (pendente) cada, totalizando 6 faturas no banco
+        bands_subs = []
+        for i in range(3):
+            b = Band.objects.create(name=f'Banda {i}', slug=f'banda-{i}')
+            s = BandSubscription.objects.create(
+                band=b,
+                plan_name='Profissional',
+                billing_cycle='MENSAL',
+                contracted_value=Decimal('49.90'),
+                commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
+                status='ATIVO',
+                gateway_provider='ASAAS',
+                gateway_subscription_id=f'sub_test_coherence_{i}',
+                gateway_customer_id=f'cus_test_coherence_{i}'
+            )
+            bands_subs.append((b, s))
+
+        for idx, (b, s) in enumerate(bands_subs):
+            BillingRecord.objects.create(
+                subscription=s,
+                band=b,
+                reference_period=f'Setembro/2026 #{idx}',
+                amount=Decimal('49.90'),
+                due_date=sep_date,
+                paid_date=sep_date,
+                status='PAGO',
+                gateway_provider='ASAAS',
+                gateway_payment_id=f'pay_sep_{idx}'
+            )
+            BillingRecord.objects.create(
+                subscription=s,
+                band=b,
+                reference_period=f'Outubro/2026 #{idx}',
+                amount=Decimal('49.90'),
+                due_date=oct_date,
+                status='PENDENTE',
+                gateway_provider='ASAAS',
+                gateway_payment_id=f'pay_oct_{idx}'
+            )
+
+        # Filtrar 01/09/2026 a 30/09/2026: deve conter exatamente as 3 faturas de Setembro e 0 de Outubro
+        resp = self.client.get('/painel/relatorios/financeiro/?start_date=2026-09-01&end_date=2026-09-30')
+        self.assertEqual(resp.status_code, 200)
+        billings_context = list(resp.context['billings'])
+        self.assertEqual(len(billings_context), 3)
+        self.assertTrue(all(b.paid_date == sep_date for b in billings_context))
+
+        # O gráfico de status (chart_pie) deve refletir somente as 3 faturas de Setembro
+        import json
+        pie_data = json.loads(resp.context['chart_pie'])
+        self.assertEqual(pie_data['labels'], ['PAGO'])
+        self.assertEqual(pie_data['data'], [3])
+
+    def test_expense_proof_view_security_and_availability(self):
+        """Valida rota protegida de comprovante de despesa para admin e bloqueio de não-autorizados"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        # Cria despesa com arquivo de comprovante real em memória
+        proof = SimpleUploadedFile("comprovante_hostinger.jpg", b"fake image bytes", content_type="image/jpeg")
+        expense = Expense.objects.create(
+            description='Hostinger Dominio',
+            provider='Hostinger',
+            category='Infraestrutura',
+            amount=Decimal('86.28'),
+            competence_date=datetime.date(2026, 7, 4),
+            due_date=datetime.date(2029, 7, 4),
+            paid_date=datetime.date(2026, 7, 4),
+            status='PAGO',
+            proof_file=proof,
+            created_by=self.admin
+        )
+
+        # Admin geral consegue abrir o comprovante
+        resp = self.client.get(f'/painel/relatorios/financeiro/despesas/{expense.id}/comprovante/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'image/jpeg')
+
+        # Usuário comum é bloqueado
+        self.client.force_login(self.regular_user)
+        resp_forbidden = self.client.get(f'/painel/relatorios/financeiro/despesas/{expense.id}/comprovante/')
+        self.assertIn(resp_forbidden.status_code, [302, 403])

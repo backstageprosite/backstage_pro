@@ -2415,6 +2415,16 @@ class Expense(models.Model):
         verbose_name_plural = 'Despesas Administrativas'
         ordering = ['-due_date', '-created_at']
 
+    @property
+    def proof_file_exists(self):
+        """Verifica se o arquivo de comprovante existe fisicamente no armazenamento."""
+        if not self.proof_file or not self.proof_file.name:
+            return False
+        try:
+            return self.proof_file.storage.exists(self.proof_file.name)
+        except Exception:
+            return False
+
     def __str__(self):
         return f"{self.description} - R$ {self.amount}"
 

@@ -506,9 +506,11 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         import json
+        from calendar import monthrange
+        from django.utils import timezone
         from django.db.models import Sum, Q
 
-        today = datetime.date.today()
+        today = timezone.localdate()
 
         # Filtros
         start_date = self.request.GET.get('start_date')
@@ -519,33 +521,39 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         cycle = self.request.GET.get('cycle')
         period = self.request.GET.get('period')
 
-        if not start_date or not end_date:
+        if period in ['this_month', 'last_month', 'next_30', 'this_year']:
             if period == 'this_month':
                 start_date = today.replace(day=1)
-                end_date = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
+                _, last_day = monthrange(today.year, today.month)
+                end_date = today.replace(day=last_day)
             elif period == 'last_month':
-                last_day_of_prev_month = today.replace(day=1) - datetime.timedelta(days=1)
-                start_date = last_day_of_prev_month.replace(day=1)
-                end_date = last_day_of_prev_month
+                first_this_month = today.replace(day=1)
+                last_prev_month = first_this_month - datetime.timedelta(days=1)
+                start_date = last_prev_month.replace(day=1)
+                end_date = last_prev_month
             elif period == 'next_30':
                 start_date = today
-                end_date = today + datetime.timedelta(days=30)
+                end_date = today + datetime.timedelta(days=29)
             elif period == 'this_year':
                 start_date = today.replace(month=1, day=1)
                 end_date = today.replace(month=12, day=31)
-            else:
-                # Default: this month
-                start_date = today.replace(day=1)
-                end_date = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
+        elif not start_date or not end_date:
+            # Default: this month
+            period = 'this_month'
+            start_date = today.replace(day=1)
+            _, last_day = monthrange(today.year, today.month)
+            end_date = today.replace(day=last_day)
         else:
             try:
                 start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
                 end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
             except ValueError:
+                period = 'this_month'
                 start_date = today.replace(day=1)
-                end_date = (today.replace(day=28) + datetime.timedelta(days=4)).replace(day=1) - datetime.timedelta(days=1)
+                _, last_day = monthrange(today.year, today.month)
+                end_date = today.replace(day=last_day)
 
-                # Base Querysets
+        # Base Querysets
         billings = BillingRecord.objects.filter(subscription__is_deleted=False)
         subs = BandSubscription.objects.filter(
             commercial_condition=BandSubscription.COMMERCIAL_CONDITION_PAID,
@@ -568,6 +576,12 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
         if cycle:
             subs = subs.filter(billing_cycle=cycle)
             billings = billings.filter(subscription__billing_cycle=cycle)
+
+        # Cobranças pertencentes ao período filtrado (Pagas no período OU Pendentes/Atrasadas com vencimento no período)
+        billings_period = billings.filter(
+            Q(paid_date__gte=start_date, paid_date__lte=end_date) |
+            Q(paid_date__isnull=True, due_date__gte=start_date, due_date__lte=end_date)
+        ).distinct()
 
         # Despesas do período filtrado
         expenses_period = expenses.filter(
@@ -627,7 +641,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'data': [float(recebido), float(despesa_paga), float(a_receber), float(a_pagar)]
         }
         
-        status_counts = billings.values('status').annotate(total=Count('id'))
+        status_counts = billings_period.order_by().values('status').annotate(total=Count('id'))
 
         status_labels = []
         status_data = []
@@ -737,7 +751,7 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'band_summaries': band_summaries,
             'all_bands': Band.objects.filter(subscriptions__is_deleted=False).distinct().order_by('name'),
             'available_plans': BandSubscription.objects.filter(is_deleted=False).values_list('plan_name', flat=True).distinct().order_by('plan_name'),
-            'billings': billings.select_related('band', 'subscription').order_by('-paid_date', '-due_date', '-created_at'),
+            'billings': billings_period.select_related('band', 'subscription').order_by('-paid_date', '-due_date', '-created_at'),
             'expenses': expenses.select_related('created_by', 'updated_by').order_by('-due_date'),
             'expenses_period': expenses_period.select_related('created_by', 'updated_by').order_by('-due_date', '-created_at'),
         })

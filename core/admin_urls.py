@@ -1,5 +1,5 @@
 from django.urls import path
-from . import admin_views, pwa_views, admin_views_support, admin_views_expenses, admin_views_database
+from . import admin_views, pwa_views, admin_views_support, admin_views_expenses, admin_views_database, file_views
 
 app_name = 'admin_painel'
 
@@ -55,6 +55,7 @@ urlpatterns = [
     path('relatorios/financeiro/despesas/<int:pk>/editar/', admin_views_expenses.admin_expense_edit, name='expense_edit'),
     path('relatorios/financeiro/despesas/<int:pk>/paga/', admin_views_expenses.admin_expense_mark_paid, name='expense_mark_paid'),
     path('relatorios/financeiro/despesas/<int:pk>/excluir/', admin_views_expenses.admin_expense_delete, name='expense_delete'),
+    path('relatorios/financeiro/despesas/<int:pk>/comprovante/', file_views.admin_expense_proof_view, name='expense_proof'),
     
     path('relatorios/parceiros/', admin_views.AdminPartnerListView.as_view(), name='parceiros'),
     path('relatorios/parceiros/novo/', admin_views.admin_partner_create, name='parceiros_novo'),

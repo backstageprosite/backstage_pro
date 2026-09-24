@@ -374,6 +374,23 @@ def admin_band_logo(request, band_slug):
 
     return response
 
+
+def admin_expense_proof_view(request, pk):
+    """
+    Rota administrativa exclusiva para servir comprovantes de despesas administrativas.
+    Restrita ao Admin Geral.
+    """
+    if not request.user.is_authenticated or not is_admin_geral(request.user):
+        raise PermissionDenied("Acesso exclusivo para Admin Geral.")
+
+    from core.models import Expense
+    expense = get_object_or_404(Expense, pk=pk)
+
+    if not expense.proof_file or not expense.proof_file.name:
+        raise Http404("Esta despesa não possui comprovante cadastrado.")
+
+    return serve_private_file(expense.proof_file, as_attachment=False)
+
 def public_rider_download(request, band_slug, uuid):
     """
     Download público seguro para Rider (sem login) através do UUID.
