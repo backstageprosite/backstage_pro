@@ -326,3 +326,178 @@ class FinancialReportImprovementsTest(TestCase):
         self.client.force_login(self.regular_user)
         resp_forbidden = self.client.get(f'/painel/relatorios/financeiro/despesas/{expense.id}/comprovante/')
         self.assertIn(resp_forbidden.status_code, [302, 403])
+        self.client.force_login(self.admin)
+
+    def test_expense_create_and_edit_brazilian_currency_formats(self):
+        """Valida que valores com vírgula, ponto e separadores de milhar são aceitos e normalizados com Decimal"""
+        from django.urls import reverse
+        self.client.force_login(self.admin)
+        url_create = reverse('admin_painel:expense_create')
+
+        # 1. Cadastro com vírgula '49,90'
+        resp1 = self.client.post(url_create, {
+            'description': 'Licença Software A',
+            'category': 'Sistemas',
+            'amount': '49,90',
+            'competence_date': '2026-09-01',
+            'due_date': '2026-09-10',
+            'status': 'PENDENTE'
+        })
+        self.assertEqual(resp1.status_code, 302)
+        exp1 = Expense.objects.get(description='Licença Software A')
+        self.assertEqual(exp1.amount, Decimal('49.90'))
+        self.assertFalse(bool(exp1.proof_file))
+
+        # 2. Cadastro com ponto '49.90'
+        resp2 = self.client.post(url_create, {
+            'description': 'Licença Software B',
+            'category': 'Sistemas',
+            'amount': '49.90',
+            'competence_date': '2026-09-01',
+            'due_date': '2026-09-11',
+            'status': 'PENDENTE'
+        })
+        self.assertEqual(resp2.status_code, 302)
+        exp2 = Expense.objects.get(description='Licença Software B')
+        self.assertEqual(exp2.amount, Decimal('49.90'))
+
+        # 3. Cadastro com milhar e vírgula '1.234,56'
+        resp3 = self.client.post(url_create, {
+            'description': 'Servidor Cloud Anual',
+            'category': 'Infraestrutura',
+            'amount': '1.234,56',
+            'competence_date': '2026-09-01',
+            'due_date': '2026-09-15',
+            'status': 'PAGO'
+        })
+        self.assertEqual(resp3.status_code, 302)
+        exp3 = Expense.objects.get(description='Servidor Cloud Anual')
+        self.assertEqual(exp3.amount, Decimal('1234.56'))
+
+        # 4. Cadastro com milhar americano '1,234.56'
+        resp4 = self.client.post(url_create, {
+            'description': 'Gateway Setup Fee',
+            'category': 'Taxas',
+            'amount': '1,234.56',
+            'competence_date': '2026-09-01',
+            'due_date': '2026-09-16',
+            'status': 'PAGO'
+        })
+        self.assertEqual(resp4.status_code, 302)
+        exp4 = Expense.objects.get(description='Gateway Setup Fee')
+        self.assertEqual(exp4.amount, Decimal('1234.56'))
+
+        # 5. Edição com formato brasileiro '2.345,67'
+        url_edit1 = reverse('admin_painel:expense_edit', kwargs={'pk': exp1.id})
+        resp_edit = self.client.post(url_edit1, {
+            'description': 'Licença Software A Atualizada',
+            'category': 'Sistemas',
+            'amount': '2.345,67',
+            'competence_date': '2026-09-01',
+            'due_date': '2026-09-10',
+            'status': 'PENDENTE'
+        })
+        self.assertEqual(resp_edit.status_code, 302)
+        exp1.refresh_from_db()
+        self.assertEqual(exp1.description, 'Licença Software A Atualizada')
+        self.assertEqual(exp1.amount, Decimal('2345.67'))
+
+    def test_expense_currency_rejections_and_validation(self):
+        """Valida que entradas inválidas ou ambíguas são rejeitadas sem conversão silenciosa"""
+        from core.admin_views_expenses import parse_brazilian_currency
+        from django import forms
+
+        # Mais de 2 casas decimais -> Rejeita
+        with self.assertRaises(forms.ValidationError):
+            parse_brazilian_currency('49,999')
+        with self.assertRaises(forms.ValidationError):
+            parse_brazilian_currency('49.999')
+
+        # Formato de milhar inconsistente -> Rejeita
+        with self.assertRaises(forms.ValidationError):
+            parse_brazilian_currency('1.23.456,78')
+        with self.assertRaises(forms.ValidationError):
+            parse_brazilian_currency('1,234,56')
+
+        # Letras / caracteres inválidos -> Rejeita
+        with self.assertRaises(forms.ValidationError):
+            parse_brazilian_currency('abc')
+        with self.assertRaises(forms.ValidationError):
+            parse_brazilian_currency('R$')
+
+        # Valor zero ou negativo -> Rejeita
+        with self.assertRaises(forms.ValidationError):
+            parse_brazilian_currency('0,00')
+        with self.assertRaises(forms.ValidationError):
+            parse_brazilian_currency('-50,00')
+
+    def test_expense_proof_preserved_on_edit_without_new_file(self):
+        """Valida que comprovante existente não é apagado quando edição é enviada sem novo arquivo"""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.urls import reverse
+        self.client.force_login(self.admin)
+
+        proof = SimpleUploadedFile("recibo_inicial.pdf", b"%PDF-1.4 initial receipt content", content_type="application/pdf")
+        expense = Expense.objects.create(
+            description='Serviço com Comprovante',
+            category='Infraestrutura',
+            amount=Decimal('150.00'),
+            competence_date=datetime.date(2026, 9, 1),
+            due_date=datetime.date(2026, 9, 10),
+            status='PAGO',
+            proof_file=proof,
+            created_by=self.admin
+        )
+        self.assertTrue(bool(expense.proof_file))
+        old_filename = expense.proof_file.name
+
+        # Envia edição sem o campo de arquivo proof_file
+        url_edit = reverse('admin_painel:expense_edit', kwargs={'pk': expense.id})
+        resp = self.client.post(url_edit, {
+            'description': 'Serviço com Comprovante (Atualizado)',
+            'category': 'Infraestrutura',
+            'amount': '150,00',
+            'competence_date': '2026-09-01',
+            'due_date': '2026-09-10',
+            'status': 'PAGO'
+        })
+        self.assertEqual(resp.status_code, 302)
+
+        expense.refresh_from_db()
+        self.assertEqual(expense.description, 'Serviço com Comprovante (Atualizado)')
+        self.assertTrue(bool(expense.proof_file))
+        self.assertEqual(expense.proof_file.name, old_filename)
+
+    def test_duplicate_expense_detection_with_normalized_amount(self):
+        """Valida que a detecção de duplicata compara pelo valor normalizado Decimal"""
+        from django.urls import reverse
+        self.client.force_login(self.admin)
+
+        # Cria primeira despesa com '49.90'
+        Expense.objects.create(
+            description='Hospedagem Web',
+            category='Infra',
+            amount=Decimal('49.90'),
+            competence_date=datetime.date(2026, 9, 1),
+            due_date=datetime.date(2026, 9, 20),
+            status='PENDENTE',
+            created_by=self.admin
+        )
+
+        # Tenta cadastrar idêntica digitando '49,90'
+        url_create = reverse('admin_painel:expense_create')
+        resp = self.client.post(url_create, {
+            'description': 'Hospedagem Web',
+            'category': 'Infra',
+            'amount': '49,90',
+            'competence_date': '2026-09-01',
+            'due_date': '2026-09-20',
+            'status': 'PENDENTE'
+        }, follow=True)
+
+        self.assertEqual(resp.status_code, 200)
+        messages_list = [str(m) for m in resp.context['messages']]
+        self.assertTrue(any('Já existe um lançamento com a mesma descrição' in m for m in messages_list))
+        # O lançamento legítimo foi registrado (avisa sem impedir)
+        self.assertEqual(Expense.objects.filter(description='Hospedagem Web').count(), 2)
+

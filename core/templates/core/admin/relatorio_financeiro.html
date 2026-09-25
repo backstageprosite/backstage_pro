@@ -170,7 +170,7 @@
                         <label class="form-label">Valor *</label>
                         <div class="input-group">
                             <span class="input-group-text" style="font-size: 14px; min-height: 34px;">R$</span>
-                            <input type="number" step="0.01" name="amount" class="form-control" required>
+                            <input type="text" name="amount" class="form-control" required placeholder="Ex: 49,90 ou 1.234,56">
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -537,7 +537,7 @@
                                         <span class="text-muted opacity-50">-</span>
                                     {% endif %}
                                 </td>
-                                <td class="fw-bold text-danger" style="font-size: 13px;">R$ {{ exp.amount|floatformat:2 }}</td>
+                                <td class="fw-bold text-danger" style="font-size: 13px;">{{ exp.amount|brl_currency }}</td>
                                 <td class="text-center">
                                     {% if exp.status == 'PAGO' %}
                                         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 status-pill">Pago</span>
@@ -572,6 +572,8 @@
                                                     <i class="fa-solid fa-file-excel text-muted" style="font-size: 12px;"></i>
                                                 </button>
                                             {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-light text-muted border px-2 py-1" style="font-size: 11px; font-weight: 500;" title="Nenhum arquivo anexado">Sem comprovante</span>
                                         {% endif %}
                                         <button type="button" class="btn btn-sm btn-outline-secondary btn-actions px-2"
                                                 onclick="abrirModalEditarDespesa('{{ exp.id }}', '{{ exp.description|escapejs }}', '{{ exp.provider|default:''|escapejs }}', '{{ exp.category|escapejs }}', '{{ exp.amount }}', '{{ exp.status }}', '{{ exp.competence_date|date:'Y-m-d' }}', '{{ exp.due_date|date:'Y-m-d' }}', '{{ exp.paid_date|date:'Y-m-d'|default:'' }}', '{{ exp.payment_method|default:''|escapejs }}', '{{ exp.internal_notes|default:''|escapejs }}')"
@@ -743,7 +745,7 @@
                     <label class="form-label">Valor *</label>
                     <div class="input-group">
                         <span class="input-group-text" style="font-size: 14px; min-height: 34px;">R$</span>
-                        <input type="number" step="0.01" name="amount" id="editExpenseAmount" class="form-control" required>
+                        <input type="text" name="amount" id="editExpenseAmount" class="form-control" required placeholder="Ex: 49,90 ou 1.234,56">
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -1016,7 +1018,7 @@ function abrirModalEditarDespesa(id, desc, provider, cat, amt, status, compDate,
     document.getElementById('editExpenseDescription').value = desc || '';
     document.getElementById('editExpenseProvider').value = provider || '';
     document.getElementById('editExpenseCategory').value = cat || '';
-    document.getElementById('editExpenseAmount').value = amt ? amt.replace(',', '.') : '';
+    document.getElementById('editExpenseAmount').value = amt ? amt.replace('.', ',') : '';
     document.getElementById('editExpenseStatus').value = status || 'PENDENTE';
     document.getElementById('editExpenseCompetenceDate').value = compDate || '';
     document.getElementById('editExpenseDueDate').value = dueDate || '';
