@@ -11,7 +11,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView, View
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, Q, Sum, Case, When, Value, IntegerField
 from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket, SystemSettings, UserBandMembership
 from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm, AdminPartnerForm
 from core.views import build_whatsapp_access_data
@@ -753,7 +753,13 @@ class AdminRelatorioFinanceiroView(AdminRequiredMixin, TemplateView):
             'available_plans': BandSubscription.objects.filter(is_deleted=False).values_list('plan_name', flat=True).distinct().order_by('plan_name'),
             'billings': billings_period.select_related('band', 'subscription').order_by('-paid_date', '-due_date', '-created_at'),
             'expenses': expenses.select_related('created_by', 'updated_by').order_by('-due_date'),
-            'expenses_period': expenses_period.select_related('created_by', 'updated_by').order_by('-due_date', '-created_at'),
+            'expenses_period': expenses_period.select_related('created_by', 'updated_by').annotate(
+                is_unpaid=Case(
+                    When(status='PAGO', then=Value(0)),
+                    default=Value(1),
+                    output_field=IntegerField()
+                )
+            ).order_by('is_unpaid', F('paid_date').desc(nulls_last=True), F('due_date').asc(nulls_last=True)),
         })
 
         from core.admin_views_expenses import ExpenseForm

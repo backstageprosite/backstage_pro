@@ -501,3 +501,127 @@ class FinancialReportImprovementsTest(TestCase):
         # O lançamento legítimo foi registrado (avisa sem impedir)
         self.assertEqual(Expense.objects.filter(description='Hospedagem Web').count(), 2)
 
+    def test_expense_ordering_by_paid_date_and_due_date(self):
+        """
+        Valida que no Relatório Financeiro > Despesas Detalhadas:
+        - Despesas pagas são ordenadas pela data de pagamento (paid_date), da mais recente para a mais antiga.
+          Exemplo:
+            #1 — 21/09/2026;
+            #3 — 22/08/2026;
+            #2 — 04/07/2026.
+        - Despesas não pagas têm o vencimento mais próximo primeiro (due_date ASC).
+        - Despesas com IDs e datas fora de sequência testam que a ordenação não depende de ID ou updated_at.
+        - Totais e filtros permanecem preservados.
+        """
+        self.client.force_login(self.admin)
+        # Limpar despesas pré-existentes para teste isolado
+        Expense.objects.all().delete()
+
+        # Criar despesas com IDs e datas fora de sequência:
+        # ID 1: paga em 21/09/2026
+        # ID 2: paga em 04/07/2026
+        # ID 3: paga em 22/08/2026
+        e1 = Expense.objects.create(
+            id=1,
+            description='Despesa 1',
+            category='Infra',
+            amount=Decimal('50.00'),
+            competence_date=datetime.date(2026, 9, 1),
+            due_date=datetime.date(2026, 9, 25),
+            status='PAGO',
+            paid_date=datetime.date(2026, 9, 21),
+            created_by=self.admin
+        )
+        e2 = Expense.objects.create(
+            id=2,
+            description='Despesa 2',
+            category='Infra',
+            amount=Decimal('30.00'),
+            competence_date=datetime.date(2026, 7, 1),
+            due_date=datetime.date(2026, 7, 10),
+            status='PAGO',
+            paid_date=datetime.date(2026, 7, 4),
+            created_by=self.admin
+        )
+        e3 = Expense.objects.create(
+            id=3,
+            description='Despesa 3',
+            category='Infra',
+            amount=Decimal('40.00'),
+            competence_date=datetime.date(2026, 8, 1),
+            due_date=datetime.date(2026, 8, 15),
+            status='PAGO',
+            paid_date=datetime.date(2026, 8, 22),
+            created_by=self.admin
+        )
+
+        # Despesas não pagas com datas e IDs fora de sequência
+        # ID 4: Pendente vencimento 30/09/2026
+        # ID 5: Pendente vencimento 15/09/2026 (mais próximo que ID 4)
+        # ID 6: Vencido vencimento 10/10/2026
+        e4 = Expense.objects.create(
+            id=4,
+            description='Despesa 4 Pendente',
+            category='Infra',
+            amount=Decimal('20.00'),
+            competence_date=datetime.date(2026, 9, 1),
+            due_date=datetime.date(2026, 9, 30),
+            status='PENDENTE',
+            paid_date=None,
+            created_by=self.admin
+        )
+        e5 = Expense.objects.create(
+            id=5,
+            description='Despesa 5 Pendente Vencimento Mais Próximo',
+            category='Infra',
+            amount=Decimal('25.00'),
+            competence_date=datetime.date(2026, 9, 1),
+            due_date=datetime.date(2026, 9, 15),
+            status='PENDENTE',
+            paid_date=None,
+            created_by=self.admin
+        )
+        e6 = Expense.objects.create(
+            id=6,
+            description='Despesa 6 Vencida',
+            category='Infra',
+            amount=Decimal('15.00'),
+            competence_date=datetime.date(2026, 9, 1),
+            due_date=datetime.date(2026, 10, 5),
+            status='VENCIDO',
+            paid_date=None,
+            created_by=self.admin
+        )
+
+        # Acessa relatório financeiro com período cobrindo todas as datas
+        resp = self.client.get('/painel/relatorios/financeiro/?start_date=2026-07-01&end_date=2026-10-31')
+        self.assertEqual(resp.status_code, 200)
+
+        expenses_period = list(resp.context['expenses_period'])
+        ordered_ids = [exp.id for exp in expenses_period]
+
+        # Ordem esperada:
+        # Pagas primeiro por paid_date DESC: #1 (21/09), #3 (22/08), #2 (04/07)
+        # Não pagas depois por due_date ASC: #5 (15/09), #4 (30/09), #6 (05/10)
+        self.assertEqual(ordered_ids, [1, 3, 2, 5, 4, 6])
+
+        # Verificar as datas exatas das despesas pagas
+        paid_expenses = [exp for exp in expenses_period if exp.status == 'PAGO']
+        self.assertEqual([(exp.id, exp.paid_date) for exp in paid_expenses], [
+            (1, datetime.date(2026, 9, 21)),
+            (3, datetime.date(2026, 8, 22)),
+            (2, datetime.date(2026, 7, 4)),
+        ])
+
+        # Verificar as datas de vencimento das não pagas (mais próximo primeiro)
+        unpaid_expenses = [exp for exp in expenses_period if exp.status != 'PAGO']
+        self.assertEqual([(exp.id, exp.due_date) for exp in unpaid_expenses], [
+            (5, datetime.date(2026, 9, 15)),
+            (4, datetime.date(2026, 9, 30)),
+            (6, datetime.date(2026, 10, 5)),
+        ])
+
+        # Verificar que o total de despesas pagas continua preservado (50 + 30 + 40 = 120.00)
+        self.assertEqual(resp.context['despesa_paga'], Decimal('120.00'))
+
+
