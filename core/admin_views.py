@@ -455,6 +455,7 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
                 Q(reason__icontains=feedback_q) |
                 Q(requested_by__username__icontains=feedback_q)
             )
+        feedback = feedback.order_by('-created_at', '-pk')
         context['feedback_q'] = feedback_q
         context['feedback_page'] = Paginator(feedback, 20).get_page(self.request.GET.get('feedback_page'))
         return context

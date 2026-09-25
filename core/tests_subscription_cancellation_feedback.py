@@ -1,9 +1,10 @@
-from datetime import date
+from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from core.models import Band, BandSubscription, SubscriptionCancellationFeedback, User, UserBandMembership
 
@@ -33,7 +34,7 @@ class SubscriptionCancellationFeedbackTests(TestCase):
         return BandSubscription.objects.create(
             band=band, plan_name='Avançado', billing_cycle='MENSAL',
             contracted_value=Decimal('49.90'), status='ATIVO',
-            next_due_date=date(2026, 10, 23), auto_renew=True,
+            next_due_date=timezone.localdate() + timedelta(days=30), auto_renew=True,
             gateway_provider='ASAAS', gateway_subscription_id=gateway_id,
             gateway_customer_id='cus_feedback_owner',
         )
