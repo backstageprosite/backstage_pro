@@ -560,6 +560,55 @@
             </div>
         </div>
     </div>
+
+    <section class="card border-0 shadow-sm mb-3" id="feedback-cancelamentos" aria-labelledby="feedbackCancelamentosTitulo" style="border-radius: 12px;">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h5 class="mb-0 fw-bold" id="feedbackCancelamentosTitulo">
+                    <i class="fa-solid fa-comment-dots text-danger me-2"></i>Feedback de cancelamentos
+                    <span class="badge bg-light text-dark border ms-1">{{ feedback_page.paginator.count }}</span>
+                </h5>
+                <form method="get" action="{% url 'admin_painel:assinaturas' %}" class="d-flex gap-2">
+                    <label class="visually-hidden" for="feedbackSearch">Buscar feedback</label>
+                    <input id="feedbackSearch" name="feedback_q" class="form-control" value="{{ feedback_q }}" placeholder="Banda, cliente ou motivo">
+                    <button type="submit" class="btn btn-outline-primary">Buscar</button>
+                </form>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data</th><th>Banda</th><th>Cliente</th><th>Motivo informado</th><th>Assinatura Asaas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for feedback in feedback_page %}
+                        <tr>
+                            <td class="text-nowrap">{{ feedback.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="fw-semibold">{{ feedback.band_name }}</td>
+                            <td>{{ feedback.requested_by.get_full_name|default:feedback.requested_by.username|default:"Usuário removido" }}</td>
+                            <td style="min-width: 240px; white-space: normal; overflow-wrap: anywhere;">{{ feedback.reason|linebreaksbr }}</td>
+                            <td class="font-monospace small">{{ feedback.gateway_subscription_id|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">Nenhum feedback de cancelamento registrado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if feedback_page.has_other_pages %}
+            <nav class="d-flex justify-content-end align-items-center gap-3 mt-3" aria-label="Páginas dos feedbacks">
+                {% if feedback_page.has_previous %}
+                <a href="?feedback_q={{ feedback_q|urlencode }}&feedback_page={{ feedback_page.previous_page_number }}#feedback-cancelamentos">Anterior</a>
+                {% endif %}
+                <span class="small text-muted">Página {{ feedback_page.number }} de {{ feedback_page.paginator.num_pages }}</span>
+                {% if feedback_page.has_next %}
+                <a href="?feedback_q={{ feedback_q|urlencode }}&feedback_page={{ feedback_page.next_page_number }}#feedback-cancelamentos">Próxima</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
 </div>
 
 <!-- Modal Create Subscription -->

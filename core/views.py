@@ -1340,88 +1340,112 @@ def minha_assinatura_view(request, band_slug):
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'cancel_subscription':
-            if subscription and subscription.status == 'ATIVO' and not subscription.cancel_at_period_end:
-                from django.db import transaction
-                from django.utils import timezone
-                from core.models import BandSubscription
-                from core.services.payments.asaas.client import AsaasClient
+            from django.db import transaction
+            from django.utils import timezone
+            from core.models import BandSubscription, SubscriptionCancellationFeedback
+            from core.services.payments.asaas.client import AsaasClient
 
-                # 1. Se assinatura possui gateway Asaas e recorrência gerenciada (ex: Mensal),
-                # valida remotamente via GET e executa DELETE.
-                # Para planos ANUAIS (parcelamento desacoplado / installment), não existe subscription no Asaas,
-                # de modo que o cancelamento apenas desativa a renovação futura localmente sem chamar DELETE.
-                if subscription.gateway_provider == 'ASAAS' and subscription.gateway_subscription_id and subscription.billing_cycle != 'ANUAL':
-                    client = AsaasClient()
-                    sub_info = client.get_subscription(subscription.gateway_subscription_id)
+            reason = (request.POST.get('reason') or '').strip()
+            if not reason or len(reason) > 1000:
+                messages.error(request, "Informe o motivo do cancelamento (até 1.000 caracteres).")
+                return redirect('minha_assinatura', band_slug=band.slug)
+            if not subscription or request.POST.get('subscription_id') != str(subscription.id):
+                messages.error(request, "A assinatura selecionada mudou. Atualize a página e tente novamente.")
+                return redirect('minha_assinatura', band_slug=band.slug)
+
+            # A trava impede duas confirmações simultâneas para a mesma assinatura.
+            # O feedback é gravado somente após a confirmação do gateway, na mesma transação local.
+            with transaction.atomic():
+                sub_locked = BandSubscription.objects.select_for_update().filter(
+                    pk=subscription.pk, band=band, is_deleted=False,
+                ).first()
+                if not sub_locked or sub_locked.status != 'ATIVO' or sub_locked.cancel_at_period_end or not sub_locked.auto_renew:
+                    messages.info(request, "Esta assinatura já não possui renovação ativa para cancelar.")
+                    return redirect('minha_assinatura', band_slug=band.slug)
+
+                # Planos anuais parcelados não têm assinatura recorrente no Asaas.
+                if (sub_locked.gateway_provider == 'ASAAS'
+                        and sub_locked.gateway_subscription_id
+                        and sub_locked.billing_cycle != 'ANUAL'):
+                    try:
+                        client = AsaasClient()
+                        sub_info = client.get_subscription(sub_locked.gateway_subscription_id)
+                    except Exception:
+                        logger.exception("Erro ao consultar assinatura Asaas no cancelamento da banda %s", band.slug)
+                        messages.error(request, "Não foi possível validar a assinatura no Asaas. Tente novamente.")
+                        return redirect('minha_assinatura', band_slug=band.slug)
+
                     if not sub_info:
-                        messages.error(request, "Não foi possível validar a assinatura junto ao gateway de pagamento. Tente novamente mais tarde.")
+                        messages.error(request, "Não foi possível validar a assinatura no Asaas. Tente novamente.")
+                        return redirect('minha_assinatura', band_slug=band.slug)
+                    if sub_info.get('id') != sub_locked.gateway_subscription_id:
+                        logger.error("Divergência de ID de assinatura: local=%s, remoto=%s",
+                                     sub_locked.gateway_subscription_id, sub_info.get('id'))
+                        messages.error(request, "Inconsistência na assinatura remota. Cancelamento abortado.")
+                        return redirect('minha_assinatura', band_slug=band.slug)
+                    remote_customer_id = sub_info.get('customer')
+                    if (sub_locked.gateway_customer_id and remote_customer_id
+                            and remote_customer_id != sub_locked.gateway_customer_id):
+                        logger.error("Divergência de cliente da assinatura %s", sub_locked.gateway_subscription_id)
+                        messages.error(request, "Inconsistência de titularidade. Cancelamento abortado.")
                         return redirect('minha_assinatura', band_slug=band.slug)
 
-                    # Validação de integridade: subscription ID e customer ID (quando presente)
-                    remote_sub_id = sub_info.get('id')
-                    remote_cust_id = sub_info.get('customer')
-
-                    if remote_sub_id != subscription.gateway_subscription_id:
-                        logger.error("Divergência de ID de assinatura: local=%s, remoto=%s", subscription.gateway_subscription_id, remote_sub_id)
-                        messages.error(request, "Inconsistência identificada na assinatura remota. Cancelamento abortado por segurança.")
-                        return redirect('minha_assinatura', band_slug=band.slug)
-
-                    if subscription.gateway_customer_id and remote_cust_id and remote_cust_id != subscription.gateway_customer_id:
-                        logger.error("Divergência de customer ID: local=%s, remoto=%s", subscription.gateway_customer_id, remote_cust_id)
-                        messages.error(request, "Inconsistência de titularidade identificada na assinatura. Cancelamento abortado por segurança.")
-                        return redirect('minha_assinatura', band_slug=band.slug)
-
-                    # Se a assinatura já estiver deletada/inativa no Asaas, consideramos a deleção remota atendida
-                    if sub_info.get('deleted') is True or sub_info.get('status') == 'INACTIVE':
-                        success = True
-                    else:
-                        # Executa DELETE na recorrência do Asaas
-                        success, resp_data = client.cancel_subscription(subscription.gateway_subscription_id)
+                    if sub_info.get('deleted') is not True and sub_info.get('status') != 'INACTIVE':
+                        try:
+                            success, resp_data = client.cancel_subscription(sub_locked.gateway_subscription_id)
+                        except Exception:
+                            logger.exception("Erro ao cancelar assinatura Asaas %s", sub_locked.gateway_subscription_id)
+                            messages.error(request, "Não foi possível cancelar a renovação no Asaas. Tente novamente.")
+                            return redirect('minha_assinatura', band_slug=band.slug)
                         if not success:
-                            logger.error("Falha no DELETE da assinatura %s no Asaas: %s", subscription.gateway_subscription_id, resp_data)
-                            messages.error(request, "Não foi possível cancelar a renovação junto ao gateway de pagamento. Nenhuma alteração foi realizada.")
+                            logger.error("Falha no cancelamento Asaas %s: %s", sub_locked.gateway_subscription_id, resp_data)
+                            messages.error(request, "Não foi possível cancelar a renovação no Asaas. Nenhuma alteração foi realizada.")
                             return redirect('minha_assinatura', band_slug=band.slug)
 
-                with transaction.atomic():
-                    sub_locked = BandSubscription.objects.select_for_update().filter(id=subscription.id).first()
-                    if sub_locked and sub_locked.status == 'ATIVO' and not sub_locked.cancel_at_period_end:
-                        sub_locked.cancel_at_period_end = True
-                        sub_locked.auto_renew = False
-                        sub_locked.canceled_at = timezone.now()
-                        sub_locked.save(update_fields=['cancel_at_period_end', 'auto_renew', 'canceled_at', 'updated_at'])
-
-                # Log para auditoria
-                logger.info(
-                    "Assinatura %d da banda '%s' marcada para cancelamento ao fim do período pelo usuário %s após sucesso no Asaas.",
-                    subscription.id, band.slug, request.user.username
+                sub_locked.cancel_at_period_end = True
+                sub_locked.auto_renew = False
+                sub_locked.canceled_at = timezone.now()
+                sub_locked.save(update_fields=['cancel_at_period_end', 'auto_renew', 'canceled_at', 'updated_at'])
+                SubscriptionCancellationFeedback.objects.create(
+                    subscription=sub_locked,
+                    band=band,
+                    requested_by=request.user,
+                    band_name=band.name,
+                    gateway_subscription_id=sub_locked.gateway_subscription_id or '',
+                    reason=reason,
                 )
-                try:
-                    from core.services.email_service import enqueue_email, resolve_subscription_recipient
-                    from core.models import EmailDelivery
-                    rec_email, rec_name = resolve_subscription_recipient(subscription)
-                    if rec_email:
-                        idemp_k = f"sub-cancel-scheduled-{subscription.id}-{timezone.localdate().isoformat()}"
-                        enqueue_email(
-                            email_type=EmailDelivery.EmailType.SUBSCRIPTION_CANCELLATION_SCHEDULED,
-                            recipient_email=rec_email,
-                            subject="Cancelamento agendado - Backstage Pro",
-                            idempotency_key=idemp_k,
-                            template_name="emails/subscription_cancellation_scheduled",
-                            context_data={
-                                "user_name": rec_name,
-                                "band_name": band.name,
-                                "plan_name": subscription.plan_name,
-                                "access_until_date": subscription.next_due_date.strftime("%d/%m/%Y") if subscription.next_due_date else "o fim do período",
-                                "reactivate_url": f"/bandas/{band.slug}/assinatura/",
-                            },
-                            related_object_type="BandSubscription",
-                            related_object_id=str(subscription.id)
-                        )
-                except Exception as eq_err:
-                    logger.error("Erro ao enfileirar email de cancelamento agendado: %s", eq_err)
 
-                messages.success(request, "Cancelamento confirmado com sucesso. O seu acesso permanecerá ativo até o fim do período contratado.")
-                return redirect('minha_assinatura', band_slug=band.slug)
+            logger.info(
+                "Assinatura %d da banda '%s' marcada para cancelamento pelo usuário %s.",
+                subscription.id, band.slug, request.user.username,
+            )
+            try:
+                from core.services.email_service import enqueue_email, resolve_subscription_recipient
+                from core.models import EmailDelivery
+                rec_email, rec_name = resolve_subscription_recipient(subscription)
+                if rec_email:
+                    idemp_k = f"sub-cancel-scheduled-{subscription.id}-{timezone.localdate().isoformat()}"
+                    enqueue_email(
+                        email_type=EmailDelivery.EmailType.SUBSCRIPTION_CANCELLATION_SCHEDULED,
+                        recipient_email=rec_email,
+                        subject="Cancelamento agendado - Backstage Pro",
+                        idempotency_key=idemp_k,
+                        template_name="emails/subscription_cancellation_scheduled",
+                        context_data={
+                            "user_name": rec_name,
+                            "band_name": band.name,
+                            "plan_name": subscription.plan_name,
+                            "access_until_date": subscription.next_due_date.strftime("%d/%m/%Y") if subscription.next_due_date else "o fim do período",
+                            "reactivate_url": f"/bandas/{band.slug}/assinatura/",
+                        },
+                        related_object_type="BandSubscription",
+                        related_object_id=str(subscription.id),
+                    )
+            except Exception as eq_err:
+                logger.error("Erro ao enfileirar email de cancelamento agendado: %s", eq_err)
+
+            messages.success(request, "Cancelamento confirmado. Seu acesso permanece ativo até o fim do período contratado.")
+            return redirect('minha_assinatura', band_slug=band.slug)
 
         elif action == 'reactivate_subscription':
             if subscription and subscription.status == 'ATIVO' and subscription.cancel_at_period_end:

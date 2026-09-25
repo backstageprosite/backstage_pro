@@ -428,23 +428,24 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body pt-3 pb-2 text-dark" style="font-size: 14px; line-height: 1.5;">
-                    <p class="mb-0 text-dark">
-                        Seu acesso continuará ativo até <strong>{% if subscription.next_due_date %}{{ subscription.next_due_date|date:"d/m/Y" }}{% else %}-{% endif %}</strong>. Após essa data, não haverá nova cobrança.
-                    </p>
-                </div>
-                <div class="modal-footer border-top-0 pt-2 pb-3 justify-content-end gap-2">
-                    <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 35px; font-size: 13px;">
-                        Voltar
-                    </button>
-                    <form method="post" action="{% url 'minha_assinatura' band.slug %}" class="d-inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="cancel_subscription">
-                        <button type="submit" class="btn btn-danger fw-bold rounded-pill px-3 text-white" style="height: 35px; font-size: 13px;">
-                            Cancelar Assinatura
-                        </button>
-                    </form>
-                </div>
+                <form method="post" action="{% url 'minha_assinatura' band.slug %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="cancel_subscription">
+                    <input type="hidden" name="subscription_id" value="{{ subscription.id }}">
+                    <div class="modal-body pt-3 pb-2 text-dark" style="font-size: 14px; line-height: 1.5;">
+                        <p class="text-dark">
+                            Seu acesso continuará ativo até <strong>{% if subscription.next_due_date %}{{ subscription.next_due_date|date:"d/m/Y" }}{% else %}-{% endif %}</strong>. Após essa data, não haverá nova cobrança.
+                        </p>
+                        <label for="cancellationReason" class="form-label fw-semibold">Por que deseja cancelar? <span class="text-danger">*</span></label>
+                        <textarea id="cancellationReason" name="reason" class="form-control" rows="3" maxlength="1000" required
+                                  placeholder="Conte o que motivou sua decisão"></textarea>
+                        <div class="form-text">Sua resposta será enviada à equipe do Backstage Pro.</div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-2 pb-3 justify-content-end gap-2">
+                        <button type="button" class="btn btn-light border fw-bold rounded-pill px-3" data-bs-dismiss="modal" style="height: 35px; font-size: 13px;">Cancelar</button>
+                        <button type="submit" class="btn btn-danger fw-bold rounded-pill px-3 text-white" style="height: 35px; font-size: 13px;">Confirmar cancelamento</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

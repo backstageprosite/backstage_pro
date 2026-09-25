@@ -1710,7 +1710,7 @@ class AsaasFoundationTests(TestCase):
         resp_before = client.get(f'/{band_a.slug}/relatorios/assinatura/')
         self.assertContains(resp_before, 'Cancelar Assinatura')
 
-        post_cancel = client.post(f'/{band_a.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        post_cancel = client.post(f'/{band_a.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub_a.id), 'reason': 'Motivo informado no teste.'}, follow=True)
         self.assertEqual(post_cancel.status_code, 200)
         sub_a.refresh_from_db()
         self.assertTrue(sub_a.cancel_at_period_end)
@@ -2227,7 +2227,7 @@ class AsaasFoundationTests(TestCase):
         self.assertContains(resp_assina_active, 'Próxima Cobrança')
 
         # Realiza o cancelamento voluntário
-        resp_post_cancel = client.post(f'/{band_canc.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'})
+        resp_post_cancel = client.post(f'/{band_canc.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub_canc.id), 'reason': 'Motivo informado no teste.'})
         self.assertEqual(resp_post_cancel.status_code, 302)
 
         # Teste B & C: cancel_at_period_end=True e auto_renew=False
@@ -2421,7 +2421,7 @@ class AsaasFoundationTests(TestCase):
 
         # Cenário A: Falha na validação remota (GET retorna None) -> Não altera estado local
         mock_get_sub.return_value = None
-        resp_fail_get = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        resp_fail_get = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub.id), 'reason': 'Motivo informado no teste.'}, follow=True)
         self.assertEqual(resp_fail_get.status_code, 200)
         sub.refresh_from_db()
         self.assertFalse(sub.cancel_at_period_end)
@@ -2429,20 +2429,20 @@ class AsaasFoundationTests(TestCase):
 
         # Cenário B: Divergência de Customer ID -> Cancelamento abortado
         mock_get_sub.return_value = {'id': 'sub_test_remote_123', 'customer': 'cus_divergente_999'}
-        resp_fail_cust = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        resp_fail_cust = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub.id), 'reason': 'Motivo informado no teste.'}, follow=True)
         sub.refresh_from_db()
         self.assertFalse(sub.cancel_at_period_end)
 
         # Cenário C: Falha no DELETE do Asaas -> Não altera estado local
         mock_get_sub.return_value = {'id': 'sub_test_remote_123', 'customer': 'cus_test_remote_456'}
         mock_cancel_sub.return_value = (False, {'error': 'gateway_timeout'})
-        resp_fail_del = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        resp_fail_del = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub.id), 'reason': 'Motivo informado no teste.'}, follow=True)
         sub.refresh_from_db()
         self.assertFalse(sub.cancel_at_period_end)
 
         # Cenário D: Sucesso no GET e no DELETE Asaas -> Marca cancelamento agendado
         mock_cancel_sub.return_value = (True, {'deleted': True})
-        resp_success = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        resp_success = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub.id), 'reason': 'Motivo informado no teste.'}, follow=True)
         self.assertEqual(resp_success.status_code, 200)
         sub.refresh_from_db()
         self.assertTrue(sub.cancel_at_period_end)
@@ -2558,7 +2558,7 @@ class AsaasFoundationTests(TestCase):
              patch('core.services.payments.asaas.client.AsaasClient.cancel_subscription') as mock_del:
             mock_get.return_value = {'id': 'sub_audit_old_111', 'customer': 'cus_audit_999'}
             mock_del.return_value = (True, {'deleted': True})
-            resp_canc = client.post(f'/{band_audit.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+            resp_canc = client.post(f'/{band_audit.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub_audit.id), 'reason': 'Motivo informado no teste.'}, follow=True)
             self.assertEqual(resp_canc.status_code, 200)
 
         sub_audit.refresh_from_db()
@@ -4464,7 +4464,7 @@ class AsaasFoundationTests(TestCase):
         client.force_login(user)
 
         with patch('core.services.payments.asaas.client.AsaasClient.cancel_subscription') as mock_del:
-            resp = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+            resp = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub.id), 'reason': 'Motivo informado no teste.'}, follow=True)
             self.assertEqual(resp.status_code, 200)
             # Confirma que NUNCA invocou cancel_subscription no Asaas
             mock_del.assert_not_called()

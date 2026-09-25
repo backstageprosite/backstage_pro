@@ -2423,7 +2423,7 @@ class LandingAndCheckoutIntegrationTests(TestCase):
         client = Client()
         client.force_login(owner)
 
-        resp = client.post(f'/{band_a.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        resp = client.post(f'/{band_a.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub_a.id), 'reason': 'Não vou usar este plano agora.'}, follow=True)
         self.assertEqual(resp.status_code, 200)
 
         # Confirma que cancelou APENAS sub_alfa_111
