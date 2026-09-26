@@ -57,7 +57,7 @@
     <span class="bp-chat-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></span>
     <span class="bp-chat-launcher-label">Assistente IA</span>
 </button>
-<section class="bp-chat-panel" id="bpChatPanel" role="dialog" aria-modal="false" aria-labelledby="bpChatTitle" hidden>
+<section class="bp-chat-panel" id="bpChatPanel" role="dialog" aria-modal="false" aria-labelledby="bpChatTitle" data-storage-key="bp-ai-chat:v1:{{ request.user.pk }}:{{ band.pk }}" hidden>
     <header class="bp-chat-header">
         <span class="bp-chat-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></span>
         <span class="bp-chat-title"><strong id="bpChatTitle">Assistente Backstage Pro</strong><small>Ajuda para usar o sistema · piloto</small></span>
@@ -96,16 +96,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const error = document.getElementById('aiChatError');
     const send = document.getElementById('aiChatSend');
     const history = [];
+    const conversation = [];
+    const storageKey = panel.dataset.storageKey;
+    function saveChat() {
+        try {
+            sessionStorage.setItem(storageKey, JSON.stringify({
+                open: !panel.hidden,
+                messages: conversation.slice(-40),
+            }));
+        } catch (exc) {
+            // O chat continua utilizável quando o navegador bloqueia armazenamento.
+        }
+    }
     function openChat() {
         panel.hidden = false;
         launcher.setAttribute('aria-expanded', 'true');
         launcher.setAttribute('aria-label', 'Fechar Assistente Backstage Pro');
+        saveChat();
         input.focus();
     }
     function closeChat() {
         panel.hidden = true;
         launcher.setAttribute('aria-expanded', 'false');
         launcher.setAttribute('aria-label', 'Abrir Assistente Backstage Pro');
+        saveChat();
         launcher.focus();
     }
     launcher.addEventListener('click', () => panel.hidden ? openChat() : closeChat());
@@ -135,6 +149,24 @@ document.addEventListener('DOMContentLoaded', () => {
         messages.scrollTop = messages.scrollHeight;
         return row;
     }
+    try {
+        const stored = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+        if (stored && Array.isArray(stored.messages)) {
+            stored.messages.slice(-40).forEach((item) => {
+                if (item && ['user', 'assistant'].includes(item.role) &&
+                    typeof item.content === 'string' && item.content.length <= 3000) {
+                    conversation.push({role: item.role, content: item.content});
+                    addMessage(item.role, item.content);
+                }
+            });
+            history.push(...conversation.slice(-6).map((item) => ({
+                role: item.role, content: item.content.slice(0, 1000),
+            })));
+        }
+        if (stored && stored.open === true) openChat();
+    } catch (exc) {
+        // Dados ausentes/corrompidos não impedem uma conversa nova.
+    }
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         const message = input.value.trim();
@@ -154,6 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok || !data.answer) throw new Error(data.error || 'Não foi possível responder agora.');
             addMessage('assistant', data.answer);
             history.push({role: 'user', content: message}, {role: 'assistant', content: data.answer.slice(0, 1000)});
+            conversation.push({role: 'user', content: message}, {role: 'assistant', content: data.answer});
+            if (conversation.length > 40) conversation.splice(0, conversation.length - 40);
+            saveChat();
         } catch (exc) {
             sentRow.remove();
             error.textContent = exc.message || 'Não foi possível responder agora.';

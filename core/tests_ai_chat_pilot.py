@@ -103,7 +103,9 @@ class AIChatPilotTests(TestCase):
             self.client.force_login(self.admin)
             self.assertContains(self.client.get(url), 'Assistente Backstage Pro')
             self.client.force_login(self.owner)
-            self.assertContains(self.client.get(url), 'Assistente Backstage Pro')
+            response = self.client.get(url)
+            self.assertContains(response, 'Assistente Backstage Pro')
+            self.assertContains(response, f'data-storage-key="bp-ai-chat:v1:{self.owner.pk}:{self.band.pk}"')
             self.client.force_login(self.member)
             self.assertNotContains(self.client.get(url), 'bpChatPanel')
         with patch.dict(os.environ, {'CLOUDFLARE_ACCOUNT_ID': '', 'CLOUDFLARE_AI_TOKEN': ''}):
