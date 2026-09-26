@@ -48,9 +48,9 @@ def extract_answer(data):
 @band_required
 @require_POST
 def ai_chat_pilot(request, band_slug):
-    # A primeira etapa fica restrita ao administrador. Não há ferramentas nem
-    # acesso a modelos, arquivos, agenda ou dados financeiros da banda.
-    if not request.user.is_superuser:
+    # Piloto para empresários da banda e administradores. Não há ferramentas
+    # nem acesso a modelos, arquivos, agenda ou dados financeiros da banda.
+    if not (request.user.is_superuser or request.user.is_empresario(request.band)):
         return JsonResponse({"error": "Assistente em fase de testes."}, status=403)
 
     account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()

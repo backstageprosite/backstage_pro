@@ -22,7 +22,9 @@ def system_settings_processor(request):
     return {
         'system_settings': settings,
         'ai_chat_pilot_enabled': bool(
-            request.user.is_authenticated and request.user.is_superuser
+            request.user.is_authenticated
+            and getattr(request, 'band', None)
+            and (request.user.is_superuser or request.user.is_empresario(request.band))
             and os.getenv('CLOUDFLARE_ACCOUNT_ID') and os.getenv('CLOUDFLARE_AI_TOKEN')
-        )
+        ),
     }

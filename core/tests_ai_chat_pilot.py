@@ -18,15 +18,20 @@ class AIChatPilotTests(TestCase):
         self.admin = User.objects.create_superuser(username='admin_chat', password='test12345', email='admin@example.com')
         self.member = User.objects.create_user(username='member_chat', password='test12345', band=self.band)
         UserBandMembership.objects.create(user=self.member, band=self.band, role='PRODUTOR', is_active=True)
+        self.owner = User.objects.create_user(username='owner_chat', password='test12345', band=self.band)
+        UserBandMembership.objects.create(user=self.owner, band=self.band, role='EMPRESARIO', is_active=True)
         self.url = reverse('ai_chat_pilot', kwargs={'band_slug': self.band.slug})
 
-    def test_pilot_restricted_to_admin_and_post(self):
+    def test_pilot_restricted_to_empresario_and_admin_and_post(self):
         with patch.dict(os.environ, {'CLOUDFLARE_ACCOUNT_ID': 'account', 'CLOUDFLARE_AI_TOKEN': 'secret'}):
             self.client.force_login(self.member)
             self.assertEqual(self.client.post(self.url, data=json.dumps({'message': 'Oi'}), content_type='application/json').status_code, 403)
             self.assertEqual(self.client.post(reverse('ai_chat_pilot', kwargs={'band_slug': self.other.slug}), data='{}', content_type='application/json').status_code, 403)
             self.client.force_login(self.admin)
             self.assertEqual(self.client.get(self.url).status_code, 405)
+            self.client.force_login(self.owner)
+            self.assertEqual(self.client.get(self.url).status_code, 405)
+            self.assertEqual(self.client.post(reverse('ai_chat_pilot', kwargs={'band_slug': self.other.slug}), data='{}', content_type='application/json').status_code, 403)
 
     def test_missing_credentials_never_calls_provider(self):
         self.client.force_login(self.admin)
@@ -52,6 +57,16 @@ class AIChatPilotTests(TestCase):
         self.assertNotIn('secret', response.content.decode())
         self.assertEqual(request.get_header('Authorization'), 'Bearer secret')
 
+    def test_empresario_can_ask_without_exposing_another_band(self):
+        self.client.force_login(self.owner)
+        mock_response = MagicMock()
+        mock_response.__enter__.return_value.read.return_value = b'{"success":true,"result":{"response":"Tudo certo."}}'
+        with patch.dict(os.environ, {'CLOUDFLARE_ACCOUNT_ID': 'account', 'CLOUDFLARE_AI_TOKEN': 'secret'}):
+            with patch('core.ai_chat_views.urlopen', return_value=mock_response):
+                response = self.client.post(self.url, data='{"message":"Ajude com um aviso"}', content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['answer'], 'Tudo certo.')
+
     def test_rejects_untrusted_history_and_daily_limit(self):
         self.client.force_login(self.admin)
         with patch.dict(os.environ, {'CLOUDFLARE_ACCOUNT_ID': 'account', 'CLOUDFLARE_AI_TOKEN': 'secret'}):
@@ -65,10 +80,12 @@ class AIChatPilotTests(TestCase):
                 self.assertEqual(self.client.post(self.url, data='{"message":"Oi"}', content_type='application/json').status_code, 429)
                 self.assertEqual(urlopen.call_count, 20)
 
-    def test_button_is_visible_only_to_admin_when_configured(self):
+    def test_button_is_visible_to_empresario_and_admin_when_configured(self):
         url = reverse('dashboard', kwargs={'band_slug': self.band.slug})
         with patch.dict(os.environ, {'CLOUDFLARE_ACCOUNT_ID': 'account', 'CLOUDFLARE_AI_TOKEN': 'secret'}):
             self.client.force_login(self.admin)
+            self.assertContains(self.client.get(url), 'Assistente Backstage Pro')
+            self.client.force_login(self.owner)
             self.assertContains(self.client.get(url), 'Assistente Backstage Pro')
             self.client.force_login(self.member)
             self.assertNotContains(self.client.get(url), 'aiChatPilotModal')
