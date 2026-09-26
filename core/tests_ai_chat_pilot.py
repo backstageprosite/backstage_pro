@@ -67,6 +67,23 @@ class AIChatPilotTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['answer'], 'Tudo certo.')
 
+    def test_system_prompt_uses_real_navigation_and_no_band_data(self):
+        self.client.force_login(self.owner)
+        mock_response = MagicMock()
+        mock_response.__enter__.return_value.read.return_value = b'{"success":true,"result":{"response":"OK"}}'
+        with patch.dict(os.environ, {'CLOUDFLARE_ACCOUNT_ID': 'account', 'CLOUDFLARE_AI_TOKEN': 'secret'}):
+            with patch('core.ai_chat_views.urlopen', return_value=mock_response) as urlopen:
+                response = self.client.post(self.url, data=json.dumps({'message': 'Como ativo as notificações?'}), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(urlopen.call_args.args[0].data)
+        prompt = payload['messages'][0]['content']
+        self.assertIn('Configurações > Notificações > Notificações neste dispositivo', prompt)
+        self.assertIn('Ativar notificações neste dispositivo', prompt)
+        self.assertIn('Evento, Cronograma, Produção, Técnica, Financeiro e Anexos', prompt)
+        self.assertIn('não complete lacunas', prompt)
+        self.assertNotIn('Banda A', prompt)
+        self.assertNotIn('banda-a', prompt)
+
     def test_rejects_untrusted_history_and_daily_limit(self):
         self.client.force_login(self.admin)
         with patch.dict(os.environ, {'CLOUDFLARE_ACCOUNT_ID': 'account', 'CLOUDFLARE_AI_TOKEN': 'secret'}):
