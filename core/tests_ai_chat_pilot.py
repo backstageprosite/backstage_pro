@@ -105,10 +105,10 @@ class AIChatPilotTests(TestCase):
             self.client.force_login(self.owner)
             self.assertContains(self.client.get(url), 'Assistente Backstage Pro')
             self.client.force_login(self.member)
-            self.assertNotContains(self.client.get(url), 'aiChatPilotModal')
+            self.assertNotContains(self.client.get(url), 'bpChatPanel')
         with patch.dict(os.environ, {'CLOUDFLARE_ACCOUNT_ID': '', 'CLOUDFLARE_AI_TOKEN': ''}):
             self.client.force_login(self.admin)
-            self.assertNotContains(self.client.get(url), 'aiChatPilotModal')
+            self.assertNotContains(self.client.get(url), 'bpChatPanel')
 
     def test_chat_completions_response_and_reasoning_are_handled(self):
         self.assertEqual(extract_answer({'success': True, 'result': {
