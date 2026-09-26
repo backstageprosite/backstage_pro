@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -18,6 +19,29 @@ logger = logging.getLogger(__name__)
 MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
 MAX_MESSAGE_LENGTH = 1000
 DAILY_LIMIT = 20
+
+
+def extract_answer(data):
+    """Aceita os formatos REST legado e Chat Completions do Workers AI."""
+    if not isinstance(data, dict) or data.get("success") is False:
+        raise ValueError("Unexpected AI response")
+    result = data.get("result", data)
+    if not isinstance(result, dict):
+        raise ValueError("Unexpected AI result")
+    answer = result.get("response")
+    if not isinstance(answer, str):
+        choices = result.get("choices")
+        if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+            raise ValueError("Missing AI response")
+        message = choices[0].get("message")
+        answer = message.get("content") if isinstance(message, dict) else None
+    if not isinstance(answer, str):
+        raise ValueError("Missing AI content")
+    # Alguns modelos de raciocínio incluem o bloco interno no texto.
+    answer = re.sub(r"<think>.*?</think>", "", answer, flags=re.DOTALL).strip()
+    if not answer or "<think>" in answer or "</think>" in answer:
+        raise ValueError("Incomplete AI response")
+    return answer
 
 
 @login_required
@@ -93,9 +117,7 @@ def ai_chat_pilot(request, band_slug):
     try:
         with urlopen(upstream, timeout=25) as response:
             data = json.load(response)
-        answer = data.get("result", {}).get("response")
-        if not data.get("success") or not isinstance(answer, str) or not answer.strip():
-            raise ValueError("Unexpected AI response")
+        answer = extract_answer(data)
     except HTTPError as exc:
         if exc.code == 429:
             return JsonResponse({"error": "A franquia da IA foi atingida. Tente novamente mais tarde."}, status=429)
@@ -105,4 +127,4 @@ def ai_chat_pilot(request, band_slug):
         logger.warning("Workers AI request failed", exc_info=True)
         return JsonResponse({"error": "Assistente indisponível no momento."}, status=502)
 
-    return JsonResponse({"answer": answer.strip()[:3000]})
+    return JsonResponse({"answer": answer[:3000]})
