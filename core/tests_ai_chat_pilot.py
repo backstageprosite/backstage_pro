@@ -6,6 +6,7 @@ from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 
+from core.ai_chat_views import extract_answer
 from core.models import Band, User, UserBandMembership
 
 
@@ -74,3 +75,12 @@ class AIChatPilotTests(TestCase):
         with patch.dict(os.environ, {'CLOUDFLARE_ACCOUNT_ID': '', 'CLOUDFLARE_AI_TOKEN': ''}):
             self.client.force_login(self.admin)
             self.assertNotContains(self.client.get(url), 'aiChatPilotModal')
+
+    def test_chat_completions_response_and_reasoning_are_handled(self):
+        self.assertEqual(extract_answer({'success': True, 'result': {
+            'choices': [{'message': {'content': '<think>planejamento</think>Resposta final.'}}]
+        }}), 'Resposta final.')
+        with self.assertRaises(ValueError):
+            extract_answer({'success': True, 'result': {
+                'choices': [{'message': {'content': '<think>resposta incompleta'}}]
+            }})
