@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 
-from core.models import Band, WebPushSubscription
+from core.models import Band, UserBandMembership, WebPushSubscription
 from core.services.web_push_subscriptions import SubscriptionNotFoundError
 
 User = get_user_model()
@@ -110,6 +110,31 @@ class WebPushEndpointsTests(TestCase):
         resp = self._post('push_subscription_status', data={})
         self.assertEqual(resp.status_code, 404)
         
+    def test_empresario_com_vinculo_ativo_verifica_status_da_banda(self):
+        empresario = User.objects.create_user(
+            username='empresario_push', password='123', role='INTEGRANTE', band=None
+        )
+        UserBandMembership.objects.create(
+            user=empresario, band=self.band, role='EMPRESARIO', is_active=True
+        )
+        self.client.force_login(empresario)
+        response = self._post('push_subscription_status', data={'endpoint': VALID_ENDPOINT})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'subscribed': False})
+        response = self._post('push_subscription_status', data={'endpoint': VALID_ENDPOINT}, band_slug=self.other_band.slug)
+        self.assertEqual(response.status_code, 404)
+
+    def test_empresario_sem_vinculo_ativo_nao_acessa_status(self):
+        empresario = User.objects.create_user(
+            username='empresario_inativo_push', password='123', role='EMPRESARIO', band=None
+        )
+        UserBandMembership.objects.create(
+            user=empresario, band=self.band, role='EMPRESARIO', is_active=False
+        )
+        self.client.force_login(empresario)
+        response = self._post('push_subscription_status', data={'endpoint': VALID_ENDPOINT})
+        self.assertEqual(response.status_code, 404)
+
     # ==========================
     # 2. HTTP METHODS
     # ==========================
