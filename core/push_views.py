@@ -43,10 +43,12 @@ def api_band_auth_required(view_func):
         if not band.is_active:
             return set_no_store(JsonResponse({"error": "not_found", "detail": "band_inactive"}, status=404))
             
-        if request.user.band != band:
+        # O painel da banda aceita vínculos ativos em UserBandMembership; o
+        # usuário pode administrar mais de uma banda sem trocar user.band.
+        if request.user.is_superuser or not request.user.has_access_to_band(band):
             return set_no_store(JsonResponse({"error": "not_found", "detail": "not_member"}, status=404))
             
-        if request.user.role not in ['PRODUTOR', 'INTEGRANTE']:
+        if request.user.get_role_for_band(band) not in ['EMPRESARIO', 'PRODUTOR', 'INTEGRANTE']:
             return set_no_store(JsonResponse({"error": "forbidden", "detail": "role_not_allowed"}, status=403))
             
         request.band = band
