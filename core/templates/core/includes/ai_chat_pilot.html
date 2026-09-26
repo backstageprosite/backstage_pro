@@ -61,7 +61,8 @@
     <header class="bp-chat-header">
         <span class="bp-chat-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></span>
         <span class="bp-chat-title"><strong id="bpChatTitle">Assistente Backstage Pro</strong><small>Ajuda para usar o sistema · piloto</small></span>
-        <button type="button" class="bp-chat-close" id="bpChatClose" aria-label="Fechar assistente"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+        <button type="button" class="bp-chat-close" id="bpChatMinimize" aria-label="Minimizar e manter conversa" title="Minimizar e manter conversa"><i class="fa-solid fa-minus" aria-hidden="true"></i></button>
+        <button type="button" class="bp-chat-close" id="bpChatClose" aria-label="Fechar e apagar conversa" title="Fechar e apagar conversa"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </header>
     <div class="bp-chat-messages" id="aiChatMessages" role="log" aria-live="polite" aria-label="Mensagens do assistente">
         <div class="bp-chat-welcome">
@@ -90,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!form) return;
     const launcher = document.getElementById('bpChatLauncher');
     const panel = document.getElementById('bpChatPanel');
+    const minimize = document.getElementById('bpChatMinimize');
     const close = document.getElementById('bpChatClose');
     const input = document.getElementById('aiChatInput');
     const messages = document.getElementById('aiChatMessages');
@@ -98,6 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const history = [];
     const conversation = [];
     const storageKey = panel.dataset.storageKey;
+    let conversationEpoch = 0;
+    let activeRequest = null;
     function saveChat() {
         try {
             sessionStorage.setItem(storageKey, JSON.stringify({
@@ -111,20 +115,35 @@ document.addEventListener('DOMContentLoaded', () => {
     function openChat() {
         panel.hidden = false;
         launcher.setAttribute('aria-expanded', 'true');
-        launcher.setAttribute('aria-label', 'Fechar Assistente Backstage Pro');
+        launcher.setAttribute('aria-label', 'Minimizar Assistente Backstage Pro');
         saveChat();
         input.focus();
     }
-    function closeChat() {
+    function minimizeChat() {
         panel.hidden = true;
         launcher.setAttribute('aria-expanded', 'false');
         launcher.setAttribute('aria-label', 'Abrir Assistente Backstage Pro');
         saveChat();
         launcher.focus();
     }
-    launcher.addEventListener('click', () => panel.hidden ? openChat() : closeChat());
-    close.addEventListener('click', closeChat);
-    panel.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeChat(); });
+    function endChat() {
+        conversationEpoch += 1;
+        if (activeRequest) activeRequest.abort();
+        activeRequest = null;
+        send.disabled = false;
+        send.removeAttribute('aria-busy');
+        minimizeChat();
+        history.length = 0;
+        conversation.length = 0;
+        messages.querySelectorAll('.bp-chat-message').forEach((row) => row.remove());
+        input.value = '';
+        error.hidden = true;
+        try { sessionStorage.removeItem(storageKey); } catch (exc) { /* Armazenamento indisponível. */ }
+    }
+    launcher.addEventListener('click', () => panel.hidden ? openChat() : minimizeChat());
+    minimize.addEventListener('click', minimizeChat);
+    close.addEventListener('click', endChat);
+    panel.addEventListener('keydown', (event) => { if (event.key === 'Escape') minimizeChat(); });
     panel.querySelectorAll('[data-question]').forEach((button) => {
         button.addEventListener('click', () => { input.value = button.dataset.question; input.focus(); });
     });
@@ -174,6 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
         error.hidden = true;
         send.disabled = true;
         send.setAttribute('aria-busy', 'true');
+        const epoch = conversationEpoch;
+        const controller = new AbortController();
+        activeRequest = controller;
         const sentRow = addMessage('user', message);
         input.value = '';
         try {
@@ -181,8 +203,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
                 body: JSON.stringify({ message, history: history.slice(-6) }),
+                signal: controller.signal,
             });
             const data = await response.json();
+            if (epoch !== conversationEpoch) return;
             if (!response.ok || !data.answer) throw new Error(data.error || 'Não foi possível responder agora.');
             addMessage('assistant', data.answer);
             history.push({role: 'user', content: message}, {role: 'assistant', content: data.answer.slice(0, 1000)});
@@ -190,14 +214,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (conversation.length > 40) conversation.splice(0, conversation.length - 40);
             saveChat();
         } catch (exc) {
+            if (epoch !== conversationEpoch) return;
             sentRow.remove();
             error.textContent = exc.message || 'Não foi possível responder agora.';
             error.hidden = false;
             input.value = message;
         } finally {
-            send.disabled = false;
-            send.removeAttribute('aria-busy');
-            input.focus();
+            if (activeRequest === controller || activeRequest === null) {
+                activeRequest = null;
+                send.disabled = false;
+                send.removeAttribute('aria-busy');
+                if (!panel.hidden) input.focus();
+            }
         }
     });
 });
