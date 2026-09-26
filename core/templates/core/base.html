@@ -587,6 +587,10 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 
 
+    {% if ai_chat_pilot_enabled and band %}
+        {% include 'core/includes/ai_chat_pilot.html' %}
+    {% endif %}
+
     <!-- Modal Plano Avancado -->
     <div class="modal fade" id="modalAdvancedPlan" tabindex="-1" aria-labelledby="modalAdvancedPlanLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
