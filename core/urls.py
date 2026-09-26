@@ -1,6 +1,7 @@
 from django.urls import path
-from . import views, pwa_views, file_views, notification_views, push_views, views_support, google_calendar_views
+from . import views, pwa_views, file_views, notification_views, push_views, views_support, google_calendar_views, ai_chat_views
 urlpatterns = [
+    path('assistente/perguntar/', ai_chat_views.ai_chat_pilot, name='ai_chat_pilot'),
     path('manifest.webmanifest', pwa_views.band_manifest, name='manifest'),
     path('sw.js', pwa_views.band_service_worker, name='band_sw'),
     path('pwa/<str:filename>', pwa_views.band_icon_view, name='band_icon'),

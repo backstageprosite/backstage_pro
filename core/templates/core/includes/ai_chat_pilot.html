@@ -1,0 +1,77 @@
+<button type="button" class="btn btn-primary rounded-pill shadow position-fixed bottom-0 end-0 m-3 m-lg-4"
+        style="z-index: 1030;" data-bs-toggle="modal" data-bs-target="#aiChatPilotModal"
+        aria-label="Abrir Assistente Backstage Pro">
+    <i class="fa-solid fa-comments me-1" aria-hidden="true"></i> Assistente <span class="d-none d-sm-inline">(piloto)</span>
+</button>
+<div class="modal fade" id="aiChatPilotModal" tabindex="-1" aria-labelledby="aiChatPilotTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="aiChatPilotTitle">Assistente Backstage Pro <small class="text-muted">· piloto</small></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted">Posso ajudar com dúvidas gerais e textos de produção. Ainda não consulto dados dos shows ou da banda. Evite enviar informações pessoais.</p>
+                <div id="aiChatMessages" class="border rounded p-3 bg-light overflow-auto" style="height: 300px;" role="log" aria-live="polite"></div>
+                <div id="aiChatError" class="small text-danger mt-2" role="alert" hidden></div>
+            </div>
+            <div class="modal-footer d-block">
+                <form id="aiChatForm" data-url="{% url 'ai_chat_pilot' band.slug %}">
+                    {% csrf_token %}
+                    <label for="aiChatInput" class="form-label small">Sua mensagem</label>
+                    <textarea id="aiChatInput" class="form-control" maxlength="1000" rows="2" required placeholder="Como posso organizar as informações de um show?"></textarea>
+                    <button id="aiChatSend" class="btn btn-primary mt-2 w-100" type="submit">Enviar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('aiChatForm');
+    if (!form) return;
+    const input = document.getElementById('aiChatInput');
+    const messages = document.getElementById('aiChatMessages');
+    const error = document.getElementById('aiChatError');
+    const send = document.getElementById('aiChatSend');
+    const history = [];
+    function addMessage(label, content) {
+        const row = document.createElement('div');
+        row.className = 'mb-3';
+        const title = document.createElement('strong');
+        title.textContent = label + ': ';
+        const text = document.createElement('span');
+        text.textContent = content;
+        row.append(title, text);
+        messages.appendChild(row);
+        messages.scrollTop = messages.scrollHeight;
+    }
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const message = input.value.trim();
+        if (!message || send.disabled) return;
+        error.hidden = true;
+        send.disabled = true;
+        send.textContent = 'Aguarde…';
+        try {
+            const response = await fetch(form.dataset.url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: JSON.stringify({ message, history: history.slice(-6) }),
+            });
+            const data = await response.json();
+            if (!response.ok || !data.answer) throw new Error(data.error || 'Não foi possível responder agora.');
+            addMessage('Você', message);
+            addMessage('Assistente', data.answer);
+            history.push({role: 'user', content: message}, {role: 'assistant', content: data.answer.slice(0, 1000)});
+            input.value = '';
+        } catch (exc) {
+            error.textContent = exc.message || 'Não foi possível responder agora.';
+            error.hidden = false;
+        } finally {
+            send.disabled = false;
+            send.textContent = 'Enviar';
+        }
+    });
+});
+</script>
