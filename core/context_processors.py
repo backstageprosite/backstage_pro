@@ -1,3 +1,5 @@
+import os
+
 from core.admin_views import is_admin_web_push
 from core.models import SystemSettings
 
@@ -18,5 +20,9 @@ def system_settings_processor(request):
     # Evita query de banco em rotas onde não é necessário, mas é leve.
     settings = SystemSettings.get_settings()
     return {
-        'system_settings': settings
+        'system_settings': settings,
+        'ai_chat_pilot_enabled': bool(
+            request.user.is_authenticated and request.user.is_superuser
+            and os.getenv('CLOUDFLARE_ACCOUNT_ID') and os.getenv('CLOUDFLARE_AI_TOKEN')
+        )
     }
