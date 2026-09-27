@@ -48,7 +48,14 @@
         .bp-chat-launcher { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); padding: 8px; }
         .bp-chat-launcher .bp-chat-icon { width: 40px; height: 40px; }
         .bp-chat-launcher-label { display: none; }
-        .bp-chat-panel { inset: 0; width: 100%; height: 100dvh; border: 0; border-radius: 0; }
+        .bp-chat-panel {
+            inset: auto 12px max(16px, env(safe-area-inset-bottom)) auto;
+            width: calc(100vw - 24px);
+            height: min(540px, 68dvh);
+            max-height: calc(100dvh - 40px);
+            border: 1px solid #dbe6ee;
+            border-radius: 18px;
+        }
         .bp-chat-launcher[aria-expanded="true"] { display: none; }
         .bp-chat-composer { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
     }
@@ -118,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         launcher.setAttribute('aria-expanded', 'true');
         launcher.setAttribute('aria-label', 'Minimizar Assistente Backstage Pro');
         saveChat();
-        input.focus();
+        if (window.matchMedia('(min-width: 576px)').matches) input.focus();
     }
     function minimizeChat() {
         panel.hidden = true;
