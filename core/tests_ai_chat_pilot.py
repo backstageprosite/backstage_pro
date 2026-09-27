@@ -79,6 +79,7 @@ class AIChatPilotTests(TestCase):
         prompt = payload['messages'][0]['content']
         self.assertIn('Configurações > Notificações > Notificações neste dispositivo', prompt)
         self.assertIn('Ativar notificações neste dispositivo', prompt)
+        self.assertIn('Instalar Aplicativo e clique em Ver instruções de instalação', prompt)
         self.assertIn('Evento, Cronograma, Produção, Técnica, Financeiro e Anexos', prompt)
         self.assertIn('não complete lacunas', prompt)
         self.assertNotIn('Banda A', prompt)
@@ -108,6 +109,7 @@ class AIChatPilotTests(TestCase):
             self.assertContains(response, f'data-storage-key="bp-ai-chat:v1:{self.owner.pk}:{self.band.pk}"')
             self.assertContains(response, 'id="bpChatMinimize" aria-label="Minimizar e manter conversa"')
             self.assertContains(response, 'id="bpChatClose" aria-label="Fechar e apagar conversa"')
+            self.assertContains(response, 'data-question="Como instalo o aplicativo Backstage Pro?"')
             self.client.force_login(self.member)
             self.assertNotContains(self.client.get(url), 'bpChatPanel')
         with patch.dict(os.environ, {'CLOUDFLARE_ACCOUNT_ID': '', 'CLOUDFLARE_AI_TOKEN': ''}):
