@@ -153,7 +153,7 @@
 
             <!-- Previsão do Tempo -->
             <div style="width: 180px; text-align: right; font-size: 12px;">
-                {% if weather %}
+                {% if weather and not weather.unavailable_reason %}
                 <div style="border: 1px solid #ddd; padding: 4px 6px; border-radius: 4px; display: inline-block; text-align: left; background-color: #f8f9fa;">
                     <div style="font-weight: bold; margin-bottom: 2px; color: #333; font-size: 10px;">
                         <i class="fa-solid fa-cloud-sun text-secondary"></i> Clima - {{ show.city|truncatechars:15 }}
@@ -167,7 +167,7 @@
                     <div style="font-weight: bold; margin-bottom: 2px; color: #333; font-size: 10px;">
                         <i class="fa-solid fa-cloud-sun text-secondary"></i> Clima - {{ show.city|truncatechars:15 }}
                     </div>
-                    <div>Clima indisponível no momento</div>
+                    <div>{% if weather.unavailable_reason %}{{ weather.unavailable_reason }}{% else %}Clima indisponível no momento{% endif %}</div>
                 </div>
                 {% endif %}
             </div>
@@ -403,15 +403,13 @@
                         <p class="mb-1">
                             {{ show.transport|default:"-" }}
                             {% if show.transport_contact %}
-                                <span class="mx-1">|</span>
-                                <strong>Contato:</strong>
-                                {% if show.transport_contact_whatsapp_digits %}
-                                    <a href="https://wa.me/{{ show.transport_contact_whatsapp_digits }}" target="_blank" class="text-success text-decoration-none ms-1">
-                                        <i class="fa-brands fa-whatsapp me-1"></i>{{ show.transport_contact }}
-                                    </a>
-                                {% else %}
-                                    <span class="ms-1">{{ show.transport_contact }}</span>
-                                {% endif %}
+                                <span class="text-info ms-2" style="font-size: 0.85em;"><i class="fa-brands fa-whatsapp me-1"></i> Contato:
+                                    {% if show.transport_contact_whatsapp_digits %}
+                                        <a href="https://wa.me/{{ show.transport_contact_whatsapp_digits }}" target="_blank" class="text-info text-decoration-none">{{ show.transport_contact }}</a>
+                                    {% else %}
+                                        {{ show.transport_contact }}
+                                    {% endif %}
+                                </span>
                             {% endif %}
                         </p>
                         {% if show.has_air_travel %}
