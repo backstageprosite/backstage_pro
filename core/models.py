@@ -144,10 +144,12 @@ class Band(models.Model):
         seja via UserBandMembership ativo com role='EMPRESARIO' e user ativo,
         seja via fallback legado (user.band=self, user.role='EMPRESARIO', is_active=True).
         """
-        from django.db.models import Q
-        return User.objects.filter(
-            Q(band_memberships__band=self, band_memberships__is_active=True, band_memberships__role='EMPRESARIO', is_active=True) |
-            Q(band=self, role='EMPRESARIO', is_active=True)
+        from django.db.models import Exists, OuterRef, Q
+        has_membership = UserBandMembership.objects.filter(user_id=OuterRef('pk'), band=self)
+        return User.objects.annotate(_has_membership_here=Exists(has_membership)).filter(
+            Q(band_memberships__band=self, band_memberships__is_active=True,
+              band_memberships__role='EMPRESARIO', is_active=True) |
+            Q(band=self, role='EMPRESARIO', is_active=True, _has_membership_here=False)
         ).distinct()
 
     def __str__(self):
