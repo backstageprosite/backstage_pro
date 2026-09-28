@@ -391,13 +391,13 @@
         {% endif %}
 
         <!-- Produção (Transporte Principal, Hospedagem, Camarim & Apoio, Outras Atrações) -->
-        {% if show.transport or show.transport_contact or show.accommodation or show.accommodation_responsible or show.accommodation_contact or show.transfer or show.dressing_room or show.catering or show.wardrobe or show.attractions %}
+        {% if show.transport or show.transport_contact or show.has_air_travel or show.accommodation or show.accommodation_responsible or show.accommodation_contact or show.transfer or show.dressing_room or show.catering or show.wardrobe or show.attractions %}
         <div class="card mb-2 border-success">
             <div class="card-header header-logistica py-1"><i class="fa-solid fa-hotel me-1"></i> Produção</div>
             <div class="card-body">
                 <div class="row">
                     <!-- Transporte principal, no mesmo formato dos demais itens de Produção -->
-                    {% if show.transport or show.transport_contact %}
+                    {% if show.transport or show.transport_contact or show.has_air_travel %}
                     <div class="col-6 mb-3">
                         <h6 class="text-muted"><i class="fa-solid fa-bus me-1"></i> Meio de transporte</h6>
                         <p class="mb-1">
@@ -414,6 +414,20 @@
                                 {% endif %}
                             {% endif %}
                         </p>
+                        {% if show.has_air_travel %}
+                        <h6 class="text-muted mt-2"><i class="fa-solid fa-plane me-1"></i> Trecho aéreo</h6>
+                        <p class="mb-0">
+                            {% if show.departure_airport %}<strong>Aeroporto de embarque:</strong> {{ show.departure_airport }}<br>{% endif %}
+                            {% if show.arrival_airport %}<strong>Aeroporto de desembarque:</strong> {{ show.arrival_airport }}<br>{% endif %}
+                            {% if show.airline %}<strong>Cia:</strong> {{ show.airline }}{% endif %}
+                            {% if show.airline and show.flight_number %} | {% endif %}
+                            {% if show.flight_number %}<strong>Voo:</strong> {{ show.flight_number }}{% endif %}
+                            {% if show.airline or show.flight_number %}<br>{% endif %}
+                            {% if show.boarding_datetime %}<strong>Embarque:</strong> {{ show.boarding_datetime|date:"d/m/Y H:i" }}<br>{% elif show.boarding_time %}<strong>Embarque:</strong> {{ show.boarding_time|time:"H:i" }}<br>{% endif %}
+                            {% if show.flight_departure_time %}<strong>Voo:</strong> {{ show.flight_departure_time|date:"d/m/Y H:i" }}<br>{% endif %}
+                            {% if show.flight_arrival_time %}<strong>Chegada prevista:</strong> {{ show.flight_arrival_time|date:"d/m/Y H:i" }}{% endif %}
+                        </p>
+                        {% endif %}
                     </div>
                     {% endif %}
 
