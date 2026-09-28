@@ -52,8 +52,8 @@ class SubscriptionCancellationFeedbackTests(TestCase):
         response = self.client.get(self.url)
         self.assertContains(response, 'name="reason"')
         self.assertContains(response, 'maxlength="1000"')
-        self.assertContains(response, 'Confirmar cancelamento')
-        self.assertContains(response, '>Cancelar</button>')
+        self.assertContains(response, 'Cancelar plano')
+        self.assertContains(response, '>Voltar</button>')
 
     @patch('core.services.payments.asaas.client.AsaasClient.cancel_subscription')
     @patch('core.services.payments.asaas.client.AsaasClient.get_subscription')
