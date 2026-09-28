@@ -301,9 +301,9 @@ class AdminUserListView(AdminRequiredMixin, ListView):
             )
         if band_id:
             if band_id == 'none':
-                qs = qs.filter(band__isnull=True)
+                qs = qs.filter(band__isnull=True, band_memberships__isnull=True)
             else:
-                qs = qs.filter(band_id=band_id)
+                qs = qs.filter(Q(band_id=band_id) | Q(band_memberships__band_id=band_id)).distinct()
 
         # BP-PEND-62: prefetch memberships para exibir múltiplas bandas sem N+1 queries
         return qs.prefetch_related('band_memberships__band')
