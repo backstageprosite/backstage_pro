@@ -1151,6 +1151,35 @@ class BandSubscription(models.Model):
     def __str__(self):
         return f"Assinatura - {self.band.name}"
 
+class SubscriptionCancellationFeedback(models.Model):
+    """Motivo informado pelo cliente após confirmar o cancelamento da renovação."""
+
+    subscription = models.ForeignKey(
+        BandSubscription, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='cancellation_feedback',
+    )
+    band = models.ForeignKey(
+        Band, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='subscription_cancellation_feedback',
+    )
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='subscription_cancellation_feedback',
+    )
+    band_name = models.CharField(max_length=100)
+    gateway_subscription_id = models.CharField(max_length=100, blank=True)
+    reason = models.TextField(max_length=1000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Feedback de cancelamento'
+        verbose_name_plural = 'Feedbacks de cancelamento'
+
+    def __str__(self):
+        return f"Cancelamento de {self.band_name} em {self.created_at:%d/%m/%Y}"
+
+
 def billing_proof_upload_path(instance, filename):
     return f'billing/{instance.band.id}/comprovantes/{filename}'
 

@@ -8,7 +8,8 @@ from django.utils import timezone
 from core.models import (
     User, Band, BandSubscription, BillingRecord, SignupOrder,
     PaymentWebhookEvent, BandActivationToken, EmailDelivery,
-    AnnualRenewalNotice, AnnualPlanPurchase, GatewayPaymentMethod, SystemSettings
+    AnnualRenewalNotice, AnnualPlanPurchase, GatewayPaymentMethod, SystemSettings,
+    UserBandMembership
 )
 from core.services.payments.base import (
     AsaasConfig, normalize_band_slug, generate_unique_band_slug,
@@ -1615,10 +1616,12 @@ class AsaasFoundationTests(TestCase):
         # 1. Setup de Bandas e Usuários
         band_a = Band.objects.create(name='Banda Teste Homologacao', slug='testehomologacao', plan_type='BASICO')
         user_produtor_a = User.objects.create_user(username='prod_a', email='proda@test.com', password='123', band=band_a, role='PRODUTOR')
+        UserBandMembership.objects.create(user=user_produtor_a, band=band_a, role='EMPRESARIO', is_active=True)
         user_integrante_a = User.objects.create_user(username='integ_a', email='intega@test.com', password='123', band=band_a, role='INTEGRANTE')
 
         band_b = Band.objects.create(name='Banda Outra', slug='bandaoutra', plan_type='AVANCADO')
         user_produtor_b = User.objects.create_user(username='prod_b', email='prodb@test.com', password='123', band=band_b, role='PRODUTOR')
+        UserBandMembership.objects.create(user=user_produtor_b, band=band_b, role='EMPRESARIO', is_active=True)
 
         # 2. Permissão de Acesso:
         # Integrante recebe 403
@@ -1710,7 +1713,12 @@ class AsaasFoundationTests(TestCase):
         resp_before = client.get(f'/{band_a.slug}/relatorios/assinatura/')
         self.assertContains(resp_before, 'Cancelar Assinatura')
 
-        post_cancel = client.post(f'/{band_a.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        with patch('core.services.payments.asaas.client.AsaasClient.get_subscription') as mock_get, \
+             patch('core.services.payments.asaas.client.AsaasClient.cancel_subscription') as mock_cancel:
+            mock_get.return_value = {'id': sub_a.gateway_subscription_id, 'customer': sub_a.gateway_customer_id}
+            mock_cancel.return_value = (True, {'deleted': True})
+            post_cancel = client.post(f'/{band_a.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub_a.id), 'reason': 'Motivo informado no teste.'}, follow=True)
+            mock_cancel.assert_called_once_with(sub_a.gateway_subscription_id)
         self.assertEqual(post_cancel.status_code, 200)
         sub_a.refresh_from_db()
         self.assertTrue(sub_a.cancel_at_period_end)
@@ -1744,6 +1752,7 @@ class AsaasFoundationTests(TestCase):
         # 6. Assinatura manual/legada sem gateway
         band_manual = Band.objects.create(name='Banda Manual Teste', slug='manualteste', plan_type='AVANCADO')
         user_manual = User.objects.create_user(username='prod_man', email='man@test.com', password='123', band=band_manual, role='PRODUTOR')
+        UserBandMembership.objects.create(user=user_manual, band=band_manual, role='EMPRESARIO', is_active=True)
         sub_manual = BandSubscription.objects.create(
             band=band_manual,
             plan_name='Avançado',
@@ -1834,6 +1843,7 @@ class AsaasFoundationTests(TestCase):
         # Cenário B: Assinatura cancelada cujo período pago VENCEU (today >= next_due_date)
         band_b = Band.objects.create(name='Banda Expirada', slug='bandaexpirada')
         user_b = User.objects.create_user(username='prod_expirado', email='expirado@test.com', password='123', band=band_b, role='PRODUTOR')
+        UserBandMembership.objects.create(user=user_b, band=band_b, role='EMPRESARIO', is_active=True)
         sub_b = BandSubscription.objects.create(
             band=band_b,
             plan_name='Básico',
@@ -2212,6 +2222,7 @@ class AsaasFoundationTests(TestCase):
         # 1. CANCELAMENTO VOLUNTÁRIO DURANTE O PERÍODO PAGO (A até G)
         band_canc = Band.objects.create(name='Banda Cancel Test', slug='bandacanceltest')
         user_canc = User.objects.create_user(username='prod_canc', email='canc@test.com', password='123', band=band_canc, role='PRODUTOR')
+        UserBandMembership.objects.create(user=user_canc, band=band_canc, role='EMPRESARIO', is_active=True)
         sub_canc = BandSubscription.objects.create(
             band=band_canc, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
             start_date=today - timedelta(days=10), next_due_date=today + timedelta(days=20),
@@ -2227,7 +2238,7 @@ class AsaasFoundationTests(TestCase):
         self.assertContains(resp_assina_active, 'Próxima Cobrança')
 
         # Realiza o cancelamento voluntário
-        resp_post_cancel = client.post(f'/{band_canc.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'})
+        resp_post_cancel = client.post(f'/{band_canc.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub_canc.id), 'reason': 'Motivo informado no teste.'})
         self.assertEqual(resp_post_cancel.status_code, 302)
 
         # Teste B & C: cancel_at_period_end=True e auto_renew=False
@@ -2253,6 +2264,7 @@ class AsaasFoundationTests(TestCase):
         # 2. FIM DO PERÍODO PAGO APÓS CANCELAMENTO (H até P)
         band_exp = Band.objects.create(name='Banda Periodo Encerrado', slug='bandaexp')
         user_exp = User.objects.create_user(username='prod_exp', email='exp@test.com', password='123', band=band_exp, role='PRODUTOR')
+        UserBandMembership.objects.create(user=user_exp, band=band_exp, role='EMPRESARIO', is_active=True)
         sub_exp = BandSubscription.objects.create(
             band=band_exp, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
             start_date=date(2026, 9, 4), next_due_date=date(2026, 10, 4),
@@ -2373,6 +2385,7 @@ class AsaasFoundationTests(TestCase):
         client = Client()
         band = Band.objects.create(name='Banda Cancel Entitlement', slug='bandacancelentitlement')
         user = User.objects.create_user(username='prod_cancel_ent', email='cancelent@test.com', password='123', band=band, role='PRODUTOR')
+        UserBandMembership.objects.create(user=user, band=band, role='EMPRESARIO', is_active=True)
         client.login(username='prod_cancel_ent', password='123')
 
         sub = BandSubscription.objects.create(
@@ -2421,7 +2434,7 @@ class AsaasFoundationTests(TestCase):
 
         # Cenário A: Falha na validação remota (GET retorna None) -> Não altera estado local
         mock_get_sub.return_value = None
-        resp_fail_get = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        resp_fail_get = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub.id), 'reason': 'Motivo informado no teste.'}, follow=True)
         self.assertEqual(resp_fail_get.status_code, 200)
         sub.refresh_from_db()
         self.assertFalse(sub.cancel_at_period_end)
@@ -2429,20 +2442,20 @@ class AsaasFoundationTests(TestCase):
 
         # Cenário B: Divergência de Customer ID -> Cancelamento abortado
         mock_get_sub.return_value = {'id': 'sub_test_remote_123', 'customer': 'cus_divergente_999'}
-        resp_fail_cust = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        resp_fail_cust = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub.id), 'reason': 'Motivo informado no teste.'}, follow=True)
         sub.refresh_from_db()
         self.assertFalse(sub.cancel_at_period_end)
 
         # Cenário C: Falha no DELETE do Asaas -> Não altera estado local
         mock_get_sub.return_value = {'id': 'sub_test_remote_123', 'customer': 'cus_test_remote_456'}
         mock_cancel_sub.return_value = (False, {'error': 'gateway_timeout'})
-        resp_fail_del = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        resp_fail_del = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub.id), 'reason': 'Motivo informado no teste.'}, follow=True)
         sub.refresh_from_db()
         self.assertFalse(sub.cancel_at_period_end)
 
         # Cenário D: Sucesso no GET e no DELETE Asaas -> Marca cancelamento agendado
         mock_cancel_sub.return_value = (True, {'deleted': True})
-        resp_success = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+        resp_success = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub.id), 'reason': 'Motivo informado no teste.'}, follow=True)
         self.assertEqual(resp_success.status_code, 200)
         sub.refresh_from_db()
         self.assertTrue(sub.cancel_at_period_end)
@@ -2537,6 +2550,7 @@ class AsaasFoundationTests(TestCase):
             username='prod_audit_canc', email='audit_canc@test.com', password='123',
             band=band_audit, role='PRODUTOR'
         )
+        UserBandMembership.objects.create(user=user_audit, band=band_audit, role='EMPRESARIO', is_active=True)
         sub_audit = BandSubscription.objects.create(
             band=band_audit, plan_name='Básico', billing_cycle='MENSAL', contracted_value=Decimal('19.90'),
             start_date=date(2026, 8, 4), next_due_date=date(2026, 9, 4),
@@ -2558,7 +2572,7 @@ class AsaasFoundationTests(TestCase):
              patch('core.services.payments.asaas.client.AsaasClient.cancel_subscription') as mock_del:
             mock_get.return_value = {'id': 'sub_audit_old_111', 'customer': 'cus_audit_999'}
             mock_del.return_value = (True, {'deleted': True})
-            resp_canc = client.post(f'/{band_audit.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+            resp_canc = client.post(f'/{band_audit.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub_audit.id), 'reason': 'Motivo informado no teste.'}, follow=True)
             self.assertEqual(resp_canc.status_code, 200)
 
         sub_audit.refresh_from_db()
@@ -4446,6 +4460,7 @@ class AsaasFoundationTests(TestCase):
             band=band,
             role='PRODUTOR'
         )
+        UserBandMembership.objects.create(user=user, band=band, role='EMPRESARIO', is_active=True)
         sub = BandSubscription.objects.create(
             band=band,
             plan_name="Básico",
@@ -4464,7 +4479,7 @@ class AsaasFoundationTests(TestCase):
         client.force_login(user)
 
         with patch('core.services.payments.asaas.client.AsaasClient.cancel_subscription') as mock_del:
-            resp = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription'}, follow=True)
+            resp = client.post(f'/{band.slug}/relatorios/assinatura/', {'action': 'cancel_subscription', 'subscription_id': str(sub.id), 'reason': 'Motivo informado no teste.'}, follow=True)
             self.assertEqual(resp.status_code, 200)
             # Confirma que NUNCA invocou cancel_subscription no Asaas
             mock_del.assert_not_called()

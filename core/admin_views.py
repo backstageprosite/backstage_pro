@@ -12,7 +12,8 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView, View
 from django.db.models import Count, F, Q, Sum, Case, When, Value, IntegerField
-from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket, SystemSettings, UserBandMembership
+from django.core.paginator import Paginator
+from core.models import Band, User, Show, BandSubscription, BillingRecord, AdministrativeBandNotice, Partner, SupportTicket, SystemSettings, UserBandMembership, SubscriptionCancellationFeedback
 from .admin_forms import AdminBandForm, AdminUserCreateForm, AdminUserEditForm, AdminSubscriptionForm, AdminBillingRecordForm, AdminPartnerForm
 from core.views import build_whatsapp_access_data
 import datetime
@@ -446,6 +447,17 @@ class AdminAssinaturasView(AdminRequiredMixin, ListView):
             }
 
         context['bands_charge_data_json'] = json.dumps(bands_charge_dict)
+        feedback_q = self.request.GET.get('feedback_q', '').strip()
+        feedback = SubscriptionCancellationFeedback.objects.select_related('requested_by', 'subscription')
+        if feedback_q:
+            feedback = feedback.filter(
+                Q(band_name__icontains=feedback_q) |
+                Q(reason__icontains=feedback_q) |
+                Q(requested_by__username__icontains=feedback_q)
+            )
+        feedback = feedback.order_by('-created_at', '-pk')
+        context['feedback_q'] = feedback_q
+        context['feedback_page'] = Paginator(feedback, 20).get_page(self.request.GET.get('feedback_page'))
         return context
 
 class AdminCobrancasView(AdminRequiredMixin, ListView):
