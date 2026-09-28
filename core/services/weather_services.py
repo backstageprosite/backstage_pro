@@ -1,8 +1,14 @@
 import requests
+from datetime import timedelta
+from django.utils import timezone
 
 def get_weather_for_show(city_name, show_date):
     if not city_name or not show_date:
         return None
+
+    # A API cobre hoje e os 15 dias seguintes; uma data distante não invalida a cidade.
+    if show_date > timezone.localdate() + timedelta(days=15):
+        return {'unavailable_reason': 'Previsão ainda não disponível. Consulte nos 15 dias anteriores ao show.'}
     
     try:
         # Convert "Salvador/BA" or "Salvador - BA" to "Salvador, BA" for better API accuracy
@@ -23,7 +29,7 @@ def get_weather_for_show(city_name, show_date):
         date_str = show_date.strftime("%Y-%m-%d")
         
         # Get weather
-        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=America%2FSao_Paulo&start_date={date_str}&end_date={date_str}"
+        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=America%2FSao_Paulo&forecast_days=16&start_date={date_str}&end_date={date_str}"
         w_resp = requests.get(weather_url, timeout=5)
         w_data = w_resp.json()
         
