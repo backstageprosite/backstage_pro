@@ -1384,7 +1384,7 @@ def minha_assinatura_view(request, band_slug):
                         messages.error(request, "Inconsistência na assinatura remota. Cancelamento abortado.")
                         return redirect('minha_assinatura', band_slug=band.slug)
                     remote_customer_id = sub_info.get('customer')
-                    if (sub_locked.gateway_customer_id and remote_customer_id
+                    if (sub_locked.gateway_customer_id
                             and remote_customer_id != sub_locked.gateway_customer_id):
                         logger.error("Divergência de cliente da assinatura %s", sub_locked.gateway_subscription_id)
                         messages.error(request, "Inconsistência de titularidade. Cancelamento abortado.")
