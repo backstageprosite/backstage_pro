@@ -3516,267 +3516,231 @@ def build_admin_user_whatsapp_access_data(user, raw_password="", is_provisional=
     }
 
 
+def _users_for_band(band):
+    """Lista vínculos desta banda, incluindo contas cujo User.band aponta para outra."""
+    from django.db.models import Q
+    usuarios = User.objects.filter(
+        Q(band=band) | Q(band_memberships__band=band)
+    ).distinct().prefetch_related('band_memberships').order_by('first_name', 'username')
+    for usuario in usuarios:
+        memberships = list(usuario.band_memberships.all())
+        membership = next((m for m in memberships if m.band_id == band.id), None)
+        usuario.band_role = membership.role if membership else usuario.role
+        usuario.band_membership_active = membership.is_active if membership else usuario.is_active
+        usuario.band_is_active = usuario.is_active and usuario.band_membership_active
+        usuario.shared_account = any(m.band_id != band.id for m in memberships) or (
+            usuario.band_id is not None and usuario.band_id != band.id
+        )
+        yield usuario
+
+
+def _get_user_in_band(band, pk):
+    from django.db.models import Q
+    return get_object_or_404(
+        User.objects.filter(Q(band=band) | Q(band_memberships__band=band)).distinct(),
+        pk=pk,
+    )
+
+
+def _user_has_other_bands(user, band):
+    return (user.band_id is not None and user.band_id != band.id) or user.band_memberships.exclude(band=band).exists()
+
+
+def _move_primary_band(user):
+    """Após remover/desativar o vínculo principal, mantém a conta em outra banda ativa."""
+    next_membership = user.band_memberships.filter(
+        is_active=True, band__is_active=True
+    ).select_related('band').order_by('id').first()
+    user.band = next_membership.band if next_membership else None
+    user.role = next_membership.role if next_membership else 'INTEGRANTE'
+    user.save(update_fields=['band', 'role'])
+
+
 @login_required
 @band_required
 def usuarios_list_view(request, band_slug):
-    if not request.user.is_produtor():
-        return HttpResponseForbidden("Apenas produtores.")
-
     band = get_object_or_404(Band, slug=band_slug)
-    usuarios = User.objects.filter(band=band).order_by('first_name', 'username')
-    whatsapp_access_data = request.session.pop('whatsapp_access_data', None)
-    is_emp = request.user.is_superuser or request.user.is_empresario(band)
-
-    context = {
+    if not request.user.is_produtor(band):
+        return HttpResponseForbidden("Apenas produtores.")
+    return render(request, 'core/usuarios.html', {
         'band': band,
-        'usuarios': usuarios,
-        'whatsapp_access_data': whatsapp_access_data,
-        'is_empresario': is_emp,
-    }
-    return render(request, 'core/usuarios.html', context)
+        'usuarios': list(_users_for_band(band)),
+        'whatsapp_access_data': request.session.pop('whatsapp_access_data', None),
+        'is_empresario': request.user.is_empresario(band),
+    })
 
 
 @login_required
 @band_required
 def usuario_create_view(request, band_slug):
-    if not request.user.is_produtor() and not request.user.is_superuser:
-        return HttpResponseForbidden("Apenas produtores podem adicionar usuários.")
-
     band = get_object_or_404(Band, slug=band_slug)
-    is_emp = request.user.is_superuser or request.user.is_empresario(band)
+    if not request.user.is_produtor(band):
+        return HttpResponseForbidden("Apenas produtores podem adicionar usuários.")
+    is_emp = request.user.is_empresario(band)
 
     if request.method == 'POST':
-        # BP-PEND-82: Apenas Empresário ou superusuário pode atribuir o perfil EMPRESARIO
-        requested_role = request.POST.get('role')
-        if requested_role == 'EMPRESARIO' and not is_emp:
+        if request.POST.get('role') == 'EMPRESARIO' and not is_emp:
             messages.error(request, "Apenas empresários ou administradores podem atribuir o perfil de Empresário.")
             return redirect('usuarios_list', band_slug=band.slug)
 
         form = UserForm(request.POST)
         if form.is_valid():
+            from core.models import UserBandMembership
             raw_password = form.cleaned_data.get('password')
             user = form.save(commit=False)
             user.band = band
             user.save()
-
-            # BP-PEND-82: Sincroniza UserBandMembership
-            from core.models import UserBandMembership
             UserBandMembership.objects.update_or_create(
-                user=user,
-                band=band,
-                defaults={'role': user.role, 'is_active': user.is_active}
+                user=user, band=band,
+                defaults={'role': user.role, 'is_active': user.is_active},
             )
-
             if user.role == 'INTEGRANTE':
                 request.session['whatsapp_access_data'] = build_whatsapp_access_data(
-                    band=band,
-                    user=user,
-                    raw_password=raw_password
+                    band=band, user=user, raw_password=raw_password
                 )
-
             messages.success(request, "Usuário criado com sucesso!")
             return redirect('usuarios_list', band_slug=band.slug)
-        else:
-            if request.POST.get('from_modal'):
-                usuarios = User.objects.filter(band=band).order_by('first_name', 'username')
-                context = {
-                    'band': band,
-                    'usuarios': usuarios,
-                    'add_user_form': form,
-                    'open_add_modal': True,
-                    'whatsapp_access_data': None,
-                    'is_empresario': is_emp,
-                }
-                return render(request, 'core/usuarios.html', context)
 
+        if request.POST.get('from_modal'):
+            return render(request, 'core/usuarios.html', {
+                'band': band,
+                'usuarios': list(_users_for_band(band)),
+                'add_user_form': form,
+                'open_add_modal': True,
+                'whatsapp_access_data': None,
+                'is_empresario': is_emp,
+            })
     else:
-
         form = UserForm()
 
-
-
-    context = {
-
-        'band': band,
-
-        'form': form,
-
-        'is_edit': False,
-
-        'is_empresario': is_emp,
-
-    }
-
-    return render(request, 'core/usuario_form.html', context)
-
+    return render(request, 'core/usuario_form.html', {
+        'band': band, 'form': form, 'is_edit': False, 'is_empresario': is_emp,
+    })
 
 
 @login_required
-
 @band_required
-
 def usuario_edit_view(request, band_slug, pk):
-
-    if not request.user.is_produtor() and not request.user.is_superuser:
-
-        return HttpResponseForbidden("Apenas produtores podem editar usuários.")
-
-
-
     band = get_object_or_404(Band, slug=band_slug)
-
-    user_to_edit = get_object_or_404(User, pk=pk, band=band)
-
-    is_emp = request.user.is_superuser or request.user.is_empresario(band)
-
-
+    if not request.user.is_produtor(band):
+        return HttpResponseForbidden("Apenas produtores podem editar usuários.")
+    user_to_edit = _get_user_in_band(band, pk)
+    is_emp = request.user.is_empresario(band)
+    membership = user_to_edit.get_membership_for_band(band)
+    current_role = membership.role if membership else user_to_edit.role
+    shared_account = _user_has_other_bands(user_to_edit, band)
 
     if request.method == 'POST':
-
         new_role = request.POST.get('role')
         new_is_active = bool(request.POST.get('is_active'))
-
-        # BP-PEND-82: Apenas Empresário ou superusuário pode atribuir o perfil EMPRESARIO
-        if new_role == 'EMPRESARIO' and not is_emp:
-            messages.error(request, "Apenas empresários ou administradores podem atribuir o perfil de Empresário.")
+        if new_role not in {'INTEGRANTE', 'PRODUTOR', 'EMPRESARIO'}:
+            messages.error(request, "Perfil de acesso inválido.")
+            return redirect('usuarios_list', band_slug=band.slug)
+        if not is_emp and (new_role == 'EMPRESARIO' or current_role == 'EMPRESARIO'):
+            messages.error(request, "Apenas empresários podem alterar o perfil de Empresário.")
             return redirect('usuarios_list', band_slug=band.slug)
 
-        # BP-PEND-82: Trava do último empresário ativo
-        was_emp = user_to_edit.is_empresario_for_band(band)
-        is_still_emp = (new_role == 'EMPRESARIO' and new_is_active)
-        if was_emp and not is_still_emp:
-            active_emp_count = band.get_active_empresarios().exclude(pk=user_to_edit.pk).count()
-            if active_emp_count == 0:
+        was_emp = current_role == 'EMPRESARIO' and user_to_edit.is_active and (
+            membership.is_active if membership else True
+        )
+        if was_emp and not (new_role == 'EMPRESARIO' and new_is_active):
+            if not band.get_active_empresarios().exclude(pk=user_to_edit.pk).exists():
                 messages.error(request, "A banda não pode ficar sem nenhum Empresário ativo.")
                 return redirect('usuarios_list', band_slug=band.slug)
+
+        from core.models import UserBandMembership
+        if shared_account:
+            # Nome, e-mail e login pertencem à conta compartilhada; só o vínculo é local.
+            UserBandMembership.objects.update_or_create(
+                user=user_to_edit, band=band,
+                defaults={'role': new_role, 'is_active': new_is_active},
+            )
+            if user_to_edit.band_id == band.id:
+                if new_is_active:
+                    user_to_edit.role = new_role
+                    user_to_edit.save(update_fields=['role'])
+                else:
+                    _move_primary_band(user_to_edit)
+            messages.success(request, "Acesso nesta banda atualizado sem alterar as outras bandas.")
+            return redirect('usuarios_list', band_slug=band.slug)
 
         form = UserEditForm(request.POST, instance=user_to_edit)
-
         if form.is_valid():
-
             updated_user = form.save()
-
-            # BP-PEND-82: Sincroniza UserBandMembership
-            from core.models import UserBandMembership
             UserBandMembership.objects.update_or_create(
-                user=updated_user,
-                band=band,
-                defaults={'role': updated_user.role, 'is_active': updated_user.is_active}
+                user=updated_user, band=band,
+                defaults={'role': updated_user.role, 'is_active': updated_user.is_active},
             )
-
             messages.success(request, "Usuário atualizado com sucesso!")
+        else:
+            for errors in form.errors.values():
+                for error in errors:
+                    messages.error(request, error)
+        return redirect('usuarios_list', band_slug=band.slug)
 
-            return redirect('usuarios_list', band_slug=band.slug)
-
-    else:
-
-        form = UserEditForm(instance=user_to_edit)
-
-
-
-    context = {
-
-        'band': band,
-
-        'form': form,
-
-        'is_edit': True,
-
-        'user_to_edit': user_to_edit,
-
-        'is_empresario': is_emp,
-
-    }
-
-    return render(request, 'core/usuario_form.html', context)
-
+    form = UserEditForm(instance=user_to_edit)
+    return render(request, 'core/usuario_form.html', {
+        'band': band, 'form': form, 'is_edit': True,
+        'user_to_edit': user_to_edit, 'is_empresario': is_emp,
+        'shared_account': shared_account, 'band_role': current_role,
+        'band_membership_active': membership.is_active if membership else user_to_edit.is_active,
+    })
 
 
 @login_required
-
 @band_required
-
 def usuario_delete_view(request, band_slug, pk):
-
-    if not request.user.is_produtor() and not request.user.is_superuser:
-
-        return HttpResponseForbidden("Apenas produtores podem excluir usuários.")
-
-
-
     band = get_object_or_404(Band, slug=band_slug)
-
-    user_to_delete = get_object_or_404(User, pk=pk, band=band)
-
-
-
+    if not request.user.is_produtor(band):
+        return HttpResponseForbidden("Apenas produtores podem remover usuários.")
+    user_to_delete = _get_user_in_band(band, pk)
     if request.method == 'POST':
-
-        # BP-PEND-82: Trava do último empresário ativo ao excluir
-        if user_to_delete.is_empresario_for_band(band):
-            active_emp_count = band.get_active_empresarios().exclude(pk=user_to_delete.pk).count()
-            if active_emp_count == 0:
+        membership = user_to_delete.get_membership_for_band(band)
+        current_role = membership.role if membership else user_to_delete.role
+        if current_role == 'EMPRESARIO':
+            if not request.user.is_empresario(band):
+                return HttpResponseForbidden("Apenas empresários podem remover outro empresário.")
+            if not band.get_active_empresarios().exclude(pk=user_to_delete.pk).exists():
                 messages.error(request, "A banda não pode ficar sem nenhum Empresário ativo.")
                 return redirect('usuarios_list', band_slug=band.slug)
 
-        user_to_delete.delete()
-
-        messages.success(request, "Usuário excluído com sucesso!")
-
-
-
+        if _user_has_other_bands(user_to_delete, band):
+            if membership:
+                membership.delete()
+            if user_to_delete.band_id == band.id:
+                _move_primary_band(user_to_delete)
+            messages.success(request, "Acesso removido desta banda; a conta nas outras bandas foi preservada.")
+        else:
+            user_to_delete.delete()
+            messages.success(request, "Usuário excluído com sucesso!")
     return redirect('usuarios_list', band_slug=band.slug)
-
 
 
 @login_required
-
 @band_required
-
 def usuario_reset_password_view(request, band_slug, pk):
-
-    if not request.user.is_produtor() and not request.user.is_superuser:
-
-        return HttpResponseForbidden("Apenas produtores podem redefinir senhas.")
-
-
-
     band = get_object_or_404(Band, slug=band_slug)
-
-    user_to_edit = get_object_or_404(User, pk=pk, band=band)
-
-
+    if not request.user.is_produtor(band):
+        return HttpResponseForbidden("Apenas produtores podem redefinir senhas.")
+    user_to_edit = _get_user_in_band(band, pk)
+    if _user_has_other_bands(user_to_edit, band) and not request.user.is_superuser:
+        messages.error(request, "Esta senha é compartilhada entre bandas. O titular ou o administrador geral deve alterá-la.")
+        return redirect('usuarios_list', band_slug=band.slug)
 
     if request.method == 'POST':
-
         new_password = request.POST.get('new_password')
-
         confirm_password = request.POST.get('confirm_password')
-
-
-
         if not new_password or not confirm_password:
-
             messages.error(request, "As senhas não podem ser vazias.")
-
         elif new_password != confirm_password:
-
             messages.error(request, "As senhas não conferem. Tente novamente.")
-
         else:
-
             user_to_edit.set_password(new_password)
-            if user_to_edit.role == 'INTEGRANTE':
+            if user_to_edit.get_role_for_band(band) == 'INTEGRANTE':
                 user_to_edit.must_change_password = True
-
             user_to_edit.save()
-
             messages.success(request, f"Senha do usuário {user_to_edit.username} redefinida com sucesso!")
-
-
-
     return redirect('usuarios_list', band_slug=band.slug)
-
 
 
 @login_required
