@@ -396,23 +396,24 @@
             <div class="card-header header-logistica py-1"><i class="fa-solid fa-hotel me-1"></i> Produção</div>
             <div class="card-body">
                 <div class="row">
-                    <!-- Meio de Transporte Principal e Contato (fora do Cronograma) -->
+                    <!-- Transporte principal, no mesmo formato dos demais itens de Produção -->
                     {% if show.transport or show.transport_contact %}
-                    <div class="col-12 mb-3">
-                        <div class="p-2 border rounded bg-light">
-                            <strong>Meio de transporte:</strong> {{ show.transport|default:"-" }}
+                    <div class="col-6 mb-3">
+                        <h6 class="text-muted"><i class="fa-solid fa-bus me-1"></i> Meio de transporte</h6>
+                        <p class="mb-1">
+                            {{ show.transport|default:"-" }}
                             {% if show.transport_contact %}
                                 <span class="mx-1">|</span>
                                 <strong>Contato:</strong>
                                 {% if show.transport_contact_whatsapp_digits %}
-                                    <a href="https://wa.me/{{ show.transport_contact_whatsapp_digits }}" target="_blank" class="text-success fw-bold text-decoration-none ms-1">
+                                    <a href="https://wa.me/{{ show.transport_contact_whatsapp_digits }}" target="_blank" class="text-success text-decoration-none ms-1">
                                         <i class="fa-brands fa-whatsapp me-1"></i>{{ show.transport_contact }}
                                     </a>
                                 {% else %}
                                     <span class="ms-1">{{ show.transport_contact }}</span>
                                 {% endif %}
                             {% endif %}
-                        </div>
+                        </p>
                     </div>
                     {% endif %}
 
