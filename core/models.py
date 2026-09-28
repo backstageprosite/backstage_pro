@@ -204,14 +204,14 @@ class User(AbstractUser):
         if not band:
             return self.role
 
-        membership = self.band_memberships.filter(band=band, is_active=True).first()
-        if membership and membership.role:
-            return membership.role
+        membership = self.band_memberships.filter(band=band).first()
+        if membership:
+            return membership.role if membership.is_active else 'INTEGRANTE'
 
         if self.band_id == band.id:
             return self.role
 
-        return self.role
+        return 'INTEGRANTE'
 
     def is_produtor_for_band(self, band=None):
         """Verifica se o usuário é PRODUTOR ou EMPRESARIO para a banda fornecida."""
@@ -231,18 +231,11 @@ class User(AbstractUser):
         if not band:
             return False
 
-        has_active_membership = self.band_memberships.filter(
-            band=band,
-            is_active=True,
-            band__is_active=True
-        ).exists()
-        if has_active_membership:
-            return True
+        membership = self.band_memberships.filter(band=band).first()
+        if membership:
+            return bool(self.is_active and band.is_active and membership.is_active)
 
-        if self.band_id == band.id and band.is_active:
-            return True
-
-        return False
+        return bool(self.is_active and self.band_id == band.id and band.is_active)
 
     def is_produtor(self, band=None):
         """
