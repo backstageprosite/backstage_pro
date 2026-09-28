@@ -182,8 +182,8 @@
                                 <strong class="text-dark" style="font-size: 14px;">{{ room.number_or_name }}</strong>
                                 {% if room_list.status == 'RASCUNHO' %}
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-light border rounded-pill shadow-sm dropdown-toggle py-1 px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 12px; height: 28px;">
-                                        <i class="fa-solid fa-gear me-1 text-secondary"></i> Ações
+                                    <button class="btn btn-sm btn-light border rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Ações do quarto {{ room.number_or_name }}" title="Ações do quarto {{ room.number_or_name }}" style="width: 34px; height: 34px;">
+                                        <i class="fa-solid fa-gear text-secondary" aria-hidden="true"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 12px; font-size: 0.9rem;">
                                         <li>
